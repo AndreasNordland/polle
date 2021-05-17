@@ -62,14 +62,14 @@ d_alpha_opt_10 <- function(data, par){
 # observed_utility <- mean(utility(two_stage_policy_data)$U)
 # rm(two_stage_policy_data)
 #
-# # approximated mean utility under the optimal policy
-# n <- 2e6
-# set.seed(1)
-# d <- simulate_two_stage_data(n = n, par = par0, a_1 = d_alpha_opt_10, a_2 = d_alpha_opt_20)
-# two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
-# utility(two_stage_policy_data)
-# optimal_utility <- mean(utility(two_stage_policy_data)$U)
-# rm(two_stage_policy_data)
+# approximated mean utility under the optimal policy
+n <- 2e6
+set.seed(1)
+d <- simulate_two_stage_data(n = n, par = par0, a_1 = d_alpha_opt_10, a_2 = d_alpha_opt_20)
+two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
+utility(two_stage_policy_data)
+optimal_utility <- mean(utility(two_stage_policy_data)$U)
+rm(two_stage_policy_data)
 
 
 # binomial model
@@ -208,6 +208,25 @@ linear_model <- function(V_res, A, X){
   return(m)
 }
 
+Q_res_interept_model <- function(V_res, A, X){
+  # model matrix as data.frame
+  if (is.matrix(X)) {
+    X = as.data.frame(X)
+  }
+
+  data <- cbind(A = A, X)
+  lm_model <- lm(V_res ~ 1, data = data, model = FALSE)
+
+  m <- list(
+    lm_model = lm_model
+  )
+
+  class(m) <- "linear_model"
+  return(m)
+
+  return(m)
+}
+
 predict.linear_model <- function(object, new_X, action_set){
   lm_model <- object$lm_model
 
@@ -224,8 +243,8 @@ predict.linear_model <- function(object, new_X, action_set){
   )
 
   return(preds)
-
 }
+
 n <- 2e3
 set.seed(1)
 d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
@@ -296,7 +315,7 @@ Q_1 <- structure(
   class = "q_function"
 )
 
-n <- 1e5
+n <- 2e3
 set.seed(1)
 d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
 two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
@@ -311,3 +330,46 @@ tmp$value
 # optimal_utility
 rm(tmp)
 
+
+# DR ----------------------------------------------------------------------
+
+# intercept model
+intercept_model <- function(A, X){
+  # binary outcome
+  stopifnot(
+    all(A %in% c("0","1"))
+  )
+  A <- as.numeric(as.character(A))
+
+  # model matrix as data.frame
+  if (is.matrix(X)) {
+    X = as.data.frame(X)
+  }
+
+  glm_model <- glm(A ~ 1, data = X, family = binomial(), model = FALSE)
+
+  bm <- list(
+    glm_model = glm_model
+  )
+
+  class(bm) <- "binom_model"
+  return(bm)
+}
+
+n <- 1e6
+set.seed(1)
+d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
+two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
+
+tmp <- dr(
+  two_stage_policy_data,
+  policy = list(policy_opt_stage_1, policy_opt_stage_2),
+  g_model = list(binom_model, binom_model),
+  Q_function = list(Q_1, Q_2),
+  g_full_history = FALSE,
+  Q_full_history = TRUE,
+  policy_full_history = TRUE
+)
+tmp$value
+mean(tmp$phi_or)
+mean(tmp$phi_ipw)
