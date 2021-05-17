@@ -27,7 +27,7 @@ ipw.policy_data <- function(object, g_model = NULL, g_function = NULL, policy, g
   G <- as.matrix(dcast(g_function_policy_predictions, id ~ stage, value.var = "P")[, -c("id"), with = FALSE])
   U <- utility(object)$U
 
-  phi <- apply(D / G, 1, prod, na.rm = TRUE) * U # TODO to be improved (behavior if c(NA,NA))
+  phi <- ipw_weight(D = D, G = G) * U
 
   out <- list(
     value = mean(phi),
