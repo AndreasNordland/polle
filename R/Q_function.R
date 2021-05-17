@@ -65,6 +65,7 @@ predict.q_function <- function(object, new_history){
 
 fit_Q_model <- function(policy_data, policy_actions, Q_model, Q_full_history = TRUE){
   K <- policy_data$dim$K
+  n <- policy_data$dim$n
   action_set <- policy_data$action_set
 
   # checking g_model: must either be a list of length K.
@@ -79,7 +80,7 @@ fit_Q_model <- function(policy_data, policy_actions, Q_model, Q_full_history = T
   id <- U$id
 
   # constructing a matrix for the (predicted) Q-function values under the policy (note that V_{K+1} = U)
-  V <- matrix(nrow= n, ncol = K+1)
+  V <- matrix(nrow = n, ncol = K+1)
   V[, K+1] <- U$U
 
   out <- list()
