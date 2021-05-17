@@ -45,3 +45,23 @@ get_function_predictions <- function(policy_data, fun, full_history){
 
   return(pred)
 }
+
+ipw_weight <- function(D, G){
+  stopifnot(
+    is.vector(D) | is.matrix(D),
+    is.vector(G) | is.matrix(G),
+    all(dim(G) == dim(D))
+  )
+
+  if(is.vector(D)){
+    out <- D / G
+  } else{
+    out <- apply(D / G, 1, prod, na.rm = TRUE)
+  }
+
+  stopifnot(
+    !any(is.na(out))
+  )
+
+  return(out)
+}
