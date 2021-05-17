@@ -156,8 +156,6 @@ get_X.history <- function(object){
   H <- object$H
   action_name <- object$action_name
 
-
-
   # collecting the data:
   X_names <- names(H)[!(names(H) %in% c("id", "stage", action_name))]
   X <- H[, ..X_names]
@@ -165,6 +163,12 @@ get_X.history <- function(object){
   # dropping character columns with 1 unique element (1 level)
   character_cols <- names(X)[sapply(X, is.character)]
   dn <- character_cols[(sapply(X[, ..character_cols], function(x) length(unique(x))) == 1)]
+  if (length(dn) > 0)
+    X[, (dn) := NULL]
+
+  # dropping numeric columns with 1 unique value
+  numeric_cols <- names(X)[sapply(X, is.numeric)]
+  dn <- numeric_cols[(sapply(X[, ..numeric_cols], function(x) length(unique(x))) == 1)]
   if (length(dn) > 0)
     X[, (dn) := NULL]
 
