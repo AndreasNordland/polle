@@ -66,40 +66,13 @@ utility.policy_data <- function(object){
   return(U)
 }
 
-get_stage_history <- function(policy_data, stage, full_history){
-  if (full_history == TRUE){
-    his <- full_stage_history(policy_data, stage = stage)
-  } else{
-    his <- markov_stage_history(policy_data, stage = stage)
-  }
-  return(his)
-}
+#' @export
+get_actions <- function(object)
+  UseMethod("get_actions")
 
-get_actions <- function(policy_data){
-  actions <- policy_data$stage_data[event == 0, c("id", "stage", "A"), with = FALSE]
-
+#' @export
+get_actions.policy_data <- function(object){
+  actions <- object$stage_data[event == 0, c("id", "stage", "A"), with = FALSE]
   return(actions)
-}
-
-get_policy_actions <- function(policy_data, policy, policy_full_history = TRUE){
-  K <- policy_data$dim$K
-
-  # checking policy input: must be a list of length K
-  stopifnot(
-    if(class(policy)[[1]] == "list")
-      length(policy) == K
-    else FALSE
-  )
-
-  pa <- function(stage){
-    his <- get_stage_history(policy_data, stage = stage, full_history = policy_full_history)
-    return(policy[[stage]](his))
-  }
-
-  policy_actions <- lapply(1:K, pa)
-  policy_actions <- rbindlist(policy_actions)
-  setkey(policy_actions, id, stage)
-
-  return(policy_actions)
 }
 
