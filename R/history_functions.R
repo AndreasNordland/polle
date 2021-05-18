@@ -201,3 +201,17 @@ get_id_stage.history <- function(object){
 
   return(id)
 }
+
+#' @export
+get_stage_history <- function(object, stage, full_history)
+  UseMethod("get_stage_history")
+
+#' @export
+get_stage_history.policy_data <- function(object, stage, full_history){
+  if (full_history == TRUE){
+    his <- full_stage_history(object, stage = stage)
+  } else{
+    his <- markov_stage_history(object, stage = stage)
+  }
+  return(his)
+}
