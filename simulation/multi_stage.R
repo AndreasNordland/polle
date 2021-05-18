@@ -1,3 +1,4 @@
+# TODO: bug if history object contains 1 observation:
 
 smpd <- function(d, tau, lambda, alpha, sigma, beta, gamma, psi, rho, ...){
   stage_vec <- vector("numeric")
@@ -163,8 +164,11 @@ args0 <- list(
   rho = -0.4 # Cox parameter for X_lead (the cost), if negative, the rate will decrease
 )
 
+
+# g-model -----------------------------------------------------------------
+
 # binomial model
-binom_model <- function(A, X){
+g_binomial_linear <- function(A, X){
   # binary outcome
   stopifnot(
     all(A %in% c("0","1"))
@@ -182,11 +186,11 @@ binom_model <- function(A, X){
     glm_model = glm_model
   )
 
-  class(bm) <- "binom_model"
+  class(bm) <- "g_binomial"
   return(bm)
 }
 
-predict.binom_model <- function(object, new_X, type = "probs", action_set){
+predict.g_binomial <- function(object, new_X, type = "probs", action_set){
   glm_model <- object$glm_model
 
   stopifnot(
@@ -204,13 +208,18 @@ predict.binom_model <- function(object, new_X, type = "probs", action_set){
   return(probs)
 }
 
-policy_1 <- function(history){
+# policies ----------------------------------------------------------------
+
+policy_function_1 <- function(history){
   pol <- history$H[, c("id", "stage")]
   pol[, d := "1"]
   return(pol)
 }
 
-Q_res_linear_model <- function(V_res, A, X){
+
+# Q-model -----------------------------------------------------------------
+
+Q_linear <- function(V_res, A, X){
   # model matrix as data.frame
   if (is.matrix(X)) {
     X = as.data.frame(X)
@@ -223,13 +232,13 @@ Q_res_linear_model <- function(V_res, A, X){
     lm_model = lm_model
   )
 
-  class(m) <- "lm_model"
+  class(m) <- "Q_linear"
   return(m)
 
   return(m)
 }
 
-predict.lm_model <- function(object, new_X, action_set){
+predict.Q_linear <- function(object, new_X, action_set){
   lm_model <- object$lm_model
 
   if (is.matrix(new_X)) {
@@ -247,47 +256,55 @@ predict.lm_model <- function(object, new_X, action_set){
   return(preds)
 }
 
-# policy value approximation ------------------------------------------------------
+# approximations ------------------------------------------------------
+n <- 5e5
 
-pd <- simulate_policy_data(5e5, args0)
+pd <- simulate_policy_data(n, args0)
 pd <- new_policy_data(stage_data = pd$stage_data, baseline_data = pd$baseline_data)
-value_observed <- mean(utility(pd)$U)
+true_value_observed <- mean(utility(pd)$U)
 rm(pd)
 
 args1 <- args0
 args1$d <- d_1
-pd1 <- simulate_policy_data(5e5, args1)
+pd1 <- simulate_policy_data(n, args1)
 pd1 <- new_policy_data(stage_data = pd1$stage_data, baseline_data = pd1$baseline_data)
 true_value_policy_1 <- mean(utility(pd1)$U)
 rm(pd1)
 
 args1 <- args0
 args1$d <- d_1_stage_4_obs
-pd1 <- simulate_policy_data(5e5, args1)
+pd1 <- simulate_policy_data(n, args1)
 pd1 <- new_policy_data(stage_data = pd1$stage_data, baseline_data = pd1$baseline_data)
 true_value_policy_1_stage_4_obs <- mean(utility(pd1)$U)
 rm(pd1)
 
-# policy value IPW-estimation -------------------------------------------------
+rm(n)
 
+# ipw -------------------------------------------------
+
+# always treat policy:
 set.seed(1)
-multi_stage_policy_data <- simulate_policy_data(2e4, args0)
+multi_stage_policy_data <- simulate_policy_data(2e3, args0)
 multi_stage_policy_data <- new_policy_data(stage_data = multi_stage_policy_data$stage_data, baseline_data = multi_stage_policy_data$baseline_data)
+
+K <- multi_stage_policy_data$dim$K
+policy_1 <- new_policy(
+  policy_functions = rep(list(policy_function_1), multi_stage_policy_data$dim$K),
+  full_history = FALSE
+)
 
 tmp <- ipw(
   multi_stage_policy_data,
-  g_model = binom_model,
+  g_model = g_binomial_linear,
   g_full_history = FALSE,
-  policy = rep(list(policy_1), multi_stage_policy_data$dim$K),
-  policy_full_history = FALSE
-
+  policy = policy_1
 )
 tmp$value
 true_value_policy_1
 tmp$g_function$gm
 args0$beta
+rm(tmp, policy_1)
 
-# always treat policy:
 set.seed(1)
 m <- 1e3
 
@@ -299,13 +316,16 @@ for (i in seq_along(value_policy_1)){
 
   pd <- simulate_policy_data(2e3, args0)
   pd <- new_policy_data(stage_data = pd$stage_data, baseline_data = pd$baseline_data)
+  pol_1 <- new_policy(
+    policy_functions = rep(list(policy_function_1), pd$dim$K),
+    full_history = FALSE
+  )
 
   ipw_1 <- ipw(
     pd,
-    g_model = binom_model,
+    g_model = g_binomial_linear,
     g_full_history = FALSE,
-    policy = rep(list(policy_1), pd$dim$K),
-    policy_full_history = FALSE
+    policy = pol_1
   )
   value_policy_1[i] <- ipw_1$value
   pb$tick()
@@ -315,58 +335,58 @@ mean(value_policy_1)
 sd(value_policy_1)
 true_value_policy_1
 
-# policy value DR-estimation -------------------------------------------------
+# dr -------------------------------------------------
 
-# TODO: bug is history object contains 1 observation:
-
+# always treat policy up to stage 4
 KK <- 4
 set.seed(3)
 multi_stage_policy_data <- simulate_policy_data(2e4, args0)
 multi_stage_policy_data <- new_policy_data(stage_data = multi_stage_policy_data$stage_data, baseline_data = multi_stage_policy_data$baseline_data)
 multi_stage_policy_data <- partial(multi_stage_policy_data, K = KK)
 
-multi_stage_policy_data$stage_data[event == 0, .N, stage]
+policy_1 <- new_policy(
+  policy_functions = rep(list(policy_function_1), multi_stage_policy_data$dim$K),
+  full_history = FALSE
+)
 
 tmp <- dr(
   multi_stage_policy_data,
-  g_model = binom_model,
-  Q_model = rep(list(Q_res_linear_model), multi_stage_policy_data$dim$K),
+  g_model = g_binomial_linear,
+  Q_model = rep(list(Q_linear), multi_stage_policy_data$dim$K),
   g_full_history = FALSE,
   Q_full_history = FALSE,
-  policy = rep(list(policy_1), multi_stage_policy_data$dim$K),
-  policy_full_history = FALSE
+  policy = policy_1
 )
 tmp$value
 mean(tmp$phi_ipw)
 mean(tmp$phi_or)
 true_value_policy_1_stage_4_obs
 
-# always treat policy up to stage 4
 set.seed(1)
 m <- 5e2
-KK <- 4
-
 pb <- progress::progress_bar$new(
   format = " simulating [:bar] :percent eta: :eta",
   total = m, clear = FALSE, width= 60)
 value_policy_1_stage_4_obs <- vector(mode = "numeric", length = m)
 for (i in seq_along(value_policy_1)){
-
+  pb$tick()
   pd <- simulate_policy_data(2e3, args0)
   pd <- new_policy_data(stage_data = pd$stage_data, baseline_data = pd$baseline_data)
   pd <- partial(pd, K = KK)
+  pol_1 <- new_policy(
+    policy_functions = rep(list(policy_function_1), pd$dim$K),
+    full_history = FALSE
+  )
 
   dr_1_stage_4_obs <- dr(
     pd,
-    g_model = binom_model,
-    Q_model = rep(list(Q_res_linear_model), pd$dim$K),
+    g_model = g_binomial_linear,
+    Q_model = rep(list(Q_linear), pd$dim$K),
     g_full_history = FALSE,
     Q_full_history = FALSE,
-    policy = rep(list(policy_1), multi_stage_policy_data$dim$K),
-    policy_full_history = FALSE
+    policy = pol_1
   )
   value_policy_1_stage_4_obs[i] <- dr_1_stage_4_obs$value
-  pb$tick()
   rm(dr_1_stage_4_obs)
 }
 mean(value_policy_1_stage_4_obs)

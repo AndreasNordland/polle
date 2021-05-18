@@ -1,9 +1,9 @@
 #' @export
-or <- function(object, Q_model, Q_function, policy, Q_full_history, policy_full_history)
+or <- function(object, Q_model, Q_function, policy, Q_full_history)
   UseMethod("or")
 
 #' @export
-or.policy_data <- function(object, Q_model = NULL, Q_function = NULL, policy, Q_full_history = FALSE, policy_full_history = FALSE){
+or.policy_data <- function(object, Q_model = NULL, Q_function = NULL, policy, Q_full_history = FALSE){
   stopifnot(
     !(is.null(Q_model) & is.null(Q_function)),
     !(!is.null(Q_function) & !is.null(Q_model))
@@ -12,7 +12,7 @@ or.policy_data <- function(object, Q_model = NULL, Q_function = NULL, policy, Q_
   K <- object$dim$K
   action_set <- object$action_set
 
-  policy_actions <- get_policy_actions(object, policy = policy, policy_full_history = policy_full_history)
+  policy_actions <- get_policy_actions(policy, policy_data = object)
 
   if (!is.null(Q_model)){
     Q_function <- fit_Q_model(object, policy_actions = policy_actions, Q_model = Q_model, Q_full_history = Q_full_history)

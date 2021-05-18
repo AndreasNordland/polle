@@ -1,9 +1,9 @@
 #' @export
-ipw <- function(object, g_model, g_function, policy, g_full_history, policy_full_history)
+ipw <- function(object, g_model, g_function, policy, g_full_history)
   UseMethod("ipw")
 
 #' @export
-ipw.policy_data <- function(object, g_model = NULL, g_function = NULL, policy, g_full_history = FALSE, policy_full_history = FALSE){
+ipw.policy_data <- function(object, g_model = NULL, g_function = NULL, policy, g_full_history = FALSE){
   stopifnot(
     !(is.null(g_model) & is.null(g_function)),
     !(!is.null(g_function) & !is.null(g_model))
@@ -13,7 +13,7 @@ ipw.policy_data <- function(object, g_model = NULL, g_function = NULL, policy, g
   action_set <- object$action_set
 
   actions <- get_actions(object)
-  policy_actions <- get_policy_actions(object, policy = policy, policy_full_history = policy_full_history)
+  policy_actions <- get_policy_actions(policy, policy_data = object)
   policy_actions[actions, A := i.A]
   policy_actions[, dA := d == A]
 
