@@ -195,11 +195,11 @@ get_id_stage <- function(object)
 
 get_id_stage.history <- function(object){
   H <- object$H
-  id_names <- c("id", "stage")
+  id_stage_names <- c("id", "stage")
 
-  id <- H[, ..id_names]
+  id_stage <- H[, ..id_stage_names]
 
-  return(id)
+  return(id_stage)
 }
 
 #' @export

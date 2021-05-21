@@ -76,3 +76,15 @@ get_actions.policy_data <- function(object){
   return(actions)
 }
 
+#' @export
+get_id_stage.policy_data <- function(object){
+  stage_data <- object$stage_data
+
+  id_stage_names <- c("id", "stage")
+
+  id_stage <- stage_data[event == 0, ][, ..id_stage_names]
+
+  return(id_stage)
+}
+
+
