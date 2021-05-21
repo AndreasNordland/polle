@@ -1,9 +1,11 @@
-#' @export
-g_function <- function(object, g_model)
-  UseMethod("g_function")
+# TODO include g_full_history in the G_function object
 
 #' @export
-g_function.history <- function(object, g_model){
+G_function <- function(object, g_model)
+  UseMethod("G_function")
+
+#' @export
+G_function.history <- function(object, g_model){
   action_set <- object$action_set
 
   # getting the action (A) and the model matrix (X):
@@ -18,13 +20,13 @@ g_function.history <- function(object, g_model){
     X_names = colnames(X),
     action_set = action_set
   )
-  class(g_function) <- "g_function"
+  class(g_function) <- "G_function"
 
   return(g_function)
 }
 
 #' @export
-predict.g_function <- function(object, new_history){
+predict.G_function <- function(object, new_history){
   X_names <- object$X_names
   g_model <- object$gm
   action_set <- object$action_set
@@ -59,14 +61,14 @@ fit_g_model <- function(policy_data, g_model, g_full_history = TRUE){
 
   fg <- function(stage){
     his <- get_stage_history(policy_data, stage = stage, full_history = g_full_history)
-    return(g_function(his, g_model[[stage]]))
+    return(G_function(his, g_model[[stage]]))
   }
 
   if (class(g_model)[[1]] == "list"){
     out <- lapply(1:K, fg)
   } else{
     his <- markov_history(policy_data)
-    out <- g_function(his, g_model)
+    out <- G_function(his, g_model)
   }
 
   return(out)

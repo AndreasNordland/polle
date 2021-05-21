@@ -1,9 +1,11 @@
+# TODO: q_model not a list if K = 1
+
 #' @export
-Q_function <- function(object, V, Q_model)
+Q_function <- function(object, V, q_model)
   UseMethod("Q_function")
 
 #' @export
-Q_function.history <- function(object, V, Q_model){
+Q_function.history <- function(object, V, q_model){
 
   action_name <- object$action_name
   action_set <- object$action_set
@@ -23,18 +25,18 @@ Q_function.history <- function(object, V, Q_model){
   V_res <- U$V_res
 
   # fitting the (residual) Q-model
-  qm <- Q_model(V_res = V_res, A = A, X = X)
+  qm <- q_model(V_res = V_res, A = A, X = X)
 
   q_function <- list(
     qm = qm,
     X_names = colnames(X)
   )
-  class(q_function) <- "q_function"
+  class(q_function) <- "Q_function"
 
   return(q_function)
 }
 
-predict.q_function <- function(object, new_history){
+predict.Q_function <- function(object, new_history){
   X_names <- object$X_names
   q_model <- object$qm
   action_set <- new_history$action_set
@@ -63,15 +65,15 @@ predict.q_function <- function(object, new_history){
   return(q_predictions)
 }
 
-fit_Q_model <- function(policy_data, policy_actions, Q_model, Q_full_history = TRUE){
+fit_Q_model <- function(policy_data, policy_actions, q_model, q_full_history = TRUE){
   K <- policy_data$dim$K
   n <- policy_data$dim$n
   action_set <- policy_data$action_set
 
-  # checking g_model: must either be a list of length K.
+  # checking q_model: must either be a list of length K.
   stopifnot(
-    if(class(Q_model)[[1]] == "list")
-      length(Q_model) == K
+    if(class(q_model)[[1]] == "list")
+      length(q_model) == K
     else FALSE
   )
 
@@ -86,9 +88,9 @@ fit_Q_model <- function(policy_data, policy_actions, Q_model, Q_full_history = T
   out <- list()
   for (k in K:1){
     # getting the history
-    q_history <- get_stage_history(policy_data, stage = k, full_history = Q_full_history)
+    q_history <- get_stage_history(policy_data, stage = k, full_history = q_full_history)
     # fitting the Q-function
-    q_function <- Q_function(q_history, V = data.table(id = id, V = V[, k+1]), Q_model = Q_model[[k]])
+    q_function <- Q_function(q_history, V = data.table(id = id, V = V[, k+1]), q_model = q_model[[k]])
     out[[k]] <- q_function
     # getting the (predicted) Q-function values for each action
     q_predictions <- predict(q_function, new_history = q_history)
