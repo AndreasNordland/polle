@@ -117,6 +117,38 @@ predict.g_binomial <- function(object, new_X, type = "probs", action_set){
   return(probs)
 }
 
+g <- structure(list(), class = "g")
+predict.g <- function(object, new_X, type = "probs", action_set){
+  n <- nrow(new_X)
+
+  stopifnot(
+    all(action_set == c("0", "1")),
+    all(colnames(new_X) == c("L", "C"))
+  )
+
+  C <- new_X[, colnames(new_X) == "C"]
+
+  fit <- lava::expit(par0$gamma_A * C)
+
+  preds <- matrix(
+    c(
+      1 - fit,
+      fit
+    ),
+    ncol = 2
+  )
+
+  return(preds)
+}
+G <- structure(
+  list(
+    gm = g,
+    X_names = c("L", "C"),
+    action_set = c("0", "1")
+  ),
+  class = "G_function"
+)
+
 n <- 2e3
 set.seed(1)
 d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
@@ -137,29 +169,33 @@ tmp <- fit_g_model(
   g_full_history = FALSE
 )
 get_function_predictions(two_stage_policy_data, tmp, full_history = FALSE)
+
+get_function_predictions(two_stage_policy_data, G, full_history = FALSE)
 rm(tmp)
 
 # policies ----------------------------------------------------------------
 
-policy_function_1 <- function(history){
+always_treat_stage_policy <- function(history){
   pol <- history$H[, c("id", "stage")]
   pol[, d := "1"]
   return(pol)
 }
 
-policy_1 <- new_policy(
-  policy_functions = list(policy_function_1, policy_function_1),
-  full_history = FALSE
+always_treat_policy <- new_policy(
+  stage_policies = always_treat_stage_policy,
+  full_history = FALSE,
+  replicate = TRUE
 )
 
 n <- 2e3
 set.seed(1)
 d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
 two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
-head(get_policy_actions(policy_1, two_stage_policy_data))
-rm(two_stage_policy_data)
 
-policy_function_opt_stage_1 <- function(history){
+# always treat policy
+always_treat_policy(two_stage_policy_data)
+
+optimal_stage_policy_stage_1 <- function(history){
   stopifnot(
     all(c("C_1", "L_1") %in% colnames(history$H))
   )
@@ -169,7 +205,7 @@ policy_function_opt_stage_1 <- function(history){
   return(pol)
 }
 
-policy_function_opt_stage_2 <- function(history){
+optimal_stage_policy_stage_2 <- function(history){
   stopifnot(
     all(c("C_2", "A_1") %in% colnames(history$H))
   )
@@ -179,16 +215,12 @@ policy_function_opt_stage_2 <- function(history){
   return(pol)
 }
 
-policy_opt <- new_policy(
-  policy_functions = list(policy_function_opt_stage_1, policy_function_opt_stage_2),
+optimal_policy <- new_policy(
+  stage_policies = list(optimal_stage_policy_stage_1, optimal_stage_policy_stage_2),
   full_history = TRUE
 )
 
-n <- 2e3
-set.seed(1)
-d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
-two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
-head(get_policy_actions(policy_opt, two_stage_policy_data))
+optimal_policy(two_stage_policy_data)
 rm(two_stage_policy_data)
 
 
@@ -201,7 +233,7 @@ two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(i
 
 tmp <- ipw(
   two_stage_policy_data,
-  policy = policy_opt,
+  policy = optimal_policy,
   g_model = g_binomial_linear,
   g_full_history = FALSE
 )
@@ -209,6 +241,15 @@ tmp$value
 # optimal_utility
 rm(tmp)
 rm(two_stage_policy_data)
+
+tmp <- ipw(
+  two_stage_policy_data,
+  policy = optimal_policy,
+  g_function = G
+)
+tmp$value
+# optimal_utility
+rm(tmp)
 
 # OR ----------------------------------------------------------------------
 
@@ -275,7 +316,7 @@ two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(i
 
 tmp <- or(
   two_stage_policy_data,
-  policy = policy_opt,
+  policy = optimal_policy,
   q_model = list(Q_linear, Q_linear),
   q_full_history = TRUE
 )
@@ -285,14 +326,13 @@ rm(tmp)
 
 tmp <- or(
   two_stage_policy_data,
-  policy = policy_opt,
+  policy = optimal_policy,
   q_model = list(Q_interept, Q_interept),
   q_full_history = TRUE
 )
 tmp$value
 # optimal_utility
 rm(tmp)
-
 rm(two_stage_policy_data)
 
 q_2 <- structure(list(), class = "q_2")
@@ -359,7 +399,7 @@ two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(i
 
 tmp <- or(
   two_stage_policy_data,
-  policy = policy_opt,
+  policy = optimal_policy,
   q_function = list(Q_1, Q_2),
   q_full_history = TRUE
 )
@@ -394,14 +434,14 @@ g_binomial_intercept <- function(A, X){
   return(bm)
 }
 
-n <- 2e4
+n <- 2e5
 set.seed(2)
 d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
 two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
 
 tmp <- dr(
   two_stage_policy_data,
-  policy = policy_opt,
+  policy = optimal_policy,
   g_model = g_binomial_linear,
   # g_model = g_binomial_intercept,
   q_function = list(Q_1, Q_2),
@@ -417,7 +457,7 @@ rm(tmp)
 
 # Q-learning --------------------------------------------------------------
 
-n <- 2e5
+n <- 2e3
 set.seed(1)
 d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
 two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
@@ -434,16 +474,13 @@ optimal_utility
 QL_policy <- get_policy(tmp_QL)
 rm(tmp_QL, two_stage_policy_data)
 
-n <- 2e4
+n <- 2e3
 set.seed(2)
 d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
 two_stage_policy_data_new <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
 
-# q_history_new_stage_1 <- get_stage_history(two_stage_policy_data_new, stage = 1, full_history = TRUE)
-# head(QL_policy$policy_functions[[1]](q_history_new_stage_1))
-
-QL_policy_actions_new <- get_policy_actions(QL_policy, two_stage_policy_data_new)
-optimal_policy_actions_new <- get_policy_actions(policy_opt, two_stage_policy_data_new)
+QL_policy_actions_new <- QL_policy(two_stage_policy_data_new)
+optimal_policy_actions_new <- optimal_policy(two_stage_policy_data_new)
 all.equal(QL_policy_actions_new, optimal_policy_actions_new)
 rm(optimal_policy_actions_new, QL_policy_actions_new)
 
@@ -451,8 +488,8 @@ dr_new <- dr(
   two_stage_policy_data_new,
   policy = QL_policy,
   g_model = g_binomial_linear,
-  q_model = list(Q_linear, Q_linear),
-  # Q_function = list(Q_1, Q_2),
+  # q_model = list(Q_linear, Q_linear),
+  q_function = list(Q_1, Q_2),
   g_full_history = FALSE,
   q_full_history = TRUE
 )
@@ -464,32 +501,33 @@ rm(QL_policy)
 
 # realistic Q-learning ----------------------------------------------------
 
-# n <- 2e4
-# set.seed(1)
-# d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
-# two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
-#
-# tmp_QL <- realistic_Q_learning(
-#   policy_data = two_stage_policy_data,
-#   alpha = 0.02,
-#   g_model = g_binomial_linear,
-#   # q_model = list(Q_linear, Q_linear),
-#   q_function = list(Q_1, Q_2),
-#   q_full_history = TRUE,
-#   g_full_history = FALSE
-# )
-# tmp_QL$value
-# optimal_utility
-#
-# QL_policy <- get_policy(tmp_QL)
-# rm(tmp_QL, two_stage_policy_data)
-#
-# n <- 2e4
-# set.seed(2)
-# d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
-# two_stage_policy_data_new <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
-#
-# QL_policy_actions_new <- get_policy_actions(QL_policy, two_stage_policy_data_new)
-# optimal_policy_actions_new <- get_policy_actions(policy_opt, two_stage_policy_data_new)
-# all.equal(QL_policy_actions_new, optimal_policy_actions_new)
-# rm(optimal_policy_actions_new, QL_policy_actions_new)
+n <- 2e3
+set.seed(1)
+d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
+two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
+
+tmp_QL <- realistic_Q_learning(
+  policy_data = two_stage_policy_data,
+  alpha = 0.02,
+  #g_model = g_binomial_linear,
+  g_function = G,
+  # q_model = list(Q_linear, Q_linear),
+  q_function = list(Q_1, Q_2),
+  q_full_history = TRUE,
+  g_full_history = FALSE
+)
+tmp_QL$value
+optimal_utility
+
+QL_policy <- get_policy(tmp_QL)
+rm(tmp_QL, two_stage_policy_data)
+
+n <- 2e3
+set.seed(2)
+d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
+two_stage_policy_data_new <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
+
+QL_policy_actions_new <- QL_policy(two_stage_policy_data_new)
+optimal_policy_actions_new <- optimal_policy(two_stage_policy_data_new)
+all.equal(QL_policy_actions_new, optimal_policy_actions_new)
+rm(optimal_policy_actions_new, QL_policy_actions_new)
