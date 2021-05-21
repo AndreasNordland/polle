@@ -47,3 +47,7 @@ get_policy_actions.policy <- function(object, policy_data){
 
   return(policy_actions)
 }
+
+#' @export
+get_policy <- function(object)
+  UseMethod("get_policy")
