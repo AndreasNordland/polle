@@ -1,52 +1,96 @@
-new_policy <- function(policy_functions, full_history = FALSE){
-  object <- list(
-    policy_functions = policy_functions,
-    full_history = full_history
-  )
-  class(object) <- "policy"
+# TODO implement the single stage policy
 
-  return(object)
-}
+# a policy should take a policy data object as input and return a policy action data.table with id, stage and d (d: policy action)
+# a stage policy should take a history object as input and return a data.table with id, stage and d (d: policy action)
 
 #' @export
-get_policy_actions <- function(object, policy_data)
-  UseMethod("get_policy_actions")
+new_policy <- function(stage_policies, full_history = FALSE, replicate = FALSE){
+  force(stage_policies)
+  force(full_history)
+  force(replicate)
 
-#' @export
-get_policy_actions.policy <- function(object, policy_data){
   stopifnot(
-    class(policy_data)[[1]] == "policy_data"
+    !(full_history == TRUE & replicate == TRUE),
+    !(class(stage_policies)[[1]] == "list" & replicate == TRUE)
   )
 
-  K <- policy_data$dim$K
-  policy_functions <- object$policy_functions
-  full_history <- object$full_history
+  policy <- function(policy_data){
+    action_set <- policy_data$action_set
+    K <- policy_data$dim$K
 
-  # checking the policy_functions input: must be a list of K policy functions or a single policy function
-  stopifnot(
-    if(class(policy_functions)[[1]] == "list")
-      length(policy_functions) == K
-    else
-      class(policy_functions)[[1]] == "function" & (K == 1)
-  )
+    if (replicate == TRUE){
+      stage_policies <- replicate(K, stage_policies)
+    }
 
-  pa <- function(stage){
-    his <- get_stage_history(policy_data, stage = stage, full_history = full_history)
-    out <- policy_functions[[stage]](his)
-    return(out)
-  }
+    # checking the stage_policies input:
+    # must be a list of K stage policies or a single stage policy
+    stopifnot(
+      if(class(stage_policies)[[1]] == "list")
+        length(stage_policies) == K
+      else
+        class(stage_policies)[[1]] == "function" & (K == 1)
+    )
 
-  if (class(policy_functions)[[1]] == "list"){
-    policy_actions <- lapply(1:K, pa)
+    if (class(stage_policies)[[1]] == "list"){
+    stage_histories <- lapply(1:K, function(k) get_stage_history(policy_data, stage = k, full_history = full_history))
+    policy_actions <- mapply(function(sp, sh) sp(sh), stage_policies, stage_histories, SIMPLIFY = FALSE)
     policy_actions <- rbindlist(policy_actions)
     setkey(policy_actions, id, stage)
-  } else{
-    his <- get_stage_history(policy_data, stage = 1, full_history = full_history)
-    policy_actions <- policy_functions(his)
+    } else{
+      stop()
+    }
+
+    stopifnot(
+      any("d" %in% colnames(policy_actions)),
+      all(policy_actions$d %in% action_set),
+      all(key(policy_actions) == c("id", "stage"))
+    )
+
+    return(policy_actions)
   }
 
-  return(policy_actions)
+  return(policy)
 }
+
+#' @export
+# get_policy_actions <- function(object, policy_data)
+#   UseMethod("get_policy_actions")
+
+#' @export
+# get_policy_actions.policy <- function(object, policy_data){
+#   stopifnot(
+#     class(policy_data)[[1]] == "policy_data"
+#   )
+#
+#   K <- policy_data$dim$K
+#   stage_policies <- object$stage_policies
+#   full_history <- object$full_history
+#
+#   # checking the stage_policies input: must be a list of K policy functions or a single policy function
+#   stopifnot(
+#     if(class(stage_policies)[[1]] == "list")
+#       length(stage_policies) == K
+#     else
+#       class(stage_policies)[[1]] == "function" & (K == 1)
+#   )
+#
+#   pa <- function(stage){
+#     his <- get_stage_history(policy_data, stage = stage, full_history = full_history)
+#     out <- stage_policies[[stage]](his)
+#     return(out)
+#   }
+#
+#   if (class(stage_policies)[[1]] == "list"){
+#     policy_actions <- lapply(1:K, pa)
+#     policy_actions <- rbindlist(policy_actions)
+#     setkey(policy_actions, id, stage)
+#   } else{
+#     his <- get_stage_history(policy_data, stage = 1, full_history = full_history)
+#     policy_actions <- stage_policies(his)
+#   }
+#
+#   return(policy_actions)
+# }
 
 #' @export
 get_policy <- function(object)

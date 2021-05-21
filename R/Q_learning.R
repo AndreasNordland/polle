@@ -78,7 +78,7 @@ get_policy.Q_learning_function <- function(object){
 
   q_cols <- paste("Q_", action_set, sep = "")
 
-  policy_functions <- lapply(
+  stage_policies <- lapply(
     q_function,
     function(qf){
       pf <- function(history){
@@ -98,7 +98,7 @@ get_policy.Q_learning_function <- function(object){
   )
 
   policy <- new_policy(
-    policy_functions = policy_functions,
+    stage_policies = stage_policies,
     full_history = q_full_history
   )
 

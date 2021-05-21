@@ -12,7 +12,7 @@ or.policy_data <- function(object, q_model = NULL, q_function = NULL, policy, q_
   K <- object$dim$K
   action_set <- object$action_set
 
-  policy_actions <- get_policy_actions(policy, policy_data = object)
+  policy_actions <- policy(policy_data = object)
 
   if (!is.null(q_model)){
     q_function <- fit_Q_model(object, policy_actions = policy_actions, q_model = q_model, q_full_history = q_full_history)

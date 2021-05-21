@@ -13,7 +13,7 @@ ipw.policy_data <- function(object, g_model = NULL, g_function = NULL, policy, g
   action_set <- object$action_set
 
   actions <- get_actions(object)
-  policy_actions <- get_policy_actions(policy, policy_data = object)
+  policy_actions <- policy(policy_data = object)
   policy_actions[actions, A := i.A]
   policy_actions[, dA := d == A]
 
