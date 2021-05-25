@@ -210,11 +210,17 @@ predict.g_binomial <- function(object, new_X, type = "probs", action_set){
 
 # policies ----------------------------------------------------------------
 
-policy_function_1 <- function(history){
+always_treat_stage_policy <- function(history){
   pol <- history$H[, c("id", "stage")]
   pol[, d := "1"]
   return(pol)
 }
+
+always_treat_policy <- new_policy(
+  stage_policies = always_treat_stage_policy,
+  full_history = FALSE,
+  replicate = TRUE
+)
 
 
 # Q-model -----------------------------------------------------------------
@@ -268,14 +274,14 @@ args1 <- args0
 args1$d <- d_1
 pd1 <- simulate_policy_data(n, args1)
 pd1 <- new_policy_data(stage_data = pd1$stage_data, baseline_data = pd1$baseline_data)
-true_value_policy_1 <- mean(utility(pd1)$U)
+true_value_always_treat <- mean(utility(pd1)$U)
 rm(pd1)
 
 args1 <- args0
 args1$d <- d_1_stage_4_obs
 pd1 <- simulate_policy_data(n, args1)
 pd1 <- new_policy_data(stage_data = pd1$stage_data, baseline_data = pd1$baseline_data)
-true_value_policy_1_stage_4_obs <- mean(utility(pd1)$U)
+true_value_always_treat_policy_partial_4 <- mean(utility(pd1)$U)
 rm(pd1)
 
 rm(n)
@@ -287,23 +293,17 @@ set.seed(1)
 multi_stage_policy_data <- simulate_policy_data(2e3, args0)
 multi_stage_policy_data <- new_policy_data(stage_data = multi_stage_policy_data$stage_data, baseline_data = multi_stage_policy_data$baseline_data)
 
-K <- multi_stage_policy_data$dim$K
-policy_1 <- new_policy(
-  policy_functions = rep(list(policy_function_1), multi_stage_policy_data$dim$K),
-  full_history = FALSE
-)
-
 tmp <- ipw(
   multi_stage_policy_data,
   g_model = g_binomial_linear,
   g_full_history = FALSE,
-  policy = policy_1
+  policy = always_treat_policy
 )
 tmp$value
-true_value_policy_1
+true_value_always_treat
 tmp$g_function$gm
 args0$beta
-rm(tmp, policy_1)
+rm(tmp)
 
 set.seed(1)
 m <- 1e3
@@ -311,29 +311,25 @@ m <- 1e3
 pb <- progress::progress_bar$new(
                                format = " simulating [:bar] :percent eta: :eta",
                                total = m, clear = FALSE, width= 60)
-value_policy_1 <- vector(mode = "numeric", length = m)
-for (i in seq_along(value_policy_1)){
+estimate_always_treat <- vector(mode = "numeric", length = m)
+for (i in seq_along(estimate_always_treat)){
 
   pd <- simulate_policy_data(2e3, args0)
   pd <- new_policy_data(stage_data = pd$stage_data, baseline_data = pd$baseline_data)
-  pol_1 <- new_policy(
-    policy_functions = rep(list(policy_function_1), pd$dim$K),
-    full_history = FALSE
-  )
 
-  ipw_1 <- ipw(
+  tmp <- ipw(
     pd,
     g_model = g_binomial_linear,
     g_full_history = FALSE,
-    policy = pol_1
+    policy = always_treat_policy
   )
-  value_policy_1[i] <- ipw_1$value
+  estimate_always_treat[i] <- tmp$value
   pb$tick()
-  rm(ipw_1)
+  rm(tmp)
 }
-mean(value_policy_1)
-sd(value_policy_1)
-true_value_policy_1
+mean(estimate_always_treat)
+sd(estimate_always_treat)
+true_value_always_treat
 
 # dr -------------------------------------------------
 
@@ -344,51 +340,88 @@ multi_stage_policy_data <- simulate_policy_data(2e4, args0)
 multi_stage_policy_data <- new_policy_data(stage_data = multi_stage_policy_data$stage_data, baseline_data = multi_stage_policy_data$baseline_data)
 multi_stage_policy_data <- partial(multi_stage_policy_data, K = KK)
 
-policy_1 <- new_policy(
-  policy_functions = rep(list(policy_function_1), multi_stage_policy_data$dim$K),
-  full_history = FALSE
-)
-
 tmp <- dr(
   multi_stage_policy_data,
   g_model = g_binomial_linear,
-  Q_model = rep(list(Q_linear), multi_stage_policy_data$dim$K),
+  q_model = rep(list(Q_linear), multi_stage_policy_data$dim$K),
   g_full_history = FALSE,
-  Q_full_history = FALSE,
-  policy = policy_1
+  q_full_history = FALSE,
+  policy = always_treat_policy
 )
 tmp$value
 mean(tmp$phi_ipw)
 mean(tmp$phi_or)
-true_value_policy_1_stage_4_obs
+true_value_always_treat_policy_partial_4
 
 set.seed(1)
 m <- 5e2
 pb <- progress::progress_bar$new(
   format = " simulating [:bar] :percent eta: :eta",
   total = m, clear = FALSE, width= 60)
-value_policy_1_stage_4_obs <- vector(mode = "numeric", length = m)
-for (i in seq_along(value_policy_1)){
+estimate_always_treat_policy_partial_4 <- vector(mode = "numeric", length = m)
+for (i in seq_alongestimate_always_treat_policy_partial_4){
   pb$tick()
   pd <- simulate_policy_data(2e3, args0)
   pd <- new_policy_data(stage_data = pd$stage_data, baseline_data = pd$baseline_data)
   pd <- partial(pd, K = KK)
-  pol_1 <- new_policy(
-    policy_functions = rep(list(policy_function_1), pd$dim$K),
-    full_history = FALSE
-  )
 
-  dr_1_stage_4_obs <- dr(
+  tmp <- dr(
     pd,
     g_model = g_binomial_linear,
-    Q_model = rep(list(Q_linear), pd$dim$K),
+    q_model = rep(list(Q_linear), pd$dim$K),
     g_full_history = FALSE,
-    Q_full_history = FALSE,
-    policy = pol_1
+    q_full_history = FALSE,
+    policy = always_treat_policy
   )
-  value_policy_1_stage_4_obs[i] <- dr_1_stage_4_obs$value
-  rm(dr_1_stage_4_obs)
+  estimate_always_treat_policy_partial_4[i] <- tmp$value
+  rm(tmp)
 }
-mean(value_policy_1_stage_4_obs)
-sd(value_policy_1_stage_4_obs)
-true_value_policy_1_stage_4_obs
+mean(estimate_always_treat_policy_partial_4)
+sd(estimate_always_treat_policy_partial_4)
+true_value_always_treat_policy_partial_4
+
+# realistic Q-learning ----------------------------------------------------
+
+# always treat policy up to stage 4
+KK <- 4
+set.seed(1)
+multi_stage_policy_data <- simulate_policy_data(2e4, args0)
+multi_stage_policy_data <- new_policy_data(stage_data = multi_stage_policy_data$stage_data, baseline_data = multi_stage_policy_data$baseline_data)
+multi_stage_policy_data <- partial(multi_stage_policy_data, K = KK)
+
+RQL_partial_4 <- realistic_Q_learning(
+  multi_stage_policy_data,
+  alpha = 0.05,
+  g_model = g_binomial_linear,
+  q_model = rep(list(Q_linear), multi_stage_policy_data$dim$K),
+  g_full_history = FALSE,
+  q_full_history = FALSE
+)
+tmp$value
+
+set.seed(1)
+m <- 5e2
+pb <- progress::progress_bar$new(
+  format = " simulating [:bar] :percent eta: :eta",
+  total = m, clear = FALSE, width= 60)
+estimate_RQL_partial_4 <- vector(mode = "numeric", length = m)
+for (i in 1:m){
+  pb$tick()
+  pd <- simulate_policy_data(2e3, args0)
+  pd <- new_policy_data(stage_data = pd$stage_data, baseline_data = pd$baseline_data)
+  pd <- partial(pd, K = KK)
+
+  tmp <- dr(
+    pd,
+    g_model = g_binomial_linear,
+    q_model = rep(list(Q_linear), pd$dim$K),
+    g_full_history = FALSE,
+    q_full_history = FALSE,
+    policy = get_policy(RQL_partial_4)
+  )
+  estimate_RQL_partial_4[i] <- tmp$value
+  rm(tmp)
+}
+mean(estimate_RQL_partial_4)
+
+
