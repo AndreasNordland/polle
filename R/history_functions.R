@@ -42,7 +42,6 @@ full_stage_history.policy_data <- function(object, stage){
   U_names <- c("id", "stage", "U_bar", action_utility_names)
   U <- U[, ..U_names]
 
-
   action_name <- paste("A", stage_, sep = "_")
   # id_names <- c("id", "stage")
   # H_names <- names(H)[!(names(H) %in% c(id_names, action_name))]
@@ -60,11 +59,11 @@ full_stage_history.policy_data <- function(object, stage){
 }
 
 #' @export
-markov_stage_history <- function(object, stage)
-  UseMethod("markov_stage_history")
+state_stage_history <- function(object, stage)
+  UseMethod("state_stage_history")
 
 #' @export
-markov_stage_history.policy_data <- function(object, stage){
+state_stage_history.policy_data <- function(object, stage){
 
   if (stage > object$dim$K)
     stop("The stage number must be lower or equal to maximal number of stages observed.")
@@ -84,8 +83,8 @@ markov_stage_history.policy_data <- function(object, stage){
   # filtering observations with an action at the given stage:
   H <- H[stage == stage_, ..H_names]
   # setting new names:
-  new_names <- paste(c("A", stage_data_names), stage_, sep = "_")
-  setnames(H, old = c("A", stage_data_names), new = new_names)
+  # new_names <- paste(c("A", stage_data_names), stage_, sep = "_")
+  # setnames(H, old = c("A", stage_data_names), new = new_names)
   # merging the stage specific histories and the the baseline data by reference:
   if(length(baseline_data_names) > 0){
     H[baseline_data, (baseline_data_names) := mget(paste0('i.', baseline_data_names))]
@@ -98,13 +97,13 @@ markov_stage_history.policy_data <- function(object, stage){
   U <- U[, ..U_names]
 
   id_names <- c("id", "stage")
-  action_name <- paste("A", stage_, sep = "_")
+  # action_name <- paste("A", stage_, sep = "_")
   # H_names <- names(H)[!(names(H) %in% c(id_names, action_name))]
 
   history <- list(
     H = H,
     U = U,
-    action_name = action_name,
+    action_name = "A",
     action_utility_names = action_utility_names,
     action_set = action_set
   )
@@ -114,11 +113,11 @@ markov_stage_history.policy_data <- function(object, stage){
 }
 
 #' @export
-markov_history <- function(object)
-  UseMethod("markov_history")
+state_history <- function(object)
+  UseMethod("state_history")
 
 #' @export
-markov_history.policy_data <- function(object){
+state_history.policy_data <- function(object){
   stage_data <- object$stage_data
   stage_data_names <- object$colnames$stage_data_names
   baseline_data <- object$baseline_data
@@ -211,7 +210,7 @@ get_stage_history.policy_data <- function(object, stage, full_history){
   if (full_history == TRUE){
     his <- full_stage_history(object, stage = stage)
   } else{
-    his <- markov_stage_history(object, stage = stage)
+    his <- state_stage_history(object, stage = stage)
   }
   return(his)
 }

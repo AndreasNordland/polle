@@ -1,11 +1,12 @@
-# TODO: q_model not a list if K = 1
+# TODO: q_model not a list if K = 1.
+# TODO: non-occurring actions .
 
 #' @export
-Q_function <- function(object, V, q_model)
-  UseMethod("Q_function")
+fit_Q_function <- function(object, V, q_model)
+  UseMethod("fit_Q_function")
 
 #' @export
-Q_function.history <- function(object, V, q_model){
+fit_Q_function.history <- function(object, V, q_model){
 
   action_name <- object$action_name
   action_set <- object$action_set
@@ -15,20 +16,21 @@ Q_function.history <- function(object, V, q_model){
   A <- get_A(object)
   X <- get_X(object)
 
-  # getting the historic utilities
+  # checking that all actions in the actions set occur:
+  if (!all(action_set == sort(unique(A)))) stop("An action in the action set does not occur.")
+
+  # getting the historic rewards
   U <- object$U
-  # merging the (fitted) values (V)
-  U <- merge(U, V, all.x = TRUE, by = c("id")); stopifnot(all(complete.cases(U)))
   # calculating the residual (fitted) values
-  U_A <- apply(action_matrix(A = A, action_set = action_set) * U[, ..action_utility_names], MARGIN = 1, sum)
+  U_A <- apply(action_matrix(a = A, action_set = action_set) * U[, ..action_utility_names], MARGIN = 1, sum)
   U[, V_res := V - U_bar - U_A]
   V_res <- U$V_res
 
   # fitting the (residual) Q-model
-  qm <- q_model(V_res = V_res, A = A, X = X)
+  q_model <- q_model(V_res = V_res, A = A, X = X)
 
   q_function <- list(
-    qm = qm,
+    q_model = q_model,
     X_names = colnames(X)
   )
   class(q_function) <- "Q_function"
@@ -36,9 +38,10 @@ Q_function.history <- function(object, V, q_model){
   return(q_function)
 }
 
-predict.Q_function <- function(object, new_history){
+#' @export
+evaluate.Q_function <- function(object, new_history){
   X_names <- object$X_names
-  q_model <- object$qm
+  q_model <- object$q_model
   action_set <- new_history$action_set
   action_utility_names <- new_history$action_utility_names
 
@@ -50,59 +53,73 @@ predict.Q_function <- function(object, new_history){
     names(new_X) == X_names
   )
 
-  # getting the historic utilities
+  # getting the historic rewards
   U <- new_history$U
+
   # getting the residual predictions
-  residual_q_predictions <- predict(q_model, new_X = new_X, action_set = action_set)
-  # adding the historic utilities and deterministic utility contributions
-  q_predictions <- U$U_bar + U[, ..action_utility_names] + residual_q_predictions
-  names(q_predictions) <- paste("Q", action_set, sep = "_")
+  residual_q_predictions <- sapply(action_set, function(a) predict(q_model, new_A = a, new_X = new_X))
+  # adding the historic utilities and deterministic rewards
+  q_values <- U$U_bar + U[, ..action_utility_names] + residual_q_predictions
+  names(q_values) <- paste("Q", action_set, sep = "_")
 
   # including the IDs and stage number
-  q_predictions <- data.table(id_stage, q_predictions)
-  setkey(q_predictions, id, stage)
+  q_values <- data.table(id_stage, q_values)
+  setkey(q_values, id, stage)
 
-  return(q_predictions)
+  return(q_values)
 }
 
-fit_Q_model <- function(policy_data, policy_actions, q_model, q_full_history = TRUE){
+#' @export
+fit_Q_functions <- function(policy_data, policy_actions, q_models, full_history = TRUE){
   K <- policy_data$dim$K
   n <- policy_data$dim$n
   action_set <- policy_data$action_set
 
-  # checking q_model: must either be a list of length K.
-  stopifnot(
-    if(class(q_model)[[1]] == "list")
-      length(q_model) == K
-    else FALSE
-  )
-
-  # getting the IDs and the observed (complete) utility
-  U <- utility(policy_data)
-  id <- U$id
-
-  # constructing a matrix for the (predicted) Q-function values under the policy (note that V_{K+1} = U)
-  V <- matrix(nrow = n, ncol = K+1)
-  V[, K+1] <- U$U
-
-  out <- list()
-  for (k in K:1){
-    # getting the history
-    q_history <- get_stage_history(policy_data, stage = k, full_history = q_full_history)
-    # fitting the Q-function
-    q_function <- Q_function(q_history, V = data.table(id = id, V = V[, k+1]), q_model = q_model[[k]])
-    out[[k]] <- q_function
-    # getting the (predicted) Q-function values for each action
-    q_predictions <- predict(q_function, new_history = q_history)
-    # getting the Q-function values under the policy
-    q_predictions <- get_action_predictions(A = policy_actions[stage == k,]$d, action_set = action_set, predictions = q_predictions)
-
-    # inserting the Q-function values under the policy in V
-    qd <- merge(data.table(id = id), q_predictions, all.x = TRUE, by = "id")
-    idx <- which(is.na(qd$stage))
-    V[ ,k] <- qd$P
-    V[idx, k] <- V[idx, k+1]
+  # checking q_models: must either be a list of length K or a single Q-model
+  if (class(q_models)[[1]] == "list"){
+    if (length(q_models) != K) stop("q_models must either be a list of length K or a single Q-model.")
   }
 
-  return(out)
+  # getting the IDs and the observed (complete) utility U
+  utility <- utility(policy_data)
+  id <- utility$id
+
+  # (n) vector with entries U_i
+  U <- utility$U
+
+  # (n X K+1) matrix with entries Q_k(H_{k,i}, d_k(H_{k,i})), Q_{K+1} = U
+  V <- matrix(nrow = n, ncol = K+1)
+  V[, K+1] <- U
+
+  q_functions <- list()
+  for (k in K:1){
+    # getting the history:
+    q_history_k <- get_stage_history(policy_data, stage = k, full_history = full_history)
+
+    # getting the IDs and ID-index:
+    id_k <- q_history_k$H$id
+    idx_k <- (id %in% id_k)
+
+    # fitting the Q-function
+    if (class(q_models)[[1]] == "list"){
+      q_model_k <- q_models[[k]]
+    } else{
+      q_model_k <- q_models
+    }
+    q_function_k <- fit_Q_function(q_history_k, V = V[idx_k, k+1], q_model = q_model_k)
+    q_functions[[k]] <- q_function_k
+    # getting the Q-function values for each action
+    q_values_k <- evaluate(q_function_k, new_history = q_history_k)
+    # getting the Q-function values under the policy
+    d_k <- policy_actions[stage == k, ]$d
+    q_d_values_k <- get_a_values(a = d_k, action_set = action_set, values = q_values_k)$P
+    # inserting the Q-function values under the policy in V
+    V[idx_k, k] <- q_d_values_k
+    V[!idx_k, k] <- V[!idx_k, k+1]
+  }
+
+  class(q_functions) <- "nuisance_functions"
+  attr(q_functions, "full_history") <- full_history
+
+  return(q_functions)
 }
