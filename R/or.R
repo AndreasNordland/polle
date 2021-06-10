@@ -18,7 +18,7 @@ or <- function(policy_data, q_models = NULL, q_functions = NULL, policy, q_full_
   if (!is.null(q_models)){
     q_functions <- fit_Q_functions(policy_data, policy_actions = policy_actions, q_models = q_models, full_history = q_full_history)
   }
-  q_values <- evaluate(policy_data = q_functions, policy_data = policy_data)
+  q_values <- evaluate(q_functions, policy_data = policy_data)
   q_d_values <- get_a_values(a = policy_actions$d, action_set = action_set, values = q_values)
 
   # (n X K) matrix with entries Q_k(d_k(H_k), H_k)

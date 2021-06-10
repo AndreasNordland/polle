@@ -100,7 +100,7 @@ rql<- function(policy_data, alpha = 0, g_models = NULL, g_functions = NULL, q_mo
   out <- list(
     q_functions = q_functions,
     g_functions = g_functions,
-    value = mean(phi_or),
+    value_estimate = mean(phi_or),
     phi_or = phi_or,
     action_set = action_set,
     alpha = alpha,
