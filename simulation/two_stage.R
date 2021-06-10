@@ -78,66 +78,6 @@ d_alpha_opt_10 <- function(data, par){
 
 # g-models ----------------------------------------------------------------
 
-# binomial model
-g_binomial_linear <- function(A, X){
-  # binary outcome
-  stopifnot(
-    all(A %in% c("0","1"))
-  )
-  A <- as.numeric(as.character(A))
-
-  # model matrix as data.frame
-  if (is.matrix(X)) {
-    X = as.data.frame(X)
-  }
-
-  glm_model <- glm(A ~ ., data = X, family = binomial(), model = FALSE)
-
-  bm <- list(
-    glm_model = glm_model
-  )
-
-  class(bm) <- "g_binomial"
-  return(bm)
-}
-
-# g-model with intercept
-g_binomial_intercept <- function(A, X){
-  # binary outcome
-  stopifnot(
-    all(A %in% c("0","1"))
-  )
-  A <- as.numeric(as.character(A))
-
-  # model matrix as data.frame
-  if (is.matrix(X)) {
-    X = as.data.frame(X)
-  }
-
-  glm_model <- glm(A ~ 1, data = X, family = binomial(), model = FALSE)
-
-  bm <- list(
-    glm_model = glm_model
-  )
-
-  class(bm) <- "g_binomial"
-  return(bm)
-}
-
-predict.g_binomial <- function(object, new_X){
-  glm_model <- object$glm_model
-
-  # model matrix as data.frame
-  if (is.matrix(new_X)) {
-    new_X = as.data.frame(new_X)
-  }
-  fit <- predict.glm(object = glm_model, newdata = new_X, type = "response")
-
-  probs <- cbind((1-fit), fit)
-
-  return(probs)
-}
-
 g0 <- function(A, X){
 
   out <- list()
@@ -266,57 +206,6 @@ optimal_policy <- new_policy(
 # rm(two_stage_policy_data)
 
 # Q-models ----------------------------------------------------------------
-
-Q_linear <- function(V_res, A, X){
-  # model matrix as data.frame
-  if (is.matrix(X)) {
-    X = as.data.frame(X)
-  }
-
-  data <- cbind(A = A, X)
-  lm_model <- lm(V_res ~ A * ., data = data, model = FALSE)
-
-  m <- list(
-    lm_model = lm_model
-  )
-
-  class(m) <- "Q_linear"
-  return(m)
-
-  return(m)
-}
-
-Q_interept <- function(V_res, A, X){
-  # model matrix as data.frame
-  if (is.matrix(X)) {
-    X = as.data.frame(X)
-  }
-
-  data <- cbind(A = A, X)
-  lm_model <- lm(V_res ~ 1, data = data, model = FALSE)
-
-  m <- list(
-    lm_model = lm_model
-  )
-
-  class(m) <- "Q_linear"
-  return(m)
-
-  return(m)
-}
-
-predict.Q_linear <- function(object, new_A, new_X){
-  lm_model <- object$lm_model
-
-  if (is.matrix(new_X)) {
-    new_X = as.data.frame(new_X)
-  }
-
-  data <- cbind(A = new_A, new_X)
-  pred <- predict(lm_model, newdata = data, type = "response")
-
-  return(pred)
-}
 
 q0_2 <- function(V_res, A, X){
   out <- list()

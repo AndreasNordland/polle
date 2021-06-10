@@ -425,3 +425,49 @@ for (i in 1:m){
 mean(estimate_RQL_partial_4)
 
 
+# policy tree -------------------------------------------------------------
+
+KK <- 4
+set.seed(1)
+multi_stage_policy_data <- simulate_policy_data(2e3, args0)
+multi_stage_policy_data <- new_policy_data(stage_data = multi_stage_policy_data$stage_data, baseline_data = multi_stage_policy_data$baseline_data)
+multi_stage_policy_data <- partial(multi_stage_policy_data, K = KK)
+
+ptl <- policy_tree_learning(
+  multi_stage_policy_data,
+  g_model = g_binomial_linear,
+  q_model = rep(list(Q_linear), multi_stage_policy_data$dim$K),
+  g_full_history = FALSE,
+  q_full_history = FALSE,
+  policy_full_history = FALSE,
+  depth = 2
+)
+#ptl$pt[[2]]
+
+set.seed(1)
+m <- 1e2
+pb <- progress::progress_bar$new(
+  format = " simulating [:bar] :percent eta: :eta",
+  total = m, clear = FALSE, width= 60)
+estimate_ptl_4 <- vector(mode = "numeric", length = m)
+for (i in 1:m){
+  pb$tick()
+  pd <- simulate_policy_data(2e3, args0)
+  pd <- new_policy_data(stage_data = pd$stage_data, baseline_data = pd$baseline_data)
+  pd <- partial(pd, K = KK)
+
+  tmp <- dr(
+    pd,
+    g_model = g_binomial_linear,
+    q_model = rep(list(Q_linear), pd$dim$K),
+    g_full_history = FALSE,
+    q_full_history = FALSE,
+    policy = get_policy(ptl)
+  )
+  estimate_ptl_4[i] <- tmp$value
+  rm(tmp)
+}
+mean(estimate_ptl_4)
+true_value_observed
+true_value_always_treat_policy_partial_4
+
