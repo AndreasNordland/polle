@@ -440,35 +440,46 @@ predict.qbias <- function(q_model, new_A, new_X){
 
 # DR ----------------------------------------------------------------------
 
-n <- 2e3
-set.seed(2)
-d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
-two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
-
-tmp <- dr(
-  two_stage_policy_data,
-  policy = optimal_policy,
-  g_models = g_binomial_linear,
-  # g_models = g_binomial_intercept,
-  q_models = list(q0_1, q0_2),
-  # q_models = Q_interept,
-  g_full_history = FALSE,
-  q_full_history = FALSE
-)
-tmp$value_estimate
-mean(tmp$phi_or)
-mean(tmp$phi_ipw)
-
-tmp2 <- dr(
-  two_stage_policy_data,
-  policy = optimal_policy,
-  g_functions = tmp$g_functions,
-  q_functions = tmp$q_functions
-)
-tmp2$value_estimate
-
-# optimal_utility
-rm(tmp, tmp2, two_stage_policy_data)
+# n <- 2e3
+# set.seed(2)
+# d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
+# two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
+#
+# tmp <- cv_dr(
+#   two_stage_policy_data,
+#   M = 3,
+#   policy = optimal_policy,
+#   g_models = g_binomial_linear,
+#   q_models = list(q0_1, q0_2),
+#   g_full_history = FALSE,
+#   q_full_history = FALSE,
+#   mc.cores = 3
+# )
+#
+# tmp <- dr(
+#   two_stage_policy_data,
+#   policy = optimal_policy,
+#   g_models = g_binomial_linear,
+#   # g_models = g_binomial_intercept,
+#   q_models = list(q0_1, q0_2),
+#   # q_models = Q_interept,
+#   g_full_history = FALSE,
+#   q_full_history = FALSE
+# )
+# tmp$value_estimate
+# mean(tmp$phi_or)
+# mean(tmp$phi_ipw)
+#
+# tmp2 <- dr(
+#   two_stage_policy_data,
+#   policy = optimal_policy,
+#   g_functions = tmp$g_functions,
+#   q_functions = tmp$q_functions
+# )
+# tmp2$value_estimate
+#
+# # optimal_utility
+# rm(tmp, tmp2, two_stage_policy_data)
 
 # RQL ----------------------------------------------------
 
@@ -487,7 +498,7 @@ rm(tmp, tmp2, two_stage_policy_data)
 #   q_models = list(q0_1, q0_2)
 # )
 # tmp_rql$value
-# # optimal_utility
+# optimal_utility
 #
 # rql_policy <- get_policy(tmp_rql)
 # rm(tmp_rql, two_stage_policy_data)
@@ -504,53 +515,49 @@ rm(tmp, tmp2, two_stage_policy_data)
 
 # BOWL --------------------------------------------------------------------
 
-n <- 500
-set.seed(1)
-d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
-two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
-
-tmp_bowl <- bowl(
-  alpha = par0$alpha,
-  policy_data = two_stage_policy_data,
-  g_models = g0,
-  g_full_history = FALSE
-)
-
-tmp_bowl_policy <- get_policy(tmp_bowl)
-
-tmp_bowl_policy_actions <- tmp_bowl_policy(two_stage_policy_data)
-optimal_policy_actions <- optimal_policy(two_stage_policy_data)
-setnames(optimal_policy_actions, "d", "d_opt")
-
-plot_data <- state_history(two_stage_policy_data)$H
-plot_data <- merge(plot_data, tmp_bowl_policy_actions, all.x = TRUE)
-plot_data <- merge(plot_data, optimal_policy_actions, all.x = TRUE)
-
-plot_data[, g_1 := lava::expit(par0$gamma_A * C)]
-plot_data[, ap := (g_1 >= par0$alpha) & (g_1 <= (1-par0$alpha))]
-
-library(ggplot2)
-stage_ <- 1
-g_1 <- ggplot(plot_data[stage == stage_, ]) +
-  geom_point(aes(x = L, y = C, color = d_opt, shape = ap)) +
-  theme_bw()
-
-g_2 <- ggplot(plot_data[stage == stage_, ]) +
-  geom_point(aes(x = L, y = C, color = d, shape = ap)) +
-  theme_bw()
-
-gridExtra::grid.arrange(g_1, g_2)
-
-stage_ <- 2
-g_1 <- ggplot(plot_data[stage == stage_, ]) +
-  geom_point(aes(x = L, y = C, color = d_opt, shape = ap)) +
-  theme_bw()
-
-g_2 <- ggplot(plot_data[stage == stage_, ]) +
-  geom_point(aes(x = L, y = C, color = d, shape = ap)) +
-  theme_bw()
-
-gridExtra::grid.arrange(g_1, g_2)
+# n <- 500
+# set.seed(7)
+# d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
+# two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
+#
+# tmp_bowl <- bowl(
+#   alpha = par0$alpha,
+#   policy_data = two_stage_policy_data,
+#   g_models = g0,
+#   g_full_history = FALSE
+# )
+#
+# tmp_bowl_policy <- get_policy(tmp_bowl)
+#
+# tmp_bowl_policy_actions <- tmp_bowl_policy(two_stage_policy_data)
+# optimal_policy_actions <- optimal_policy(two_stage_policy_data)
+# setnames(optimal_policy_actions, "d", "d_opt")
+#
+# plot_data <- state_history(two_stage_policy_data)$H
+# plot_data <- merge(plot_data, tmp_bowl_policy_actions, all.x = TRUE)
+# plot_data <- merge(plot_data, optimal_policy_actions, all.x = TRUE)
+#
+# plot_data[, g_1 := lava::expit(par0$gamma_A * C)]
+# plot_data[, ap := (g_1 >= par0$alpha) & (g_1 <= (1-par0$alpha))]
+#
+# library(ggplot2)
+# stage_ <- 1
+# g_1 <- ggplot(plot_data[stage == stage_, ]) +
+#   geom_point(aes(x = L, y = C, color = d_opt, shape = ap)) +
+#   theme_bw()
+#
+# g_2 <- ggplot(plot_data[stage == stage_, ]) +
+#   geom_point(aes(x = L, y = C, color = d, shape = ap)) +
+#   theme_bw()
+#
+# gridExtra::grid.arrange(g_1, g_2)
+#
+# stage_ <- 2
+# g_2 <- ggplot(plot_data[stage == stage_, ]) +
+#   geom_point(aes(x = L, y = C, color = d, shape = ap)) +
+#   geom_hline(yintercept = -par0$mu_L[3]) +
+#   theme_bw()
+# g_2
 
 # PTL ----------------------------------------------------------------------
 # (doubly robust) policy tree learning
