@@ -77,6 +77,12 @@ get_actions.policy_data <- function(object){
 }
 
 #' @export
+get_id <- function(policy_data){
+  id <- unique(policy_data$stage_data$id)
+  return(id)
+}
+
+#' @export
 get_id_stage.policy_data <- function(object){
   stage_data <- object$stage_data
 
