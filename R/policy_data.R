@@ -1,5 +1,3 @@
-# TODO: check that all actions in the action_set occur at every stage.
-
 #' Create A Policy Data Object
 #'
 #' \code{new_policy_data} creates an object of class policy_data.
@@ -172,4 +170,60 @@ new_policy_data <- function(stage_data, baseline_data = NULL){ #, id = "id", sta
   class(object) <- "policy_data"
 
   return(object)
+}
+
+#' @export
+wide_stage_data_to_long <- function(wide_stage_data, id_col = NULL, A_cols, X_cols, X_value_names, U_cols){
+  wide_stage_data <- copy(wide_stage_data)
+
+  if (any("id" %in% colnames(wide_stage_data)))
+    stop("The wide_stage_data contains a variable called id, but id_col = NULL. Please set id_col = 'id' or change the name of the variable.")
+  if (is.null(id_col)){
+    wide_stage_data[, id := 1:.N]
+    id_col <- "id"
+  }
+
+  if (is.list(A_cols))
+    A_cols <- unlist(A_cols)
+  if (!is.vector(A_cols) | !is.character(A_cols))
+    stop("A_cols must be a vector or a list of type character.")
+
+  if (is.vector(X_cols) & !is.list(X_cols))
+    X_cols <- list(X_cols)
+  if (!is.list(X_cols))
+    stop("X_cols must be a vector or a list of vectors or lists of type character.")
+
+  X_cols <- lapply(X_cols, function(x_col){
+    if (is.list(x_col))
+      x_col <- unlist(x_col)
+    if (!is.vector(x_col) | !is.character(x_col))
+      stop("X_cols must be a vector or a list of vectors or lists of type character.")
+    return(x_col)
+  })
+
+  if (!is.character(X_value_names))
+    stop("X_value_names must be a vector or list of type character.")
+  if (length(X_cols) != length(X_value_names))
+    stop("X_value_names must be the same length as the number of vectors or lists in X_cols.")
+  if (any("U" %in% X_value_names))
+    stop("X_value_names may not contain 'U'.")
+  if (any("stage" %in% X_value_names))
+    stop("X_value_names may not contain 'stage'.")
+
+
+  measure <- append(list(A_cols), X_cols)
+  measure <- append(measure, list(U_cols))
+  value.name = c("A", X_value_names, "U")
+
+  long_stage_data <- melt(wide_stage_data, id.vars = c("id"), measure = measure, value.name = value.name, variable.name = "stage")
+  long_stage_data[ , stage := as.numeric(as.character(stage))]
+  long_stage_data[, A := as.character(A)]
+
+  long_stage_data[!is.na(A), event := 0]
+  long_stage_data <- long_stage_data[!(is.na(A) & is.na(U)),]
+  long_stage_data[is.na(A), event := 1]
+
+  setkey(long_stage_data, id, stage)
+
+  return(long_stage_data)
 }
