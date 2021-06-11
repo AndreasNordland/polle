@@ -62,16 +62,14 @@ d_alpha_opt_10 <- function(data, par){
 # set.seed(1)
 # d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
 # two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
-# utility(two_stage_policy_data)
 # observed_utility <- mean(utility(two_stage_policy_data)$U)
 # rm(two_stage_policy_data)
-
-# approximated mean utility under the optimal policy
+#
+# # approximated mean utility under the optimal policy
 # n <- 2e6
 # set.seed(2)
 # d <- simulate_two_stage_data(n = n, par = par0, a_1 = d_alpha_opt_10, a_2 = d_alpha_opt_20)
 # two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
-# utility(two_stage_policy_data)
 # optimal_utility <- mean(utility(two_stage_policy_data)$U)
 # rm(two_stage_policy_data)
 
@@ -180,7 +178,7 @@ optimal_policy <- new_policy(
 
 # ipw ---------------------------------------------------------------------
 
-# n <- 2e3
+# n <- 2e5
 # set.seed(1)
 # d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
 # two_stage_policy_data <- new_policy_data(stage_data = d); rm(d)
@@ -188,7 +186,7 @@ optimal_policy <- new_policy(
 # tmp <- ipw(
 #   two_stage_policy_data,
 #   policy = optimal_policy,
-#   g_models = list(g_binomial_linear, g_binomial_linear),
+#   g_models = g_binomial_linear,
 #   g_full_history = FALSE
 # )
 # tmp$value_estimate
@@ -260,7 +258,7 @@ predict.qbias <- function(q_model, new_A, new_X){
   return(pred)
 }
 
-# n <- 2e3
+# n <- 2e4
 # set.seed(1)
 # d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
 #
@@ -268,14 +266,14 @@ predict.qbias <- function(q_model, new_A, new_X){
 #
 # tmp <- fit_Q_functions(
 #   two_stage_policy_data,
-#   q_models = list(q0_1, q0_2),
-#   # q_models = list(Q_linear, Q_linear),
-#   # q_models = Q_linear,
+#   # q_models = list(q0_1, q0_2),
+#   q_models = q_linear,
 #   optimal_policy(two_stage_policy_data),
 #   full_history = FALSE
 #   )
 # tmp[[1]]
 # tmp[[2]]
+# par0$mu_L[3]
 #
 # attr(tmp, "full_history")
 # evaluate(
@@ -329,10 +327,10 @@ predict.qbias <- function(q_model, new_A, new_X){
 
 # DR ----------------------------------------------------------------------
 
-# n <- 2e3
-# set.seed(2)
-# d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
-# two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
+n <- 2e6
+set.seed(1)
+d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
+two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
 #
 # tmp <- cv_dr(
 #   two_stage_policy_data,
@@ -345,19 +343,23 @@ predict.qbias <- function(q_model, new_A, new_X){
 #   mc.cores = 3
 # )
 #
-# tmp <- dr(
-#   two_stage_policy_data,
-#   policy = optimal_policy,
-#   g_models = g_binomial_linear,
-#   # g_models = g_binomial_intercept,
-#   q_models = list(q0_1, q0_2),
-#   # q_models = Q_interept,
-#   g_full_history = FALSE,
-#   q_full_history = FALSE
-# )
-# tmp$value_estimate
-# mean(tmp$phi_or)
-# mean(tmp$phi_ipw)
+tmp <- dr(
+  two_stage_policy_data,
+  policy = optimal_policy,
+  g_models = g_binomial_linear,
+  # g_models = g_binomial_intercept,
+  q_models = list(q0_1, q0_2),
+  # q_models = Q_interept,
+  g_full_history = FALSE,
+  q_full_history = FALSE
+)
+
+tmp$g_functions[[1]]
+
+tmp$value_estimate
+mean(tmp$phi_or)
+sd(tmp$phi_ipw)
+optimal_utility
 #
 # tmp2 <- dr(
 #   two_stage_policy_data,

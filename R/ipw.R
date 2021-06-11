@@ -1,5 +1,3 @@
-# TODO check robustness if not all actions are represented at each stage
-
 #' @export
 ipw <- function(policy_data, g_models = NULL, g_functions = NULL, policy, g_full_history = FALSE){
   if (is.null(g_models) & is.null(g_functions)) stop("Either g-models or g-functions must be provided.")

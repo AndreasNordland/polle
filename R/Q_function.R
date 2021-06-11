@@ -1,6 +1,3 @@
-# TODO: q_model not a list if K = 1.
-# TODO: non-occurring actions .
-
 #' @export
 fit_Q_function <- function(object, V, q_model)
   UseMethod("fit_Q_function")

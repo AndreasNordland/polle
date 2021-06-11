@@ -6,6 +6,9 @@ q_linear <- function(V_res, A, X){
     X = as.data.frame(X)
   }
 
+  # xx - model.matrix(~ A*X)
+  # lm.fit()
+
   data <- cbind(A = A, X)
   lm_model <- lm(V_res ~ A * ., data = data, model = FALSE)
 

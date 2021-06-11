@@ -1,11 +1,3 @@
-# TODO consider how to incorporate the deterministic utility contributions
-# TODO consider scales for binary variables
-# TODO subset of variables for the bowl policy
-# TODO add augment argument
-# TODO introduce realistic action on level alpha
-# TODO think about how a policy with more stages than the policy data can still be used.
-# TODO investigate bias, see single_stage simulation
-
 #' @export
 bowl <- function(policy_data, alpha = 0, g_models = NULL, g_functions = NULL, g_full_history = FALSE, policy_full_history = FALSE, ...){
 

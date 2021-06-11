@@ -1,5 +1,3 @@
-# TODO: profile or
-
 #' @export
 or <- function(policy_data, q_models = NULL, q_functions = NULL, policy, q_full_history = FALSE){
   if (is.null(q_models) & is.null(q_functions)) stop("Either q-models or q-functions must be provided.")

@@ -1,5 +1,3 @@
-# TODO: Consider to introduce general model objects such as modelObj
-
 #' @export
 g_binomial_linear <- function(A, X){
   # binary outcome

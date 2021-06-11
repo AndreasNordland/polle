@@ -25,27 +25,6 @@ get_a_values <- function(a, action_set, values){
   return(out)
 }
 
-# get_function_predictions <- function(policy_data, fun, full_history){
-#   K <- policy_data$dim$K
-#   action_set <- policy_data$action_set
-#
-#   p <- function(stage){
-#     his <- get_stage_history(policy_data, stage = stage, full_history = full_history)
-#     pred <- predict(fun[[stage]], his)
-#     return(pred)
-#   }
-#
-#   if (class(fun)[[1]] == "list"){
-#     pred <- lapply(1:K, p)
-#     pred <- rbindlist(pred)
-#     setkey(pred, id, stage)
-#   } else{
-#     his <- markov_history(policy_data)
-#     pred <- predict(fun, his)
-#   }
-#
-#   return(pred)
-# }
 
 ipw_weight <- function(D, G){
   stopifnot(
