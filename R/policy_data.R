@@ -61,6 +61,10 @@ new_policy_data <- function(stage_data, baseline_data = NULL){ #, id = "id", sta
     # getting the set of actions (A):
     action_set <- sort(unique(stage_data$A))
 
+    # checking that all actions in the action set are observed at every stage
+    if (!all(stage_data[event == 0, .(check = all(sort(unique(A)) == action_set)), stage]$check))
+      stop("All actions in the action set are observed at every stage.")
+
     # checking the utility variable (U)
     if (!all(is.numeric(stage_data$U))) stop("The utility (U) must be numeric.")
     if(any(is.na(stage_data$U))) stop("The utility (U) has missing values")
