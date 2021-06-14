@@ -1,5 +1,5 @@
 #' @export
-ptl <- function(policy_data, alpha, g_models = NULL, g_functions = NULL, q_models = NULL, q_functions = NULL, q_full_history = FALSE, g_full_history = FALSE, policy_full_history = FALSE, depth = 2, split.step = 1, min.node.size = 1){
+ptl <- function(policy_data, alpha, g_models = NULL, g_functions = NULL, q_models = NULL, q_functions = NULL, q_full_history = FALSE, g_full_history = FALSE, policy_full_history = FALSE, policy_subset = NULL, depth = 2, split.step = 1, min.node.size = 1){
   if (is.null(g_models) & is.null(g_functions)) stop("Either g-models or g-functions must be provided.")
   if (!is.null(g_functions) & !is.null(g_models)) stop("g-models and g-functions can not both be provided.")
   if (!is.null(g_functions)){
@@ -19,6 +19,9 @@ ptl <- function(policy_data, alpha, g_models = NULL, g_functions = NULL, q_model
     if (class(q_models)[[1]] == "list"){
       if (length(q_models) != K) stop("q_models must either be a list of length K or a single Q-model.")
     }
+  }
+  if (policy_full_history == TRUE){
+    if ((!is.list(policy_subset)) | (length(policy_subset) != K)) stop("policy_subset must be a list of length K, when policy_full_history = TRUE")
   }
 
   # getting the observed actions:
@@ -95,7 +98,12 @@ ptl <- function(policy_data, alpha, g_models = NULL, g_functions = NULL, q_model
 
     # getting the policy history
     policy_history_k <- get_stage_history(policy_data, stage = k, full_history = policy_full_history)
-    X <- get_X(policy_history_k)
+    if (policy_full_history == TRUE)
+      subset <- policy_subset[[k]]
+    else
+      subset <- policy_subset
+    X <- get_X(policy_history_k, subset = subset)
+
     ptl_k <- policytree::policy_tree(X = X, Gamma = Gamma, depth = depth, split.step = split.step, min.node.size = min.node.size)
     ptl_objects[[k]] <- ptl_k
     dd <- policytree:::predict.policy_tree(ptl_k, X)
@@ -121,6 +129,7 @@ ptl <- function(policy_data, alpha, g_models = NULL, g_functions = NULL, q_model
     g_functions = g_functions,
     q_functions = q_functions,
     policy_full_history = policy_full_history,
+    policy_subset = policy_subset,
     action_set = action_set,
     K = K
   )
@@ -135,12 +144,17 @@ get_policy.PTL <- function(object){
   K <- object$K
   policy_full_history <- object$policy_full_history
   ptl_objects <- object$ptl_objects
+  policy_subset <- getElement(object, "policy_subset")
+
+  if (!is.list(policy_subset))
+    policy_subset <- list(policy_subset)
 
   stage_policies <- mapply(
     ptl_objects,
-    FUN = function(ptl){
+    policy_subset,
+    FUN = function(ptl, ps){
       pf <- function(history){
-        X <- get_X(history)
+        X <- get_X(history, subset = ps)
 
         dd <- predict(ptl, newdata = X)
         d <- action_set[dd]

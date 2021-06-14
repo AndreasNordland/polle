@@ -1,5 +1,5 @@
 #' @export
-bowl <- function(policy_data, alpha = 0, g_models = NULL, g_functions = NULL, g_full_history = FALSE, policy_full_history = FALSE, ...){
+bowl <- function(policy_data, alpha = 0, g_models = NULL, g_functions = NULL, g_full_history = FALSE, policy_full_history = FALSE, policy_subset = NULL, ...){
 
   if (is.null(g_models) & is.null(g_functions)) stop("Either g-models or g-functions must be provided.")
   if (!is.null(g_functions) & !is.null(g_models)) stop("g-models and g-functions can not both be provided.")
@@ -10,6 +10,9 @@ bowl <- function(policy_data, alpha = 0, g_models = NULL, g_functions = NULL, g_
   K <- policy_data$dim$K
   n <- policy_data$dim$n
   action_set <- policy_data$action_set
+  if (policy_full_history == TRUE){
+    if ((!is.list(policy_subset)) | (length(policy_subset) != K)) stop("policy_subset must be a list of length K, when policy_full_history = TRUE")
+  }
 
   if (!(length(action_set) == 2)) stop("bowl only works for binary actions.")
 
@@ -49,7 +52,11 @@ bowl <- function(policy_data, alpha = 0, g_models = NULL, g_functions = NULL, g_
     idx_k <- (id %in% id_k)
 
     # constructing the inputs for owl
-    X <- get_X(policy_history_k)
+    if (policy_full_history == TRUE)
+      subset <- policy_subset[[k]]
+    else
+      subset <- policy_subset
+    X <- get_X(policy_history_k, subset = subset)
     X <- scale(X)
 
     X_scales[[k]] <- attributes(X)[3:4]
@@ -65,7 +72,8 @@ bowl <- function(policy_data, alpha = 0, g_models = NULL, g_functions = NULL, g_
 
     pi <- colprod(G[idx_k , k:K])
 
-    # single stage OWL
+    if ((ncol(X) == 1))
+      stop("DTRlearn2 has a bug. H must be a matrix with ncol(H) > 1.")
     owl_objects[[k]] <- DTRlearn2::owl(H = X, AA = AA, RR = RR, pi = pi, K = 1, n = nrow(X), ...)
 
     dd <- owl_objects[[k]]$stage$treatment
@@ -88,6 +96,7 @@ bowl <- function(policy_data, alpha = 0, g_models = NULL, g_functions = NULL, g_
     X_scales = X_scales,
     g_functions = g_functions,
     policy_full_history = policy_full_history,
+    policy_subset = policy_subset,
     alpha = alpha,
     action_set = action_set,
     K = K
@@ -103,6 +112,7 @@ get_policy.BOWL <- function(object){
   X_scales <- object$X_scales
   g_functions = object$g_functions
   policy_full_history <- object$policy_full_history
+  policy_subset <- getElement(object, "policy_subset")
   alpha <- object$alpha
   action_set <- object$action_set
   K <- object$K
@@ -116,7 +126,11 @@ get_policy.BOWL <- function(object){
       # getting the policy history:
       policy_history_k <- get_stage_history(policy_data, stage = k, full_history = policy_full_history)
 
-      X <- get_X(policy_history_k)
+      if (policy_full_history == TRUE)
+        subset <- policy_subset[[k]]
+      else
+        subset <- policy_subset
+      X <- get_X(policy_history_k, subset = subset)
       X <- scale(X, center = X_scales[[k]]$`scaled:center`, scale = X_scales[[k]]$`scaled:scale`)
 
       dd <- d <- predict(owl_objects[[k]], H = X, K = 1)$treatment[[1]]

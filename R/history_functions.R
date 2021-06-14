@@ -148,16 +148,23 @@ state_history.policy_data <- function(object){
   return(history)
 }
 
-get_X <- function(object)
-  UseMethod("get_X")
-
-get_X.history <- function(object){
-  H <- object$H
-  action_name <- object$action_name
+get_X <- function(history, subset = NULL){
+  H <- history$H
+  action_name <- history$action_name
 
   # collecting the data:
   X_names <- names(H)[!(names(H) %in% c("id", "stage", action_name))]
-  X <- H[, ..X_names]
+  if (!is.null(subset)){
+    if (is.character(subset)){
+      if (!all(subset %in% X_names)){
+        stop("Invalid subset.")
+      }
+    } else
+      stop("subset must be of type character.")
+  } else
+    subset <- X_names
+
+  X <- H[, ..subset]
 
   # dropping character columns with 1 unique element (1 level)
   character_cols <- names(X)[sapply(X, is.character)]
@@ -172,9 +179,22 @@ get_X.history <- function(object){
     X[, (dn) := NULL]
 
   # constructing the model matrix (without an intercept)
-  X <- model.matrix(~., X)[, -1]
+  X <- model.matrix(~., X)[, -1, drop = FALSE]
 
   return(X)
+}
+
+#' @export
+get_X_names <- function(policy_data, stage = NULL){
+  if (is.null(stage)){
+    history <- get_stage_history(policy_data, stage = 1, full_history = FALSE)
+  } else{
+    history <- get_stage_history(policy_data, stage = stage, full_history = TRUE)
+  }
+  H <- getElement(history, "H")
+  action_name <- getElement(history, "action_name")
+  X_names <- names(H)[!(names(H) %in% c("id", "stage", action_name))]
+  return(X_names)
 }
 
 get_A <- function(object)
