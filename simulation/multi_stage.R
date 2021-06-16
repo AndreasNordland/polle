@@ -87,14 +87,14 @@ always_treat_policy <- new_policy(
 # ipw -------------------------------------------------
 
 # # always treat policy:
-# n <- 2e4
+# n <- 2e3
 # set.seed(1)
 # multi_stage_policy_data <- simulate_multi_stage_data(n, args0)
 # multi_stage_policy_data <- new_policy_data(stage_data = multi_stage_policy_data$stage_data, baseline_data = multi_stage_policy_data$baseline_data)
 #
 # tmp <- ipw(
 #   multi_stage_policy_data,
-#   g_models = g_binomial_linear,
+#   g_models = new_g_glm(),
 #   policy = always_treat_policy
 # )
 # tmp$value_estimate
@@ -117,7 +117,7 @@ always_treat_policy <- new_policy(
 #
 #   tmp <- ipw(
 #     pd,
-#     g_models = g_binomial_linear,
+#     g_models = new_g_glm(),
 #     policy = always_treat_policy
 #   )
 #   estimate_always_treat[i] <- tmp$value_estimate
@@ -140,7 +140,7 @@ always_treat_policy <- new_policy(
 #
 # tmp <- dr(
 #   multi_stage_policy_data,
-#   g_models = g_binomial_linear,
+#   g_models = new_g_glm(),
 #   q_models = q_linear,
 #   policy = always_treat_policy
 # )
@@ -163,7 +163,7 @@ always_treat_policy <- new_policy(
 #
 #   tmp <- dr(
 #     pd,
-#     g_models = g_binomial_linear,
+#     g_models = new_g_glm(),
 #     q_models = q_linear,
 #     policy = always_treat_policy
 #   )
@@ -187,7 +187,7 @@ always_treat_policy <- new_policy(
 # RQL_partial_4 <- rql(
 #   multi_stage_policy_data,
 #   alpha = 0.05,
-#   g_models = g_binomial_linear,
+#   g_models = new_g_glm(),
 #   q_models = q_linear
 # )
 # RQL_partial_4$value_estimate
@@ -207,7 +207,7 @@ always_treat_policy <- new_policy(
 #
 #   tmp <- dr(
 #     pd,
-#     g_models = g_binomial_linear,
+#     g_models = new_g_glm(),
 #     q_models = q_linear,
 #     policy = get_policy(RQL_partial_4)
 #   )
@@ -230,7 +230,7 @@ always_treat_policy <- new_policy(
 #
 # ptl_object <- ptl(
 #   multi_stage_policy_data,
-#   g_models = g_binomial_linear,
+#   g_models = new_g_glm(),
 #   q_models = q_linear,
 #   policy_full_history = FALSE,
 #   depth = 2
@@ -251,7 +251,7 @@ always_treat_policy <- new_policy(
 #
 #   tmp <- dr(
 #     pd,
-#     g_models = g_binomial_linear,
+#     g_models = new_g_glm(),
 #     q_models = q_linear,
 #     policy = get_policy(ptl_object)
 #   )

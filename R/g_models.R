@@ -1,52 +1,56 @@
 #' @export
-g_binomial_linear <- function(A, X){
-  # binary outcome
-  stopifnot(
-    all(A %in% c("0","1"))
-  )
-  A <- as.numeric(as.character(A))
+new_g_glm <- function(
+  formula = ~.,
+  family = binomial(),
+  model = FALSE,
+  ...
+){
+  dotdotdot <- list(...)
 
-  # model matrix as data.frame
-  if (is.matrix(X)) {
-    X = as.data.frame(X)
+  g_glm <- function(A, X){
+    action_set <- sort(unique(A))
+    if (length(action_set) != 2)
+      stop("g_glm requires exactly two levels.")
+    AA <- A
+    AA[A == action_set[1]] <- 0
+    AA[A == action_set[2]] <- 1
+    AA <- as.numeric(AA)
+
+    if (is.matrix(X)) {
+      X = as.data.frame(X)
+    }
+
+    tt <- terms(formula, data = X)
+
+  if (length(attr(tt, "term.labels")) == 0)
+    formula <- AA ~ 1
+  else
+    formula <- reformulate(attr(tt, "term.labels"), response = "AA")
+
+    args_glm <- list(
+      formula = formula,
+      data = X,
+      family = family,
+      model = model
+    )
+    args_glm <- append(args_glm, dotdotdot)
+
+    glm_model <- do.call(what = "glm", args = args_glm)
+    glm_model$call <- NULL
+
+    m <- list(
+      glm_model = glm_model,
+      action_set = action_set
+    )
+
+    class(m) <- "g_glm"
+    return(m)
+
   }
-
-  glm_model <- glm(A ~ ., data = X, family = binomial(), model = FALSE)
-
-  bm <- list(
-    glm_model = glm_model
-  )
-
-  class(bm) <- "g_binomial"
-  return(bm)
 }
-
 #' @export
-g_binomial_intercept <- function(A, X){
-  # binary outcome
-  stopifnot(
-    all(A %in% c("0","1"))
-  )
-  A <- as.numeric(as.character(A))
-
-  # model matrix as data.frame
-  if (is.matrix(X)) {
-    X = as.data.frame(X)
-  }
-
-  glm_model <- glm(A ~ 1, data = X, family = binomial(), model = FALSE)
-
-  bm <- list(
-    glm_model = glm_model
-  )
-
-  class(bm) <- "g_binomial"
-  return(bm)
-}
-
-#' @export
-predict.g_binomial <- function(object, new_X){
-  glm_model <- object$glm_model
+predict.g_glm <- function(object, new_X){
+  glm_model <- getElement(object, "glm_model")
 
   # model matrix as data.frame
   if (is.matrix(new_X)) {

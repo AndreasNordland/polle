@@ -150,27 +150,33 @@ predict.g0 <- function(object, new_X){
 # single_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
 # his <- state_history(single_stage_policy_data)
 #
-# tmp <- fit_g_function(his, g_model = g_binomial_linear)
+# g_glm <- new_g_glm()
+# tmp <- fit_g_function(his, g_model = g_glm)
+# tmp$g_model
+#
 # tmp$g_model$glm_model
 # par0$kappa # correct if kappa = 0
 # rm(tmp)
-#
+
 # head(predict.G_function(G, new_history = his))
 # rm(his)
 
 # IPW ---------------------------------------------------------------------
 
-# set.seed(1)
-# d <- simulate_single_stage(n = 2e3, a = a0, par = par0)
-# single_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
-#
-# tmp <- ipw(
-#   single_stage_policy_data,
-#   g_models = g_binomial_linear,
-#   policy = linear_policy,
-#   g_full_history = FALSE
-# )
-# tmp$value_estimate
+set.seed(1)
+d <- simulate_single_stage(n = 2e3, a = a0, par = par0)
+single_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
+
+tmp <- ipw(
+  single_stage_policy_data,
+  g_models = new_g_glm(),
+  policy = linear_policy,
+  g_full_history = TRUE
+)
+tmp$value_estimate
+
+tmp$g_functions
+
 # linear_utility
 
 # Q-models ----------------------------------------------------------------
@@ -248,7 +254,7 @@ single_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, 
 tmp <- dr(
   single_stage_policy_data,
   q_models = q_linear,
-  g_models = g_binomial_linear,
+  g_models = new_g_glm(),
   policy = linear_policy
 )
 
@@ -263,7 +269,7 @@ rm(tmp)
 tmp <- cv_dr(
   single_stage_policy_data,
   q_models = q_linear,
-  g_models = g_binomial_linear,
+  g_models = new_g_glm(),
   policy = linear_policy,
   M = 3,
   mc.cores = 3
