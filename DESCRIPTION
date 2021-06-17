@@ -14,7 +14,10 @@ LazyData: true
 Imports:
     data.table,
     parallel,
-    DTRlearn2
+    DTRlearn2,
+    policytree,
+    glmnet,
+    mgcv
 Suggests:
 	knitr,
     	bookdown,

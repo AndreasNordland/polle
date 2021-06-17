@@ -22,10 +22,10 @@ new_g_glm <- function(
 
     tt <- terms(formula, data = X)
 
-  if (length(attr(tt, "term.labels")) == 0)
-    formula <- AA ~ 1
-  else
-    formula <- reformulate(attr(tt, "term.labels"), response = "AA")
+    if (length(attr(tt, "term.labels")) == 0)
+      formula <- AA ~ 1
+    else
+      formula <- reformulate(attr(tt, "term.labels"), response = "AA")
 
     args_glm <- list(
       formula = formula,

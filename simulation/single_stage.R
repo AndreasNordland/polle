@@ -163,20 +163,17 @@ predict.g0 <- function(object, new_X){
 
 # IPW ---------------------------------------------------------------------
 
-set.seed(1)
-d <- simulate_single_stage(n = 2e3, a = a0, par = par0)
-single_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
-
-tmp <- ipw(
-  single_stage_policy_data,
-  g_models = new_g_glm(),
-  policy = linear_policy,
-  g_full_history = TRUE
-)
-tmp$value_estimate
-
-tmp$g_functions
-
+# set.seed(1)
+# d <- simulate_single_stage(n = 2e5, a = a0, par = par0)
+# single_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
+#
+# tmp <- ipw(
+#   single_stage_policy_data,
+#   g_models = new_g_glm(),
+#   policy = linear_policy,
+#   g_full_history = FALSE
+# )
+# tmp$value_estimate
 # linear_utility
 
 # Q-models ----------------------------------------------------------------
@@ -213,7 +210,7 @@ predict.q0 <- function(q_model, new_A, new_X){
 }
 
 # set.seed(1)
-# d <- simulate_single_stage(n = 2e4, a = a0, par = par0)
+# d <- simulate_single_stage(n = 2e5, a = a0, par = par0)
 # single_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
 # his <- state_stage_history(single_stage_policy_data, stage = 1)
 #
@@ -221,54 +218,63 @@ predict.q0 <- function(q_model, new_A, new_X){
 # tmp <- fit_Q_function(
 #   his,
 #   V,
-#   q_model = q_linear
+#   q_model = new_q_glm()
 # )
-# tmp$q_model$lm_model
+# tmp$q_model
+#
+# V <- utility(single_stage_policy_data)$U
+# tmp <- fit_Q_function(
+#   his,
+#   V,
+#   q_model = new_q_glmnet()
+# )
+# tmp$q_model$glmnet_model
+# tmp$q_model$glmnet_model$nzero
+# coef(tmp$q_model$glmnet_model, s = "lambda.min")
 # par0
 # rm(tmp, V)
 # rm(his)
 
 # OR ----------------------------------------------------------------------
 
-# set.seed(1)
-# d <- simulate_single_stage(n = 2e3, a = a0, par = par0)
-# single_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
-#
-# tmp <- or(
-#   policy_data = single_stage_policy_data,
-#   q_models = q_linear,
-#   policy = linear_policy,
-#   q_full_history = FALSE
-# )
-# tmp$value_estimate
-# linear_utility
-# rm(tmp)
+set.seed(2)
+d <- simulate_single_stage(n = 2e5, a = a0, par = par0)
+single_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
+
+tmp <- or(
+  policy_data = single_stage_policy_data,
+  q_models = new_q_glmnet(),
+  policy = linear_policy,
+  q_full_history = FALSE
+)
+tmp$value_estimate
+linear_utility
+rm(tmp)
 
 # DR ----------------------------------------------------------------------
 
-n <- 2e3
-set.seed(1)
-d <- simulate_single_stage(n = n, a = a0, par = par0)
-single_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
-
-tmp <- dr(
-  single_stage_policy_data,
-  q_models = q_linear,
-  g_models = new_g_glm(),
-  policy = linear_policy
-)
-
-tmp$value_estimate
-mean(tmp$phi_ipw)
-mean(tmp$phi_or)
-linear_utility
-
-rm(tmp)
+# n <- 2e3
+# set.seed(2)
+# d <- simulate_single_stage(n = n, a = a0, par = par0)
+# single_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
+#
+# tmp <- dr(
+#   single_stage_policy_data,
+#   q_models = new_q_glm(),
+#   g_models = new_g_glm(),
+#   policy = linear_policy
+# )
+# tmp$value_estimate
+# mean(tmp$phi_ipw)
+# mean(tmp$phi_or)
+# linear_utility
+#
+# rm(tmp)
 
 # cross-fitting:
 tmp <- cv_dr(
   single_stage_policy_data,
-  q_models = q_linear,
+  q_models = new_q_glm(),
   g_models = new_g_glm(),
   policy = linear_policy,
   M = 3,
