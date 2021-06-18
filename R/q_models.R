@@ -1,6 +1,3 @@
-#' @export
-new_q_gam <- function()
-
 
 #' @export
 new_q_glmnet <- function(
