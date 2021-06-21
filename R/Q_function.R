@@ -13,6 +13,8 @@ fit_Q_function.history <- function(object, V, q_model){
   A <- get_A(object)
   X <- get_X(object)
 
+  AX <- cbind(A, X)
+
   # checking that all actions in the actions set occur:
   if (!all(action_set == sort(unique(A)))) stop("An action in the action set does not occur.")
 
@@ -24,11 +26,11 @@ fit_Q_function.history <- function(object, V, q_model){
   V_res <- U$V_res
 
   # fitting the (residual) Q-model
-  q_model <- q_model(V_res = V_res, A = A, X = X)
+  q_model <- q_model(V_res = V_res, AX = AX)
 
   q_function <- list(
     q_model = q_model,
-    X_names = colnames(X)
+    AX_names = colnames(AX)
   )
   class(q_function) <- "Q_function"
 
@@ -37,7 +39,6 @@ fit_Q_function.history <- function(object, V, q_model){
 
 #' @export
 evaluate.Q_function <- function(object, new_history){
-  X_names <- object$X_names
   q_model <- object$q_model
   action_set <- new_history$action_set
   action_utility_names <- new_history$action_utility_names
@@ -45,16 +46,11 @@ evaluate.Q_function <- function(object, new_history){
   id_stage <- get_id_stage(new_history)
   new_X <- get_X(new_history)
 
-  # checking that the model matrix has the correct form (could be an issue if factor levels are missing)
-  stopifnot(
-    names(new_X) == X_names
-  )
-
   # getting the historic rewards
   U <- new_history$U
 
   # getting the residual predictions
-  residual_q_predictions <- sapply(action_set, function(a) predict(q_model, new_A = a, new_X = new_X))
+  residual_q_predictions <- sapply(action_set, function(a) predict(q_model, new_AX = cbind(A = a, new_X)))
   # adding the historic utilities and deterministic rewards
   q_values <- U$U_bar + U[, ..action_utility_names] + residual_q_predictions
   names(q_values) <- paste("Q", action_set, sep = "_")

@@ -9,7 +9,9 @@ new_q_glmnet <- function(
 ){
   dotdotdot <- list(...)
 
-  q_glmnet <- function(V_res, A, X){
+  q_glmnet <- function(V_res, AX){
+
+    browser()
 
     A <- as.factor(A)
     A_levels <- levels(A)
@@ -87,11 +89,8 @@ new_q_glm <- function(
 ){
   dotdotdot <- list(...)
 
-  q_glm <- function(V_res, A, X){
-    if (is.matrix(X)) {
-      X = as.data.frame(X)
-    }
-    data <- cbind(A = A, X)
+  q_glm <- function(V_res, AX){
+    data <- AX
 
     tt <- terms(formula, data = data)
     if (length(attr(tt, "term.labels")) == 0)
@@ -122,13 +121,10 @@ new_q_glm <- function(
 }
 
 #' @export
-predict.q_glm <- function(object, new_A, new_X){
+predict.q_glm <- function(object, new_AX){
   glm_model <- getElement(object, "glm_model")
 
-  if (is.matrix(new_X)) {
-    new_X = as.data.frame(new_X)
-  }
-  newdata <- cbind(A = new_A, new_X)
+  newdata <- new_AX
 
   pred <- predict(glm_model, newdata = newdata, type = "response")
 
