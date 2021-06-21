@@ -89,7 +89,7 @@ predict.g0 <- function(object, new_X){
     all(colnames(new_X) == c("L", "C"))
   )
 
-  C <- new_X[, colnames(new_X) == "C"]
+  C <- new_X$C
   fit <- lava::expit(par0$gamma_A * C)
 
   preds <- matrix(
@@ -114,7 +114,7 @@ predict.g0 <- function(object, new_X){
 # # two_stage_g_function <- fit_g_function(two_stage_state_history, g0)
 # evaluate(two_stage_g_function, new_history = two_stage_state_history)
 # rm(two_stage_state_history, two_stage_g_function)
-#
+
 # two_stage_g_functions <- fit_g_functions(two_stage_policy_data, g_models = new_g_glm(), full_history = FALSE)
 # # two_stage_g_functions <- fit_g_functions(two_stage_policy_data, g_models = g0, full_history = FALSE)
 # # two_stage_g_functions <- fit_g_functions(two_stage_policy_data, g_models = list(new_g_glm(), new_g_glm()), full_history = FALSE)
@@ -203,37 +203,38 @@ optimal_policy <- new_policy(
 
 # Q-models ----------------------------------------------------------------
 
-q0_2 <- function(V_res, A, X){
+q0_2 <- function(V_res, AX){
   out <- list()
   class(out) <- "q0_2"
 
   return(out)
 }
 
-predict.q0_2 <- function(q_model, new_A, new_X){
-  stopifnot(all(new_A %in% c("0", "1")))
+predict.q0_2 <- function(q_model, new_AX){
+  stopifnot(all(new_AX$A %in% c("0", "1")))
 
-  n <- nrow(new_X)
+  n <- nrow(new_AX)
 
-  pred <- (new_A == "1") * rep(par0$mu_L[3], n)
+  pred <- (new_AX$A == "1") * rep(par0$mu_L[3], n)
 
   return(pred)
 }
 
-q0_1 <- function(V_res, A, X){
+q0_1 <- function(V_res, AX){
   out <- list()
   class(out) <- "q0_1"
 
   return(out)
 }
-predict.q0_1 <- function(q_model, new_A, new_X){
-  stopifnot(all(colnames(new_X) == c("L", "C")))
-  stopifnot(all(new_A %in% c("0", "1")))
+predict.q0_1 <- function(q_model, new_AX){
+  stopifnot(all(colnames(new_AX) == c("A", "L", "C")))
+  stopifnot(all(new_AX$A %in% c("0", "1")))
 
-  n <- nrow(new_X)
+  n <- nrow(new_AX)
 
-  l_1 <- new_X[, colnames(new_X) == "L"]
-  pred <- (new_A == "1") * (
+  l_1 <- new_AX$L
+  a_1 <- new_AX$A
+  pred <- (a_1 == "1") * (
     par0$mu_L[2] +
       kappa_1(l_1 = l_1, par = par0) +
       kappa_2(l_1 = l_1, par = par0)
@@ -242,14 +243,14 @@ predict.q0_1 <- function(q_model, new_A, new_X){
   return(pred)
 }
 
-qbias <- function(V_res, A, X){
+qbias <- function(V_res, AX){
   out <- list()
   class(out) <- "qbias"
 
   return(out)
 }
-predict.qbias <- function(q_model, new_A, new_X){
-  n <- nrow(new_X)
+predict.qbias <- function(q_model, new_AX){
+  n <- nrow(new_AX)
 
   pred <- rep(0, times = n)
 
@@ -264,8 +265,8 @@ predict.qbias <- function(q_model, new_A, new_X){
 #
 # tmp <- fit_Q_functions(
 #   two_stage_policy_data,
-#   # q_models = list(q0_1, q0_2),
-#   q_models = q_linear,
+#   q_models = list(q0_1, q0_2),
+#   # q_models = new_q_glm(),
 #   optimal_policy(two_stage_policy_data),
 #   full_history = FALSE
 #   )
