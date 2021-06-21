@@ -167,19 +167,16 @@ get_X <- function(history, subset = NULL){
   X <- H[, ..subset]
 
   # dropping character columns with 1 unique element (1 level)
-  character_cols <- names(X)[sapply(X, is.character)]
-  dn <- character_cols[(sapply(X[, ..character_cols], function(x) length(unique(x))) == 1)]
-  if (length(dn) > 0)
-    X[, (dn) := NULL]
+  # character_cols <- names(X)[sapply(X, is.character)]
+  # dn <- character_cols[(sapply(X[, ..character_cols], function(x) length(unique(x))) == 1)]
+  # if (length(dn) > 0)
+  #   X[, (dn) := NULL]
 
   # dropping numeric columns with 1 unique value
-  numeric_cols <- names(X)[sapply(X, is.numeric)]
-  dn <- numeric_cols[(sapply(X[, ..numeric_cols], function(x) length(unique(x))) == 1)]
-  if (length(dn) > 0)
-    X[, (dn) := NULL]
-
-  # constructing the model matrix (without an intercept)
-  X <- model.matrix(~., X)[, -1, drop = FALSE]
+  # numeric_cols <- names(X)[sapply(X, is.numeric)]
+  # dn <- numeric_cols[(sapply(X[, ..numeric_cols], function(x) length(unique(x))) == 1)]
+  # if (length(dn) > 0)
+  #   X[, (dn) := NULL]
 
   return(X)
 }
