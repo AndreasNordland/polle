@@ -31,10 +31,7 @@ evaluate.g_function <- function(object, new_history){
   id_stage <- get_id_stage(new_history)
   new_X <- get_X(new_history)
 
-  # checking that the model matrix has the correct form (could be an issue if factor levels are missing)
-  stopifnot(
-    names(new_X) == X_names
-  )
+  if (!all(names(new_X) %in% X_names)) stop("new_history does not have the same variable names as the original history.")
 
   g_values <- predict(g_model, new_X = new_X)
 

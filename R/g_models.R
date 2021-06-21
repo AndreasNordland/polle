@@ -16,10 +16,6 @@ new_g_glm <- function(
     AA[A == action_set[2]] <- 1
     AA <- as.numeric(AA)
 
-    if (is.matrix(X)) {
-      X = as.data.frame(X)
-    }
-
     tt <- terms(formula, data = X)
 
     if (length(attr(tt, "term.labels")) == 0)
@@ -52,10 +48,6 @@ new_g_glm <- function(
 predict.g_glm <- function(object, new_X){
   glm_model <- getElement(object, "glm_model")
 
-  # model matrix as data.frame
-  if (is.matrix(new_X)) {
-    new_X = as.data.frame(new_X)
-  }
   fit <- predict.glm(object = glm_model, newdata = new_X, type = "response")
 
   probs <- cbind((1-fit), fit)
