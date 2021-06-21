@@ -9,12 +9,14 @@ simulate_single_stage <- function(n, a, par){
     Z + L + A*(gamma * Z + alpha * L + beta) + rnorm(n)
   }
 
+  B <- rbinom(n = n, size = 1, prob = 0.3)
+  B <- ifelse(B == 1, "a", "b")
   Z <- runif(n)
   L <- runif(n)
-  A <- a(Z = Z, L = L, par = par)
+  A <- a(Z = Z, L = L, B = B, par = par)
   U <- u(Z = Z, L = L, A = A, par = par)
 
-  stage_data_1 <- data.table(id = 1:n, stage = 1, event = 0, Z = Z, L = L, A = as.character(A), U = 0, U_0 = 0, U_1 = 0)
+  stage_data_1 <- data.table(id = 1:n, stage = 1, event = 0, Z = Z, L = L, B  = B, A = as.character(A), U = 0, U_0 = 0, U_1 = 0)
   stage_data_2 <- data.table(id = 1:n, stage = 2, event = 1, U =  U)
 
   stage_data <- rbindlist(list(stage_data_1, stage_data_2), fill = TRUE)
