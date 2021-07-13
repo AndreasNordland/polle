@@ -1,7 +1,7 @@
-dr_split <- function(validation_split, id, policy_data, policy, g_models, q_models, g_full_history, q_full_history){
+dr_fold <- function(fold, id, policy_data, policy, g_models, q_models, g_full_history, q_full_history){
   K <- policy_data$dim$K
-  train_id <- id[-validation_split]
-  validation_id <- id[validation_split]
+  train_id <- id[-fold]
+  validation_id <- id[fold]
 
   train_policy_data <- new_policy_data(
     stage_data = policy_data$stage_data[id %in% train_id],
@@ -38,13 +38,12 @@ cv_dr <- function(policy_data, M, g_models, q_models, policy, g_full_history = F
   n <- policy_data$dim$n
   id <- get_id(policy_data)
 
-  # setting up the training folds
-  sample <- sample(1:n, n)
-  validation_split_list <- split(sample, rep(1:M, length.out = n))
+  # setting up the folds
+  folds <- split(sample(1:n, n), rep(1:M, length.out = n))
 
-  validation_dr_list <- parallel::mclapply(
-    validation_split_list,
-    FUN = dr_split,
+  dr_list <- parallel::mclapply(
+    folds,
+    FUN = dr_fold,
     ...,
     id = id,
     policy_data = policy_data,
@@ -55,10 +54,10 @@ cv_dr <- function(policy_data, M, g_models, q_models, policy, g_full_history = F
     q_full_history = q_full_history
     )
 
-  id <- unlist(lapply(validation_dr_list, function(dr) getElement(dr, "id")))
-  phi_dr <- unlist(lapply(validation_dr_list, function(dr) getElement(dr, "phi_dr")))
-  phi_ipw <- unlist(lapply(validation_dr_list, function(dr) getElement(dr, "phi_ipw")))
-  phi_or <- unlist(lapply(validation_dr_list, function(dr) getElement(dr, "phi_or")))
+  id <- unlist(lapply(dr_list, function(dr) getElement(dr, "id")))
+  phi_dr <- unlist(lapply(dr_list, function(dr) getElement(dr, "phi_dr")))
+  phi_ipw <- unlist(lapply(dr_list, function(dr) getElement(dr, "phi_ipw")))
+  phi_or <- unlist(lapply(dr_list, function(dr) getElement(dr, "phi_or")))
 
   phi_dr <- phi_dr[order(id)]
   phi_ipw <- phi_ipw[order(id)]
@@ -68,10 +67,11 @@ cv_dr <- function(policy_data, M, g_models, q_models, policy, g_full_history = F
 
   out <- list(
     id = id,
+    value_estimate = mean(phi_dr),
     phi_dr = phi_dr,
     phi_ipw = phi_ipw,
     phi_or = phi_or,
-    validation_dr_list = validation_dr_list
+    dr_list = dr_list
   )
 
   return(out)
@@ -101,7 +101,7 @@ dr <- function(policy_data, g_models = NULL, g_functions = NULL, q_models = NULL
 
   # fitting the g-functions:
   if (!is.null(g_models)){
-    g_functions <- fit_g_functions(policy_data, g_models, full_history = g_full_history)
+    g_functions <- fit_g_functions(policy_data, models = g_models, full_history = g_full_history)
   }
   g_values <- evaluate(g_functions, policy_data)
   g_d_values <- get_a_values(a = policy_actions$d, action_set = action_set, values = g_values)
