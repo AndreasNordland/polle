@@ -148,35 +148,23 @@ state_history.policy_data <- function(object){
   return(history)
 }
 
-get_X <- function(history, subset = NULL){
+get_X <- function(history, vars = NULL){
   H <- history$H
   action_name <- history$action_name
 
   # collecting the data:
   X_names <- names(H)[!(names(H) %in% c("id", "stage", action_name))]
-  if (!is.null(subset)){
-    if (is.character(subset)){
-      if (!all(subset %in% X_names)){
-        stop("Invalid subset.")
+  if (!is.null(vars)){
+    if (is.character(vars)){
+      if (!all(vars %in% X_names)){
+        stop("Invalid selection of variables.")
       }
     } else
-      stop("subset must be of type character.")
+      stop("Selection of variables must be of type character.")
   } else
-    subset <- X_names
+    vars <- X_names
 
-  X <- H[, ..subset]
-
-  # dropping character columns with 1 unique element (1 level)
-  # character_cols <- names(X)[sapply(X, is.character)]
-  # dn <- character_cols[(sapply(X[, ..character_cols], function(x) length(unique(x))) == 1)]
-  # if (length(dn) > 0)
-  #   X[, (dn) := NULL]
-
-  # dropping numeric columns with 1 unique value
-  # numeric_cols <- names(X)[sapply(X, is.numeric)]
-  # dn <- numeric_cols[(sapply(X[, ..numeric_cols], function(x) length(unique(x))) == 1)]
-  # if (length(dn) > 0)
-  #   X[, (dn) := NULL]
+  X <- H[, ..vars]
 
   return(X)
 }
