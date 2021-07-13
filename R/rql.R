@@ -28,7 +28,7 @@ rql<- function(policy_data, alpha = 0, g_models = NULL, g_functions = NULL, q_mo
   if (alpha != 0){
 
     if (!is.null(g_models)){
-      g_functions <- fit_g_functions(policy_data, g_models, full_history = g_full_history)
+      g_functions <- fit_g_functions(policy_data, models = g_models, full_history = g_full_history)
     }
     g_values <- evaluate(g_functions, policy_data)
   }
