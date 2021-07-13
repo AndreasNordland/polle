@@ -63,7 +63,7 @@ evaluate.Q_function <- function(object, new_history){
 }
 
 #' @export
-fit_Q_functions <- function(policy_data, policy_actions, q_models, full_history = TRUE){
+fit_Q_functions <- function(policy_data, policy_actions, q_models, full_history = FALSE){
   K <- policy_data$dim$K
   n <- policy_data$dim$n
   action_set <- policy_data$action_set
@@ -86,21 +86,21 @@ fit_Q_functions <- function(policy_data, policy_actions, q_models, full_history 
 
   q_functions <- list()
   for (k in K:1){
-    # getting the history:
-    q_history_k <- get_stage_history(policy_data, stage = k, full_history = full_history)
-
     # getting the IDs and ID-index:
-    id_k <- q_history_k$H$id
+    id_k <- get_id_stage(policy_data)[stage == k]$id
     idx_k <- (id %in% id_k)
 
-    # fitting the Q-function
     if (class(q_models)[[1]] == "list"){
       q_model_k <- q_models[[k]]
     } else{
       q_model_k <- q_models
     }
+    # getting the Q-function history:
+    q_history_k <- get_stage_history(policy_data, stage = k, full_history = full_history)
+    # fitting the Q-function:
     q_function_k <- fit_Q_function(q_history_k, V = V[idx_k, k+1], q_model = q_model_k)
     q_functions[[k]] <- q_function_k
+
     # getting the Q-function values for each action
     q_values_k <- evaluate(q_function_k, new_history = q_history_k)
     # getting the Q-function values under the policy
@@ -116,3 +116,28 @@ fit_Q_functions <- function(policy_data, policy_actions, q_models, full_history 
 
   return(q_functions)
 }
+
+# cv_fit_Q_functions <- function(folds, policy_data, policy_actions, q_models, full_history = FALSE){
+#   id <- get_id(policy_data)
+#
+#   lapply(
+#     folds,
+#     function(fold){
+#       browser()
+#       train_id <- id[-fold]
+#
+#       train_policy_data <- new_policy_data(
+#         stage_data = policy_data$stage_data[id %in% train_id],
+#         baseline_data = policy_data$baseline_data[id %in% train_id]
+#       )
+#
+#       train_policy_actions <- policy_actions[id %in% train_id, ]
+#
+#       fit_Q_functions(
+#         policy_data = train_policy_data,
+#         policy_actions = train_policy_actions
+#       )
+#
+#     }
+#   )
+# }
