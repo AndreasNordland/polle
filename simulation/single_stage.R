@@ -148,23 +148,27 @@ predict.g0 <- function(object, new_X){
   return(preds)
 }
 
-set.seed(1)
-d <- simulate_single_stage(n = 2e3, a = a0, par = par0)
+set.seed(2)
+d <- simulate_single_stage(n = 2e4, a = a0, par = par0)
 single_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
 his <- state_history(single_stage_policy_data)
 
 # data.table
 get_X(history = his)
 
-g_glm <- new_g_glm(formula = ~Z+L+B)
-tmp <- fit_g_function(his, g_model = g_glm)
-# tmp <- fit_g_function(his, g_model = g0)
-tmp$g_model
+# g_model0 <- new_g_glm(formula = ~ .)
+g_model0 <- new_g_glmnet(formula = ~ Z + L)
+tmp <- fit_g_function(his, g_model = g_model0)
+tmp2 <- fit_g_function(his, g_model = g0)
+
+tmp$g_model$glm_model
+tmp$g_model$glmnet_model$glmnet.fit$beta
 
 # tmp$g_model$glm_model
 # par0$kappa # correct if kappa = 0
 
 evaluate(tmp, new_history = his)
+evaluate(tmp2, new_history = his)
 
 rm(his, tmp)
 
@@ -175,8 +179,9 @@ d <- d[, if (any(B == "b", na.rm = TRUE)) .SD, id]
 single_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
 his <- state_history(single_stage_policy_data)
 
-g_glm <- new_g_glm(~ Z + L) # ~. will cause an error
-tmp <- fit_g_function(his, g_model = g_glm)
+# g_model0 <- new_g_glm(~ L + Z) # ~. will cause an error
+g_model0 <- new_g_glmnet(~ L + Z) # ~. will cause an error
+tmp <- fit_g_function(his, g_model = g_model0)
 rm(his)
 
 set.seed(2)
@@ -192,8 +197,9 @@ d <- simulate_single_stage(n = 2e3, a = a0, par = par0)
 single_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
 his <- state_history(single_stage_policy_data)
 
-g_glm <- new_g_glm()
-tmp <- fit_g_function(his, g_model = g_glm)
+# g_model0 <- new_g_glm()
+g_model0 <- new_g_glmnet()
+tmp <- fit_g_function(his, g_model = g_model0)
 rm(his)
 
 set.seed(2)
