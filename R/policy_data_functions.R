@@ -54,6 +54,19 @@ partial.policy_data <- function(object, K){
 }
 
 #' @export
+subset.policy_data <- function(x, id){
+  if (!all(id %in% get_id(x))) stop("Invalid subset of IDs.")
+  id_ <- id; rm(id)
+
+  spd <- new_policy_data(
+    stage_data = x$stage_data[id %in% id_],
+    baseline_data = x$baseline_data[id %in% id_]
+  )
+
+  return(spd)
+}
+
+#' @export
 utility <- function(object)
   UseMethod("utility")
 
