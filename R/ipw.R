@@ -14,7 +14,7 @@ ipw <- function(policy_data, g_models = NULL, g_functions = NULL, policy, g_full
 
   # fitting the g-functions:
   if (!is.null(g_models)){
-    g_functions <- fit_g_functions(policy_data, g_models, full_history = g_full_history)
+    g_functions <- fit_g_functions(policy_data, models = g_models, full_history = g_full_history)
   }
   g_values <- evaluate(g_functions, policy_data)
   g_d_values <- get_a_values(a = policy_actions$d, action_set = action_set, g_values)
