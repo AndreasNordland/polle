@@ -252,7 +252,7 @@ qbias <- function(V_res, AX){
 predict.qbias <- function(q_model, new_AX){
   n <- nrow(new_AX)
 
-  pred <- rep(0, times = n)
+  pred <- rep(-2, times = n)
 
   return(pred)
 }
@@ -459,34 +459,103 @@ predict.qbias <- function(q_model, new_AX){
 # PTL ----------------------------------------------------------------------
 # (doubly robust) policy tree learning
 
+# n <- 2e3
+# set.seed(1)
+# d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
+# two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
+#
+# get_X_names(two_stage_policy_data, stage = 2)
+#
+# tmp_ptl <- ptl(
+#   policy_data = two_stage_policy_data,
+#   g_models = new_g_glm(),
+#   q_models = qbias,
+#   g_full_history = FALSE,
+#   q_full_history = FALSE,
+#   policy_full_history = FALSE,
+#   M = 2,
+#   # policy_vars = list(c("C_1"), c("C_2", "L_2"))
+#   policy_vars = c("L")
+#   # policy_vars = NULL
+# )
+#
+# tmp_ptl$ptl_objects[[1]]
+# tmp_ptl$ptl_objects[[2]]
+# # tmp_ptl$q_functions[[1]]$q_model
+# # tmp_ptl$q_functions[[1]]$q_model$lm_model
+# # par0$mu_L[[3]]
+#
+# tmp_policy <- get_policy(tmp_ptl)
+# rm(two_stage_policy_data, tmp_ptl)
+#
+# n <- 1e3
+# set.seed(2)
+# d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
+# two_stage_policy_data_new <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
+#
+# tmp_policy_actions <- tmp_policy(two_stage_policy_data_new)
+# optimal_policy_actions <- optimal_policy(two_stage_policy_data_new)
+# setnames(optimal_policy_actions, "d", "d_opt")
+#
+# plot_data <- state_history(two_stage_policy_data_new)$H
+# plot_data <- merge(plot_data, tmp_policy_actions, all.x = TRUE)
+# plot_data <- merge(plot_data, optimal_policy_actions, all.x = TRUE)
+#
+# library(ggplot2)
+# stage_ <- 1
+# g_1 <- ggplot(plot_data[stage == stage_, ]) +
+#   geom_point(aes(x = L, y = C, color = d_opt)) +
+#   theme_bw()
+#
+# g_2 <- ggplot(plot_data[stage == stage_, ]) +
+#   geom_point(aes(x = L, y = C, color = d)) +
+#   theme_bw()
+#
+# gridExtra::grid.arrange(g_1, g_2)
+#
+# stage_ <- 2
+# g_1 <- ggplot(plot_data[stage == stage_, ]) +
+#   geom_point(aes(x = L, y = C, color = d_opt)) +
+#   geom_hline(yintercept = -par0$mu_L[3]) +
+#   theme_bw()
+#
+# g_2 <- ggplot(plot_data[stage == stage_, ]) +
+#   geom_point(aes(x = L, y = C, color = d)) +
+#   geom_hline(yintercept = -par0$mu_L[3]) +
+#   theme_bw()
+#
+# gridExtra::grid.arrange(g_1, g_2)
+
+
+# RQVL --------------------------------------------------------------------
+
+# realistic QV learning
+
 n <- 2e3
-set.seed(1)
+set.seed(5)
 d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
 two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
 
 get_X_names(two_stage_policy_data, stage = 2)
 
-tmp_ptl <- ptl(
+tmprqvl <- rqvl(
   policy_data = two_stage_policy_data,
-  g_models = new_g_glm(),
-  q_models = qbias,
+  alpha = 0,
+  g_models = new_g_glm(~1),
+  # q_models = qbias,
+  q_models = new_q_glm(),
   g_full_history = FALSE,
   q_full_history = FALSE,
-  policy_full_history = FALSE,
-  M = 2,
-  # policy_vars = list(c("C_1"), c("C_2", "L_2"))
-  policy_vars = c("L")
-  # policy_vars = NULL
+  qv_models = list(new_q_glm(formula = ~L+C), new_q_glm(formula = ~L+C)),
+  qv_full_history = FALSE,
+  M = NULL
 )
 
-tmp_ptl$ptl_objects[[1]]
-tmp_ptl$ptl_objects[[2]]
-# tmp_ptl$q_functions[[1]]$q_model
-# tmp_ptl$q_functions[[1]]$q_model$lm_model
-# par0$mu_L[[3]]
+tmprqvl$qv_functions[[1]]
 
-tmp_policy <- get_policy(tmp_ptl)
-rm(two_stage_policy_data, tmp_ptl)
+tmp_policy <- get_policy(tmprqvl)
+rm(two_stage_policy_data)
+rm(tmprqvl)
 
 n <- 1e3
 set.seed(2)
