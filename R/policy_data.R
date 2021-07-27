@@ -1,3 +1,22 @@
+##' @export
+policy_data <- function(data, baseline_data,
+                        treatment, covariates, utility,
+                        ..., type="wide") {
+  if (is.data.frame(data)) data <- as.data.table(data)
+  type <- tolower(type)
+  if (type %in% c("wide")) {
+    pd <- wide_stage_data_to_long(data,
+                                  A_cols = treatment,
+                                  X_cols = covariates,
+                                  U_cols = utility,
+                                  ...)
+    res <- new_policy_data(pd)
+  } else {
+    res <- new_policy_data(data, baseline_data, ...)
+  }
+  return(res)
+}
+
 #' Create A Policy Data Object
 #'
 #' \code{new_policy_data} creates an object of class policy_data.
@@ -181,7 +200,7 @@ wide_stage_data_to_long <- function(wide_stage_data, id_col = NULL, A_cols, X_co
   if (is.data.frame(wide_stage_data)) wide_stage_data <- as.data.table(wide_stage_data)
   wide_stage_data <- copy(wide_stage_data)
 
-  if (any("id" %in% colnames(wide_stage_data)))
+  if (any("id" %in% colnames(wide_stage_data)) && !is.null(id_col))
     stop("The wide_stage_data contains a variable called id, but id_col = NULL. Please set id_col = 'id' or change the name of the variable.")
   if (is.null(id_col)){
     wide_stage_data[, id := 1:.N]
@@ -190,6 +209,7 @@ wide_stage_data_to_long <- function(wide_stage_data, id_col = NULL, A_cols, X_co
 
   if (is.list(A_cols))
     A_cols <- unlist(A_cols)
+  K <- length(A_cols)
   if (!is.vector(A_cols) | !is.character(A_cols))
     stop("A_cols must be a vector or a list of type character.")
 
@@ -206,6 +226,11 @@ wide_stage_data_to_long <- function(wide_stage_data, id_col = NULL, A_cols, X_co
     return(x_col)
   })
 
+  if (missing(X_value_names)) {
+    X_value_names <- names(X_cols)
+    if (is.null(X_value_names) && K==1)
+      X_value_names <- unlist(X_cols)
+  }
   if (!is.character(X_value_names))
     stop("X_value_names must be a vector or list of type character.")
   if (length(X_cols) != length(X_value_names))
@@ -217,10 +242,19 @@ wide_stage_data_to_long <- function(wide_stage_data, id_col = NULL, A_cols, X_co
 
 
   measure <- append(list(A_cols), X_cols)
-  measure <- append(measure, list(U_cols))
-  value.name = c("A", X_value_names, "U")
+  if (length(U_cols)==1) {
+    for (i in seq(K)) {
+      newU <- paste0("_", U_cols[1], "_", i)
+      wide_stage_data[, (newU) := 0]
+      U_cols <- c(newU, U_cols)
+    }
+  }
 
-  long_stage_data <- melt(wide_stage_data, id.vars = c("id"), measure = measure, value.name = value.name, variable.name = "stage")
+  measure <- append(measure, list(U_cols))
+  value.name <- c("A", X_value_names, "U")
+
+  long_stage_data <- melt(wide_stage_data, id.vars = id_col, measure = measure, value.name = value.name, variable.name = "stage")
+  setnames(long_stage_data, id_col, "id")
   long_stage_data[ , stage := as.numeric(as.character(stage))]
   long_stage_data[, A := as.character(A)]
 

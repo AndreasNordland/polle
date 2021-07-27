@@ -132,7 +132,8 @@ policy_evaluation_cv_dr <- function(policy_data, M, g_models, q_models, policy, 
   out <- list(
     id = id,
     value_estimate = mean(phi_dr),
-    iid=phi_dr-mean(phi_dr),
+    iid = phi_dr-mean(phi_dr),
+    phi_dr = phi_dr,
     phi_ipw = phi_ipw,
     phi_or = phi_or,
     dr_list = dr_list
@@ -212,6 +213,7 @@ policy_evaluation_dr <- function(policy_data, g_models = NULL, g_functions = NUL
   out <- list(
     value_estimate = mean(phi_dr),
     iid=phi_dr-mean(phi_dr),
+    phi_dr = phi_dr,
     phi_ipw = phi_ipw,
     phi_or = phi_or,
     g_functions = g_functions,
