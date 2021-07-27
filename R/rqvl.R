@@ -97,14 +97,14 @@ rqvl <- function(
   U <- utility$U
 
   # (n X K) matrix with entries I(d_k(H_k) = A_k):
-  Id <- matrix(nrow = n, ncol = K)
+  II <- matrix(nrow = n, ncol = K)
 
   # (n X K) matrix with entries g_k(A_k, H_k)
   G <- as.matrix(dcast(g_A_values, id ~ stage, value.var = "P")[, -c("id"), with = FALSE])
 
   # (n X K+1) matrix with entries Q_k(H_{k,i}, d_k(H_{k,i})), Q_{K+1} = U:
-  Qd <- matrix(nrow = n, ncol = K+1)
-  Qd[, K+1] <- U
+  Q <- matrix(nrow = n, ncol = K+1)
+  Q[, K+1] <- U
 
   g_cols <- paste("g_", action_set, sep = "")
   q_cols <- paste("Q_", action_set, sep = "")
@@ -127,12 +127,14 @@ rqvl <- function(
         q_model_k <- q_models
       }
 
-      q_function_k <- fit_Q_function(q_history_k, V = Qd[idx_k, k+1], q_model = q_model_k)
+      q_function_k <- fit_Q_function(q_history_k, V = Q[idx_k, k+1], q_model = q_model_k)
       q_functions[[k]] <- q_function_k
 
       # getting the Q-function values for each action:
       q_values_k <- evaluate(q_function_k, new_history = q_history_k)
     } else{
+      browser()
+      # cv_fit_Q_function
       # TODO
       stop()
     }
@@ -143,11 +145,11 @@ rqvl <- function(
 
     # calculating the Z-matrix
     Z_1 <- Q_k <- as.matrix(q_values_k[, ..q_cols, with = FALSE])
-    Z_2 <- (IA_k / G[idx_k, k]) * (Qd[idx_k, k+1] - Q_k)
+    Z_2 <- (IA_k / G[idx_k, k]) * (Q[idx_k, k+1] - Q_k)
     Z_3 <- 0
     if (k != K){
       for (r in (k+1):K){
-        Z_3 <- Z_3 + ipw_weight(Id[idx_k,(k+1):r], G[idx_k,(k+1):r]) * (Qd[idx_k, r+1] - Qd[idx_k, r])
+        Z_3 <- Z_3 + ipw_weight(II[idx_k,(k+1):r], G[idx_k,(k+1):r]) * (Q[idx_k, r+1] - Q[idx_k, r])
       }
       Z_3 <- (IA_k / G[idx_k, k]) * Z_3
     }
@@ -177,10 +179,10 @@ rqvl <- function(
     d <- action_set[dd]
 
     q_d_k <- get_a_values(a = d, action_set = action_set, q_values_k)$P
-    Qd[idx_k, k] <- q_d_k
-    Qd[!idx_k, k] <- Qd[!idx_k, k+1]
-    Id[idx_k, k] <- (A_k == d)
-    Id[!idx_k, k] <- TRUE
+    Q[idx_k, k] <- q_d_k
+    Q[!idx_k, k] <- Q[!idx_k, k+1]
+    II[idx_k, k] <- (A_k == d)
+    II[!idx_k, k] <- TRUE
     G[!idx_k,k] <- TRUE
   }
 
@@ -196,6 +198,7 @@ rqvl <- function(
     qv_functions = qv_functions,
     q_functions = q_functions,
     g_functions = g_functions,
+    cf_g_functions = cf_g_functions,
     value_estimate = mean(phi_dr),
     phi_dr = phi_dr,
     action_set = action_set,

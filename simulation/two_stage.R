@@ -66,12 +66,12 @@ d_alpha_opt_10 <- function(data, par){
 # rm(two_stage_policy_data)
 #
 # approximated mean utility under the optimal policy
-n <- 2e6
-set.seed(2)
-d <- simulate_two_stage_data(n = n, par = par0, a_1 = d_alpha_opt_10, a_2 = d_alpha_opt_20)
-two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
-optimal_utility <- mean(utility(two_stage_policy_data)$U)
-rm(two_stage_policy_data)
+# n <- 2e6
+# set.seed(2)
+# d <- simulate_two_stage_data(n = n, par = par0, a_1 = d_alpha_opt_10, a_2 = d_alpha_opt_20)
+# two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
+# optimal_utility <- mean(utility(two_stage_policy_data)$U)
+# rm(two_stage_policy_data)
 
 
 # g-models ----------------------------------------------------------------
@@ -548,9 +548,9 @@ tmprqvl <- rqvl(
   q_full_history = FALSE,
   qv_models = list(new_q_glm(formula = ~L+C), new_q_glm(formula = ~L+C)),
   qv_full_history = FALSE,
-  M = NULL
+  M = 3
 )
-
+tmprqvl$value_estimate
 tmprqvl$qv_functions[[1]]
 
 tmp_policy <- get_policy(tmprqvl)
