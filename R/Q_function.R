@@ -1,9 +1,9 @@
 #' @export
-fit_Q_function <- function(object, V, q_model)
+fit_Q_function <- function(object, Q, q_model)
   UseMethod("fit_Q_function")
 
 #' @export
-fit_Q_function.history <- function(object, V, q_model){
+fit_Q_function.history <- function(object, Q, q_model){
 
   action_name <- object$action_name
   action_set <- object$action_set
@@ -22,7 +22,7 @@ fit_Q_function.history <- function(object, V, q_model){
   U <- object$U
   # calculating the residual (fitted) values
   U_A <- apply(action_matrix(a = A, action_set = action_set) * U[, ..action_utility_names], MARGIN = 1, sum)
-  U[, V_res := V - U_bar - U_A]
+  U[, V_res := Q - U_bar - U_A]
   V_res <- U$V_res
 
   # fitting the (residual) Q-model
@@ -62,6 +62,33 @@ evaluate.Q_function <- function(object, new_history){
   return(q_values)
 }
 
+Q_step <- function(policy_data, k, full_history, Q, q_models){
+
+  id <- get_id(policy_data)
+  id_k <- get_id_stage(policy_data)[stage == k]$id
+  idx_k <- (id %in% id_k)
+
+  if (class(q_models)[[1]] == "list"){
+    q_model <- q_models[[k]]
+  } else{
+    q_model <- q_models
+  }
+
+  # getting the Q-function history:
+  q_history <- get_stage_history(policy_data, stage = k, full_history = full_history)
+  # fitting the Q-function:
+  q_function <- fit_Q_function(q_history, Q = Q[idx_k], q_model = q_model)
+  # getting the Q-function values for each action
+  q_values <- evaluate(q_function, new_history = q_history)
+
+  out <- list(
+    q_function = q_function,
+    q_values = q_values,
+    idx_k = idx_k
+  )
+  return(out)
+}
+
 #' @export
 fit_Q_functions <- function(policy_data, policy_actions, q_models, full_history = FALSE){
   K <- policy_data$dim$K
@@ -81,34 +108,31 @@ fit_Q_functions <- function(policy_data, policy_actions, q_models, full_history 
   U <- utility$U
 
   # (n X K+1) matrix with entries Q_k(H_{k,i}, d_k(H_{k,i})), Q_{K+1} = U
-  V <- matrix(nrow = n, ncol = K+1)
-  V[, K+1] <- U
+  Q <- matrix(nrow = n, ncol = K+1)
+  Q[, K+1] <- U
 
+  # Q-functions
   q_functions <- list()
   for (k in K:1){
-    # getting the IDs and ID-index:
-    id_k <- get_id_stage(policy_data)[stage == k]$id
-    idx_k <- (id %in% id_k)
+    q_step_k <- Q_step(
+      policy_data = policy_data,
+      k = k,
+      full_history = full_history,
+      Q = Q[, k+1],
+      q_models = q_models
+    )
+    # getting the Q-function, Q-function values and the ID-index
+    q_function_k <- q_functions[[k]] <- q_step_k$q_function
+    q_values_k <- q_step_k$q_values
+    idx_k <- q_step_k$idx_k
 
-    if (class(q_models)[[1]] == "list"){
-      q_model_k <- q_models[[k]]
-    } else{
-      q_model_k <- q_models
-    }
-    # getting the Q-function history:
-    q_history_k <- get_stage_history(policy_data, stage = k, full_history = full_history)
-    # fitting the Q-function:
-    q_function_k <- fit_Q_function(q_history_k, V = V[idx_k, k+1], q_model = q_model_k)
-    q_functions[[k]] <- q_function_k
-
-    # getting the Q-function values for each action
-    q_values_k <- evaluate(q_function_k, new_history = q_history_k)
     # getting the Q-function values under the policy
     d_k <- policy_actions[stage == k, ]$d
     q_d_values_k <- get_a_values(a = d_k, action_set = action_set, values = q_values_k)$P
-    # inserting the Q-function values under the policy in V
-    V[idx_k, k] <- q_d_values_k
-    V[!idx_k, k] <- V[!idx_k, k+1]
+
+    # inserting the Q-function values under the policy in Q
+    Q[idx_k, k] <- q_d_values_k
+    Q[!idx_k, k] <- Q[!idx_k, k+1]
   }
 
   class(q_functions) <- "nuisance_functions"
@@ -116,28 +140,3 @@ fit_Q_functions <- function(policy_data, policy_actions, q_models, full_history 
 
   return(q_functions)
 }
-
-# cv_fit_Q_functions <- function(folds, policy_data, policy_actions, q_models, full_history = FALSE){
-#   id <- get_id(policy_data)
-#
-#   lapply(
-#     folds,
-#     function(fold){
-#       browser()
-#       train_id <- id[-fold]
-#
-#       train_policy_data <- new_policy_data(
-#         stage_data = policy_data$stage_data[id %in% train_id],
-#         baseline_data = policy_data$baseline_data[id %in% train_id]
-#       )
-#
-#       train_policy_actions <- policy_actions[id %in% train_id, ]
-#
-#       fit_Q_functions(
-#         policy_data = train_policy_data,
-#         policy_actions = train_policy_actions
-#       )
-#
-#     }
-#   )
-# }
