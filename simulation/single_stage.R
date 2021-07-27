@@ -8,8 +8,8 @@ a0 <- function(Z, L, B, par){
   rbinom(n, 1, lava::expit(kappa * (Z + L - 1) * Z^(-2) + (B == "a") * xi))
 }
 par0 <- list(
-  # kappa = 0.1,
-  kappa = 0,
+  kappa = 0.1,
+  # kappa = 0,
   gamma = 3,
   alpha = 1,
   beta = -2.5,
@@ -73,6 +73,22 @@ linear_policy <- new_policy(
   replicate = TRUE
 )
 
+d_treat <- function(Z, L, ...){
+  as.numeric(1)
+}
+treat_policy <- function(history){
+  pol <- history$H
+  pol[, d := as.character(1)]
+
+  return(pol[, c("id", "stage", "d"), with = FALSE])
+}
+treat_policy <- new_policy(
+  stage_policies = treat_policy,
+  full_history = FALSE,
+  replicate = TRUE
+)
+
+
 set.seed(1)
 d <- simulate_single_stage(n = 2e3, a = a0, par = par0)
 single_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
@@ -114,6 +130,8 @@ head(linear_policy(single_stage_policy_data))
 # simulate_single_stage <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
 # linear_utility <- mean(utility(simulate_single_stage)$U)
 # rm(simulate_single_stage)
+
+always_treat_utility <- 0.5 + 0.5 + (par0$gamma * 0.5 + par0$alpha * 0.5 + par0$beta)
 
 # g-models -----------------------------------------------------------------
 
@@ -276,7 +294,6 @@ tmp$q_model
 
 evaluate.Q_function(tmp, new_history = his)
 
-## TODO: new_glmnet not working - issues saving the form of the model.matrix
 # V <- utility(single_stage_policy_data)$U
 # tmp <- fit_Q_function(
 #   his,
@@ -308,7 +325,7 @@ evaluate.Q_function(tmp, new_history = his)
 
 # DR ----------------------------------------------------------------------
 
-n <- 2e3
+n <- 2e4
 set.seed(2)
 d <- simulate_single_stage(n = n, a = a0, par = par0)
 single_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
@@ -317,14 +334,20 @@ tmp <- dr(
   single_stage_policy_data,
   q_models = new_q_glm(),
   g_models = new_g_glm(),
-  policy = linear_policy
+  policy = treat_policy
 )
 tmp$value_estimate
+
+tmp$g_functions[[1]]$g_model
+tmp$q_functions[[1]]$q_model
+
+sd(tmp$phi_or)
+sd(tmp$phi_ipw)
+sd(tmp$phi_dr)
+
 mean(tmp$phi_ipw)
 mean(tmp$phi_or)
-# linear_utility
-#
-# rm(tmp)
+rm(tmp)
 
 # cross-fitting:
 tmp <- cv_dr(
@@ -336,6 +359,39 @@ tmp <- cv_dr(
   mc.cores = 3
 )
 mean(tmp$phi_dr)
+
+# coverage
+res <- replicate(
+  1e3,
+  expr = {
+    n <- 2e3
+    d <- simulate_single_stage(n = n, a = a0, par = par0)
+    sspd <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
+    ssdr <- dr(
+      sspd,
+      q_models = new_q_glm(),
+      g_models = new_g_glm(),
+      policy = treat_policy
+    )
+
+    out <- list(
+      est = ssdr$value_estimate,
+      est_var = mean((ssdr$phi_dr - ssdr$value_estimate)^2),
+      n = 2e3
+    )
+    return(out)
+  }
+)
+
+cov_res <- apply(
+  res,
+  MARGIN = 2,
+  FUN = function(x){
+    coef_inter <- x[[1]] + c(-1,1) * 1.96 * sqrt(x[[2]]) / sqrt(x[[3]])
+    (always_treat_utility <= coef_inter[2] & always_treat_utility >= coef_inter[1])
+  }
+)
+mean(cov_res)
 
 # OWL ---------------------------------------------------------------------
 
