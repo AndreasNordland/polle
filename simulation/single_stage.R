@@ -232,17 +232,18 @@ rm(tmp, new_his, single_stage_policy_data)
 # IPW ---------------------------------------------------------------------
 
 set.seed(1)
-d <- simulate_single_stage(n = 2e5, a = a0, par = par0)
+d <- simulate_single_stage(n = 2e3, a = a0, par = par0)
 single_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
 
-tmp <- ipw(
+tmp <- policy_eval(
   single_stage_policy_data,
-  g_models = new_g_glm(),
   policy = linear_policy,
-  g_full_history = FALSE
+  type = "ipw",
+  g_models = new_g_glm()
 )
 tmp$value_estimate
-linear_utility
+tmp
+# linear_utility
 
 # Q-models ----------------------------------------------------------------
 
@@ -282,7 +283,7 @@ d <- simulate_single_stage(n = 2e3, a = a0, par = par0)
 single_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
 his <- state_stage_history(single_stage_policy_data, stage = 1)
 
-V <- utility(single_stage_policy_data)$U
+Q <- utility(single_stage_policy_data)$U
 tmp <- fit_Q_function(
   his,
   V,
@@ -297,7 +298,7 @@ evaluate.Q_function(tmp, new_history = his)
 # V <- utility(single_stage_policy_data)$U
 # tmp <- fit_Q_function(
 #   his,
-#   V,
+#   Q,
 #   q_model = new_q_glmnet()
 # )
 # tmp$q_model$glmnet_model
@@ -330,7 +331,7 @@ set.seed(2)
 d <- simulate_single_stage(n = n, a = a0, par = par0)
 single_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
 
-tmp <- dr(
+tmp <- policy_eval(
   single_stage_policy_data,
   q_models = new_q_glm(),
   g_models = new_g_glm(),
