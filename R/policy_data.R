@@ -178,6 +178,7 @@ new_policy_data <- function(stage_data, baseline_data = NULL){ #, id = "id", sta
 
 #' @export
 wide_stage_data_to_long <- function(wide_stage_data, id_col = NULL, A_cols, X_cols, X_value_names, U_cols){
+  if (is.data.frame(wide_stage_data)) wide_stage_data <- as.data.table(wide_stage_data)
   wide_stage_data <- copy(wide_stage_data)
 
   if (any("id" %in% colnames(wide_stage_data)))
