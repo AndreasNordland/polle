@@ -127,7 +127,7 @@ rqvl <- function(
         q_model_k <- q_models
       }
 
-      q_function_k <- fit_Q_function(q_history_k, V = Q[idx_k, k+1], q_model = q_model_k)
+      q_function_k <- fit_Q_function(q_history_k, Q = Q[idx_k, k+1], q_model = q_model_k)
       q_functions[[k]] <- q_function_k
 
       # getting the Q-function values for each action:

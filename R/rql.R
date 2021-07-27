@@ -41,8 +41,8 @@ rql<- function(policy_data, alpha = 0, g_models = NULL, g_functions = NULL, q_mo
   U <- utility$U
 
   # (n X K+1) matrix with entries Q_k(H_{k,i}, d_k(H_{k,i})), Q_{K+1} = U:
-  V <- matrix(nrow = n, ncol = K+1)
-  V[, K+1] <- U
+  Q <- matrix(nrow = n, ncol = K+1)
+  Q[, K+1] <- U
 
   q_cols <- paste("Q_", action_set, sep = "")
   g_cols <- paste("g_", action_set, sep = "")
@@ -65,7 +65,7 @@ rql<- function(policy_data, alpha = 0, g_models = NULL, g_functions = NULL, q_mo
         q_model_k <- q_models
       }
 
-      q_function_k <- fit_Q_function(q_history_k, V = V[idx_k, k+1], q_model = q_model_k)
+      q_function_k <- fit_Q_function(q_history_k, Q = Q[idx_k, k+1], q_model = q_model_k)
       q_functions[[k]] <- q_function_k
     } else{
       q_function_k <- q_functions[[k]]
@@ -88,14 +88,14 @@ rql<- function(policy_data, alpha = 0, g_models = NULL, g_functions = NULL, q_mo
       q_max_realistic_k <- apply(q_values_k[,..q_cols], MARGIN = 1, max, na.rm = TRUE)
     }
 
-    # inserting the maximal Q-function values in V:
-    V[idx_k, k] <- q_max_realistic_k
-    V[!idx_k, k] <- V[!idx_k, k+1]
+    # inserting the maximal Q-function values in Q:
+    Q[idx_k, k] <- q_max_realistic_k
+    Q[!idx_k, k] <- Q[!idx_k, k+1]
   }
   class(q_functions) <- "nuisance_functions"
   attr(q_functions, "full_history") <- q_full_history
 
-  phi_or <- V[, 1]
+  phi_or <- Q[, 1]
 
   out <- list(
     q_functions = q_functions,

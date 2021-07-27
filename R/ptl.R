@@ -62,8 +62,8 @@ ptl <- function(
   G <- as.matrix(dcast(g_A_values, id ~ stage, value.var = "P")[, -c("id"), with = FALSE])
 
   # (n X K+1) matrix with entries Q_k(H_{k,i}, d_k(H_{k,i})), Q_{K+1} = U:
-  V <- matrix(nrow = n, ncol = K+1)
-  V[, K+1] <- U
+  Q <- matrix(nrow = n, ncol = K+1)
+  Q[, K+1] <- U
 
   q_cols <- paste("Q_", action_set, sep = "")
   ptl_objects <- list()
@@ -84,7 +84,7 @@ ptl <- function(
         q_model_k <- q_models
       }
 
-      q_function_k <- fit_Q_function(q_history_k, V = V[idx_k, k+1], q_model = q_model_k)
+      q_function_k <- fit_Q_function(q_history_k, Q = Q[idx_k, k+1], q_model = q_model_k)
       q_functions[[k]] <- q_function_k
 
 
@@ -102,11 +102,11 @@ ptl <- function(
 
     # calculating Gamma
     Gamma_1 <- Q_k <- as.matrix(q_values_k[, ..q_cols, with = FALSE])
-    Gamma_2 <- (IA_k / G[idx_k, k]) * (V[idx_k, k+1] - Q_k)
+    Gamma_2 <- (IA_k / G[idx_k, k]) * (Q[idx_k, k+1] - Q_k)
     Gamma_3 <- 0
     if (k != K){
       for (r in (k+1):K){
-        Gamma_3 <- Gamma_3 + ipw_weight(D[idx_k,(k+1):r], G[idx_k,(k+1):r]) * (V[idx_k, r+1] - V[idx_k, r])
+        Gamma_3 <- Gamma_3 + ipw_weight(D[idx_k,(k+1):r], G[idx_k,(k+1):r]) * (Q[idx_k, r+1] - Q[idx_k, r])
       }
       Gamma_3 <- (IA_k / G[idx_k, k]) * Gamma_3
     }
@@ -126,8 +126,8 @@ ptl <- function(
     d <- action_set[dd]
 
     q_d_k <- get_a_values(a = d, action_set = action_set, q_values_k)$P
-    V[idx_k, k] <- q_d_k
-    V[!idx_k, k] <- V[!idx_k, k+1]
+    Q[idx_k, k] <- q_d_k
+    Q[!idx_k, k] <- Q[!idx_k, k+1]
     D[idx_k, k] <- (A_k == d)
     D[!idx_k, k] <- TRUE
     G[!idx_k,k] <- TRUE
