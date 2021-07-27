@@ -11,7 +11,7 @@ iid.policy_eval <- function(x, ...) {
 
 ##' @export
 vcov.policy_eval <- function(object, ...) {
-  crossprod(a)
+  crossprod(iid(a))
 }
 
 ##' @export
@@ -292,7 +292,7 @@ policy_evaluation_ipw <- function(policy_data, g_models = NULL, g_functions = NU
 
   out <- list(
     value_estimate = mean(phi_ipw),
-    iid=phi_dr-mean(phi_dr),
+    iid=phi_dr-mean(phi_ipw),
     g_functions = g_functions,
     id = get_id(policy_data)
   )
