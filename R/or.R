@@ -25,10 +25,12 @@ or <- function(policy_data, q_models = NULL, q_functions = NULL, policy, q_full_
   phi_or <- V[, 1]
   out <- list(
     value_estimate = mean(phi_or),
-    phi_or = phi_or,
+    iid=phi_or-mean(phi_or),
     q_functions = q_functions,
     id = get_id(policy_data)
   )
+
+  class <- c("policy_evaluation_or", "policy_evalution")
 
   return(out)
 }
