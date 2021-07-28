@@ -58,15 +58,19 @@ rqvl <- function(
   if (class(q_models)[[1]] == "list"){
     if (length(q_models) != K) stop("q_models must either be a list of length K or a single Q-model.")
   }
+  if (!is.null(M))
+    if (!is.numeric(M) | (M<2)) stop("M must be greater than 1.")
 
   # getting the observed actions:
   actions <- get_actions(policy_data)
 
+  # getting the IDs:
+  id <- get_id(policy_data)
+
   # getting the IDs and the observed (complete) utilities:
   utility <- utility(policy_data)
-  id <- utility$id
 
-  # constructing the folds for cross-fitting
+  # constructing the folds for cross-fitting:
   if (!is.null(M)){
     folds <- split(sample(1:n, n), rep(1:M, length.out = n))
   } else{
@@ -75,7 +79,6 @@ rqvl <- function(
 
   # cross-fitting the g-functions:
   g_functions <- NULL
-  cf_g_functions <- NULL
   if (is.null(folds)){
     g_functions <- fit_g_functions(policy_data, g_models, full_history = g_full_history)
     g_values <- evaluate(g_functions, policy_data)
@@ -87,56 +90,53 @@ rqvl <- function(
       full_history = g_full_history,
       folds = folds
     )
-    cf_g_functions <- cf_g$functions
+    g_functions <- cf_g$functions
     g_values <- cf_g$values
   }
-  # getting the observed g-function values:
+
+  # getting the observed values of the g-functions:
   g_A_values <- get_a_values(a = actions$A, action_set = action_set, g_values)
 
   # (n) vector with entries U_i:
   U <- utility$U
-
   # (n X K) matrix with entries I(d_k(H_k) = A_k):
   II <- matrix(nrow = n, ncol = K)
-
   # (n X K) matrix with entries g_k(A_k, H_k)
   G <- as.matrix(dcast(g_A_values, id ~ stage, value.var = "P")[, -c("id"), with = FALSE])
-
   # (n X K+1) matrix with entries Q_k(H_{k,i}, d_k(H_{k,i})), Q_{K+1} = U:
   Q <- matrix(nrow = n, ncol = K+1)
   Q[, K+1] <- U
 
   g_cols <- paste("g_", action_set, sep = "")
   q_cols <- paste("Q_", action_set, sep = "")
-
   q_functions <- list()
   qv_functions <- list()
   for (k in K:1){
-    # getting the IDs and ID-index:
-    id_k <- get_id_stage(policy_data)[stage == k]$id
-    idx_k <- (id %in% id_k)
 
     if (is.null(folds)){
-      # getting the history for the Q-function:
-      q_history_k <- get_stage_history(policy_data, stage = k, full_history = q_full_history)
-
-      # fitting the Q-function:
-      if (class(q_models)[[1]] == "list"){
-        q_model_k <- q_models[[k]]
-      } else{
-        q_model_k <- q_models
-      }
-
-      q_function_k <- fit_Q_function(q_history_k, Q = Q[idx_k, k+1], q_model = q_model_k)
-      q_functions[[k]] <- q_function_k
-
-      # getting the Q-function values for each action:
-      q_values_k <- evaluate(q_function_k, new_history = q_history_k)
+      Q_step_k <- Q_step(
+        policy_data = policy_data,
+        k = k,
+        full_history = q_full_history,
+        Q = Q[, k+1],
+        q_models = q_models
+      )
+      # getting the Q-function, Q-function values and the ID-index
+      q_functions[[k]] <- Q_step_k$q_function
+      q_values_k <- Q_step_k$q_values
+      idx_k <- Q_step_k$idx_k
     } else{
-      browser()
-      # cv_fit_Q_function
-      # TODO
-      stop()
+      cf_Q_step_k <- cf_Q_step(
+        folds = folds,
+        policy_data = policy_data,
+        k = k,
+        full_history = q_full_history,
+        Q = Q[, k+1],
+        q_models = q_models
+      )
+      q_functions[[k]] <- cf_Q_step_k$q_function
+      q_values_k <- cf_Q_step_k$q_values
+      idx_k <- cf_Q_step_k$idx_k
     }
 
     # getting the action matrix for stage k:
@@ -155,11 +155,12 @@ rqvl <- function(
     }
     Z <- Z_1 + Z_2 + Z_3
 
-    # getting the history for the QV model
+    # getting the history for the QV model:
     qv_history_k <- get_stage_history(policy_data, stage = k, full_history = qv_full_history)
+    # fitting the QV-function:
     qv_function_k <- fit_QV_function(qv_history_k, Z = Z, qv_model = qv_models[[k]])
     qv_functions[[k]] <- qv_function_k
-
+    # getting the QV-function values:
     qv_values_k <- evaluate(qv_function_k, new_history = qv_history_k)
 
     if (alpha != 0){
@@ -198,12 +199,12 @@ rqvl <- function(
     qv_functions = qv_functions,
     q_functions = q_functions,
     g_functions = g_functions,
-    cf_g_functions = cf_g_functions,
     value_estimate = mean(phi_dr),
     phi_dr = phi_dr,
     action_set = action_set,
     alpha = alpha,
-    K = K
+    K = K,
+    folds = folds
   )
   class(out) <- "RQVL"
 

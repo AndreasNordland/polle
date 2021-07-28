@@ -533,7 +533,7 @@ mean(tmp$phi_or)
 # realistic QV learning
 
 n <- 2e3
-set.seed(5)
+set.seed(1)
 d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
 two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
 
@@ -542,14 +542,15 @@ get_X_names(two_stage_policy_data, stage = 2)
 tmprqvl <- rqvl(
   policy_data = two_stage_policy_data,
   alpha = 0,
-  g_models = new_g_glm(~1),
+  g_models = new_g_glm(),
   # q_models = qbias,
-  q_models = new_q_glm(),
+  # q_models = new_q_glm(),
+  q_models = list(q0_1, q0_2),
   g_full_history = FALSE,
   q_full_history = FALSE,
   qv_models = list(new_q_glm(formula = ~L+C), new_q_glm(formula = ~L+C)),
   qv_full_history = FALSE,
-  M = NULL
+  M = 3
 )
 tmprqvl$value_estimate
 tmprqvl$qv_functions[[1]]
@@ -562,6 +563,14 @@ n <- 1e3
 set.seed(2)
 d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
 two_stage_policy_data_new <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
+
+policy_eval(
+  two_stage_policy_data_new,
+  type = "dr",
+  g_models = new_g_glm(),
+  q_models = list(q0_1, q0_2),
+  policy = tmp_policy
+)
 
 tmp_policy_actions <- tmp_policy(two_stage_policy_data_new)
 optimal_policy_actions <- optimal_policy(two_stage_policy_data_new)
