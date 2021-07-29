@@ -1,23 +1,71 @@
 ##' @export
 coef.policy_eval <- function(object, ...) {
-  object$value_estimate
+  return(object$value_estimate)
 }
 
 ##' @export
 iid.policy_eval <- function(x, ...) {
   res <- cbind(x$iid)
-  res/nrow(res)
+  return(res/nrow(res))
 }
 
 ##' @export
 vcov.policy_eval <- function(object, ...) {
-  crossprod(iid(a))
+  return(crossprod(iid(object)))
 }
 
 ##' @export
 print.policy_eval <- function(x, ...) {
-  print(estimate(x, ...))
+  print(summary(x, ...))
 }
+
+##' @export
+summary.policy_eval <- function(object, ...) {
+  estimate(object, ...)
+}
+
+##' @export
+estimate.policy_eval <- function(x, ..., labels=x$name) {
+  p <- length(coef(x))
+  if (is.null(labels)) {
+    if (p==1) {
+      "value"
+    } else {
+      labels <- paste0("value", seq(p))
+    }
+  }
+  return(estimate(NULL, coef=coef(x), iid=iid(x), labels=labels, ...))
+}
+
+##' @export
+"merge.policy_eval" <- function(x, y, ..., paired=TRUE) {
+  dots <- list(...)
+  idx <- names(dots)%in%formalArgs(estimate.default)[-1]
+  est_args <- list()
+  if (length(idx)>0) {
+    est_args <- dots[which(idx)]
+    dots <- dots[-which(idx)]
+  }
+  m <- lapply(c(list(x, y),dots), function(p)
+    do.call(estimate, c(list(p),est_args)))
+  do.call("merge", c(m, list(paired=paired)))
+}
+
+##' @export
+"+.policy_eval" <- function(x,...) {
+  merge(x, ...)
+}
+
+##' @export
+static_policy <- function(action, name=NULL) {
+  f <- function(history) {
+    pol <- history$H
+    pol[, d := action]
+    return(pol[, c("id", "stage", "d"), with = FALSE])
+  }
+  return(structure(f, name=name))
+}
+
 
 
 ##' Policy Evaluation
@@ -55,13 +103,14 @@ policy_eval <- function(policy_data,
                                 g_models=g_models, g_functions=g_functions, g_full_history=g_full_history, ...)
   }
   if (type%in%c("or","q")) {
-    val <- policy_evaluation_or(policy_data, policy=policy,
+    val <- policy_eval_or(policy_data, policy=policy,
                                 q_models=q_models, q_functions=q_functions, q_full_history=q_full_history)
   }
   if (type%in%c("ipw")) {
-    val <- policy_evaluation_ipw(policy_data, policy=policy,
+    val <- policy_eval_ipw(policy_data, policy=policy,
                                  g_models=g_models, g_functions=g_functions, g_full_history=g_full_history)
   }
+  val$name <- attr(policy, "name")
   return(val)
 }
 
@@ -267,8 +316,8 @@ policy_evaluation_dr <- function(policy_data,
   return(out)
 }
 
-
-policy_evaluation_or <- function(policy_data, q_models = NULL, q_functions = NULL, policy, q_full_history = FALSE){
+##' @export
+policy_eval_or <- function(policy_data, q_models = NULL, q_functions = NULL, policy, q_full_history = FALSE){
   if (is.null(q_models) & is.null(q_functions)) stop("Either q-models or q-functions must be provided.")
   if (!is.null(q_models) & !is.null(q_functions)) stop("q-models and q-functions can not both be provided.")
   if (!is.null(q_functions)){
@@ -302,7 +351,8 @@ policy_evaluation_or <- function(policy_data, q_models = NULL, q_functions = NUL
   return(out)
 }
 
-policy_evaluation_ipw <- function(policy_data, g_models = NULL, g_functions = NULL, policy, g_full_history = FALSE){
+##' @export
+policy_eval_ipw <- function(policy_data, g_models = NULL, g_functions = NULL, policy, g_full_history = FALSE){
   if (is.null(g_models) & is.null(g_functions)) stop("Either g-models or g-functions must be provided.")
   if (!is.null(g_functions) & !is.null(g_models)) stop("g-models and g-functions can not both be provided.")
 

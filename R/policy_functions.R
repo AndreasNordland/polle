@@ -46,6 +46,7 @@ new_policy <- function(stage_policies, full_history = FALSE, replicate = FALSE){
 
     return(policy_actions)
   }
+  attr(policy, "name") <- attr(stage_policies, "name")
 
   return(policy)
 }
