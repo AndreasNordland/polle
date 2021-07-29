@@ -81,7 +81,7 @@ rqvl <- function(
   # cross-fitting the g-functions:
   g_functions <- NULL
   if (is.null(folds)){
-    g_functions <- fit_g_functions(policy_data, g_models, full_history = g_full_history)
+    g_functions <- fit_g_functions(policy_data, models = g_models, full_history = g_full_history)
     g_values <- evaluate(g_functions, policy_data)
   } else{
     cf_g <- cf_fit_nuisance_functions(
