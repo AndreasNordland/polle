@@ -1,12 +1,12 @@
 ##' @export
 policy_data <- function(data, baseline_data,
-                        treatment, covariates, utility,
+                        action, covariates, utility,
                         ..., type="wide") {
   if (is.data.frame(data)) data <- as.data.table(data)
   type <- tolower(type)
   if (type %in% c("wide")) {
     pd <- wide_stage_data_to_long(data,
-                                  A_cols = treatment,
+                                  A_cols = action,
                                   X_cols = covariates,
                                   U_cols = utility,
                                   ...)
@@ -46,21 +46,21 @@ policy_data <- function(data, baseline_data,
 #' The utility is given by the sum of the rewards, i.e., \eqn{U = sum_{k = 1}^{K+1} U_k}.\
 #'
 #' @export
-new_policy_data <- function(stage_data, baseline_data = NULL){ #, id = "id", stage = "stage", event = "event", action = "A", utility = "U"){
+new_policy_data <- function(stage_data, baseline_data = NULL, messages = FALSE){
 
-  # checking and processing stage_data
+  # checking and processing stage_data:
   {
     if (missing(stage_data)) stage_data <- NULL
     if (is.null(stage_data)) stop("stage_data is missing or NULL.")
     if (is.data.frame(stage_data)) stage_data <- as.data.table(stage_data)
-    if (!is.data.table(stage_data)) stop("stage_data must be a data.table or data.frame.")
+    if (!is.data.table(stage_data)) stop("stage_data must be a data.table or a data.frame.")
     if (!all(c("id", "stage", "event", "A", "U") %in% colnames(stage_data))) stop("stage_data must contain id, stage, event, A (action) and U (utility/reward).")
 
-    # copying stage_data in order to avoid reference issues
+    # copying stage_data in order to avoid reference issues:
     stage_data <- copy(stage_data)
     setcolorder(stage_data, c("id", "stage", "event", "A"))
 
-    # setting and checking keys
+    # setting and checking keys:
     setkey(stage_data, id, stage)
     if (any(is.na(stage_data$id))) stop("id has missing values.")
     if (any(is.na(stage_data$stage))) stop("stage has missing values.")
@@ -71,7 +71,7 @@ new_policy_data <- function(stage_data, baseline_data = NULL){ #, id = "id", sta
     if (any(is.na(stage_data$event))) stop("event have missing values.")
     if (!all(stage_data[, .(check = all(event == c(rep(0, times = (.N-1)), 1) | event == c(rep(0, times = (.N-1)), 2))), id]$check)) stop("event must be on the form 0,0,...,0,j (j in {1,2}).")
 
-    # checking the action variable (A)
+    # checking the action variable (A):
     if (!is.character(stage_data$A)){
       message("Coercing A to character type.")
       stage_data$A <- as.character(stage_data$A)
@@ -80,21 +80,23 @@ new_policy_data <- function(stage_data, baseline_data = NULL){ #, id = "id", sta
     # getting the set of actions (A):
     action_set <- sort(unique(stage_data$A))
 
-    # checking that all actions in the action set are observed at every stage
+    # checking that all actions in the action set are observed at every stage:
     if (!all(stage_data[event == 0, .(check = all(sort(unique(A)) == action_set)), stage]$check))
       stop("All actions in the action set are observed at every stage.")
 
-    # checking the utility variable (U)
+    # checking the utility variable (U):
     if (!all(is.numeric(stage_data$U))) stop("The utility (U) must be numeric.")
     if(any(is.na(stage_data$U))) stop("The utility (U) has missing values")
 
-    # checking the action dependent deterministic utility variable (U_.)
+    # checking the action dependent deterministic utility variable (U_.):
     action_utility_names <- paste("U", action_set, sep = "_")
     missing_action_utililty_names <- action_utility_names[!(action_utility_names %in% names(stage_data))]
     if (length(missing_action_utililty_names) > 0){
       mes <- paste(missing_action_utililty_names, collapse = ", ")
       mes <- paste("setting ", mes, " to default value 0.", sep = "")
-      message(mes)
+      if (messages == TRUE){
+        message(mes)
+      }
       stage_data[, (missing_action_utililty_names) := 0]
     }
     if (!all(sapply(stage_data[, ..action_utility_names], function(col) is.numeric(col)))){
@@ -103,8 +105,7 @@ new_policy_data <- function(stage_data, baseline_data = NULL){ #, id = "id", sta
       stop(mes)
     }
 
-    # TODO consider missing values for event 2
-    # checking missing values
+    # checking missing values for action stages (event == 0):
     sd <- stage_data[event == 0, -c("id", "stage", "event", "A"), with = FALSE]
     sd_names <- colnames(sd)
     sdm <- sapply(sd, function(x) any(is.na(x)))
@@ -117,61 +118,64 @@ new_policy_data <- function(stage_data, baseline_data = NULL){ #, id = "id", sta
     rm(sd, sd_names, sdm)
 
 
-    # Coercing columns of type factor to type character in stage_data
+    # Coercing columns of type factor to type character in stage_data:
     sdf <- sapply(stage_data, function(x) is.factor(x))
     if (any(sdf)){
       f_names <- colnames(stage_data)[sdf]
       mes <- f_names
       mes <- paste(mes, collapse = ", ")
       mes <- paste("Coercing ", mes, " to type character.", sep = "")
+      if (messages == TRUE){
       message(mes)
+      }
       stage_data[, (f_names) := lapply(.SD, as.character), .SDcols = f_names]
       rm(mes, f_names)
     }
     rm(sdf)
 
-    # getting the names of the stage specific state data (X_k)
+    # getting the names of the stage specific state data (X_k):
     rn <- c("id", "stage", "event", "A", "U", action_utility_names)
     stage_data_names <- names(stage_data)[!(names(stage_data) %in% rn)]
   }
 
-  # checking and processing baseline_data
+  # checking and processing baseline_data:
   baseline_data_names <- NULL
   if (!is.null(baseline_data)){
     if (is.data.frame(baseline_data)) baseline_data <- as.data.table(baseline_data)
 
-    # copying baseline_data in order to avoid reference issues
+    # copying baseline_data in order to avoid reference issues:
     baseline_data <- copy(baseline_data)
 
-    # checking id
+    # checking id:
     if (!all(c("id") %in% names(baseline_data))) stop("baseline_data must contain id.")
     if (any(is.na(baseline_data$id))) stop("baseline_data id has missing values")
     if (anyDuplicated(baseline_data, by = key(baseline_data)) > 0) stop("baseline id contains duplicates.")
     if (!all(unique(stage_data$id) == baseline_data$id)) stop("baseline_data id must match stage_data id.")
 
-    # setting id as key
+    # setting id as key:
     setkey(baseline_data, id)
 
-    # Coercing columns of type factor to type character in baseline_data
+    # Coercing columns of type factor to type character in baseline_data:
     bdf <- sapply(baseline_data, function(x) is.factor(x))
     if (any(bdf)){
       f_names <- colnames(baseline_data)[bdf]
       mes <- f_names
       mes <- paste(mes, collapse = ", ")
       mes <- paste("Coercing ", mes, " to type character.", sep = "")
-      message(mes)
+      if (messages == TRUE)
+        message(mes)
       baseline_data[, (f_names) := lapply(.SD, as.character), .SDcols = f_names]
       rm(mes, f_names)
     }
     rm(bdf)
 
-    # getting the names of the baseline state data
+    # getting the names of the baseline state data:
     baseline_data_names <- names(baseline_data)[!(names(baseline_data) %in% c("id"))]
   } else {
     baseline_data <- stage_data[, .(id =unique(id))]
   }
 
-  # getting dimensions
+  # getting the dimensions:
   n <- length(unique(stage_data$id))
   K <- stage_data[event == 0, .(max(stage))][[1]]
 
