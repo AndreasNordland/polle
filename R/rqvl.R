@@ -49,7 +49,8 @@ rqvl <- function(
   g_full_history = FALSE,
   qv_models,
   qv_full_history = FALSE,
-  L = NULL
+  L = NULL,
+  ...
 ){
   K <- policy_data$dim$K
   n <- policy_data$dim$n
