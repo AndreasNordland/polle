@@ -94,7 +94,7 @@ policy_eval <- function(policy_data,
                                    policy=policy, policy_learner=policy_learner,
                                    g_models=g_models, g_functions = g_functions, g_full_history=g_full_history,
                                    q_models=q_models, q_functions = q_functions, q_full_history=q_full_history,
-                                   M=M)
+                                   M=M, ...)
   }
   if (type%in%c("dr")) {
     val <- policy_eval_dr(policy_data,
