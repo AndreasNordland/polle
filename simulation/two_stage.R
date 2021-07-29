@@ -333,39 +333,39 @@ d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
 two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
 
 tmp <- policy_eval(
-  type = "cv",
+  type = "or",
   two_stage_policy_data,
-  policy = optimal_policy,
+  # policy = optimal_policy,
+  policy_learner = rqvl,
+  qv_models = list(new_q_glm(formula = ~L+C), new_q_glm(formula = ~L+C)),
+  alpha = 0,
+  # policy = optimal_policy,
   g_models = new_g_glm(),
-  q_models = list(q0_1, q0_2),
+  # q_models = list(q0_1, q0_2),
+  q_models = new_q_glm(),
   g_full_history = FALSE,
   q_full_history = FALSE,
   mc.cores = 3,
   M = 3,
 )
-tmp
-tmp$value_estimate
 
-
-tmp$value_estimate_ipw
-tmp$value_estimate_or
-optimal_utility
-
-tmp <- policy_eval(
+tmp2 <- policy_eval(
+  type = "ipw",
   two_stage_policy_data,
   policy = optimal_policy,
-  # policy_learner = rql,
+  # policy_learner = rqvl,
+  qv_models = list(new_q_glm(formula = ~L+C), new_q_glm(formula = ~L+C)),
+  alpha = 0,
+  # policy = optimal_policy,
   g_models = new_g_glm(),
-  # g_models = new_g_glm(formula = ~ 1),
   # q_models = list(q0_1, q0_2),
   q_models = new_q_glm(),
   g_full_history = FALSE,
-  q_full_history = FALSE
+  q_full_history = FALSE,
+  mc.cores = 3,
+  M = 3,
 )
-tmp
-# tmp$value_estimate_ipw
-# tmp$value_estimate_or
-# optimal_utility
+tmp2
 
 # all.equal(get_policy(tmp$policy_object)(two_stage_policy_data), optimal_policy(two_stage_policy_data))
 
