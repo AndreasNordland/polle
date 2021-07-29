@@ -45,8 +45,8 @@ evaluate.g_function <- function(object, new_history){
 }
 
 #' @export
-fit_g_functions <- function(policy_data, models, full_history = FALSE){
-  K <- policy_data$dim$K
+fit_g_functions <- function(policy_data, models, full_history){
+  K <- get_K(policy_data)
 
   # checking the models:
   if (class(models)[[1]] == "list"){
