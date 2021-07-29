@@ -1,5 +1,8 @@
 #' @export
-bowl <- function(policy_data, alpha = 0, g_models = NULL, g_functions = NULL, g_full_history = FALSE, policy_full_history = FALSE, policy_vars = NULL, ...){
+bowl <- function(policy_data,
+                 alpha = 0,
+                 g_models = NULL, g_functions = NULL, g_full_history = FALSE,
+                 policy_full_history = FALSE, policy_vars = NULL, ...){
 
   if (is.null(g_models) & is.null(g_functions)) stop("Either g-models or g-functions must be provided.")
   if (!is.null(g_functions) & !is.null(g_models)) stop("g-models and g-functions can not both be provided.")
