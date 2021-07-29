@@ -7,8 +7,8 @@
 policy_eval(
   policy_data,
   policy,
-  g_models = NULL,
-  q_models = NULL,
+  g_models = g_glm(),
+  q_models = q_glm(),
   g_functions = NULL,
   q_functions = NULL,
   g_full_history = FALSE,

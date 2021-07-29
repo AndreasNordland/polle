@@ -57,7 +57,7 @@ estimate.policy_eval <- function(x, ..., labels=x$name) {
 }
 
 ##' @export
-static_policy <- function(action, name=NULL) {
+static_policy <- function(action, name=paste0("a=",action)) {
   f <- function(history) {
     pol <- history$H
     pol[, d := action]
@@ -65,8 +65,6 @@ static_policy <- function(action, name=NULL) {
   }
   return(structure(f, name=name))
 }
-
-
 
 ##' Policy Evaluation
 ##'
@@ -84,7 +82,7 @@ static_policy <- function(action, name=NULL) {
 ##' @param type Type of model (dr, cv, ipw, or, ...)
 ##' @param ... Additional arguments parsed to lower level functions
 policy_eval <- function(policy_data, policy,
-                        g_models=new_g_glm(), q_models=new_q_glm(),
+                        g_models=g_glm(), q_models=q_glm(),
                         g_functions=NULL, q_functions=NULL,
                         g_full_history = FALSE, q_full_history = FALSE,
                         M=5, type="dr", ...) {

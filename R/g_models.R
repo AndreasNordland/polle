@@ -38,7 +38,7 @@ get_design <- function(formula, data) {
 }
 
 #' @export
-new_g_glm <- function(formula = ~., family = binomial(), model = FALSE, ...) {
+g_glm <- function(formula = ~., family = binomial(), model = FALSE, ...) {
   dotdotdot <- list(...)
   g_glm <- function(A, X){
     formula <- update_g_formula(formula, A, X)
@@ -64,8 +64,8 @@ predict.g_glm <- function(object, new_X){
 }
 
 #' @export
-new_g_glmnet <- function(formula = ~., family = "binomial",
-                         alpha = 1, s = "lambda.min", ...) {
+g_glmnet <- function(formula = ~., family = "binomial",
+                     alpha = 1, s = "lambda.min", ...) {
   dotdotdot <- list(...)
   g_glmnet <- function(A, X) {
     formula <- update_g_formula(formula, A, X)
@@ -100,4 +100,15 @@ predict.g_glmnet <- function(object, new_X){
   fit <- predict(glmnet_model,  newx = newx, type = "response", s = object$s)
   probs <- cbind((1-fit), fit)
   return(probs)
+}
+
+
+#' @export
+g_rf <- function(formula = ~., ...) {
+  dotdotdot <- list(...)
+
+  g_rf <- function(A, X) {
+
+  }
+  return(g_rf)
 }
