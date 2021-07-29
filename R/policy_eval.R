@@ -90,14 +90,14 @@ policy_eval <- function(policy_data,
                         M=5, type="dr", ...) {
   type <- tolower(type)
   if (type%in%c("cv", "crossfit", "cf", "cv_dr")) {
-    val <- policy_evaluation_cv_dr(policy_data,
+    val <- policy_eval_cv_dr(policy_data,
                                    policy=policy, policy_learner=policy_learner,
                                    g_models=g_models, g_functions = g_functions, g_full_history=g_full_history,
                                    q_models=q_models, q_functions = q_functions, q_full_history=q_full_history,
                                    M=M)
   }
   if (type%in%c("dr")) {
-    val <- policy_evaluation_dr(policy_data,
+    val <- policy_eval_dr(policy_data,
                                 policy=policy, policy_learner = policy_learner,
                                 q_models=q_models, q_functions=q_functions, q_full_history=q_full_history,
                                 g_models=g_models, g_functions=g_functions, g_full_history=g_full_history, ...)
@@ -115,12 +115,12 @@ policy_eval <- function(policy_data,
 }
 
 
-policy_evaluation_dr_fold <- function(fold,
-                                      policy_data,
-                                      policy, policy_learner,
-                                      g_models, g_functions, g_full_history,
-                                      q_models, q_functions, q_full_history,
-                                      dotdotdot){
+policy_eval_dr_fold <- function(fold,
+                                policy_data,
+                                policy, policy_learner,
+                                g_models, g_functions, g_full_history,
+                                q_models, q_functions, q_full_history,
+                                dotdotdot){
   K <- get_K(policy_data)
   id <- get_id(policy_data)
   train_id <- id[-fold]
@@ -136,7 +136,7 @@ policy_evaluation_dr_fold <- function(fold,
                      g_models = g_models, g_functions = g_functions, g_full_history = g_full_history,
                      q_models = q_models, q_functions = q_functions, q_full_history = q_full_history)
   train_args <- append(train_args, dotdotdot)
-  train_pe_dr <- do.call(what = "policy_evaluation_dr", args = train_args)
+  train_pe_dr <- do.call(what = "policy_eval_dr", args = train_args)
 
   # getting the policy:
   if (is.null(policy))
@@ -146,12 +146,12 @@ policy_evaluation_dr_fold <- function(fold,
                           policy = policy,
                           g_functions = train_pe_dr$g_functions,
                           q_functions = train_pe_dr$q_functions)
-  validation_pe_dr <- do.call(what = "policy_evaluation_dr", args = validation_args)
+  validation_pe_dr <- do.call(what = "policy_eval_dr", args = validation_args)
 
   return(validation_pe_dr)
 }
 
-policy_evaluation_cv_dr <- function(policy_data,
+policy_eval_cv_dr <- function(policy_data,
                                     policy = NULL, policy_learner = NULL,
                                     g_models = NULL, g_functions = NULL, g_full_history = FALSE,
                                     q_models = NULL, q_functions = NULL, q_full_history = FALSE,
@@ -167,7 +167,7 @@ policy_evaluation_cv_dr <- function(policy_data,
 
   pe_dr_cv <- lapply(
     folds,
-    FUN = policy_evaluation_dr_fold,
+    FUN = policy_eval_dr_fold,
     policy_data = policy_data,
     policy = policy, policy_learner = policy_learner,
     g_models = g_models, g_functions = g_functions, g_full_history = g_full_history,
@@ -208,7 +208,7 @@ policy_evaluation_cv_dr <- function(policy_data,
   return(out)
 }
 
-policy_evaluation_dr <- function(policy_data,
+policy_eval_dr <- function(policy_data,
                                  policy = NULL, policy_learner = NULL,
                                  g_models = NULL, g_functions = NULL, g_full_history = FALSE,
                                  q_models = NULL, q_functions = NULL, q_full_history = FALSE, ...){
@@ -234,7 +234,7 @@ policy_evaluation_dr <- function(policy_data,
   # getting the observed actions:
   actions <- get_actions(policy_data)
 
-  # fitting the g-functions:
+  # fitting the g-functions: TODO
   if (!is.null(g_models)){
     g_functions <- fit_g_functions(policy_data, models = g_models, full_history = g_full_history)
   }
