@@ -83,11 +83,15 @@ static_policy <- function(action, name=paste0("a=",action)) {
 ##' @param ... Additional arguments parsed to lower level functions
 policy_eval <- function(policy_data,
                         policy = NULL, policy_learner = NULL,
-                        g_functions=NULL, g_models=NULL, g_full_history = FALSE,
-                        q_functions=NULL, q_models=NULL, q_full_history = FALSE,
+                        g_functions=NULL, g_models=g_glm(), g_full_history = FALSE,
+                        q_functions=NULL, q_models=q_glm(), q_full_history = FALSE,
                         M=5, type="dr", ...) {
   type <- tolower(type)
+  fm <- formals()[-(1:3)]
+  fm[["..."]] <- NULL
   cl <- match.call(expand.dots=TRUE)
+  for (i in setdiff(names(fm), names(cl)))
+    cl[i] <- list(fm[[i]])
   if (type%in%c("cv", "crossfit", "cf", "cv_dr")) {
     cl[[1]] <- policy_eval_cv_dr
   }
