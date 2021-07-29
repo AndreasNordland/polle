@@ -170,16 +170,16 @@ get_X <- function(history, vars = NULL){
 }
 
 #' @export
-get_X_names <- function(policy_data, stage = NULL){
+get_history_names <- function(policy_data, stage = NULL){
   if (is.null(stage)){
     history <- get_stage_history(policy_data, stage = 1, full_history = FALSE)
   } else{
     history <- get_stage_history(policy_data, stage = stage, full_history = TRUE)
   }
-  H <- getElement(history, "H")
-  action_name <- getElement(history, "action_name")
-  X_names <- names(H)[!(names(H) %in% c("id", "stage", action_name))]
-  return(X_names)
+  H <- history$H
+  action_name <- history$action_name
+  history_names <- names(H)[!(names(H) %in% c("id", "stage", action_name))]
+  return(history_names)
 }
 
 get_A <- function(object)
