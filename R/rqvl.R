@@ -49,7 +49,7 @@ rqvl <- function(
   g_full_history = FALSE,
   qv_models,
   qv_full_history = FALSE,
-  M = NULL
+  L = NULL
 ){
   K <- policy_data$dim$K
   n <- policy_data$dim$n
@@ -58,8 +58,8 @@ rqvl <- function(
   if (class(q_models)[[1]] == "list"){
     if (length(q_models) != K) stop("q_models must either be a list of length K or a single Q-model.")
   }
-  if (!is.null(M))
-    if (!is.numeric(M) | (M<2)) stop("M must be greater than 1.")
+  if (!is.null(L))
+    if (!is.numeric(L) | (L<2)) stop("L must be greater than 1.")
 
   # getting the observed actions:
   actions <- get_actions(policy_data)
@@ -71,8 +71,8 @@ rqvl <- function(
   utility <- utility(policy_data)
 
   # constructing the folds for cross-fitting:
-  if (!is.null(M)){
-    folds <- split(sample(1:n, n), rep(1:M, length.out = n))
+  if (!is.null(L)){
+    folds <- split(sample(1:n, n), rep(1:L, length.out = n))
   } else{
     folds <- NULL
   }

@@ -5,7 +5,8 @@ par0 <- list(
   mu_L = c(-1.4, 1.1, 1.3),
   mu_C = c(-2.1),
   gamma_C = c(-1.3,1.5),
-  gamma_A = -1, # gamma_A must be negative
+  # gamma_A = -1, # gamma_A must be negative
+  gamma_A = -0.02,
   sigma_L = 1.5,
   sigma_C = 2,
   alpha = 0 # 0 corresponds to no "protection"
@@ -66,12 +67,12 @@ d_alpha_opt_10 <- function(data, par){
 # rm(two_stage_policy_data)
 
 # approximated mean utility under the optimal policy
-n <- 2e6
-set.seed(2)
-d <- simulate_two_stage_data(n = n, par = par0, a_1 = d_alpha_opt_10, a_2 = d_alpha_opt_20)
-two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
-optimal_utility <- mean(utility(two_stage_policy_data)$U)
-rm(two_stage_policy_data)
+# n <- 2e6
+# set.seed(2)
+# d <- simulate_two_stage_data(n = n, par = par0, a_1 = d_alpha_opt_10, a_2 = d_alpha_opt_20)
+# two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
+# optimal_utility <- mean(utility(two_stage_policy_data)$U)
+# rm(two_stage_policy_data)
 
 
 # g-models ----------------------------------------------------------------
@@ -326,56 +327,61 @@ predict.qbias <- function(q_model, new_AX){
 
 # DR ----------------------------------------------------------------------
 
-n <- 2e4
-set.seed(1)
+n <- 2e3
+set.seed(3)
 d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
 two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
 
-# tmp <- cv_dr(
-#   two_stage_policy_data,
-#   M = 3,
-#   policy = optimal_policy,
-#   g_models = new_g_glm(),
-#   q_models = list(q0_1, q0_2),
-#   g_full_history = FALSE,
-#   q_full_history = FALSE,
-#   mc.cores = 3
-# )
-# tmp$value_estimate
-# # optimal_utility
-# tmp$dr_list$`1`$g_functions
+tmp <- policy_eval(
+  type = "cv",
+  two_stage_policy_data,
+  policy = optimal_policy,
+  g_models = new_g_glm(),
+  q_models = list(q0_1, q0_2),
+  g_full_history = FALSE,
+  q_full_history = FALSE,
+  mc.cores = 3,
+  M = 3,
+)
+tmp
+tmp$value_estimate
+
+
+tmp$value_estimate_ipw
+tmp$value_estimate_or
+optimal_utility
 
 tmp <- policy_eval(
   two_stage_policy_data,
   policy = optimal_policy,
-  # g_models = new_g_glm(),
-  g_models = new_g_glm(formula = ~ 1),
-  q_models = list(q0_1, q0_2),
-  # q_models = new_q_glm(),
+  # policy_learner = rql,
+  g_models = new_g_glm(),
+  # g_models = new_g_glm(formula = ~ 1),
+  # q_models = list(q0_1, q0_2),
+  q_models = new_q_glm(),
   g_full_history = FALSE,
   q_full_history = FALSE
 )
-tmp$value_estimate
-
-mean(tmp$phi_or)
-
-# tmp$g_functions[[1]]
-#
-# tmp$value_estimate
-# mean(tmp$phi_or)
-# sd(tmp$phi_ipw)
+tmp
+# tmp$value_estimate_ipw
+# tmp$value_estimate_or
 # optimal_utility
-#
-# tmp2 <- dr(
-#   two_stage_policy_data,
-#   policy = optimal_policy,
-#   g_functions = tmp$g_functions,
-#   q_functions = tmp$q_functions
-# )
-# tmp2$value_estimate
-#
-# # optimal_utility
-# rm(tmp, tmp2, two_stage_policy_data)
+
+# all.equal(get_policy(tmp$policy_object)(two_stage_policy_data), optimal_policy(two_stage_policy_data))
+
+tmp$g_functions
+tmp$q_functions
+
+tmp2 <- policy_eval(
+  two_stage_policy_data,
+  policy = optimal_policy,
+  g_functions = tmp$g_functions,
+  q_functions = tmp$q_functions
+)
+tmp2
+
+# optimal_utility
+rm(tmp, tmp2, two_stage_policy_data)
 
 # RQL ----------------------------------------------------
 

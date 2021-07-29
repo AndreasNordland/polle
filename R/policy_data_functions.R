@@ -106,4 +106,32 @@ get_id_stage.policy_data <- function(object){
   return(id_stage)
 }
 
+#' @export
+get_K <- function(object)
+  UseMethod("get_K")
+#' @export
+get_K.policy_data <- function(object){
+  K <- object$dim$K
+  return(K)
+}
+
+#' @export
+get_n <- function(object)
+  UseMethod("get_n")
+#' @export
+get_n.policy_data <- function(object){
+  n <- object$dim$n
+  return(n)
+}
+
+#' @export
+get_action_set <- function(object)
+  UseMethod("get_action_set")
+#' @export
+get_action_set.policy_data <- function(object){
+  action_set <- object$action_set
+  return(action_set)
+}
+
+
 

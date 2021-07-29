@@ -4,8 +4,8 @@ evaluate <- function(object, ...)
 
 #' @export
 evaluate.nuisance_functions <- function(object, policy_data){
-  K <- policy_data$dim$K
-  action_set <- policy_data$action_set
+  K <- get_K(policy_data)
+  action_set <- get_action_set(policy_data)
   full_history <- attr(object, "full_history")
 
   if (length(object) == K){

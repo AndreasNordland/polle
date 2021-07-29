@@ -1,13 +1,17 @@
 #' @export
-rql<- function(policy_data, alpha = 0, g_models = NULL, g_functions = NULL, q_models = NULL, q_functions = NULL, q_full_history = FALSE, g_full_history = FALSE){
+rql<- function(policy_data, alpha = 0,
+               g_models = NULL, g_functions = NULL, g_full_history = FALSE,
+               q_models = NULL, q_functions = NULL, q_full_history = FALSE){
+
   if (!(is.numeric(alpha) &  (length(alpha) == 1) & (alpha >=0 & alpha < 0.5))) stop("alpha must be numeric and in [0, 0.5).")
+
   if (alpha != 0){
-    if (is.null(g_models) & is.null(g_functions)) stop("Either g-models or g-functions must be provided.")
-    if (!is.null(g_functions) & !is.null(g_models)) stop("g-models and g-functions can not both be provided.")
+    if ((is.null(g_models) & is.null(g_functions))) stop("Provide either g-models or g-functions.")
     if (!is.null(g_functions)){
       if(!(class(g_functions)[[1]] == "nuisance_functions")) stop("g-functions must be of class 'nuisance_functions'.")
     }
   }
+
   if (is.null(q_models) & is.null(q_functions)) stop("Either q-models or q-functions must be provided.")
   if (!is.null(q_models) & !is.null(q_functions)) stop("q-models and q-functions can not both be provided.")
   if (!is.null(q_functions)){
@@ -27,7 +31,7 @@ rql<- function(policy_data, alpha = 0, g_models = NULL, g_functions = NULL, q_mo
   # fitting the g-functions if alpha > 0:
   if (alpha != 0){
 
-    if (!is.null(g_models)){
+    if (is.null(g_functions)){
       g_functions <- fit_g_functions(policy_data, models = g_models, full_history = g_full_history)
     }
     g_values <- evaluate(g_functions, policy_data)

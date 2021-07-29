@@ -6,12 +6,13 @@
 \usage{
 policy_eval(
   policy_data,
-  policy,
-  g_models = NULL,
-  q_models = NULL,
+  policy = NULL,
+  policy_learner = NULL,
   g_functions = NULL,
-  q_functions = NULL,
+  g_models = NULL,
   g_full_history = FALSE,
+  q_functions = NULL,
+  q_models = NULL,
   q_full_history = FALSE,
   M = 5,
   type = "dr",
@@ -25,9 +26,9 @@ policy_eval(
 
 \item{g_models}{Propensity model object}
 
-\item{q_models}{Outcome regression/Q-model}
-
 \item{g_full_history}{Full history or Markov}
+
+\item{q_models}{Outcome regression/Q-model}
 
 \item{q_full_history}{Full history or Markov}
 
