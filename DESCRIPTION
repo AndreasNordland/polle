@@ -21,8 +21,9 @@ Imports:
     mgcv
 Suggests:
 	knitr,
-    	bookdown,
-        rmarkdown,
+    ranger,
+    bookdown,
+    rmarkdown,
     testthat (>= 3.0)
 Depends:
     R (>= 2.10)

@@ -1,17 +1,13 @@
 
 #' @export
-new_q_glmnet <- function(
-  formula = ~ A * .,
-  family = "gaussian",
-  alpha = 1,
-  s = "lambda.min",
-  ...
-){
+q_glmnet <- function(formula = ~ A * .,
+                     family = "gaussian",
+                     alpha = 1,
+                     s = "lambda.min",
+                     ...) {
   dotdotdot <- list(...)
 
   q_glmnet <- function(V_res, AX){
-
-    browser()
 
     A <- as.factor(A)
     A_levels <- levels(A)
@@ -81,12 +77,10 @@ predict.glmnet_model <- function(object, new_A, new_X){
 }
 
 #' @export
-new_q_glm <- function(
-  formula = ~ A * .,
-  family = gaussian(),
-  model = FALSE,
-  ...
-){
+q_glm <- function(formula = ~ A * .,
+                  family = gaussian(),
+                  model = FALSE,
+                  ...) {
   dotdotdot <- list(...)
 
   q_glm <- function(V_res, AX){
