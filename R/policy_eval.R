@@ -89,27 +89,20 @@ policy_eval <- function(policy_data,
                         q_functions=NULL, q_models=NULL, q_full_history = FALSE,
                         M=5, type="dr", ...) {
   type <- tolower(type)
+  cl <- match.call(expand.dots=TRUE)
   if (type%in%c("cv", "crossfit", "cf", "cv_dr")) {
-    val <- policy_eval_cv_dr(policy_data,
-                                   policy=policy, policy_learner=policy_learner,
-                                   g_models=g_models, g_functions = g_functions, g_full_history=g_full_history,
-                                   q_models=q_models, q_functions = q_functions, q_full_history=q_full_history,
-                                   M=M, ...)
+    cl[[1]] <- policy_eval_cv_dr
   }
   if (type%in%c("dr")) {
-    val <- policy_eval_dr(policy_data,
-                                policy=policy, policy_learner = policy_learner,
-                                q_models=q_models, q_functions=q_functions, q_full_history=q_full_history,
-                                g_models=g_models, g_functions=g_functions, g_full_history=g_full_history, ...)
+    cl[[1]] <- policy_eval_dr
   }
   if (type%in%c("or","q")) {
-    val <- policy_eval_or(policy_data, policy=policy,
-                                q_models=q_models, q_functions=q_functions, q_full_history=q_full_history)
+    cl[[1]] <- policy_eval_or
   }
   if (type%in%c("ipw")) {
-    val <- policy_eval_ipw(policy_data, policy=policy,
-                                 g_models=g_models, g_functions=g_functions, g_full_history=g_full_history)
+    cl[[1]] <- policy_eval_ipw
   }
+  val <- eval(cl)
   val$name <- attr(policy, "name")
   return(val)
 }
@@ -152,10 +145,10 @@ policy_eval_dr_fold <- function(fold,
 }
 
 policy_eval_cv_dr <- function(policy_data,
-                                    policy = NULL, policy_learner = NULL,
-                                    g_models = NULL, g_functions = NULL, g_full_history = FALSE,
-                                    q_models = NULL, q_functions = NULL, q_full_history = FALSE,
-                                    M, ...){
+                              policy = NULL, policy_learner = NULL,
+                              g_models = NULL, g_functions = NULL, g_full_history,
+                              q_models = NULL, q_functions = NULL, q_full_history,
+                              M, ...){
 
   n <- get_n(policy_data)
   id <- get_id(policy_data)
@@ -164,7 +157,6 @@ policy_eval_cv_dr <- function(policy_data,
   folds <- split(sample(1:n, n), rep(1:M, length.out = n))
 
   dotdotdot <- list(...)
-
   pe_dr_cv <- lapply(
     folds,
     FUN = policy_eval_dr_fold,
@@ -209,187 +201,94 @@ policy_eval_cv_dr <- function(policy_data,
 }
 
 policy_eval_dr <- function(policy_data,
-                                 policy = NULL, policy_learner = NULL,
-                                 g_models = NULL, g_functions = NULL, g_full_history = FALSE,
-                                 q_models = NULL, q_functions = NULL, q_full_history = FALSE, ...){
+                           policy = NULL, policy_learner = NULL,
+                           g_models = NULL, g_functions = NULL, g_full_history,
+                           q_models = NULL, q_functions = NULL, q_full_history, ...){
 
-  if ((is.null(g_models) & is.null(g_functions)) | (!is.null(g_functions) & !is.null(g_models))) stop("Provide either g-models or g-functions.")
-  if (!is.null(g_functions)){
-    if(!(class(g_functions)[[1]] == "nuisance_functions")) stop("g-functions must be of class 'nuisance_functions'.")
-  }
+  # fitting the g-functions, Q-functions and policy (functions):
+  function_fits <- fit_functions(policy_data = policy_data,
+                          policy = policy, policy_learner = policy_learner,
+                          g_models = g_models, g_functions = g_functions, g_full_history = g_full_history,
+                          q_models = q_models, q_functions = q_functions, q_full_history = q_full_history,
+                          ...)
 
-  if ((is.null(q_models) & is.null(q_functions)) | (!is.null(q_models) & !is.null(q_functions))) stop("Provide either q-models or q-functions.")
-  if (!is.null(q_functions)){
-    if(!(class(q_functions)[[1]] == "nuisance_functions")) stop("q-functions must be of class 'nuisance_functions'.")
-  }
 
-  if ((is.null(policy) & is.null(policy_learner)) | (!is.null(policy_learner) & !is.null(policy))) stop("Provide either policy or policy_learner.")
-
-  # getting the number of stages:
-  K <- get_K(policy_data)
-
-  # getting the action set:
-  action_set <- get_action_set(policy_data)
-
-  # getting the observed actions:
-  actions <- get_actions(policy_data)
-
-  # fitting the g-functions: TODO
-  if (!is.null(g_models)){
-    g_functions <- fit_g_functions(policy_data, models = g_models, full_history = g_full_history)
-  }
-  g_values <- evaluate(g_functions, policy_data)
-
-  # learning the policy:
-  policy_object <- NULL
-  if (is.null(policy)){
-    policy_object <- policy_learner(
-      policy_data = policy_data,
-      g_models = g_models, g_functions = g_functions, g_full_history = g_full_history,
-      q_models = q_models, q_functions = q_functions, q_full_history = q_full_history,
-      ...
-    )
-    policy <- get_policy(policy_object)
-  }
-
-  # getting the policy actions:
-  policy_actions <- policy(policy_data = policy_data)
-
-  # fitting the Q-functions:
-  if(is.null(q_functions)){
-    if(!is.null(policy_object$q_functions)){
-      q_functions <- policy_object$q_functions
-    } else{
-      q_functions <- fit_Q_functions(policy_data,
-                                     policy_actions = policy_actions,
-                                     q_models = q_models, full_history = q_full_history)
-    }
-  }
-
-  # getting the Q-function values:
-  q_values <- evaluate(q_functions, policy_data = policy_data)
-
-  # (n X K) matrix with entries I(d_k(H_k) = A_k):
-  IIA <- as.matrix(dcast(actions, id ~ stage, value.var = "A")[, -c("id"), with = FALSE])
-  IId <- as.matrix(dcast(policy_actions, id ~ stage, value.var = "d")[, -c("id"), with = FALSE])
-  II <- (IIA == IId); rm(IIA, IId)
-  # (n X K) matrix with entries g_k(d_k(H_k), H_k):
-  g_d_values <- get_a_values(a = policy_actions$d, action_set = action_set, values = g_values)
-  G <- as.matrix(dcast(g_d_values, id ~ stage, value.var = "P")[, -c("id"), with = FALSE])
-  # (n) vector with entries U_i:
-  U <- utility(policy_data)$U
-  # (n X K+1) matrix with entries Q_k(H_{k,i}, d_k(H_{k,i})), Q_{K+1} = U:
-  q_d_values <- get_a_values(a = policy_actions$d, action_set = action_set, values = q_values)
-  Q <- as.matrix(dcast(q_d_values, id ~ stage, value.var = "P")[, -c("id"), with = FALSE])
-  Q <- apply(
-    Q,
-    MARGIN = 2,
-    function(v){
-      v[is.na(v)] <- U[is.na(v)]
-      return(v)
-    }
-  )
-  Q <- cbind(Q, U)
-
-  # calculating the doubly robust score
-  Zd <- Q[, 1]
-  for (k in 1:K){
-    Zd <- Zd + ipw_weight(II[,1:k], G = G[,1:k]) * (Q[,k+1] - Q[,k])
-  }
-
-  # getting the IPW and OR Z-score
-  Zd_ipw <- ipw_weight(II, G = G) * U
-  Zd_or <- Q[, 1]
+  # calculating the doubly robust score and value estimate:
+  if (is.null(policy))
+    policy <- get_policy(function_fits$policy_object)
+  value_object <- dr_value(policy_data = policy_data,
+                    policy = policy,
+                    g_functions = function_fits$g_functions,
+                    q_function = function_fits$q_functions)
 
   out <- list(
-    value_estimate = mean(Zd),
-    iid=Zd-mean(Zd),
-    Zd = Zd,
-    value_estimate_ipw = mean(Zd_ipw),
-    value_estimate_or = mean(Zd_or),
-    g_functions = g_functions,
-    q_functions = q_functions,
+    value_estimate = value_object$value_estimate,
+    iid=value_object$iid,
+    value_estimate_ipw = value_object$value_estimate_ipw,
+    value_estimate_or = value_object$value_estimate_or,
+    g_functions = function_fits$g_functions,
+    q_functions = function_fits$q_functions,
     id = get_id(policy_data),
-    policy_object = policy_object
+    policy_object = function_fits$policy_object
   )
+
   class(out) <- c("policy_eval_dr", "policy_eval")
   return(out)
 }
 
-##' @export
-policy_eval_or <- function(policy_data, q_models = NULL, q_functions = NULL, policy, q_full_history = FALSE){
-  if (is.null(q_models) & is.null(q_functions)) stop("Either q-models or q-functions must be provided.")
-  if (!is.null(q_models) & !is.null(q_functions)) stop("q-models and q-functions can not both be provided.")
-  if (!is.null(q_functions)){
-    if(!(class(q_functions)[[1]] == "nuisance_functions")) stop("q-functions must be of class 'nuisance_functions'.")
-  }
+policy_eval_or <- function(policy_data,
+                           policy = NULL, policy_learner = NULL,
+                           q_models = NULL, q_functions = NULL, q_full_history,
+                           ...){
 
-  K <- policy_data$dim$K
-  action_set <- policy_data$action_set
+  # fitting the Q-functions and policy (functions):
+  function_fits <- fit_functions(policy_data = policy_data,
+                                 policy = policy, policy_learner = policy_learner,
+                                 q_models = q_models, q_functions = q_functions, q_full_history = q_full_history,
+                                 ...)
 
-  # getting the policy actions
-  policy_actions <- policy(policy_data = policy_data)
+  # calculating the doubly robust score and value estimate:
+  if (is.null(policy))
+    policy <- get_policy(function_fits$policy_object)
+  value_object <- or_value(policy_data = policy_data,
+                           policy = policy,
+                           q_functions = function_fits$q_functions)
 
-  # fitting the q-functions
-  if (!is.null(q_models)){
-    q_functions <- fit_Q_functions(policy_data, policy_actions = policy_actions, q_models = q_models, full_history = q_full_history)
-  }
-  q_values <- evaluate(q_functions, policy_data = policy_data)
-  q_d_values <- get_a_values(a = policy_actions$d, action_set = action_set, values = q_values)
-
-  # (n X K) matrix with entries Q_k(d_k(H_k), H_k)
-  Q <- as.matrix(dcast(q_d_values, id ~ stage, value.var = "P")[, -c("id"), with = FALSE])
-
-  phi_or <- Q[, 1]
   out <- list(
-    value_estimate = mean(phi_or),
-    iid=phi_or-mean(phi_or),
-    q_functions = q_functions,
-    id = get_id(policy_data)
+    value_estimate = value_object$value_estimate,
+    iid=value_object$iid,
+    q_functions = function_fits$q_functions,
+    id = get_id(policy_data),
+    policy_object = function_fits$policy_object
   )
   class(out) <- c("policy_eval_or", "policy_eval")
   return(out)
 }
 
-##' @export
-policy_eval_ipw <- function(policy_data, g_models = NULL, g_functions = NULL, policy, g_full_history = FALSE){
-  if (is.null(g_models) & is.null(g_functions)) stop("Either g-models or g-functions must be provided.")
-  if (!is.null(g_functions) & !is.null(g_models)) stop("g-models and g-functions can not both be provided.")
+policy_eval_ipw <- function(policy_data,
+                            policy = NULL, policy_learner = NULL,
+                            g_models = NULL, g_functions = NULL, g_full_history,
+                            ...){
 
-  K <- policy_data$dim$K
-  action_set <- policy_data$action_set
+  # fitting the g-functions and policy (functions):
+  function_fits <- fit_functions(policy_data = policy_data,
+                                 policy = policy, policy_learner = policy_learner,
+                                 g_models = g_models, g_functions = g_functions, g_full_history = g_full_history,
+                                 ...)
 
-  # getting the observed actions:
-  actions <- get_actions(policy_data)
-
-  # getting the policy actions:
-  policy_actions <- policy(policy_data)
-
-  # fitting the g-functions:
-  if (!is.null(g_models)){
-    g_functions <- fit_g_functions(policy_data, models = g_models, full_history = g_full_history)
-  }
-  g_values <- evaluate(g_functions, policy_data)
-  g_d_values <- get_a_values(a = policy_actions$d, action_set = action_set, g_values)
-
-  # (n) vector with entries U_i:
-  U <- utility(policy_data)$U
-
-  # (n X K) matrix with entries I(d_k(H_k) = A_k):
-  IIA <- as.matrix(dcast(actions, id ~ stage, value.var = "A")[, -c("id"), with = FALSE])
-  IId <- as.matrix(dcast(policy_actions, id ~ stage, value.var = "d")[, -c("id"), with = FALSE])
-  II <- (IIA == IId); rm(IIA, IId)
-
-  # (n X K) matrix with entries g_k(d_k(H_k), H_k):
-  G <- as.matrix(dcast(g_d_values, id ~ stage, value.var = "P")[, -c("id"), with = FALSE])
-
-  phi_ipw <- ipw_weight(II, G = G) * U
+  # calculating the doubly robust score and value estimate:
+  if (is.null(policy))
+    policy <- get_policy(function_fits$policy_object)
+  value_object <- ipw_value(policy_data = policy_data,
+                           policy = policy,
+                           g_functions = function_fits$g_functions)
 
   out <- list(
-    value_estimate = mean(phi_ipw),
-    iid=phi_ipw-mean(phi_ipw),
-    g_functions = g_functions,
-    id = get_id(policy_data)
+    value_estimate = value_object$value_estimate,
+    iid=value_object$iid,
+    g_functions = function_fits$g_functions,
+    id = get_id(policy_data),
+    policy_object = function_fits$policy_object
   )
   class(out) <- c("policy_eval_ipw", "policy_eval")
   return(out)
