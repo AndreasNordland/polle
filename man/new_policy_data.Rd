@@ -4,7 +4,7 @@
 \alias{new_policy_data}
 \title{Create A Policy Data Object}
 \usage{
-new_policy_data(stage_data, baseline_data = NULL)
+new_policy_data(stage_data, baseline_data = NULL, messages = FALSE)
 }
 \arguments{
 \item{stage_data}{A data.table on long format with required columns:
