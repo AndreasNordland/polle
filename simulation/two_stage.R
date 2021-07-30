@@ -332,11 +332,14 @@ set.seed(3)
 d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
 two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
 
-print(two_stage_policy_data)
+print(two_stage_policy_data, digits = 4)
 
-two_stage_policy_data$stage_data[event == 0,][, .N, stage]
+utility(two_stage_policy_data)$U
 
-print.policy_data(two_stage_policy_data)
+table(two_stage_policy_data$stage_data[event == 0,][, .N, .(stage, A)])
+
+table(two_stage_policy_data$stage_data[event == 0,][, c("stage", "A"), with = FALSE])
+two_stage_policy_data$colnames$baseline_data_names
 
 tmp <- policy_eval(
   type = "dr",

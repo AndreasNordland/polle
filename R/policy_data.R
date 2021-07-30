@@ -272,17 +272,40 @@ wide_stage_data_to_long <- function(wide_stage_data, id_col = NULL, A_cols, X_co
 }
 
 #' @export
-print.policy_data <- function(x, ...){
+print.policy_data <- function(x, digits = 2, ...){
   K <- get_K(x)
   n <- get_n(x)
 
   cat(
-    paste("policy_data object with ", n, " observations and maximal ", K, " stages.", sep = "")
+    paste("Object of class policy_data with n = ", n, " observations and maximal K = ", K, " stages.", sep = "")
   )
   cat("\n")
 
-  stage_table <- x$stage_data[event == 0,][, .N, stage]
+  action_set <- get_action_set(x)
 
-  print(stage_table, row.names = FALSE)
+  cat("\n")
+  st <- x$stage_data[event == 0,][, c("stage", "A"), with = FALSE]
+  colnames(st) <- c("stage", "action")
+  stable <- addmargins(table(st), 2, FUN = list(n = sum))
+
+  print(stable)
+
+  cat("\n")
+  bc <- paste(x$colnames$baseline_data_names, collapse = ", ")
+  cat(
+    paste("Baseline covariates: ", bc, ".", sep = "")
+  )
+  cat("\n")
+  sc <- paste(x$colnames$stage_data_names, collapse = ", ")
+  cat(
+    paste("State covariates: ", sc, ".", sep = "")
+  )
+  cat("\n")
+  mean_utility <- mean(utility(x)$U)
+  mean_utility <- round(mean_utility, digits = digits)
+
+  cat(
+    paste("Average utility: ", mean_utility, ".", sep = "")
+  )
 
 }
