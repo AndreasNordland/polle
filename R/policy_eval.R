@@ -87,20 +87,21 @@ policy_eval <- function(policy_data,
                         q_functions=NULL, q_models=NULL, q_full_history = FALSE,
                         M=5, type="dr", ...) {
   type <- tolower(type)
-  cl <- match.call(expand.dots=TRUE)
+
+  cl_args <- c(as.list(environment()), list(...))
+
   if (type%in%c("cv", "crossfit", "cf", "cv_dr")) {
-    cl[[1]] <- policy_eval_cv_dr
+    val <- do.call(what = "policy_eval_cv_dr", cl_args)
   }
   if (type%in%c("dr")) {
-    cl[[1]] <- policy_eval_dr
+    val <- do.call(what = "policy_eval_dr", cl_args)
   }
   if (type%in%c("or","q")) {
-    cl[[1]] <- policy_eval_or
+    val <- do.call(what = "policy_eval_or", cl_args)
   }
   if (type%in%c("ipw")) {
-    cl[[1]] <- policy_eval_ipw
+    val <- do.call(what = "policy_eval_ipw", cl_args)
   }
-  val <- eval(cl)
   val$name <- attr(policy, "name")
   return(val)
 }
