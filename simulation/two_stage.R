@@ -355,7 +355,7 @@ tmp <- policy_eval(
   mc.cores = 3,
   M = 3,
 )
-attributes(tmp$g_functions)
+tmp
 
 tmp2 <- policy_eval(
   type = "ipw",
