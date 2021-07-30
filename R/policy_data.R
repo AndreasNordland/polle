@@ -270,3 +270,19 @@ wide_stage_data_to_long <- function(wide_stage_data, id_col = NULL, A_cols, X_co
 
   return(long_stage_data)
 }
+
+#' @export
+print.policy_data <- function(x, ...){
+  K <- get_K(x)
+  n <- get_n(x)
+
+  cat(
+    paste("policy_data object with ", n, " observations and maximal ", K, " stages.", sep = "")
+  )
+  cat("\n")
+
+  stage_table <- x$stage_data[event == 0,][, .N, stage]
+
+  print(stage_table, row.names = FALSE)
+
+}
