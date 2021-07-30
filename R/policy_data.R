@@ -307,5 +307,5 @@ print.policy_data <- function(x, digits = 2, ...){
   cat(
     paste("Average utility: ", mean_utility, ".", sep = "")
   )
-
+  cat("\n")
 }

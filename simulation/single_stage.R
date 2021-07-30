@@ -50,7 +50,7 @@ optimal_policy <- function(history){
 
   return(pol[, c("id", "stage", "d"), with = FALSE])
 }
-optimal_policy <- new_policy(
+optimal_policy <- policy_def(
   stage_policies = optimal_policy,
   full_history = FALSE,
   replicate = TRUE
@@ -67,7 +67,7 @@ linear_policy <- function(history){
 
   return(pol[, c("id", "stage", "d"), with = FALSE])
 }
-linear_policy <- new_policy(
+linear_policy <- policy_def(
   stage_policies = linear_policy,
   full_history = FALSE,
   replicate = TRUE
@@ -82,7 +82,7 @@ treat_policy <- function(history){
 
   return(pol[, c("id", "stage", "d"), with = FALSE])
 }
-treat_policy <- new_policy(
+treat_policy <- policy_def(
   stage_policies = treat_policy,
   full_history = FALSE,
   replicate = TRUE

@@ -186,7 +186,7 @@ get_policy.PTL <- function(object){
     }
   )
 
-  policy <- new_policy(
+  policy <- policy_def(
     stage_policies = stage_policies,
     full_history = policy_full_history
   )
