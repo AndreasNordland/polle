@@ -1,7 +1,7 @@
 fit_functions <- function(policy_data,
-                             policy = NULL, policy_learner = NULL,
-                             g_models = NULL, g_functions = NULL, g_full_history,
-                             q_models = NULL, q_functions = NULL, q_full_history, ...){
+                          policy = NULL, policy_learner = NULL,
+                          g_models = NULL, g_functions = NULL, g_full_history,
+                          q_models = NULL, q_functions = NULL, q_full_history, ...){
 
   # if ((is.null(g_models) & is.null(g_functions)) | (!is.null(g_functions) & !is.null(g_models))) stop("Provide either g-models or g-functions.")
   # if (!is.null(g_functions)){
