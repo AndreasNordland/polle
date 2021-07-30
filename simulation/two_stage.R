@@ -332,17 +332,24 @@ set.seed(3)
 d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
 two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
 
+print(two_stage_policy_data)
+
+two_stage_policy_data$stage_data[event == 0,][, .N, stage]
+
+print.policy_data(two_stage_policy_data)
+
 tmp <- policy_eval(
-  type = "or",
+  type = "dr",
   two_stage_policy_data,
   # policy = optimal_policy,
   policy_learner = rqvl,
-  qv_models = list(new_q_glm(formula = ~L+C), new_q_glm(formula = ~L+C)),
+  qv_models = list(q_glm(formula = ~L+C), q_glm(formula = ~L+C)),
   alpha = 0,
   # policy = optimal_policy,
-  g_models = new_g_glm(),
+  g_models = g_glm(),
+  # g_models = list(g_glm(~L_1), g_glm(~L_1)),
   # q_models = list(q0_1, q0_2),
-  q_models = new_q_glm(),
+  q_models = q_glm(),
   g_full_history = FALSE,
   q_full_history = FALSE,
   mc.cores = 3,
@@ -357,7 +364,7 @@ tmp2 <- policy_eval(
   qv_models = list(new_q_glm(formula = ~L+C), new_q_glm(formula = ~L+C)),
   alpha = 0,
   # policy = optimal_policy,
-  g_models = new_g_glm(),
+  g_models = g_glm(),
   # q_models = list(q0_1, q0_2),
   q_models = new_q_glm(),
   g_full_history = FALSE,
@@ -471,7 +478,7 @@ rm(tmp, tmp2, two_stage_policy_data)
 # d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
 # two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
 #
-# get_X_names(two_stage_policy_data, stage = 2)
+# get_history_names(two_stage_policy_data, stage = 1)
 #
 # tmp_ptl <- ptl(
 #   policy_data = two_stage_policy_data,
