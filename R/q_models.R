@@ -8,73 +8,96 @@ q_glmnet <- function(formula = ~ A * .,
   dotdotdot <- list(...)
 
   q_glmnet <- function(V_res, AX){
-
-    A <- as.factor(A)
-    A_levels <- levels(A)
-
-    if (is.matrix(X)) {
-      X = as.data.frame(X)
-    }
-    data <- cbind(A = A, X)
-
-    tt <- terms(formula, data = data)
-    if (length(attr(tt, "term.labels")) == 0)
-      formula <- ~ 1
-    else
-      formula <- reformulate(attr(tt, "term.labels"), response = NULL, intercept = FALSE)
-
-    x <- model.matrix(formula, data)
+    des <- get_design(formula, data=AX)
     y <- V_res
-
-    args_glmnet <- list(
-      y = y,
-      x = x,
-      family = family,
-      alpha = alpha
-    )
-    args_glmnet <- append(args_glmnet, dotdotdot)
-
-    glmnet_model <- do.call(what = "cv.glmnet", args = args_glmnet)
-    glmnet_model$call <- NULL
-
-    m <- list(
-      glmnet_model = glmnet_model,
-      s = s,
-      formula = formula,
-      A_levels = A_levels
-    )
-
-    class(m) <- "glmnet_model"
+    args_glmnet <- c(list(y = y, x = des$x,
+                        family = family, alpha = alpha), dotdotdot)
+    fit <- do.call(what = "cv.glmnet", args = args_glmnet)
+    fit$call <- NULL
+    m <- with(des, list(
+                     fit = fit,
+                     s = s,
+                     formula = formula,
+                     terms = terms,
+                     xlevels = x_levels))
+    class(m) <- c("q_glmnet", "g_model")
     return(m)
   }
-
   return(q_glmnet)
 }
 
 #' @export
-predict.glmnet_model <- function(object, new_A, new_X){
-  glmnet_model <- getElement(object, "glmnet_model")
-  formula <- getElement(object, "formula")
-  A_levels <- getElement(object, "A_levels")
-  s <- getElement(object, "s")
-
-  if (is.matrix(new_X)) {
-    new_X = as.data.frame(new_X)
-  }
-  new_A <- factor(new_A, levels = A_levels)
-  newdata <- cbind(A = new_A, new_X)
-
-  newx <- model.matrix(formula, newdata)
-
-  pred <- predict(
-    glmnet_model,
-    newx = newx,
-    type = "response",
-    s = s
-  )
-
+predict.q_glmnet <- function(object, new_AX, ...) {
+  mf <- with(object, model.frame(terms, data=new_AX, xlev = xlevels,
+                                 drop.unused.levels=FALSE))
+  newx <- model.matrix(mf, data=new_AX, xlev = object$xlevels)
+  pred <- predict(getElement(object, "fit"),
+                  newx = newx,
+                  type = "response",
+                  s = getElement(object, "s"))
   return(pred)
 }
+
+
+perf_ranger <- function(fit, data,  ...) {
+  y <- as.numeric(data[,1])
+  x <- data[,-1,drop=FALSE]
+  mean((predict(fit, data=x, num.threads=1)-y)^2)^.5
+}
+
+#' @export
+q_rf <- function(formula = ~ .,
+                 num.trees=c(250,500,750), mtry=NULL,
+                 cv_args=list(K=3, rep=1), ...) {
+  if (!requireNamespace("ranger")) stop("Package 'ranger' required")
+  dotdotdot <- list(...)
+  hyper_par <- expand.list(num.trees=num.trees, mtry=mtry)
+  rf_args <- function(p) {
+    list(num.threads=1, num.trees=p$num.trees, mtry=p$mtry)
+  }
+  ml <- lapply(hyper_par, function(p)
+    function(data) {
+      rf_args <- append(rf_args(p), list(y=data[,1], x=as.matrix(data[,-1,drop=FALSE])))
+      rf_args <- append(rf_args, dotdotdot)
+      do.call("ranger", args=rf_args)
+    })
+
+  q_rf <- function(V_res, AX){
+    des <- get_design(formula, data=AX)
+    data <- data.frame(V_res, des$x)
+    res <- NULL; best <- 1
+    if (length(ml)>1) {
+      res <- tryCatch(lava::cv(ml, data=data, perf=perf_ranger,
+                               K=cv_args$K, rep=cv_args$rep),
+                      error=function(...) NULL)
+      best <- if (is.null(res)) 1 else which.min(summary(res))
+    }
+    if (!is.null(res)) {
+      fit <- res$fit[[best]]
+    } else {
+      fit <- ml[[best]](data)
+    }
+    res <- with(des, list(fit = fit,
+                          rf_args = rf_args(hyper_par[[best]]),
+                          num.trees=num.trees[best],
+                          xlevels = x_levels,
+                          terms = terms))
+    class(res) <- c("q_rf", "g_model")
+    return(res)
+  }
+  return(q_rf)
+}
+
+#' @export
+predict.q_rf <- function(object, new_AX, ...){
+  mf <- with(object, model.frame(terms, data=new_AX, xlev = xlevels,
+                                 drop.unused.levels=FALSE))
+  newx <- model.matrix(mf, data=new_AX, xlev = object$xlevels)
+  pr <- predict(object$fit, data=newx, num.threads=1)$predictions
+  return(pr)
+
+}
+
 
 #' @export
 q_glm <- function(formula = ~ A * .,
@@ -107,7 +130,7 @@ q_glm <- function(formula = ~ A * .,
       glm_model = glm_model
     )
 
-    class(m) <- "q_glm"
+    class(m) <- c("q_glm", "g_model")
     return(m)
   }
 

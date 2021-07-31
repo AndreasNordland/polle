@@ -6,7 +6,7 @@ coef.policy_eval <- function(object, ...) {
 ##' @export
 iid.policy_eval <- function(x, ...) {
   res <- cbind(x$iid)
-  return(res/nrow(res))
+  return(res/NROW(res))
 }
 
 ##' @export
@@ -21,7 +21,7 @@ print.policy_eval <- function(x, ...) {
 
 ##' @export
 summary.policy_eval <- function(object, ...) {
-  estimate(object, ...)
+  lava::estimate(object, ...)
 }
 
 ##' @export
@@ -34,7 +34,7 @@ estimate.policy_eval <- function(x, ..., labels=x$name) {
       labels <- paste0("value", seq(p))
     }
   }
-  return(estimate(NULL, coef=coef(x), iid=iid(x), labels=labels, ...))
+  return(lava::estimate(NULL, coef=coef(x), iid=iid(x), labels=labels, ...))
 }
 
 ##' @export
