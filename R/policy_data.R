@@ -229,7 +229,6 @@ wide_stage_data_to_long <- function(wide_stage_data, id_col = NULL, A_cols, X_co
       stop("X_cols must be a vector or a list of vectors or lists of type character.")
     return(x_col)
   })
-
   if (missing(X_value_names)) {
     X_value_names <- names(X_cols)
     if (is.null(X_value_names) && K==1)
@@ -293,19 +292,19 @@ print.policy_data <- function(x, digits = 2, ...){
   cat("\n")
   bc <- paste(x$colnames$baseline_data_names, collapse = ", ")
   cat(
-    paste("Baseline covariates: ", bc, ".", sep = "")
+    paste("Baseline covariates: ", bc, sep = "")
   )
   cat("\n")
   sc <- paste(x$colnames$stage_data_names, collapse = ", ")
   cat(
-    paste("State covariates: ", sc, ".", sep = "")
+    paste("State covariates: ", sc, sep = "")
   )
   cat("\n")
   mean_utility <- mean(utility(x)$U)
   mean_utility <- round(mean_utility, digits = digits)
 
   cat(
-    paste("Average utility: ", mean_utility, ".", sep = "")
+    paste("Average utility: ", mean_utility, sep = "")
   )
   cat("\n")
 }
