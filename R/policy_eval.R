@@ -40,7 +40,7 @@ estimate.policy_eval <- function(x, ..., labels=x$name) {
 ##' @export
 "merge.policy_eval" <- function(x, y, ..., paired=TRUE) {
   dots <- list(...)
-  idx <- names(dots)%in%formalArgs(estimate.default)[-1]
+  idx <- names(dots)%in%formalArgs(lava::estimate.default)[-1]
   est_args <- list()
   if (length(idx)>0) {
     est_args <- dots[which(idx)]
