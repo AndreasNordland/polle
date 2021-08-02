@@ -6,10 +6,10 @@ par0 <- list(
   mu_C = c(-2.1),
   gamma_C = c(-1.3,1.5),
   # gamma_A = -1, # gamma_A must be negative
-  gamma_A = -0.02,
+  gamma_A = -0.2,
   sigma_L = 1.5,
   sigma_C = 2,
-  alpha = 0 # 0 corresponds to no "protection"
+  alpha = 0.05 # 0 corresponds to no "protection"
 )
 
 # observed action at stage 1
@@ -67,12 +67,12 @@ d_alpha_opt_10 <- function(data, par){
 # rm(two_stage_policy_data)
 
 # approximated mean utility under the optimal policy
-# n <- 2e6
-# set.seed(2)
-# d <- simulate_two_stage_data(n = n, par = par0, a_1 = d_alpha_opt_10, a_2 = d_alpha_opt_20)
-# two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
-# optimal_utility <- mean(utility(two_stage_policy_data)$U)
-# rm(two_stage_policy_data)
+n <- 2e6
+set.seed(2)
+d <- simulate_two_stage_data(n = n, par = par0, a_1 = d_alpha_opt_10, a_2 = d_alpha_opt_20)
+two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
+optimal_utility <- mean(utility(two_stage_policy_data)$U)
+rm(two_stage_policy_data)
 
 
 # g-models ----------------------------------------------------------------
@@ -328,36 +328,65 @@ predict.qbias <- function(q_model, new_AX){
 # DR ----------------------------------------------------------------------
 
 n <- 2e3
-set.seed(3)
+set.seed(1)
 d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
 two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
 
-print(two_stage_policy_data, digits = 4)
-
-utility(two_stage_policy_data)$U
-
-table(two_stage_policy_data$stage_data[event == 0,][, .N, .(stage, A)])
-
-table(two_stage_policy_data$stage_data[event == 0,][, c("stage", "A"), with = FALSE])
-two_stage_policy_data$colnames$baseline_data_names
-
 tmp <- policy_eval(
-  type = "dr",
+  type = "cv",
   two_stage_policy_data,
   # policy = optimal_policy,
   policy_learner = rqvl,
   qv_models = list(q_glm(formula = ~L+C), q_glm(formula = ~L+C)),
+  # policy = optimal_policy,
+  # g_models = g_glm(),
+  g_models = g0,
+  # g_models = list(g_glm(), g_glm()),
+  # g_models = list(g_glm(~L_1), g_glm(~L_1)),
+  q_models = list(q0_1, q0_2),
+  # q_models = q_glm(),
+  g_full_history = FALSE,
+  q_full_history = FALSE,
+  qv_full_histort = FALSE,
+  alpha = 0.05,
+  mc.cores = 3,
+  M = 3,
+  L = NULL
+)
+
+tmp$pe_dr_cv$`1`$policy_object$qv_functions
+
+tmp$pe_dr_cv$`1`$policy_object
+
+tmp$g_functions
+
+all.equal(get_policy(tmp$policy_object)(two_stage_policy_data), optimal_policy(two_stage_policy_data))
+optimal_utility
+
+tmp <- rql(
+  type = "dr",
+  two_stage_policy_data,
+  qv_models = list(q_glm(formula = ~L+C), q_glm(formula = ~L+C)),
   alpha = 0,
   # policy = optimal_policy,
   g_models = g_glm(),
+  # g_models = list(g_glm(), g_glm(), g_glm()),
   # g_models = list(g_glm(~L_1), g_glm(~L_1)),
   # q_models = list(q0_1, q0_2),
   q_models = q_glm(),
   g_full_history = FALSE,
   q_full_history = FALSE,
+  qv_full_histort = FALSE,
   mc.cores = 3,
   M = 3,
+  L = 3
 )
+tmp$alpha
+tmp$g_functions
+tmp$q_functions
+
+tmp2 <- get_policy(tmp)
+tmp2(two_stage_policy_data)
 
 tmp2 <- policy_eval(
   type = "ipw",

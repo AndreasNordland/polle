@@ -130,14 +130,19 @@ policy_eval_dr_fold <- function(fold,
   train_pe_dr <- do.call(what = "policy_eval_dr", args = train_args)
 
   # getting the policy:
-  if (is.null(policy))
+  if (is.null(policy)){
     policy <- get_policy(train_pe_dr$policy_object)
+  }
 
   validation_args <- list(policy_data = validation_policy_data,
                           policy = policy,
                           g_functions = train_pe_dr$g_functions,
                           q_functions = train_pe_dr$q_functions)
   validation_pe_dr <- do.call(what = "policy_eval_dr", args = validation_args)
+
+  if (!is.null(train_pe_dr$policy_object)){
+    validation_pe_dr$policy_object <- train_pe_dr$policy_object
+  }
 
   return(validation_pe_dr)
 }
@@ -210,14 +215,13 @@ policy_eval_dr <- function(policy_data,
                           q_models = q_models, q_functions = q_functions, q_full_history = q_full_history,
                           ...)
 
-
   # calculating the doubly robust score and value estimate:
   if (is.null(policy))
     policy <- get_policy(function_fits$policy_object)
   value_object <- dr_value(policy_data = policy_data,
                     policy = policy,
                     g_functions = function_fits$g_functions,
-                    q_function = function_fits$q_functions)
+                    q_functions = function_fits$q_functions)
 
   out <- list(
     value_estimate = value_object$value_estimate,

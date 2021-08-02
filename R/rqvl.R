@@ -39,28 +39,40 @@ evaluate.QV_function <- function(object, new_history){
   return(qv_values)
 }
 
+# note: if L > 1 and alpha > 0 then the g_functions fitting on the complete data is used to determine future realistic actions.
 #' @export
-rqvl <- function(
-  policy_data,
-  alpha,
-  g_models,
-  q_models,
-  q_full_history = FALSE,
-  g_full_history = FALSE,
-  qv_models,
-  qv_full_history = FALSE,
-  L = NULL,
-  ...
-){
-  K <- policy_data$dim$K
-  n <- policy_data$dim$n
-  action_set <- policy_data$action_set
+rqvl <- function(policy_data,
+                 alpha,
+                 g_models = NULL, g_functions = NULL, g_full_history,
+                 q_models, q_full_history,
+                 qv_models, qv_full_history = FALSE,
+                 L = NULL,
+                 ...){
+  K <- get_K(policy_data)
+  n <- get_n(policy_data)
+  action_set <- get_action_set(policy_data)
+
+  if (!(is.numeric(alpha) &  (length(alpha) == 1) & (alpha >=0 & alpha < 0.5)))
+    stop("alpha must be numeric and in [0, 0.5).")
+
+  if (!is.null(g_functions)){
+    if(!(class(g_functions)[[1]] == "nuisance_functions"))
+      stop("g-functions must be of class 'nuisance_functions'.")
+  }
 
   if (class(q_models)[[1]] == "list"){
     if (length(q_models) != K) stop("q_models must either be a list of length K or a single Q-model.")
   }
-  if (!is.null(L))
-    if (!is.numeric(L) | (L<2)) stop("L must be greater than 1.")
+
+  if (class(qv_models)[[1]] == "list"){
+    if (length(qv_models) != K) stop("qv_models must either be a list of length K or a single QV-model.")
+  }
+
+  if (!is.null(L)){
+    if (!is.numeric(L) | (L<2)) stop("The number of folds L must be greater than 1.")
+    if (is.null(g_models)) stop("g_models must be provided when L > 1.")
+  }
+
 
   # getting the observed actions:
   actions <- get_actions(policy_data)
@@ -68,7 +80,7 @@ rqvl <- function(
   # getting the IDs:
   id <- get_id(policy_data)
 
-  # getting the IDs and the observed (complete) utilities:
+  # getting the observed (complete) utilities:
   utility <- utility(policy_data)
 
   # constructing the folds for cross-fitting:
@@ -79,30 +91,42 @@ rqvl <- function(
   }
 
   # cross-fitting the g-functions:
-  g_functions <- NULL
+  g_functions_cf <- NULL
   if (is.null(folds)){
-    g_functions <- fit_g_functions(policy_data, models = g_models, full_history = g_full_history)
+    if (is.null(g_functions)){
+      g_functions <- fit_g_functions(policy_data,
+                                     g_models = g_models,
+                                     full_history = g_full_history)
+    }
     g_values <- evaluate(g_functions, policy_data)
   } else{
-    cf_g <- cf_fit_nuisance_functions(
-      fit_functions = fit_g_functions,
+    g_cf <- fit_g_functions_cf(
       policy_data = policy_data,
-      models = g_models,
+      g_models = g_models,
       full_history = g_full_history,
       folds = folds
     )
-    g_functions <- cf_g$functions
-    g_values <- cf_g$values
+    g_functions_cf <- g_cf$g_functions_cf
+    g_values <- g_cf$g_values
+    # fitting the non-cross-fitted g-functions
+    # for determining future realistic actions:
+    if (alpha > 0){
+      if (is.null(g_functions)){
+        g_functions <- fit_g_functions(policy_data,
+                                       g_models = g_models,
+                                       full_history = g_full_history)
+      }
+    } else{
+      g_functions <- NULL
+    }
   }
-
-  # getting the observed values of the g-functions:
-  g_A_values <- get_a_values(a = actions$A, action_set = action_set, g_values)
 
   # (n) vector with entries U_i:
   U <- utility$U
   # (n X K) matrix with entries I(d_k(H_k) = A_k):
   II <- matrix(nrow = n, ncol = K)
   # (n X K) matrix with entries g_k(A_k, H_k)
+  g_A_values <- get_a_values(a = actions$A, action_set = action_set, g_values)
   G <- as.matrix(dcast(g_A_values, id ~ stage, value.var = "P")[, -c("id"), with = FALSE])
   # (n X K+1) matrix with entries Q_k(H_{k,i}, d_k(H_{k,i})), Q_{K+1} = U:
   Q <- matrix(nrow = n, ncol = K+1)
@@ -110,24 +134,26 @@ rqvl <- function(
 
   g_cols <- paste("g_", action_set, sep = "")
   q_cols <- paste("Q_", action_set, sep = "")
-  q_functions <- list()
-  qv_functions <- list()
-  for (k in K:1){
 
+  q_functions <- list()
+  q_functions_cf <- list()
+  qv_functions <- list()
+
+  for (k in K:1){
     if (is.null(folds)){
-      Q_step_k <- Q_step(
+      q_step_k <- q_step(
         policy_data = policy_data,
         k = k,
         full_history = q_full_history,
         Q = Q[, k+1],
         q_models = q_models
       )
-      # getting the Q-function, Q-function values and the ID-index
-      q_functions[[k]] <- Q_step_k$q_function
-      q_values_k <- Q_step_k$q_values
-      idx_k <- Q_step_k$idx_k
+      # getting the Q-function, Q-function values and the ID-index:
+      q_functions[[k]] <- q_step_k$q_function
+      q_values_k <- q_step_k$q_values
+      idx_k <- q_step_k$idx_k
     } else{
-      cf_Q_step_k <- cf_Q_step(
+      q_step_cf_k <- q_step_cf(
         folds = folds,
         policy_data = policy_data,
         k = k,
@@ -135,9 +161,9 @@ rqvl <- function(
         Q = Q[, k+1],
         q_models = q_models
       )
-      q_functions[[k]] <- cf_Q_step_k$q_function
-      q_values_k <- cf_Q_step_k$q_values
-      idx_k <- cf_Q_step_k$idx_k
+      q_functions_cf[[k]] <- q_step_cf_k$q_function
+      q_values_k <- q_step_cf_k$q_values
+      idx_k <- q_step_cf_k$idx_k
     }
 
     # getting the action matrix for stage k:
@@ -188,20 +214,29 @@ rqvl <- function(
     G[!idx_k,k] <- TRUE
   }
 
-  class(q_functions) <- "nuisance_functions"
-  attr(q_functions, "full_history") <- q_full_history
+  if (length(q_functions) > 1){
+    class(q_functions) <- "nuisance_functions"
+    attr(q_functions, "full_history") <- q_full_history
+  } else{
+    q_functions <- NULL
+  }
+  if (length(q_functions_cf) == 0){
+    q_functions_cf <- NULL
+  }
 
   class(qv_functions) <- "nuisance_functions"
   attr(qv_functions, "full_history") <- qv_full_history
 
-  phi_dr <- apply(action_matrix(d, action_set) * Z, 1, sum)
+  Zd <- apply(action_matrix(d, action_set) * Z, 1, sum)
 
   out <- list(
     qv_functions = qv_functions,
     q_functions = q_functions,
+    q_functions_cf = q_functions_cf,
     g_functions = g_functions,
-    value_estimate = mean(phi_dr),
-    phi_dr = phi_dr,
+    g_functions_cf = g_functions_cf,
+    value_estimate = mean(Zd),
+    iid = Zd - mean(Zd),
     action_set = action_set,
     alpha = alpha,
     K = K,

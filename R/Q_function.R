@@ -55,6 +55,12 @@ evaluate.Q_function <- function(object, new_history){
   q_values <- U$U_bar + U[, ..action_utility_names] + residual_q_predictions
   names(q_values) <- paste("Q", action_set, sep = "_")
 
+  if (!all(complete.cases(q_values))){
+    stage <- unique(new_history$H$stage)
+    mes <- paste("Evaluation of the Q-function at stage ", stage, " have missing values.", sep = "")
+    stop(mes)
+  }
+
   # including the IDs and stage number
   q_values <- data.table(id_stage, q_values)
   setkey(q_values, id, stage)
@@ -62,7 +68,7 @@ evaluate.Q_function <- function(object, new_history){
   return(q_values)
 }
 
-Q_step <- function(policy_data, k, full_history, Q, q_models){
+q_step <- function(policy_data, k, full_history, Q, q_models){
   id <- get_id(policy_data)
   id_k <- get_id_stage(policy_data)[stage == k]$id
   idx_k <- (id %in% id_k)
@@ -88,20 +94,20 @@ Q_step <- function(policy_data, k, full_history, Q, q_models){
   return(out)
 }
 
-cf_Q_step <- function(folds, policy_data, k, full_history, Q, q_models){
+q_step_cf <- function(folds, policy_data, k, full_history, Q, q_models){
   id <- get_id(policy_data)
   id_k <- get_id_stage(policy_data)[stage == k]$id
   idx_k <- (id %in% id_k)
   K <- policy_data$dim$K
 
-  cf_q_step <- lapply(
+  q_step_cf <- lapply(
     folds,
     function(f){
       train_id <- id[-f]
       train_policy_data <- subset(policy_data, train_id)
       train_Q <- Q[-f]
-      if (train_policy_data$dim$K != K) stop("The number of stages K varies across the policy data training folds.")
-      train_q_step <- Q_step(train_policy_data, k = k, full_history = full_history, Q = train_Q, q_models = q_models)
+      if (train_policy_data$dim$K != K) stop("The number of stages varies accross the training folds.")
+      train_q_step <- q_step(train_policy_data, k = k, full_history = full_history, Q = train_Q, q_models = q_models)
       train_q_function <- train_q_step$q_function
 
       validation_id <- id[f]
@@ -116,16 +122,16 @@ cf_Q_step <- function(folds, policy_data, k, full_history, Q, q_models){
       return(out)
     }
   )
-  cf_q_step <- simplify2array(cf_q_step)
+  q_step_cf <- simplify2array(q_step_cf)
 
-  q_functions <- cf_q_step["train_q_function", ]
-  q_values <- cf_q_step["validation_values", ]
+  q_functions_cf <- q_step_cf["train_q_function", ]
+  q_values <- q_step_cf["validation_values", ]
 
   q_values <- rbindlist(q_values)
   setkeyv(q_values, c("id", "stage"))
 
   out <- list(
-    q_functions = q_functions,
+    q_functions_cf = q_functions_cf,
     q_values = q_values,
     idx_k = idx_k
   )
@@ -158,7 +164,7 @@ fit_Q_functions <- function(policy_data, policy_actions, q_models, full_history 
   # fitting the Q-functions:
   q_functions <- list()
   for (k in K:1){
-    q_step_k <- Q_step(
+    q_step_k <- q_step(
       policy_data = policy_data,
       k = k,
       full_history = full_history,

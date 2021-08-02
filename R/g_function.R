@@ -34,8 +34,13 @@ evaluate.g_function <- function(object, new_history){
   if (!all(names(new_X) %in% X_names)) stop("new_history does not have the same variable names as the original history.")
 
   g_values <- predict(g_model, new_X = new_X)
-
   colnames(g_values) <- paste("g", action_set, sep = "_")
+
+  if (!all(complete.cases(g_values))){
+    stage <- unique(new_history$H$stage)
+    mes <- paste("Evaluation of the g-function at stage ", stage, " have missing values.", sep = "")
+    stop(mes)
+  }
 
   # including the id's
   g_values <- data.table(id_stage, g_values)
@@ -45,28 +50,66 @@ evaluate.g_function <- function(object, new_history){
 }
 
 #' @export
-fit_g_functions <- function(policy_data, models, full_history){
+fit_g_functions <- function(policy_data, g_models, full_history){
   K <- get_K(policy_data)
 
-  # checking the models:
-  if (class(models)[[1]] == "list"){
-    if (length(models) != K) stop("models must either be a list of length K or a single g-model.")
+  # checking the g_models:
+  if (class(g_models)[[1]] == "list"){
+    if (length(g_models) != K) stop("g_models must either be a list of length K or a single g-model.")
   } else{
     if (full_history == TRUE) stop("full_history must be FALSE when a single g-model is provided.")
   }
 
-  if (class(models)[[1]] == "list"){
+  if (class(g_models)[[1]] == "list"){
     history <- lapply(1:K, function(s) get_stage_history(policy_data, stage = s, full_history = full_history))
-    g_functions <- mapply(history, models, FUN = function(h, gm) fit_g_function(history = h, g_model = gm), SIMPLIFY = FALSE)
+    g_functions <- mapply(history, g_models, FUN = function(h, gm) fit_g_function(history = h, g_model = gm), SIMPLIFY = FALSE)
   } else{
     history <- state_history(policy_data)
-    g_functions <- list(fit_g_function(history, models))
+    g_functions <- list(fit_g_function(history, g_models))
   }
 
   class(g_functions) <- "nuisance_functions"
   attr(g_functions, "full_history") <- full_history
 
   return(g_functions)
+}
+
+#' @export
+fit_g_functions_cf <- function(folds, policy_data, g_models, full_history, ...){
+  id <- get_id(policy_data)
+  K <- policy_data$dim$K
+
+  fit_cf <- lapply(
+    folds,
+    function(f){
+      train_id <- id[-f]
+      train_policy_data <- subset(policy_data, train_id)
+      if (train_policy_data$dim$K != K) stop("The number of stages K varies across the training policy data folds.")
+      train_g_functions <- fit_g_functions(policy_data = train_policy_data, g_models = g_models, full_history = full_history, ...)
+
+      validation_id <- id[f]
+      validation_policy_data <- subset(policy_data, validation_id)
+      validation_g_values <- evaluate(train_g_functions, validation_policy_data)
+
+      list(
+        train_g_functions = train_g_functions,
+        validation_g_values = validation_g_values
+      )
+    }
+  )
+  fit_cf <- simplify2array(fit_cf)
+
+  g_functions_cf <- fit_cf["train_g_functions", ]
+  g_values <- fit_cf["validation_g_values", ]
+
+  g_values <- rbindlist(g_values)
+  setkeyv(g_values, c("id", "stage"))
+
+  out <- list(
+    g_functions_cf = g_functions_cf,
+    g_values = g_values
+  )
+  return(out)
 }
 
 

@@ -62,6 +62,8 @@ E_truncated_gauss <- function(mu, sigma, a, b){
   gamma <- (a - mu) / sigma
   alpha <- (b - mu) / sigma
   Z <- pnorm(alpha) - pnorm(gamma)
+  if (any(Z == 0))
+    stop("parameter gamma_A too high.")
 
   mu + (dnorm(gamma) - dnorm(alpha)) / Z * sigma
 }
