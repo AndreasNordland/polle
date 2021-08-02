@@ -195,13 +195,18 @@ policy_eval_cv_dr <- function(policy_data,
   value_estimate <- unlist(lapply(pe_dr_cv, function(x) x$value_estimate))
   value_estimate <- sum((n / sum(n)) * value_estimate)
 
+  value_estimate_ipw <- unlist(lapply(pe_dr_cv, function(x) x$value_estimate_ipw))
+  value_estimate_ipw <- sum((n / sum(n)) * value_estimate_ipw)
+
   iid <- iid[order(id)]
   id <- id[order(id)]
 
   out <- list(value_estimate = value_estimate,
               iid = iid,
               pe_dr_cv = pe_dr_cv,
-              id = id
+              id = id,
+              value_estimate_ipw = value_estimate_ipw,
+              folds = folds
   )
   class(out) <- c("policy_eval_cv_dr", "policy_eval")
   return(out)
