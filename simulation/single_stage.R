@@ -5,10 +5,11 @@ a0 <- function(Z, L, B, par){
   kappa <- par$kappa
   xi <- par$xi
   n <- length(Z)
-  rbinom(n, 1, lava::expit(kappa * (Z + L - 1) * Z^(-2) + (B == "a") * xi))
+  # rbinom(n, 1, lava::expit(kappa * (Z + L - 1) * Z^(-2) + (B == "a") * xi))
+  rbinom(n, 1, lava::expit(kappa * (Z + L - 1) + (B == "a") * xi))
 }
 par0 <- list(
-  kappa = 0.1,
+  kappa = 0.6,
   # kappa = 0,
   gamma = 3,
   alpha = 1,
@@ -87,7 +88,6 @@ treat_policy <- policy_def(
   full_history = FALSE,
   replicate = TRUE
 )
-
 
 set.seed(1)
 d <- simulate_single_stage(n = 2e3, a = a0, par = par0)
@@ -286,7 +286,7 @@ his <- state_stage_history(single_stage_policy_data, stage = 1)
 Q <- utility(single_stage_policy_data)$U
 tmp <- fit_Q_function(
   his,
-  V,
+  Q,
   # q_model = new_q_glm(~Z + L)
   # q_model = new_q_glm()
   q_model = q0
@@ -326,40 +326,186 @@ evaluate.Q_function(tmp, new_history = his)
 
 # DR ----------------------------------------------------------------------
 
-n <- 2e4
-set.seed(2)
+n <- 5e3 + 2
+set.seed(3)
 d <- simulate_single_stage(n = n, a = a0, par = par0)
 single_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
 
+library(ranger)
 tmp <- policy_eval(
-  single_stage_policy_data,
-  q_models = new_q_glm(),
-  g_models = new_g_glm(),
+  type = "cv",
+  M = 5,
+  policy_data = single_stage_policy_data,
+  q_models = q_rf(),
+  g_models = g_rf(seed = 1),
   policy = treat_policy
 )
-tmp$value_estimate
 
-tmp$g_functions[[1]]$g_model
-tmp$q_functions[[1]]$q_model
-
-sd(tmp$phi_or)
-sd(tmp$phi_ipw)
-sd(tmp$phi_dr)
-
-mean(tmp$phi_ipw)
-mean(tmp$phi_or)
-rm(tmp)
-
-# cross-fitting:
-tmp <- cv_dr(
-  single_stage_policy_data,
-  q_models = new_q_glm(),
-  g_models = new_g_glm(),
-  policy = linear_policy,
-  M = 3,
-  mc.cores = 3
+tmp_train <- policy_eval(
+  type = "dr",
+  policy_data = single_stage_policy_data,
+  q_models = q_rf(),
+  g_models = g_rf(seed = 1),
+  policy = treat_policy
 )
-mean(tmp$phi_dr)
+
+tmp
+tmp_train
+always_treat_utility
+
+tmp$value_estimate_ipw
+
+tmp_train$value_estimate_ipw
+tmp_train$value_estimate_or
+
+tmp$pe_dr_cv$`1`$g_functions[[1]]$g_model$fit$call <- NULL
+tmp$pe_dr_cv$`1`$g_functions[[1]]$g_model$fit
+
+id <- get_id(single_stage_policy_data)
+
+sub_single_stage_policy_data <- subset(single_stage_policy_data, id = id[-tmp$folds[[1]]])
+
+sub_his <- get_stage_history(sub_single_stage_policy_data, 1, FALSE)
+
+sub_fit <- fit_g_function(sub_his, g_rf(seed = 1))
+sub_fit$g_model$fit$call <- NULL
+
+sub_fit$g_model$fit
+
+folds_g_functions <- lapply(
+  tmp$pe_dr_cv,
+  function(m){
+    gf <- m$g_functions[[1]]
+    gf$g_model$fit$call <- NULL
+    return(gf)
+  }
+)
+
+val <- mapply(function(fold, m){
+  vd <- subset(single_stage_policy_data, id = id[fold])
+  vs <- get_stage_history(vd, 1, FALSE)
+  out <-evaluate(m, vs)
+  return(out)
+}, tmp$folds, folds_g_functions, SIMPLIFY = FALSE)
+val <- rbindlist(val)
+setkey(val, id, stage)
+
+train <- evaluate(tmp_train$g_functions, single_stage_policy_data)
+
+A <- as.numeric(get_A(state_history(single_stage_policy_data)))
+mean((A == 1) / (val$g_1) * utility(single_stage_policy_data)$U)
+tmp$value_estimate_ipw
+
+mean((A == 1) / (train$g_1) * utility(single_stage_policy_data)$U)
+tmp_train$value_estimate_ipw
+
+calibration <- function(pr, cl, weights=NULL, threshold=10, method="isotonic", breaks, ...) {
+  if (!is.matrix(pr) && !is.data.frame(pr) && !is.numeric(pr)) {
+    pr <- predict(pr, ...)
+  }
+  unique_cl <- sort(unique(cl))
+  if (NCOL(pr)==1) {
+    lastcl <- firstcl <- c()
+    if (is.factor(cl)) {
+      lastcl <- tail(levels(cl),1)
+      firstcl <- levels(cl)[1]
+    } else {
+      lastcl <- tail(unique_cl,1)
+      firstcl <- unique_cl[1]
+    }
+    pr <- cbind(pr); colnames(pr) <- lastcl
+    if (length(unique_cl)==2) {
+      pr <- cbind(1-pr,pr)
+      colnames(pr) <- c(firstcl,lastcl)
+    }
+  }
+  classes <- colnames(pr)
+  clmis <- !(unique_cl %in% classes) ## Classes not in probability matrix
+  if (any(clmis)) { ## Assign 0 probability
+    pr0 <- matrix(0,nrow=nrow(pr),ncol=sum(clmis))
+    colnames(pr0) <- unique_cl[clmis]
+    pr <- cbind(pr,pr0)
+    classes <- c(classes,colnames(pr0))
+  }
+  pr[is.na(pr)] <- 0
+  stepfuns <- list()
+  xy <- list()
+  method <- tolower(method)
+  if (!missing(breaks)) {
+    method <- "bin"
+    if (is.numeric(breaks) && length(breaks)==1)
+      breaks <- seq(0, 1, length.out=breaks)
+  }
+  for (i in seq(ncol(pr))) {
+    y <- (cl==classes[i])
+    sy <- if (!is.null(weights)) sum(y*weights) else sum(y)
+    ## Check if any (enough) observations falls in class i
+    if (any(!is.na(y)) && sy>threshold) {
+      if (method=="isotonic") {
+        m <- isoreg(pr[,i],y,weights=weights)
+        stepfuns <- c(stepfuns, m)
+      }
+      if (method%in%c("logistic","platt","mspline")) {
+        if (method%in%c("logistic","platt")) {
+          m <- glm(y~pr[,i],weights=weights,family=binomial)
+        } else if (method%in%c("mspline")) {
+          m <- glm(y~mgcv::mono.con(pr[,i]),weights=weights,family=binomial)
+        }
+        phat <- predict(m,type="response")
+        f <- function(x) {
+          a <- approxfun(c(0,pr[,i],1),c(0,phat,1))
+          res <- a(x)
+          res[res<0] <- 0
+          res[res>1] <- 1
+          res
+        }
+        stepfuns <- c(stepfuns, f)
+      }
+      if (method%in%"bin") {
+        cpt <- quantile(pr[,i], breaks)
+        cpt <- cpt[which(!duplicated(cpt))]
+        val <- cut(pr[,i], breaks=cpt, include.lowest=TRUE)
+        if (!is.null(weights)) {
+          phat <- aggregate(cbind(y,weights), by=list(val), function(x) weighted.mean(x[,1],x[,2]))[,2]
+        } else {
+          phat <- aggregate(y, by=list(val), mean)[,2]
+        }
+        mpt <- diff(cpt)/2+cpt[-length(cpt)] # mid-point
+        xy <- c(xy, list(data.frame(pred=mpt, freq=phat)))
+        f <- approxfun(c(0,cpt[-1]),c(0,phat))
+        stepfuns <- c(stepfuns, f)
+      }
+    } else {
+      ## With to few observations we will not do any further calibration
+      stepfuns <- c(stepfuns, base::identity)
+    }
+  }
+  names(stepfuns) <- classes
+  mycall <- match.call()
+  return(structure(list(
+    call=mycall,
+    stepfun=stepfuns,
+    classes=classes,
+    model=method,
+    xy=xy),
+    class="calibration"))
+}
+
+##' @export
+plot.calibration <- function(x, cl=2, add=FALSE, xlab="Prediction",ylab="Fraction of positives", main="Calibration plot", type="s", ...) {
+  if (!add) {
+    plot(0,0, type="n", xlim=c(0,1), ylim=c(0,1), xlab=xlab, ylab=ylab, main=main)
+    abline(a=0,b=1, col="lightgray")
+  }
+  plot(x$stepfun[[cl]], add=TRUE, type=type, ...)
+}
+
+cal1 <- calibration(pr = val$g_1, cl = A, breaks = 100)
+cal2 <- calibration(pr = train$g_1, cl = A, breaks = 100)
+plot(cal1)
+plot(cal2)
+
+calibrate(cal1, pr1, ...)
 
 # coverage
 res <- replicate(
