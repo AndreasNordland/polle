@@ -148,6 +148,7 @@ state_history.policy_data <- function(object){
   return(history)
 }
 
+##' @export
 get_X <- function(history, vars = NULL){
   H <- history$H
   action_name <- history$action_name
@@ -182,9 +183,11 @@ get_history_names <- function(policy_data, stage = NULL){
   return(history_names)
 }
 
+##' @export
 get_A <- function(object)
   UseMethod("get_A")
 
+##' @export
 get_A.history <- function(object){
   H <- object$H
   action_name <- object$action_name
@@ -194,9 +197,11 @@ get_A.history <- function(object){
   return(A)
 }
 
+##' @export
 get_id_stage <- function(object)
   UseMethod("get_id_stage")
 
+##' @export
 get_id_stage.history <- function(object){
   H <- object$H
   id_stage_names <- c("id", "stage")

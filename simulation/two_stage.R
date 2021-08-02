@@ -132,7 +132,7 @@ always_treat_stage_policy <- function(history){
   return(pol)
 }
 
-always_treat_policy <- new_policy(
+always_treat_policy <- policy_def(
   stage_policies = always_treat_stage_policy,
   full_history = FALSE,
   replicate = TRUE
@@ -158,7 +158,7 @@ optimal_stage_policy_stage_2 <- function(history){
   return(pol)
 }
 
-optimal_policy <- new_policy(
+optimal_policy <- policy_def(
   stage_policies = list(optimal_stage_policy_stage_1, optimal_stage_policy_stage_2),
   full_history = TRUE
 )

@@ -2,7 +2,7 @@
 # a stage policy should take a history object as input and return a data.table with id, stage and d (d: policy action)
 
 #' @export
-new_policy <- function(stage_policies, full_history = FALSE, replicate = FALSE){
+policy_def <- function(stage_policies, full_history = FALSE, replicate = FALSE){
   force(stage_policies)
   force(full_history)
   force(replicate)

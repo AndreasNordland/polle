@@ -6,7 +6,7 @@ coef.policy_eval <- function(object, ...) {
 ##' @export
 iid.policy_eval <- function(x, ...) {
   res <- cbind(x$iid)
-  return(res/nrow(res))
+  return(res/NROW(res))
 }
 
 ##' @export
@@ -21,7 +21,7 @@ print.policy_eval <- function(x, ...) {
 
 ##' @export
 summary.policy_eval <- function(object, ...) {
-  estimate(object, ...)
+  lava::estimate(object, ...)
 }
 
 ##' @export
@@ -34,13 +34,13 @@ estimate.policy_eval <- function(x, ..., labels=x$name) {
       labels <- paste0("value", seq(p))
     }
   }
-  return(estimate(NULL, coef=coef(x), iid=iid(x), labels=labels, ...))
+  return(lava::estimate(NULL, coef=coef(x), iid=iid(x), labels=labels, ...))
 }
 
 ##' @export
 "merge.policy_eval" <- function(x, y, ..., paired=TRUE) {
   dots <- list(...)
-  idx <- names(dots)%in%formalArgs(estimate.default)[-1]
+  idx <- names(dots)%in%formalArgs(lava::estimate.default)[-1]
   est_args <- list()
   if (length(idx)>0) {
     est_args <- dots[which(idx)]
@@ -83,11 +83,15 @@ static_policy <- function(action, name=paste0("a=",action)) {
 ##' @param ... Additional arguments parsed to lower level functions
 policy_eval <- function(policy_data,
                         policy = NULL, policy_learner = NULL,
-                        g_functions=NULL, g_models=NULL, g_full_history = FALSE,
-                        q_functions=NULL, q_models=NULL, q_full_history = FALSE,
+                        g_functions=NULL, g_models=g_glm(), g_full_history = FALSE,
+                        q_functions=NULL, q_models=q_glm(), q_full_history = FALSE,
                         M=5, type="dr", ...) {
   type <- tolower(type)
+  fm <- formals()[-(1:3)]
+  fm[["..."]] <- NULL
   cl <- match.call(expand.dots=TRUE)
+  for (i in setdiff(names(fm), names(cl)))
+    cl[i] <- list(fm[[i]])
   if (type%in%c("cv", "crossfit", "cf", "cv_dr")) {
     cl[[1]] <- policy_eval_cv_dr
   }

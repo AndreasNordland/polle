@@ -26,9 +26,10 @@ get_response <- function(formula, ...) {
   return(y)
 }
 
-get_design <- function(formula, data) {
+get_design <- function(formula, data, intercept=FALSE) {
   tt <- terms(formula, data=data)
-  attr(tt, "intercept") <- 0
+  if (!intercept)
+    attr(tt, "intercept") <- 0
   tt <- delete.response(tt)
   mf <- model.frame(tt, data=data)
   x_levels <- .getXlevels(tt, mf)
@@ -66,6 +67,7 @@ predict.g_glm <- function(object, new_X){
 #' @export
 g_glmnet <- function(formula = ~., family = "binomial",
                      alpha = 1, s = "lambda.min", ...) {
+  if (!requireNamespace("glmnet")) stop("Package 'ranger' required")
   dotdotdot <- list(...)
   g_glmnet <- function(A, X) {
     formula <- update_g_formula(formula, A, X)
@@ -92,7 +94,7 @@ g_glmnet <- function(formula = ~., family = "binomial",
 }
 
 #' @export
-predict.g_glmnet <- function(object, new_X){
+predict.g_glmnet <- function(object, new_X) {
   glmnet_model <- object$glmnet_model
   mf <- with(object, model.frame(terms, data=new_X, xlev = xlevels,
                                  drop.unused.levels=FALSE))
@@ -102,13 +104,64 @@ predict.g_glmnet <- function(object, new_X){
   return(probs)
 }
 
+perf_ranger_prob <- function(fit, data,  ...) {
+  score_class(predict(fit, data=as.matrix(data[,-1,drop=FALSE]),
+                      num.threads=1)$predictions,
+              data[,1], ...)
+}
 
 #' @export
-g_rf <- function(formula = ~., ...) {
+g_rf <- function(formula = ~.,
+                 num.trees=c(500), mtry=NULL,
+                 cv_args=list(K=3, rep=1), ...) {
+  if (!requireNamespace("ranger")) stop("Package 'ranger' required")
   dotdotdot <- list(...)
+  hyper_par <- expand.list(num.trees=num.trees, mtry=mtry)
+    rf_args <- function(p) {
+        list(probability=TRUE, num.threads=1,
+             num.trees=p$num.trees, mtry=p$mtry)
+    }
+    ml <- lapply(hyper_par, function(p)
+      function(data) {
+        rf_args <- append(rf_args(p), list(y=data[,1], x=as.matrix(data[,-1,drop=FALSE])))
+        rf_args <- append(rf_args, dotdotdot)
+        do.call("ranger", args=rf_args)
+      })
 
   g_rf <- function(A, X) {
-
+    action_set <- sort(unique(A))
+    A <- factor(A, levels=action_set)
+    des <- get_design(formula, data=X)
+    data <- data.frame(A, des$x)
+    res <- NULL; best <- 1
+    if (length(ml)>1) {
+      res <- tryCatch(lava::cv(ml, data=data, perf=perf_ranger_prob,
+                               K=cv_args$K, rep=cv_args$rep),
+                      error=function(...) NULL)
+      best <- if (is.null(res)) 1 else which.min(summary(res))
+    }
+    if (!is.null(res)) {
+      fit <- res$fit[[best]]
+    } else {
+      fit <- ml[[best]](data)
+    }
+    m <- with(des, list(fit = fit,
+                        rf_args = rf_args(hyper_par[[best]]),
+                        num.trees=num.trees[best],
+                        xlevels = x_levels,
+                        terms = terms,
+                        action_set = action_set))
+    class(m) <- c("g_rf", "g_model")
+    return(m)
   }
   return(g_rf)
+}
+
+#' @export
+predict.g_rf <- function(object, new_X, ...) {
+  mf <- with(object, model.frame(terms, data=new_X, xlev = xlevels,
+                                 drop.unused.levels=FALSE))
+  newx <- model.matrix(mf, data=new_X, xlev = object$xlevels)
+  pr <- predict(object$fit, data=newx, num.threads=1)$predictions
+  return(pr)
 }
