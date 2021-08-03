@@ -64,6 +64,9 @@ rqvl <- function(policy_data,
     if (length(q_models) != K) stop("q_models must either be a list of length K or a single Q-model.")
   }
 
+  if(is.null(qv_models))
+    stop("qv_models are missing.")
+
   if (class(qv_models)[[1]] == "list"){
     if (length(qv_models) != K) stop("qv_models must either be a list of length K or a single QV-model.")
   }
@@ -185,7 +188,12 @@ rqvl <- function(policy_data,
     # getting the history for the QV model:
     qv_history_k <- get_stage_history(policy_data, stage = k, full_history = qv_full_history)
     # fitting the QV-function:
-    qv_function_k <- fit_QV_function(qv_history_k, Z = Z, qv_model = qv_models[[k]])
+    if (class(qv_models)[[1]] == "list"){
+      qv_model_k <- qv_models[[k]]
+    } else{
+      qv_model_k <- qv_models
+    }
+    qv_function_k <- fit_QV_function(qv_history_k, Z = Z, qv_model = qv_model_k)
     qv_functions[[k]] <- qv_function_k
     # getting the QV-function values:
     qv_values_k <- evaluate(qv_function_k, new_history = qv_history_k)
