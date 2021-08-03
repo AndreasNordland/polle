@@ -1,18 +1,21 @@
 #' @export
 bowl <- function(policy_data,
                  alpha = 0,
-                 g_models = NULL, g_functions = NULL, g_full_history = FALSE,
-                 policy_full_history = FALSE, policy_vars = NULL, ...){
+                 g_models = NULL, g_functions = NULL, g_full_history,
+                 policy_full_history = FALSE, policy_vars = NULL,
+                 res.lasso=TRUE, loss='hinge', kernel='linear',
+                 augment=FALSE, c=2^(-2:2), sigma=c(0.03,0.05,0.07), s=2.^(-2:2), m=4,
+                 ...){
 
-  if (is.null(g_models) & is.null(g_functions)) stop("Either g-models or g-functions must be provided.")
-  if (!is.null(g_functions) & !is.null(g_models)) stop("g-models and g-functions can not both be provided.")
   if (!is.null(g_functions)){
-    if(!(class(g_functions)[[1]] == "nuisance_functions")) stop("g-functions must be of class 'nuisance_functions'.")
+    if(!(class(g_functions)[[1]] == "nuisance_functions"))
+      stop("g-functions must be of class 'nuisance_functions'.")
   }
 
-  K <- policy_data$dim$K
-  n <- policy_data$dim$n
-  action_set <- policy_data$action_set
+  K <- get_K(policy_data)
+  n <- get_n(policy_data)
+  action_set <- get_action_set(policy_data)
+
   if (policy_full_history == TRUE){
     if ((!is.list(policy_vars)) | (length(policy_vars) != K)) stop("policy_vars must be a list of length K, when policy_full_history = TRUE")
   }
@@ -22,23 +25,27 @@ bowl <- function(policy_data,
   # getting the observed actions:
   actions <- get_actions(policy_data)
 
-  # fitting the g-functions:
-  if (!is.null(g_models)){
-    g_functions <- fit_g_functions(policy_data = policy_data, models = g_models, full_history = g_full_history)
-  }
-  g_values <- evaluate(g_functions, policy_data = policy_data)
-  g_A_values <- get_a_values(a = actions$A, action_set = action_set, g_values)
+  # getting the IDs:
+  id <- get_id(policy_data)
 
-  # getting the IDs and the observed (complete) utility
+  # getting the observed (complete) utilities:
   utility <- utility(policy_data)
-  id <- utility$id
+
+  # fitting the g-functions:
+  if (is.null(g_functions)){
+    g_functions <- fit_g_functions(policy_data,
+                                   g_models = g_models,
+                                   full_history = g_full_history)
+  }
+  g_values <- evaluate(g_functions, policy_data)
+  g_A_values <- get_a_values(a = actions$A, action_set = action_set, g_values)
 
   # (n) vector with entries U_i:
   U <- utility$U
 
   # (n X K+1) matrix with entries I(d_k(H_k) = A_k) for k <= K:
-  D <- matrix(nrow = n, ncol = K+1)
-  D[, K+1] <- TRUE
+  II <- matrix(nrow = n, ncol = K+1)
+  II[, K+1] <- TRUE
 
   # (n X K) matrix with entries g_k(A_k, H_k):
   G <- as.matrix(dcast(g_A_values, id ~ stage, value.var = "P")[, -c("id"), with = FALSE])
@@ -50,11 +57,11 @@ bowl <- function(policy_data,
     # getting the policy history for stage k
     policy_history_k <- get_stage_history(policy_data, stage = k, full_history = policy_full_history)
 
-    # getting the IDs and ID-Indices
+    # getting the IDs and ID-Indices:
     id_k <- policy_history_k$H$id
     idx_k <- (id %in% id_k)
 
-    # constructing the inputs for owl
+    # constructing the inputs for owl:
     if (policy_full_history == TRUE)
       vars <- policy_vars[[k]]
     else
@@ -71,13 +78,16 @@ bowl <- function(policy_data,
 
     RR <- merge(policy_history_k$U, utility, all.x = TRUE)
     RR <- (RR$U - RR$U_bar)
-    RR <- RR * colprod(D[idx_k, (k+1):(K+1)])
+    RR <- RR * colprod(II[idx_k, (k+1):(K+1)])
 
     pi <- colprod(G[idx_k , k:K])
 
     if ((ncol(X) == 1))
       stop("DTRlearn2 has a bug. H must be a matrix with ncol(H) > 1.")
-    owl_objects[[k]] <- DTRlearn2::owl(H = X, AA = AA, RR = RR, pi = pi, K = 1, n = nrow(X), ...)
+    owl_objects[[k]] <- DTRlearn2::owl(H = X, AA = AA, RR = RR, pi = pi, K = 1,
+                                       n = nrow(X), res.lasso=res.lasso,
+                                       loss=loss, kernel=kernel,
+                                       augment=augment, c=c, sigma=sigma, s=s, m=m)
 
     dd <- owl_objects[[k]]$stage$treatment
 
@@ -90,7 +100,7 @@ bowl <- function(policy_data,
       dd[(g_values_k[, g_cols[2], with = FALSE] < alpha)] <- action_set[1]
     }
 
-    D[idx_k, k] <- (AA == dd)
+    II[idx_k, k] <- (AA == dd)
 
   }
 
