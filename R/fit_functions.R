@@ -28,8 +28,7 @@ fit_functions <- function(policy_data,
     policy_object <- policy_learner(
       policy_data = policy_data,
       g_models = g_models, g_functions = g_functions, g_full_history = g_full_history,
-      q_models = q_models, q_functions = q_functions, q_full_history = q_full_history,
-      ...
+      q_models = q_models, q_functions = q_functions, q_full_history = q_full_history
     )
     policy <- get_policy(policy_object)
   }

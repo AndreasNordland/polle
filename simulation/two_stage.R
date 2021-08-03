@@ -327,38 +327,35 @@ predict.qbias <- function(q_model, new_AX){
 
 # DR ----------------------------------------------------------------------
 
-n <- 2e3
+n <- 1e3
 set.seed(1)
 d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
 two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
 
 tmp <- policy_eval(
-  type = "cv",
+  type = "dr",
   two_stage_policy_data,
+  policy_learner = policy_learn(
+    type = "bowl",
+    alpha = 0,
+    L = NULL,
+    qv_models = q_glm(formula = ~L+C),
+    policy_vars = c("L", "C")
+  ),
   # policy = optimal_policy,
-  policy_learner = rqvl,
-  qv_models = list(q_glm(formula = ~L+C), q_glm(formula = ~L+C)),
-  # policy = optimal_policy,
-  # g_models = g_glm(),
-  g_models = g0,
+  g_models = g_glm(),
+  # g_models = g0,
   # g_models = list(g_glm(), g_glm()),
   # g_models = list(g_glm(~L_1), g_glm(~L_1)),
-  q_models = list(q0_1, q0_2),
-  # q_models = q_glm(),
+  # q_models = list(q0_1, q0_2),
+  q_models = q_glm(),
   g_full_history = FALSE,
   q_full_history = FALSE,
-  qv_full_histort = FALSE,
-  alpha = 0.05,
-  mc.cores = 3,
-  M = 3,
-  L = NULL
+  M = 3
 )
+tmp$policy_object$owl_objects
 
-tmp$pe_dr_cv$`1`$policy_object$qv_functions
-
-tmp$pe_dr_cv$`1`$policy_object
-
-tmp$g_functions
+head(get_policy(tmp$policy_object)(two_stage_policy_data))
 
 all.equal(get_policy(tmp$policy_object)(two_stage_policy_data), optimal_policy(two_stage_policy_data))
 optimal_utility
