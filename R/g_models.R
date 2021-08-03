@@ -1,4 +1,4 @@
-update_g_formula <- function(formula, A, X) {
+update_g_formula <- function(formula, A, H) {
   action_set <- sort(unique(A))
   if (length(action_set) != 2)
     stop("g_glm requires exactly two levels.")
@@ -6,7 +6,7 @@ update_g_formula <- function(formula, A, X) {
   AA[A == action_set[1]] <- 0
   AA[A == action_set[2]] <- 1
   AA <- as.numeric(AA)
-  tt <- terms(formula, data = X)
+  tt <- terms(formula, data = H)
   if (length(attr(tt, "term.labels")) == 0)
     formula <- AA ~ 1
   else
@@ -41,10 +41,10 @@ get_design <- function(formula, data, intercept=FALSE) {
 #' @export
 g_glm <- function(formula = ~., family = binomial(), model = FALSE, ...) {
   dotdotdot <- list(...)
-  g_glm <- function(A, X){
-    formula <- update_g_formula(formula, A, X)
+  g_glm <- function(A, H){
+    formula <- update_g_formula(formula, A, H)
     action_set <- attr(formula, "action_set")
-    args_glm <- append(list(formula = formula, data = X,
+    args_glm <- append(list(formula = formula, data = H,
                             family = family, model = model), dotdotdot)
     glm_model <- do.call(what = "glm", args = args_glm)
     glm_model$call <- NULL
@@ -57,9 +57,9 @@ g_glm <- function(formula = ~., family = binomial(), model = FALSE, ...) {
   return(g_glm)
 }
 #' @export
-predict.g_glm <- function(object, new_X){
+predict.g_glm <- function(object, new_H){
   glm_model <- getElement(object, "glm_model")
-  fit <- predict.glm(object = glm_model, newdata = new_X, type = "response")
+  fit <- predict.glm(object = glm_model, newdata = new_H, type = "response")
   probs <- cbind((1-fit), fit)
   return(probs)
 }
@@ -69,11 +69,11 @@ g_glmnet <- function(formula = ~., family = "binomial",
                      alpha = 1, s = "lambda.min", ...) {
   if (!requireNamespace("glmnet")) stop("Package 'ranger' required")
   dotdotdot <- list(...)
-  g_glmnet <- function(A, X) {
-    formula <- update_g_formula(formula, A, X)
+  g_glmnet <- function(A, H) {
+    formula <- update_g_formula(formula, A, H)
     action_set <- attr(formula, "action_set")
-    y <- get_response(formula, data=X)
-    des <- get_design(formula, data=X)
+    y <- get_response(formula, data=H)
+    des <- get_design(formula, data=H)
     if (ncol(des$x)<2)
       stop("g_glmnet requires a model matrix with two or more columns.")
 
@@ -94,11 +94,11 @@ g_glmnet <- function(formula = ~., family = "binomial",
 }
 
 #' @export
-predict.g_glmnet <- function(object, new_X) {
+predict.g_glmnet <- function(object, new_H) {
   glmnet_model <- object$glmnet_model
-  mf <- with(object, model.frame(terms, data=new_X, xlev = xlevels,
+  mf <- with(object, model.frame(terms, data=new_H, xlev = xlevels,
                                  drop.unused.levels=FALSE))
-  newx <- model.matrix(mf, data=new_X, xlev = object$xlevels)
+  newx <- model.matrix(mf, data=new_H, xlev = object$xlevels)
   fit <- predict(glmnet_model,  newx = newx, type = "response", s = object$s)
   probs <- cbind((1-fit), fit)
   return(probs)
@@ -128,10 +128,10 @@ g_rf <- function(formula = ~.,
         do.call("ranger", args=rf_args)
       })
 
-  g_rf <- function(A, X) {
+  g_rf <- function(A, H) {
     action_set <- sort(unique(A))
     A <- factor(A, levels=action_set)
-    des <- get_design(formula, data=X)
+    des <- get_design(formula, data=H)
     data <- data.frame(A, des$x)
     res <- NULL; best <- 1
     if (length(ml)>1) {
@@ -158,10 +158,10 @@ g_rf <- function(formula = ~.,
 }
 
 #' @export
-predict.g_rf <- function(object, new_X, ...) {
-  mf <- with(object, model.frame(terms, data=new_X, xlev = xlevels,
+predict.g_rf <- function(object, new_H, ...) {
+  mf <- with(object, model.frame(terms, data=new_H, xlev = xlevels,
                                  drop.unused.levels=FALSE))
-  newx <- model.matrix(mf, data=new_X, xlev = object$xlevels)
+  newx <- model.matrix(mf, data=new_H, xlev = object$xlevels)
   pr <- predict(object$fit, data=newx, num.threads=1)$predictions
   return(pr)
 }

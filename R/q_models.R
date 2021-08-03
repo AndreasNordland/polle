@@ -7,8 +7,8 @@ q_glmnet <- function(formula = ~ A * .,
                      ...) {
   dotdotdot <- list(...)
 
-  q_glmnet <- function(V_res, AX){
-    des <- get_design(formula, data=AX)
+  q_glmnet <- function(V_res, AH){
+    des <- get_design(formula, data=AH)
     y <- V_res
     args_glmnet <- c(list(y = y, x = des$x,
                         family = family, alpha = alpha), dotdotdot)
@@ -27,10 +27,10 @@ q_glmnet <- function(formula = ~ A * .,
 }
 
 #' @export
-predict.q_glmnet <- function(object, new_AX, ...) {
-  mf <- with(object, model.frame(terms, data=new_AX, xlev = xlevels,
+predict.q_glmnet <- function(object, new_AH, ...) {
+  mf <- with(object, model.frame(terms, data=new_AH, xlev = xlevels,
                                  drop.unused.levels=FALSE))
-  newx <- model.matrix(mf, data=new_AX, xlev = object$xlevels)
+  newx <- model.matrix(mf, data=new_AH, xlev = object$xlevels)
   pred <- predict(getElement(object, "fit"),
                   newx = newx,
                   type = "response",
@@ -62,8 +62,8 @@ q_rf <- function(formula = ~ .,
       do.call("ranger", args=rf_args)
     })
 
-  q_rf <- function(V_res, AX){
-    des <- get_design(formula, data=AX)
+  q_rf <- function(V_res, AH){
+    des <- get_design(formula, data=AH)
     data <- data.frame(V_res, des$x)
     res <- NULL; best <- 1
     if (length(ml)>1) {
@@ -89,10 +89,10 @@ q_rf <- function(formula = ~ .,
 }
 
 #' @export
-predict.q_rf <- function(object, new_AX, ...){
-  mf <- with(object, model.frame(terms, data=new_AX, xlev = xlevels,
+predict.q_rf <- function(object, new_AH, ...){
+  mf <- with(object, model.frame(terms, data=new_AH, xlev = xlevels,
                                  drop.unused.levels=FALSE))
-  newx <- model.matrix(mf, data=new_AX, xlev = object$xlevels)
+  newx <- model.matrix(mf, data=new_AH, xlev = object$xlevels)
   pr <- predict(object$fit, data=newx, num.threads=1)$predictions
   return(pr)
 
@@ -106,8 +106,8 @@ q_glm <- function(formula = ~ A * .,
                   ...) {
   dotdotdot <- list(...)
 
-  q_glm <- function(V_res, AX){
-    data <- AX
+  q_glm <- function(V_res, AH){
+    data <- AH
 
     tt <- terms(formula, data = data)
     if (length(attr(tt, "term.labels")) == 0)
@@ -138,10 +138,10 @@ q_glm <- function(formula = ~ A * .,
 }
 
 #' @export
-predict.q_glm <- function(object, new_AX){
+predict.q_glm <- function(object, new_AH){
   glm_model <- getElement(object, "glm_model")
 
-  newdata <- new_AX
+  newdata <- new_AH
 
   pred <- predict(glm_model, newdata = newdata, type = "response")
 

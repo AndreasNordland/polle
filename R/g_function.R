@@ -2,19 +2,19 @@
 fit_g_function <- function(history, g_model){
   action_set <- history$action_set
 
-  # getting the action (A) and the model matrix (X):
+  # getting the action (A) and the model matrix (H):
   A <- get_A(history)
-  X <- get_X(history)
+  H <- get_H(history)
 
   # checking that all actions in the actions set occur:
   if (!all(action_set == sort(unique(A)))) stop("An action in the action set does not occur.")
 
   # fitting the model:
-  g_model <- g_model(A = A, X = X)
+  g_model <- g_model(A = A, H = H)
 
   g_function <- list(
     g_model = g_model,
-    X_names = colnames(X),
+    H_names = colnames(H),
     action_set = action_set
   )
   class(g_function) <- "g_function"
@@ -25,15 +25,15 @@ fit_g_function <- function(history, g_model){
 #' @export
 evaluate.g_function <- function(object, new_history){
   g_model <- object$g_model
-  X_names <- object$X_names
+  H_names <- object$H_names
   action_set <- object$action_set
 
   id_stage <- get_id_stage(new_history)
-  new_X <- get_X(new_history)
+  new_H <- get_H(new_history)
 
-  if (!all(names(new_X) %in% X_names)) stop("new_history does not have the same variable names as the original history.")
+  if (!all(names(new_H) %in% H_names)) stop("new_history does not have the same variable names as the original history.")
 
-  g_values <- predict(g_model, new_X = new_X)
+  g_values <- predict(g_model, new_H = new_H)
   colnames(g_values) <- paste("g", action_set, sep = "_")
 
   if (!all(complete.cases(g_values))){
@@ -63,9 +63,10 @@ fit_g_functions <- function(policy_data, g_models, full_history){
   if (class(g_models)[[1]] == "list"){
     history <- lapply(1:K, function(s) get_stage_history(policy_data, stage = s, full_history = full_history))
     g_functions <- mapply(history, g_models, FUN = function(h, gm) fit_g_function(history = h, g_model = gm), SIMPLIFY = FALSE)
+    names(g_functions) <- paste("stage_", 1:K, sep = "")
   } else{
     history <- state_history(policy_data)
-    g_functions <- list(fit_g_function(history, g_models))
+    g_functions <- list(across_stages = fit_g_function(history, g_models))
   }
 
   class(g_functions) <- "nuisance_functions"

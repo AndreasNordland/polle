@@ -17,24 +17,24 @@ full_stage_history.policy_data <- function(object, stage){
   stage_ <- stage; rm(stage)
 
   # getting stage specific history names:
-  H_names <- c("id", "stage", "A", stage_data_names)
+  AH_names <- c("id", "stage", "A", stage_data_names)
   # filtering rows which have an action (event = 0):
-  H <- stage_data[event == 0, ]
+  AH <- stage_data[event == 0, ]
   # filtering rows up till the given stage number:
-  H <- H[stage <= stage_, ..H_names]
+  AH <- AH[stage <= stage_, ..AH_names]
   # filtering observations with an action at the given stage:
-  H <- H[, if(any(stage == stage_)) .SD, id]
+  AH <- AH[, if(any(stage == stage_)) .SD, id]
   # transforming the data from long to wide format:
-  H <- dcast(H, id ~ stage, value.var = H_names[-c(1,2)])
+  AH <- dcast(AH, id ~ stage, value.var = AH_names[-c(1,2)])
   # inserting stage column:
-  H[, stage := stage_]
+  AH[, stage := stage_]
   # merging the stage specific histories and the the baseline data by reference:
   if(length(baseline_data_names) > 0){
-    H[baseline_data, (baseline_data_names) := mget(paste0('i.', baseline_data_names))]
+    AH[baseline_data, (baseline_data_names) := mget(paste0('i.', baseline_data_names))]
   }
   # setting key and column order
-  setkey(H, id, stage)
-  setcolorder(H, neworder = c("id", "stage"))
+  setkey(AH, id, stage)
+  setcolorder(AH, neworder = c("id", "stage"))
 
   # getting the accumulated utility and deterministic utility contributions
   U <- stage_data[stage <= stage_][, U_bar := sum(U), id]
@@ -44,10 +44,10 @@ full_stage_history.policy_data <- function(object, stage){
 
   action_name <- paste("A", stage_, sep = "_")
   # id_names <- c("id", "stage")
-  # H_names <- names(H)[!(names(H) %in% c(id_names, action_name))]
+  # AH_names <- names(AH)[!(names(AH) %in% c(id_names, action_name))]
 
   history <- list(
-    H = H,
+    AH = AH,
     U = U,
     action_name = action_name,
     action_utility_names = action_utility_names,
@@ -77,17 +77,17 @@ state_stage_history.policy_data <- function(object, stage){
   stage_ <- stage
 
   # getting stage specific history names:
-  H_names <- c("id", "stage", "A", stage_data_names)
+  AH_names <- c("id", "stage", "A", stage_data_names)
   # filtering rows which have an action (event = 0):
-  H <- stage_data[event == 0, ]
+  AH <- stage_data[event == 0, ]
   # filtering observations with an action at the given stage:
-  H <- H[stage == stage_, ..H_names]
+  AH <- AH[stage == stage_, ..AH_names]
   # setting new names:
   # new_names <- paste(c("A", stage_data_names), stage_, sep = "_")
-  # setnames(H, old = c("A", stage_data_names), new = new_names)
+  # setnames(AH, old = c("A", stage_data_names), new = new_names)
   # merging the stage specific histories and the the baseline data by reference:
   if(length(baseline_data_names) > 0){
-    H[baseline_data, (baseline_data_names) := mget(paste0('i.', baseline_data_names))]
+    AH[baseline_data, (baseline_data_names) := mget(paste0('i.', baseline_data_names))]
   }
 
   # getting the accumulated utility and deterministic utility contributions
@@ -98,10 +98,10 @@ state_stage_history.policy_data <- function(object, stage){
 
   id_names <- c("id", "stage")
   # action_name <- paste("A", stage_, sep = "_")
-  # H_names <- names(H)[!(names(H) %in% c(id_names, action_name))]
+  # AH_names <- names(AH)[!(names(AH) %in% c(id_names, action_name))]
 
   history <- list(
-    H = H,
+    AH = AH,
     U = U,
     action_name = "A",
     action_utility_names = action_utility_names,
@@ -125,21 +125,21 @@ state_history.policy_data <- function(object){
   action_set <- object$action_set
 
   # getting stage specific history names:
-  H_names <- c("id", "stage", "A", stage_data_names)
+  AH_names <- c("id", "stage", "A", stage_data_names)
   # filtering rows which have an action (event = 0):
-  H <- stage_data[event == 0, ]
-  H <- H[, ..H_names]
+  AH <- stage_data[event == 0, ]
+  AH <- AH[, ..AH_names]
   # merging the stage specific histories and the the baseline data by reference:
   if(length(baseline_data_names) > 0){
-    H[baseline_data, (baseline_data_names) := mget(paste0('i.', baseline_data_names))]
+    AH[baseline_data, (baseline_data_names) := mget(paste0('i.', baseline_data_names))]
   }
 
   # id_names <- c("id", "stage")
   action_name <- "A"
-  # H_names <- names(history)[!(names(history) %in% c(id_names, action_name))]
+  # AH_names <- names(history)[!(names(history) %in% c(id_names, action_name))]
 
   history <- list(
-    H = H,
+    AH = AH,
     action_name = action_name,
     action_set = action_set
   )
@@ -149,37 +149,37 @@ state_history.policy_data <- function(object){
 }
 
 ##' @export
-get_X <- function(history, vars = NULL){
-  H <- history$H
+get_H <- function(history, vars = NULL){
+  AH <- history$AH
   action_name <- history$action_name
 
   # collecting the data:
-  X_names <- names(H)[!(names(H) %in% c("id", "stage", action_name))]
+  H_names <- names(AH)[!(names(AH) %in% c("id", "stage", action_name))]
   if (!is.null(vars)){
     if (is.character(vars)){
-      if (!all(vars %in% X_names)){
+      if (!all(vars %in% H_names)){
         stop("Invalid selection of variables.")
       }
     } else
       stop("Selection of variables must be of type character.")
   } else
-    vars <- X_names
+    vars <- H_names
 
-  X <- H[, ..vars]
+  H <- AH[, ..vars]
 
-  return(X)
+  return(H)
 }
 
 #' @export
-get_history_names <- function(policy_data, stage = NULL){
+get_H_names <- function(policy_data, stage = NULL){
   if (is.null(stage)){
     history <- get_stage_history(policy_data, stage = 1, full_history = FALSE)
   } else{
     history <- get_stage_history(policy_data, stage = stage, full_history = TRUE)
   }
-  H <- history$H
+  AH <- history$AH
   action_name <- history$action_name
-  history_names <- names(H)[!(names(H) %in% c("id", "stage", action_name))]
+  history_names <- names(AH)[!(names(AH) %in% c("id", "stage", action_name))]
   return(history_names)
 }
 
@@ -189,12 +189,18 @@ get_A <- function(object)
 
 ##' @export
 get_A.history <- function(object){
-  H <- object$H
+  AH <- object$AH
   action_name <- object$action_name
 
-  A <- H[[action_name]]
+  A <- AH[[action_name]]
 
   return(A)
+}
+
+##' @export
+get_id.history <- function(object){
+  id <- object$AH$id
+  return(id)
 }
 
 ##' @export
@@ -203,10 +209,10 @@ get_id_stage <- function(object)
 
 ##' @export
 get_id_stage.history <- function(object){
-  H <- object$H
+  AH <- object$AH
   id_stage_names <- c("id", "stage")
 
-  id_stage <- H[, ..id_stage_names]
+  id_stage <- AH[, ..id_stage_names]
 
   return(id_stage)
 }

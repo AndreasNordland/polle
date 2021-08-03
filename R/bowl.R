@@ -1,7 +1,7 @@
 #' @export
 bowl <- function(policy_data,
                  alpha = 0,
-                 g_models = NULL, g_functions = NULL, g_full_history,
+                 g_models = NULL, g_functions = NULL, g_full_history = FALSE,
                  policy_full_history = FALSE, policy_vars = NULL,
                  res.lasso=TRUE, loss='hinge', kernel='linear',
                  augment=FALSE, c=2^(-2:2), sigma=c(0.03,0.05,0.07), s=2.^(-2:2), m=4,
@@ -57,8 +57,8 @@ bowl <- function(policy_data,
     # getting the policy history for stage k
     policy_history_k <- get_stage_history(policy_data, stage = k, full_history = policy_full_history)
 
-    # getting the IDs and ID-Indices:
-    id_k <- policy_history_k$H$id
+    # getting the IDs and ID-Indices at the kth stage:
+    id_k <- get_id(policy_history_k)
     idx_k <- (id %in% id_k)
 
     # constructing the inputs for owl:
@@ -66,7 +66,7 @@ bowl <- function(policy_data,
       vars <- policy_vars[[k]]
     else
       vars <- policy_vars
-    X <- get_X(policy_history_k, vars = vars)
+    X <- get_H(policy_history_k, vars = vars)
     X <- scale(X)
 
     X_scales[[k]] <- attributes(X)[3:4]
@@ -143,7 +143,7 @@ get_policy.BOWL <- function(object){
         vars <- policy_vars[[k]]
       else
         vars <- policy_vars
-      X <- get_X(policy_history_k, vars = vars)
+      X <- get_H(policy_history_k, vars = vars)
       X <- scale(X, center = X_scales[[k]]$`scaled:center`, scale = X_scales[[k]]$`scaled:scale`)
 
       dd <- d <- predict(owl_objects[[k]], H = X, K = 1)$treatment[[1]]

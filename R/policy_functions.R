@@ -13,8 +13,12 @@ policy_def <- function(stage_policies, full_history = FALSE, replicate = FALSE){
   )
 
   policy <- function(policy_data){
-    action_set <- policy_data$action_set
-    K <- policy_data$dim$K
+    if(!any(class(policy_data) == "policy_data")){
+      stop("policy input is not of class policy_data.")
+    }
+
+    action_set <- get_action_set(policy_data)
+    K <- get_K(policy_data)
 
     if (replicate == TRUE){
       stage_policies <- replicate(K, stage_policies)
@@ -54,3 +58,18 @@ policy_def <- function(stage_policies, full_history = FALSE, replicate = FALSE){
 #' @export
 get_policy <- function(object)
   UseMethod("get_policy")
+
+##' @export
+static_policy <- function(action, name=paste0("a=",action)) {
+  action <- as.character(action)
+  if (length(action) != 1)
+    stop("the action argument in static_policy must be a single character or string.")
+
+  f <- function(history) {
+    pol <- get_id_stage(history)
+    pol[, d := action]
+    return(pol)
+  }
+  return(structure(f, name=name))
+}
+

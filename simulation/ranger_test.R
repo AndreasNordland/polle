@@ -63,7 +63,7 @@ vp_rf_cv
 library(tmle)
 tmle_glm <- tmle(Y = utility(pd)$U,
      A = as.numeric(get_actions(pd)$A),
-     W = get_X(state_history(pd)),
+     W = get_H(state_history(pd)),
      family = "gaussian",
      Qform = Y ~ A + Z + B + L,
      gform = A ~ Z + B + L
@@ -77,7 +77,7 @@ sl_rf <- create.Learner("SL.ranger", params = list(num.trees = 500, mtry = 3))
 
 tmle_rf <- tmle(Y = utility(pd)$U,
                 A = as.numeric(get_actions(pd)$A),
-                W = get_X(state_history(pd)),
+                W = get_H(state_history(pd)),
                 family = "gaussian",
                 Q.SL.library = sl_rf$names,
                 g.SL.library = sl_rf$names,

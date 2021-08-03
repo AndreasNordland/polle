@@ -1,14 +1,14 @@
 #' @export
 fit_QV_function <- function(history, Z, qv_model){
 
-  X <- get_X(history)
+  H <- get_H(history)
 
   # fitting the QV-model
   qv_model <- apply(
     Z,
     MARGIN = 2,
     function(z){
-      qv_model(z, X)
+      qv_model(z, H)
     }
   )
 
@@ -23,13 +23,13 @@ fit_QV_function <- function(history, Z, qv_model){
 evaluate.QV_function <- function(object, new_history){
 
   id_stage <- get_id_stage(new_history)
-  new_X <- get_X(new_history)
+  new_H <- get_H(new_history)
   qv_model <- object$qv_model
 
   qv_values <- sapply(
     qv_model,
     function(qvm){
-      predict(qvm, new_X)
+      predict(qvm, new_H)
     }
     )
 

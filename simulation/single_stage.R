@@ -136,22 +136,22 @@ always_treat_utility <- 0.5 + 0.5 + (par0$gamma * 0.5 + par0$alpha * 0.5 + par0$
 # g-models -----------------------------------------------------------------
 
 # True g-model
-g0 <- function(A, X){
+g0 <- function(A, H){
   out <- list()
   class(out) <- "g0"
 
   return(out)
 }
-predict.g0 <- function(object, new_X){
-  n <- nrow(new_X)
+predict.g0 <- function(object, new_H){
+  n <- nrow(new_H)
 
   stopifnot(
-    all(colnames(new_X) == c("Z", "L", "B"))
+    all(colnames(new_H) == c("Z", "L", "B"))
   )
 
-  Z <- new_X$Z
-  L <- new_X$L
-  B <- new_X$B
+  Z <- new_H$Z
+  L <- new_H$L
+  B <- new_H$B
 
   fit <- lava::expit(par0$kappa * (Z + L - 1) * Z^(-2) + (B == "a") * par0$xi)
 
@@ -172,7 +172,7 @@ single_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, 
 his <- state_history(single_stage_policy_data)
 
 # data.table
-get_X(history = his)
+get_H(history = his)
 
 # g_model0 <- new_g_glm(formula = ~ .)
 g_model0 <- new_g_glmnet(formula = ~ Z + L)
@@ -248,21 +248,21 @@ tmp
 # Q-models ----------------------------------------------------------------
 
 # True Q-model
-q0 <- function(V_res, AX){
+q0 <- function(V_res, AH){
   out <- list()
   class(out) <- "q0"
 
   return(out)
 }
-predict.q0 <- function(q_model, new_AX){
-  n <- nrow(new_AX)
+predict.q0 <- function(q_model, new_AH){
+  n <- nrow(new_AH)
 
   stopifnot(
-    all(colnames(new_AX) == c("A", "Z", "L", "B"))
+    all(colnames(new_AH) == c("A", "Z", "L", "B"))
   )
 
-  Z <- new_AX[, colnames(new_AX) == "Z"]
-  L <- new_AX[, colnames(new_AX) == "L"]
+  Z <- new_AH[, colnames(new_AH) == "Z"]
+  L <- new_AH[, colnames(new_AH) == "L"]
 
   fit_1 <- Z + L + (par0$gamma * Z + par0$alpha * L + par0$beta)
   fit_0 <- Z + L
@@ -547,7 +547,7 @@ mean(cov_res)
 # single_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
 #
 # # single_stage_history <- state_history(single_stage_policy_data)
-# # H <- polle:::get_X.history(single_stage_history)
+# # H <- polle:::get_H.history(single_stage_history)
 # # H <- scale(H)
 # # AA <- as.numeric(polle:::get_A.history(single_stage_history))
 # # AA[AA == 0] <- -1

@@ -9,11 +9,11 @@ fit_Q_function.history <- function(object, Q, q_model){
   action_set <- object$action_set
   action_utility_names <- object$action_utility_names
 
-  # getting the action (A) and the model matrix (X):
+  # getting the action (A) and the model matrix (H):
   A <- get_A(object)
-  X <- get_X(object)
+  H <- get_H(object)
 
-  AX <- cbind(A, X)
+  AH <- cbind(A, H)
 
   # checking that all actions in the actions set occur:
   if (!all(action_set == sort(unique(A)))) stop("An action in the action set does not occur.")
@@ -26,11 +26,11 @@ fit_Q_function.history <- function(object, Q, q_model){
   V_res <- U$V_res
 
   # fitting the (residual) Q-model
-  q_model <- q_model(V_res = V_res, AX = AX)
+  q_model <- q_model(V_res = V_res, AH = AH)
 
   q_function <- list(
     q_model = q_model,
-    AX_names = colnames(AX)
+    AH_names = colnames(AH)
   )
   class(q_function) <- "Q_function"
 
@@ -44,19 +44,19 @@ evaluate.Q_function <- function(object, new_history){
   action_utility_names <- new_history$action_utility_names
 
   id_stage <- get_id_stage(new_history)
-  new_X <- get_X(new_history)
+  new_H <- get_H(new_history)
 
   # getting the historic rewards
   U <- new_history$U
 
   # getting the residual predictions
-  residual_q_predictions <- sapply(action_set, function(a) predict(q_model, new_AX = cbind(A = a, new_X)))
+  residual_q_predictions <- sapply(action_set, function(a) predict(q_model, new_AH = cbind(A = a, new_H)))
   # adding the historic utilities and deterministic rewards
   q_values <- U$U_bar + U[, ..action_utility_names] + residual_q_predictions
   names(q_values) <- paste("Q", action_set, sep = "_")
 
   if (!all(complete.cases(q_values))){
-    stage <- unique(new_history$H$stage)
+    stage <- unique(id_stage$stage)
     mes <- paste("Evaluation of the Q-function at stage ", stage, " have missing values.", sep = "")
     stop(mes)
   }
@@ -140,9 +140,9 @@ q_step_cf <- function(folds, policy_data, k, full_history, Q, q_models){
 
 #' @export
 fit_Q_functions <- function(policy_data, policy_actions, q_models, full_history = FALSE){
-  K <- policy_data$dim$K
-  n <- policy_data$dim$n
-  action_set <- policy_data$action_set
+  K <- get_K(policy_data)
+  n <- get_n(policy_data)
+  action_set <- get_action_set(policy_data)
 
   # checking q_models: must either be a list of length K or a single Q-model
   if (class(q_models)[[1]] == "list"){

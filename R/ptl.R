@@ -1,7 +1,7 @@
 #' @export
 ptl <- function(policy_data,
-                g_models, g_functions, g_full_history,
-                q_models, q_full_history,
+                g_models = NULL, g_functions = NULL, g_full_history = FALSE,
+                q_models = NULL, q_full_history = FALSE,
                 policy_vars = NULL, policy_full_history = FALSE,
                 L = NULL, alpha = 0,
                 depth = 2, split.step = 1, min.node.size = 1,
@@ -115,11 +115,11 @@ ptl <- function(policy_data,
       vars <- policy_vars[[k]]
     else
       vars <- policy_vars
-    X <- get_X(policy_history_k, vars = vars)
+    H <- get_H(policy_history_k, vars = vars)
 
-    ptl_k <- policytree::policy_tree(X = X, Gamma = Gamma, depth = depth, split.step = split.step, min.node.size = min.node.size)
+    ptl_k <- policytree::policy_tree(X = H, Gamma = Gamma, depth = depth, split.step = split.step, min.node.size = min.node.size)
     ptl_objects[[k]] <- ptl_k
-    dd <- policytree:::predict.policy_tree(ptl_k, X)
+    dd <- policytree:::predict.policy_tree(ptl_k, H)
     d <- action_set[dd]
 
     q_d_k <- get_a_values(a = d, action_set = action_set, q_values_k)$P
@@ -180,9 +180,9 @@ get_policy.PTL <- function(object){
     policy_vars,
     FUN = function(ptl, vars){
       pf <- function(history){
-        X <- get_X(history, vars = vars)
+        H <- get_H(history, vars = vars)
 
-        dd <- predict(ptl, newdata = X)
+        dd <- predict(ptl, newdata = H)
         d <- action_set[dd]
 
         policy_actions <- get_id_stage(history)

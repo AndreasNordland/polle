@@ -48,17 +48,17 @@ args0 <- list(
 
 # policies ----------------------------------------------------------------
 
-always_treat_stage_policy <- function(history){
-  pol <- history$H[, c("id", "stage")]
-  pol[, d := "1"]
-  return(pol)
-}
-
-always_treat_policy <- policy_def(
-  stage_policies = always_treat_stage_policy,
-  full_history = FALSE,
-  replicate = TRUE
-)
+# always_treat_stage_policy <- function(history){
+#   pol <- history$AH[, c("id", "stage")]
+#   pol[, d := "1"]
+#   return(pol)
+# }
+#
+# always_treat_policy <- policy_def(
+#   stage_policies = always_treat_stage_policy,
+#   full_history = FALSE,
+#   replicate = TRUE
+# )
 
 # approximations ------------------------------------------------------
 # n <- 5e5

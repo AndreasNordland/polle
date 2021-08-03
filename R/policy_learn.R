@@ -2,7 +2,7 @@
 policy_learn <- function(type = "rql",
                          alpha = 0,
                          qv_models = NULL, qv_full_history = FALSE,
-                         policy_tree_vars = NULL, policy_tree_full_history = FALSE,
+                         policy_vars = NULL, policy_full_history = FALSE,
                          L = NULL,
                          ...){
   type <- tolower(type)

@@ -67,17 +67,17 @@ d_alpha_opt_10 <- function(data, par){
 # rm(two_stage_policy_data)
 
 # approximated mean utility under the optimal policy
-n <- 2e6
-set.seed(2)
-d <- simulate_two_stage_data(n = n, par = par0, a_1 = d_alpha_opt_10, a_2 = d_alpha_opt_20)
-two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
-optimal_utility <- mean(utility(two_stage_policy_data)$U)
-rm(two_stage_policy_data)
+# n <- 2e6
+# set.seed(2)
+# d <- simulate_two_stage_data(n = n, par = par0, a_1 = d_alpha_opt_10, a_2 = d_alpha_opt_20)
+# two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
+# optimal_utility <- mean(utility(two_stage_policy_data)$U)
+# rm(two_stage_policy_data)
 
 
 # g-models ----------------------------------------------------------------
 
-g0 <- function(A, X){
+g0 <- function(A, H){
 
   out <- list()
   class(out) <- "g0"
@@ -85,12 +85,12 @@ g0 <- function(A, X){
   return(out)
 }
 
-predict.g0 <- function(object, new_X){
+predict.g0 <- function(object, new_H){
   stopifnot(
-    all(colnames(new_X) == c("L", "C"))
+    all(colnames(new_H) == c("L", "C"))
   )
 
-  C <- new_X$C
+  C <- new_H$C
   fit <- lava::expit(par0$gamma_A * C)
 
   preds <- matrix(
@@ -104,56 +104,63 @@ predict.g0 <- function(object, new_X){
   return(preds)
 }
 
-# n <- 2e3
-# set.seed(1)
-# d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
-#
-# two_stage_policy_data <- new_policy_data(stage_data = d); rm(d)
-#
-# two_stage_state_history <- state_stage_history(two_stage_policy_data, stage = 2)
-# two_stage_g_function <- fit_g_function(two_stage_state_history, new_g_glm())
-# # two_stage_g_function <- fit_g_function(two_stage_state_history, g0)
-# evaluate(two_stage_g_function, new_history = two_stage_state_history)
-# rm( two_stage_g_function)
-#
-# # two_stage_g_functions <- fit_g_functions(two_stage_policy_data, g_models = new_g_glm(), full_history = FALSE)
+n <- 2e3
+set.seed(1)
+d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
+two_stage_policy_data <- new_policy_data(stage_data = d); rm(d)
+
+# two_stage_history <- state_stage_history(two_stage_policy_data, stage = 1)
+two_stage_history <- state_history(two_stage_policy_data)
+# two_stage_history <- full_stage_history(two_stage_policy_data, stage = 2)
+
+get_H_names(two_stage_policy_data, stage = 2)
+get_H(two_stage_history)
+
+# two_stage_g_function <- fit_g_function(two_stage_history, g_glm())
+two_stage_g_function <- fit_g_function(two_stage_history, g_glmnet())
+# two_stage_g_function <- fit_g_function(two_stage_history, g_glm(~ L_1 + L_2 + C_1 + C_2))
+two_stage_g_function$g_model
+
+# two_stage_g_function <- fit_g_function(two_stage_history, g0)
+
+evaluate(two_stage_g_function, new_history = two_stage_history)
+rm( two_stage_g_function)
+
+two_stage_g_functions <- fit_g_functions(two_stage_policy_data, g_models = g_glm(), full_history = FALSE)
+# two_stage_g_functions <- fit_g_functions(two_stage_policy_data, g_models = list(g_glm(), g_glm(~ L_1 + L_2 + C_1 + C_2)), full_history = TRUE)
 # two_stage_g_functions <- fit_g_functions(two_stage_policy_data, g_models = g0, full_history = FALSE)
-# # two_stage_g_functions <- fit_g_functions(two_stage_policy_data, g_models = list(new_g_glm(), new_g_glm()), full_history = FALSE)
-# evaluate(two_stage_g_functions, two_stage_policy_data)
-#
-# two_stage_g_functions[[1]]$g_model$glm_model$coefficients
+# two_stage_g_functions <- fit_g_functions(two_stage_policy_data, g_models = list(g_glm(), g_glm()), full_history = FALSE)
+
+names(two_stage_g_functions)
+
+evaluate(two_stage_g_functions, two_stage_policy_data)
+
+# two_stage_g_functions$across_stages$g_model$glm_model$coefficients
 # par0$gamma_A # C parameter
 
 # policies ----------------------------------------------------------------
 
-always_treat_stage_policy <- function(history){
-  pol <- history$H[, c("id", "stage")]
-  pol[, d := "1"]
-  return(pol)
-}
+always_treat_stage_policy <- policy_def(static_policy("1"), replicate = TRUE)
 
-always_treat_policy <- policy_def(
-  stage_policies = always_treat_stage_policy,
-  full_history = FALSE,
-  replicate = TRUE
-)
 
 optimal_stage_policy_stage_1 <- function(history){
+  H <- get_H(history)
   stopifnot(
-    all(c("C_1", "L_1") %in% colnames(history$H))
+    all(c("C_1", "L_1") %in% colnames(H))
   )
-  d <- d_alpha_opt_10(data = data.table(C_1 = history$H$C_1, L_1 = history$H$L_1), par = par0)
-  pol <- history$H[, c("id", "stage")]
+  d <- d_alpha_opt_10(data = data.table(C_1 = H$C_1, L_1 = H$L_1), par = par0)
+  pol <- get_id_stage(history)
   pol[, d := as.character(d)]
   return(pol)
 }
 
 optimal_stage_policy_stage_2 <- function(history){
+  H <- get_H(history)
   stopifnot(
-    all(c("C_2", "A_1") %in% colnames(history$H))
+    all(c("C_2", "A_1") %in% colnames(H))
   )
-  d <- d_alpha_opt_20(data = data.table(C_2 = history$H$C_2, A_1 = as.numeric(history$H$A_1)), par = par0)
-  pol <- history$H[, c("id", "stage")]
+  d <- d_alpha_opt_20(data = data.table(C_2 = H$C_2, A_1 = as.numeric(H$A_1)), par = par0)
+  pol <- get_id_stage(history)
   pol[, d := as.character(d)]
   return(pol)
 }
@@ -204,37 +211,37 @@ optimal_policy <- policy_def(
 
 # Q-models ----------------------------------------------------------------
 
-q0_2 <- function(V_res, AX){
+q0_2 <- function(V_res, AH){
   out <- list()
   class(out) <- "q0_2"
 
   return(out)
 }
 
-predict.q0_2 <- function(q_model, new_AX){
-  stopifnot(all(new_AX$A %in% c("0", "1")))
+predict.q0_2 <- function(q_model, new_AH){
+  stopifnot(all(new_AH$A %in% c("0", "1")))
 
-  n <- nrow(new_AX)
+  n <- nrow(new_AH)
 
-  pred <- (new_AX$A == "1") * rep(par0$mu_L[3], n)
+  pred <- (new_AH$A == "1") * rep(par0$mu_L[3], n)
 
   return(pred)
 }
 
-q0_1 <- function(V_res, AX){
+q0_1 <- function(V_res, AH){
   out <- list()
   class(out) <- "q0_1"
 
   return(out)
 }
-predict.q0_1 <- function(q_model, new_AX){
-  stopifnot(all(colnames(new_AX) == c("A", "L", "C")))
-  stopifnot(all(new_AX$A %in% c("0", "1")))
+predict.q0_1 <- function(q_model, new_AH){
+  stopifnot(all(colnames(new_AH) == c("A", "L", "C")))
+  stopifnot(all(new_AH$A %in% c("0", "1")))
 
-  n <- nrow(new_AX)
+  n <- nrow(new_AH)
 
-  l_1 <- new_AX$L
-  a_1 <- new_AX$A
+  l_1 <- new_AH$L
+  a_1 <- new_AH$A
   pred <- (a_1 == "1") * (
     par0$mu_L[2] +
       kappa_1(l_1 = l_1, par = par0) +
@@ -244,14 +251,14 @@ predict.q0_1 <- function(q_model, new_AX){
   return(pred)
 }
 
-qbias <- function(V_res, AX){
+qbias <- function(V_res, AH){
   out <- list()
   class(out) <- "qbias"
 
   return(out)
 }
-predict.qbias <- function(q_model, new_AX){
-  n <- nrow(new_AX)
+predict.qbias <- function(q_model, new_AH){
+  n <- nrow(new_AH)
 
   pred <- rep(-2, times = n)
 
@@ -336,7 +343,7 @@ tmp <- policy_eval(
   type = "dr",
   two_stage_policy_data,
   policy_learner = policy_learn(
-    type = "bowl",
+    type = "rqvl",
     alpha = 0,
     L = NULL,
     qv_models = q_glm(formula = ~L+C),
@@ -353,12 +360,11 @@ tmp <- policy_eval(
   q_full_history = FALSE,
   M = 3
 )
-tmp$policy_object$owl_objects
+tmp
 
 head(get_policy(tmp$policy_object)(two_stage_policy_data))
-
 all.equal(get_policy(tmp$policy_object)(two_stage_policy_data), optimal_policy(two_stage_policy_data))
-optimal_utility
+# optimal_utility
 
 tmp <- rql(
   type = "dr",
@@ -507,7 +513,7 @@ rm(tmp, tmp2, two_stage_policy_data)
 # d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
 # two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
 #
-# get_history_names(two_stage_policy_data, stage = 1)
+# get_H_names(two_stage_policy_data, stage = 1)
 #
 # tmp_ptl <- ptl(
 #   policy_data = two_stage_policy_data,
@@ -579,7 +585,7 @@ set.seed(1)
 d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
 two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
 
-get_X_names(two_stage_policy_data, stage = 2)
+get_H_names(two_stage_policy_data, stage = 2)
 
 tmprqvl <- rqvl(
   policy_data = two_stage_policy_data,

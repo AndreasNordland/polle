@@ -56,16 +56,6 @@ estimate.policy_eval <- function(x, ..., labels=x$name) {
   merge(x, ...)
 }
 
-##' @export
-static_policy <- function(action, name=paste0("a=",action)) {
-  f <- function(history) {
-    pol <- history$H
-    pol[, d := action]
-    return(pol[, c("id", "stage", "d"), with = FALSE])
-  }
-  return(structure(f, name=name))
-}
-
 ##' Policy Evaluation
 ##'
 ##' Policy evaluation function
