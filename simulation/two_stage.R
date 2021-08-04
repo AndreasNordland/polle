@@ -78,10 +78,8 @@ d_alpha_opt_10 <- function(data, par){
 # g-models ----------------------------------------------------------------
 
 g0 <- function(A, H){
-
   out <- list()
   class(out) <- "g0"
-
   return(out)
 }
 
@@ -90,16 +88,11 @@ predict.g0 <- function(object, new_H){
     all(colnames(new_H) == c("L", "C"))
   )
 
-  C <- new_H$C
-  fit <- lava::expit(par0$gamma_A * C)
+  C <- new_H[["C"]]
+  fit <- lava::expit(par0[["gamma_A"]] * C)
 
-  preds <- matrix(
-    c(
-      1 - fit,
-      fit
-    ),
-    ncol = 2
-  )
+  preds <- matrix(c(1 - fit,fit),
+                  ncol = 2)
 
   return(preds)
 }
@@ -116,6 +109,7 @@ two_stage_history <- state_history(two_stage_policy_data)
 get_H_names(two_stage_policy_data, stage = 2)
 get_H(two_stage_history)
 
+library(glmnet)
 # two_stage_g_function <- fit_g_function(two_stage_history, g_glm())
 two_stage_g_function <- fit_g_function(two_stage_history, g_glmnet())
 # two_stage_g_function <- fit_g_function(two_stage_history, g_glm(~ L_1 + L_2 + C_1 + C_2))
@@ -174,7 +168,7 @@ optimal_policy <- policy_def(
 # set.seed(1)
 # d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
 # two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(id =unique(id))]); rm(d)
-#
+
 # # always treat policy
 # always_treat_policy(two_stage_policy_data)
 #
@@ -214,15 +208,12 @@ optimal_policy <- policy_def(
 q0_2 <- function(V_res, AH){
   out <- list()
   class(out) <- "q0_2"
-
   return(out)
 }
 
 predict.q0_2 <- function(q_model, new_AH){
   stopifnot(all(new_AH$A %in% c("0", "1")))
-
   n <- nrow(new_AH)
-
   pred <- (new_AH$A == "1") * rep(par0$mu_L[3], n)
 
   return(pred)
@@ -342,20 +333,20 @@ two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(i
 tmp <- policy_eval(
   type = "dr",
   two_stage_policy_data,
-  policy_learner = policy_learn(
-    type = "rqvl",
-    alpha = 0,
-    L = NULL,
-    qv_models = q_glm(formula = ~L+C),
-    policy_vars = c("L", "C")
-  ),
-  # policy = optimal_policy,
-  g_models = g_glm(),
-  # g_models = g0,
+  # policy_learner = policy_learn(
+  #   type = "rqvl",
+  #   alpha = 0,
+  #   L = NULL,
+  #   qv_models = q_glm(formula = ~L+C),
+  #   policy_vars = c("L", "C")
+  # ),
+  policy = optimal_policy,
+  # g_models = g_glm(),
+  g_models = g0,
   # g_models = list(g_glm(), g_glm()),
   # g_models = list(g_glm(~L_1), g_glm(~L_1)),
-  # q_models = list(q0_1, q0_2),
-  q_models = q_glm(),
+  q_models = list(q0_1, q0_2),
+  # q_models = q_glm(),
   g_full_history = FALSE,
   q_full_history = FALSE,
   M = 3
