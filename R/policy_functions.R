@@ -24,22 +24,26 @@ policy_def <- function(stage_policies, full_history = FALSE, replicate = FALSE){
       stage_policies <- replicate(K, stage_policies)
     }
 
-    # checking the stage_policies input:
-    # must be a list of K stage policies or a single stage policy
-    stopifnot(
-      if(class(stage_policies)[[1]] == "list")
-        length(stage_policies) == K
-      else
-        class(stage_policies)[[1]] == "function" & (K == 1)
-    )
+    if (class(stage_policies)[[1]] == "list"){
+      if (length(stage_policies) != K)
+        stop("stage_policies must be a list of length K (or a single function).")
+      for (k in seq_along(stage_policies)){
+        if(!any(class(stage_policies[[k]]) == "function"))
+          stop("stage_policies must be a list of functions.")
+      }
+    } else {
+      if(!any(class(stage_policies) == "function"))
+        stop("stage_policies must be a single function (or a list of functions of length K).")
+    }
 
     if (class(stage_policies)[[1]] == "list"){
-    stage_histories <- lapply(1:K, function(k) get_stage_history(policy_data, stage = k, full_history = full_history))
-    policy_actions <- mapply(function(sp, sh) sp(sh), stage_policies, stage_histories, SIMPLIFY = FALSE)
-    policy_actions <- rbindlist(policy_actions)
-    setkey(policy_actions, id, stage)
+      stage_histories <- lapply(1:K, function(k) get_stage_history(policy_data, stage = k, full_history = full_history))
+      policy_actions <- mapply(function(sp, sh) sp(sh), stage_policies, stage_histories, SIMPLIFY = FALSE)
+      policy_actions <- rbindlist(policy_actions)
+      setkey(policy_actions, id, stage)
     } else{
-      stop()
+      history <- state_history(policy_data)
+      policy_actions <- stage_policies(history)
     }
 
     stopifnot(
@@ -71,5 +75,20 @@ static_policy <- function(action, name=paste0("a=",action)) {
     return(pol)
   }
   return(structure(f, name=name))
+}
+
+##' @export
+dynamic_policy <- function(fun){
+  if (!any(class(fun) == "function"))
+    stop("the fun argument in dynamic_policy must be a function.")
+
+  f <- function(history){
+    pol <- get_id_stage(history)
+    action <- do.call(what = "fun", args = get_H(history))
+    action <- as.character(action)
+    pol[, d := action]
+    return(pol)
+  }
+  return(structure(f))
 }
 
