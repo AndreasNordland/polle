@@ -44,12 +44,12 @@ simulate_two_stage_data <- function(n, par, a_1, a_2){
   wide_data <- simulate_two_stage_data_wide(n = n, par = par, a_1 = a_1, a_2 = a_2)
   A_cols <- c("A_1", "A_2")
   X_cols <- list(
-    c("L_1", "L_2"),
-    c("C_1", "C_2")
+    L = c("L_1", "L_2"),
+    C = c("C_1", "C_2")
   )
   X_value_names <- c("L", "C")
   U_cols <- c("U_1", "U_2", "U_3")
-  long_data <- wide_stage_data_to_long(wide_data, A_cols = A_cols, X_cols = X_cols, X_value_names = X_value_names, U_cols = U_cols)
+  long_data <- wide_stage_data_to_long(wide_data, A_cols = A_cols, X_cols = X_cols, U_cols = U_cols)
 
   long_data[event == 0, ("U_0") := 0]
   long_data[event == 0, ("U_1") := C]

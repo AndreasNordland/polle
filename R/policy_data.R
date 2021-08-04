@@ -1,6 +1,6 @@
 ##' @export
 policy_data <- function(data, baseline_data,
-                        action, covariates, utility,
+                        action, covariates, utility, deterministic_utility = NULL,
                         ..., type="wide") {
   if (is.data.frame(data)) data <- as.data.table(data)
   type <- tolower(type)
@@ -9,6 +9,7 @@ policy_data <- function(data, baseline_data,
                                   A_cols = action,
                                   X_cols = covariates,
                                   U_cols = utility,
+                                  U_A_cols = deterministic_utility,
                                   ...)
     res <- new_policy_data(pd)
   } else {
@@ -200,7 +201,7 @@ new_policy_data <- function(stage_data, baseline_data = NULL, messages = FALSE){
 }
 
 #' @export
-wide_stage_data_to_long <- function(wide_stage_data, id_col = NULL, A_cols, X_cols, X_value_names, U_cols){
+wide_stage_data_to_long <- function(wide_stage_data, id_col = NULL, A_cols, X_cols, U_cols, U_A_cols = NULL){
   if (is.data.frame(wide_stage_data)) wide_stage_data <- as.data.table(wide_stage_data)
   wide_stage_data <- copy(wide_stage_data)
 
@@ -229,22 +230,14 @@ wide_stage_data_to_long <- function(wide_stage_data, id_col = NULL, A_cols, X_co
       stop("X_cols must be a vector or a list of vectors or lists of type character.")
     return(x_col)
   })
-  if (missing(X_value_names)) {
-    X_value_names <- names(X_cols)
-    if (is.null(X_value_names) && K==1)
-      X_value_names <- unlist(X_cols)
+
+  if (is.null(names(X_cols))){
+    if (K == 1)
+      names(X_cols) <- X_cols
+    else
+      stop("X_cols has to be a named list when K >1.")
   }
-  if (!is.character(X_value_names))
-    stop("X_value_names must be a vector or list of type character.")
-  if (length(X_cols) != length(X_value_names))
-    stop("X_value_names must be the same length as the number of vectors or lists in X_cols.")
-  if (any("U" %in% X_value_names))
-    stop("X_value_names may not contain 'U'.")
-  if (any("stage" %in% X_value_names))
-    stop("X_value_names may not contain 'stage'.")
 
-
-  measure <- append(list(A_cols), X_cols)
   if (length(U_cols)==1) {
     for (i in seq(K)) {
       newU <- paste0("_", U_cols[1], "_", i)
@@ -253,10 +246,22 @@ wide_stage_data_to_long <- function(wide_stage_data, id_col = NULL, A_cols, X_co
     }
   }
 
-  measure <- append(measure, list(U_cols))
-  value.name <- c("A", X_value_names, "U")
+  U_A_cols <- lapply(U_A_cols, function(u_a_col){
+    if (is.list(u_a_col))
+      u_a_col <- unlist(u_a_col)
+    if (!is.vector(u_a_col) | !is.character(u_a_col))
+      stop("U_A_cols must be a vector or a list of vectors or lists of type character.")
+    return(u_a_col)
+  })
 
-  long_stage_data <- melt(wide_stage_data, id.vars = id_col, measure = measure, value.name = value.name, variable.name = "stage")
+  measure <- append(list(A = A_cols), X_cols)
+  measure <- append(measure, list(U = U_cols))
+  if (!is.null(U_A_cols)){
+    measure <- append(measure, U_A_cols)
+  }
+
+
+  long_stage_data <- melt(wide_stage_data, id.vars = id_col, measure = measure, variable.name = "stage")
   setnames(long_stage_data, id_col, "id")
   long_stage_data[ , stage := as.numeric(as.character(stage))]
   long_stage_data[, A := as.character(A)]
