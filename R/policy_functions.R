@@ -54,7 +54,8 @@ policy_def <- function(stage_policies, full_history = FALSE, replicate = FALSE){
 
     return(policy_actions)
   }
-  attr(policy, "name") <- attr(stage_policies, "name")
+
+  attr(policy, "name") <- attr(stage_policies, "name", exact = TRUE)
 
   return(policy)
 }
@@ -89,6 +90,6 @@ dynamic_policy <- function(fun){
     pol[, d := action]
     return(pol)
   }
-  return(structure(f))
+  return(f)
 }
 
