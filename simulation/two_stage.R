@@ -97,37 +97,37 @@ predict.g0 <- function(object, new_H){
   return(preds)
 }
 
-n <- 2e3
-set.seed(1)
-d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
-two_stage_policy_data <- new_policy_data(stage_data = d); rm(d)
-
-# two_stage_history <- state_stage_history(two_stage_policy_data, stage = 1)
-two_stage_history <- state_history(two_stage_policy_data)
-# two_stage_history <- full_stage_history(two_stage_policy_data, stage = 2)
-
-get_H_names(two_stage_policy_data, stage = 2)
-get_H(two_stage_history)
-
-library(glmnet)
-# two_stage_g_function <- fit_g_function(two_stage_history, g_glm())
-two_stage_g_function <- fit_g_function(two_stage_history, g_glmnet())
-# two_stage_g_function <- fit_g_function(two_stage_history, g_glm(~ L_1 + L_2 + C_1 + C_2))
-two_stage_g_function$g_model
+# n <- 2e3
+# set.seed(1)
+# d <- simulate_two_stage_data(n = n, par = par0, a_1 = a_10, a_2 = a_20)
+# two_stage_policy_data <- new_policy_data(stage_data = d); rm(d)
+#
+# # two_stage_history <- state_stage_history(two_stage_policy_data, stage = 1)
+# two_stage_history <- state_history(two_stage_policy_data)
+# # two_stage_history <- full_stage_history(two_stage_policy_data, stage = 2)
+#
+# get_H_names(two_stage_policy_data, stage = 2)
+# get_H(two_stage_history)
+#
+# library(glmnet)
+# # two_stage_g_function <- fit_g_function(two_stage_history, g_glm())
+# two_stage_g_function <- fit_g_function(two_stage_history, g_glmnet())
+# # two_stage_g_function <- fit_g_function(two_stage_history, g_glm(~ L_1 + L_2 + C_1 + C_2))
+# two_stage_g_function$g_model
 
 # two_stage_g_function <- fit_g_function(two_stage_history, g0)
 
-evaluate(two_stage_g_function, new_history = two_stage_history)
-rm( two_stage_g_function)
-
-two_stage_g_functions <- fit_g_functions(two_stage_policy_data, g_models = g_glm(), full_history = FALSE)
-# two_stage_g_functions <- fit_g_functions(two_stage_policy_data, g_models = list(g_glm(), g_glm(~ L_1 + L_2 + C_1 + C_2)), full_history = TRUE)
-# two_stage_g_functions <- fit_g_functions(two_stage_policy_data, g_models = g0, full_history = FALSE)
-# two_stage_g_functions <- fit_g_functions(two_stage_policy_data, g_models = list(g_glm(), g_glm()), full_history = FALSE)
-
-names(two_stage_g_functions)
-
-evaluate(two_stage_g_functions, two_stage_policy_data)
+# evaluate(two_stage_g_function, new_history = two_stage_history)
+# rm( two_stage_g_function)
+#
+# two_stage_g_functions <- fit_g_functions(two_stage_policy_data, g_models = g_glm(), full_history = FALSE)
+# # two_stage_g_functions <- fit_g_functions(two_stage_policy_data, g_models = list(g_glm(), g_glm(~ L_1 + L_2 + C_1 + C_2)), full_history = TRUE)
+# # two_stage_g_functions <- fit_g_functions(two_stage_policy_data, g_models = g0, full_history = FALSE)
+# # two_stage_g_functions <- fit_g_functions(two_stage_policy_data, g_models = list(g_glm(), g_glm()), full_history = FALSE)
+#
+# names(two_stage_g_functions)
+#
+# evaluate(two_stage_g_functions, two_stage_policy_data)
 
 # two_stage_g_functions$across_stages$g_model$glm_model$coefficients
 # par0$gamma_A # C parameter
