@@ -38,6 +38,14 @@ fit_Q_function.history <- function(object, Q, q_model){
 }
 
 #' @export
+print.Q_function <- function(x){
+  y <- x$q_model
+  attr(y,"class") <- NULL
+
+  print(y)
+}
+
+#' @export
 evaluate.Q_function <- function(object, new_history){
   q_model <- object$q_model
   action_set <- new_history$action_set
@@ -184,7 +192,7 @@ fit_Q_functions <- function(policy_data, policy_actions, q_models, full_history 
     Q[idx_k, k] <- q_d_values_k
     Q[!idx_k, k] <- Q[!idx_k, k+1]
   }
-
+  names(q_functions) <- paste("stage_", 1:K, sep = "")
   class(q_functions) <- "nuisance_functions"
   attr(q_functions, "full_history") <- full_history
 

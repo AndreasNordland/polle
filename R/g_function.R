@@ -23,6 +23,15 @@ fit_g_function <- function(history, g_model){
 }
 
 #' @export
+print.g_function <- function(x){
+  y <- x$g_model
+  y$action_set <- NULL
+  attr(y,"class") <- NULL
+
+  print(y)
+}
+
+#' @export
 evaluate.g_function <- function(object, new_history){
   g_model <- object$g_model
   H_names <- object$H_names
