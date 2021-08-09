@@ -143,6 +143,7 @@ ptl <- function(policy_data,
 
   Gamma_d <- apply(action_matrix(d, action_set) * Gamma, 1, sum)
 
+  names(ptl_objects) <- paste("stage_", 1:K, sep = "")
   out <- list(
     ptl_objects = ptl_objects,
     depth = depth,
@@ -159,7 +160,7 @@ ptl <- function(policy_data,
     action_set = action_set,
     K = K
   )
-  class(out) <- "PTL"
+  class(out) <- c("PTL", "policy_object")
 
   return(out)
 }

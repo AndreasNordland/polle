@@ -83,7 +83,7 @@ new_policy_data <- function(stage_data, baseline_data = NULL, messages = FALSE){
 
     # checking that all actions in the action set are observed at every stage:
     if (!all(stage_data[event == 0, .(check = all(sort(unique(A)) == action_set)), stage]$check))
-      stop("All actions in the action set are observed at every stage.")
+      stop("Every action in the action must be observed at every stage.")
 
     # checking the utility variable (U):
     if (!all(is.numeric(stage_data$U))) stop("The utility (U) must be numeric.")
