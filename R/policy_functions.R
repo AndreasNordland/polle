@@ -2,15 +2,15 @@
 # a stage policy should take a history object as input and return a data.table with id, stage and d (d: policy action)
 
 #' @export
-policy_def <- function(stage_policies, full_history = FALSE, replicate = FALSE){
+policy_def <- function(stage_policies, full_history = FALSE, reuse = FALSE){
   force(stage_policies)
   force(full_history)
-  force(replicate)
+  force(reuse)
 
-  stopifnot(
-    !(full_history == TRUE & replicate == TRUE),
-    !(class(stage_policies)[[1]] == "list" & replicate == TRUE)
-  )
+  if (full_history == TRUE & reuse == TRUE)
+    stop("full_history must be FALSE when reuse is TRUE.")
+  if (reuse == TRUE & class(stage_policies)[[1]] == "list")
+    stop("When reuse is TRUE stage_policies must be a single policy function.")
 
   policy <- function(policy_data){
     if(!any(class(policy_data) == "policy_data")){
@@ -20,13 +20,15 @@ policy_def <- function(stage_policies, full_history = FALSE, replicate = FALSE){
     action_set <- get_action_set(policy_data)
     K <- get_K(policy_data)
 
-    if (replicate == TRUE){
+    if (reuse == TRUE){
       stage_policies <- replicate(K, stage_policies)
     }
+    if (class(stage_policies)[[1]] != "list" & reuse == FALSE & K > 1)
+      stop("When reuse is FALSE and K>1, stage_policies must be a list of length K.")
 
     if (class(stage_policies)[[1]] == "list"){
       if (length(stage_policies) != K)
-        stop("stage_policies must be a list of length K (or a single function).")
+        stop("stage_policies must be a list of length K (or a single policy function).")
       for (k in seq_along(stage_policies)){
         if(!any(class(stage_policies[[k]]) == "function"))
           stop("stage_policies must be a list of functions.")
