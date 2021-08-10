@@ -34,11 +34,31 @@ lm(C_2 ~ L_1 + A_1, data = data0)
 mean(data0$C_2)
 
 # transform
+d_opt_2 <- function(C_2, ...){
+  (C_2 > 0) * 1
+}
+
+d_opt_1 <- function(C_1, L_1, ...){
+  mu_1 <- unlist(par0$gamma * L_1 + 1)
+  mu_0 <- unlist(par0$gamma * L_1 + 0)
+
+  ((C_1 + kappa(mu_1) - kappa(mu_0)) > 0) * 1
+}
+
 m_opt <- m
-transform(m_opt, A_1 ~ C_1 + L_1) <- function(x) d_opt_1(C_1 = x[1], L_1 = x[2])
-transform(m_opt, A_2 ~ C_2) <- function(x) d_opt_2(C_2 = x[1])
+
+distribution(m_opt, ~A_1+A_2) <- function(n,mu,...) mu
+regression(m_opt, A_1~1) <- function(C_1, L_1)  d_opt_1(C_1 = C_1, L_1 = L_1)
+regression(m_opt, A_2~1) <- function(C_2)  d_opt_2(C_2 = C_2)
+
+
+# transform(m_opt, A_1 ~ C_1 + L_1) <- function(x) d_opt_1(C_1 = x[1], L_1 = x[2])
+# transform(m_opt, A_2 ~ C_2) <- function(x) d_opt_2(C_2 = x[1])
 
 data_opt0 <- sim(m_opt, n = 2e5, p = unlist(par0))
+
+head(data_opt0)
+head(d_opt_2(data_opt0$C_2))
 
 lm(C_2 ~ L_1 + A_1, data = data_opt0) # incorrect
 mean(data_opt0$C_2)
