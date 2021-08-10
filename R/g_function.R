@@ -62,6 +62,9 @@ evaluate.g_function <- function(object, new_history){
 fit_g_functions <- function(policy_data, g_models, full_history){
   K <- get_K(policy_data)
 
+  if (is.null(g_models))
+    stop("Please provide g_models.")
+
   # checking the g_models:
   if (class(g_models)[[1]] == "list"){
     if (length(g_models) != K) stop("g_models must either be a list of length K or a single g-model.")

@@ -11,10 +11,12 @@ ptl <- function(policy_data,
   action_set <- get_action_set(policy_data)
 
   if (class(q_models)[[1]] == "list"){
-    if (length(q_models) != K) stop("q_models must either be a list of length K or a single Q-model.")
+    if (length(q_models) != K)
+      stop("q_models must either be a list of length K or a single Q-model.")
   }
   if (policy_full_history == TRUE){
-    if ((!is.list(policy_vars)) | (length(policy_vars) != K)) stop("policy_vars must be a list of length K, when policy_full_history = TRUE")
+    if ((!is.list(policy_vars)) | (length(policy_vars) != K))
+      stop("policy_vars must be a list of length K, when policy_full_history = TRUE.")
   }
 
   # getting the observed actions:

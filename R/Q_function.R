@@ -77,6 +77,10 @@ evaluate.Q_function <- function(object, new_history){
 }
 
 q_step <- function(policy_data, k, full_history, Q, q_models){
+
+  if (is.null(q_models))
+    stop("Please provide q_models.")
+
   id <- get_id(policy_data)
   id_k <- get_id_stage(policy_data)[stage == k]$id
   idx_k <- (id %in% id_k)

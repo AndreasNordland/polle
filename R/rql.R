@@ -1,7 +1,7 @@
 #' @export
 rql<- function(policy_data, alpha = 0,
                g_models = NULL, g_functions = NULL, g_full_history,
-               q_models = NULL, q_full_history,
+               q_models, q_full_history,
                ...){
   K <- policy_data$dim$K
   n <- policy_data$dim$n
