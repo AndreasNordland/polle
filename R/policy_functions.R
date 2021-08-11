@@ -85,9 +85,15 @@ dynamic_policy <- function(fun){
   if (!any(class(fun) == "function"))
     stop("the fun argument in dynamic_policy must be a function.")
 
+  if (!"..." %in% names(formals(fun))) {
+    formals(fun) <- c(formals(fun), alist(...=))
+  }
+
   f <- function(history){
     pol <- get_id_stage(history)
     action <- do.call(what = "fun", args = get_H(history))
+    if (is.logical(action))
+      action <- action * 1
     action <- as.character(action)
     pol[, d := action]
     return(pol)
