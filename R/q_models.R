@@ -5,14 +5,15 @@ q_glmnet <- function(formula = ~ A * .,
                      alpha = 1,
                      s = "lambda.min",
                      ...) {
+  if (!requireNamespace("glmnet"))
+    stop("Package 'glmnet' required.")
   dotdotdot <- list(...)
-
   q_glmnet <- function(V_res, AH){
     des <- get_design(formula, data=AH)
     y <- V_res
     args_glmnet <- c(list(y = y, x = des$x,
                         family = family, alpha = alpha), dotdotdot)
-    fit <- do.call(what = "cv.glmnet", args = args_glmnet)
+    fit <- do.call(glmnet::cv.glmnet, args = args_glmnet)
     fit$call <- NULL
     m <- with(des, list(
                      fit = fit,
@@ -20,7 +21,7 @@ q_glmnet <- function(formula = ~ A * .,
                      formula = formula,
                      terms = terms,
                      xlevels = x_levels))
-    class(m) <- c("q_glmnet", "g_model")
+    class(m) <- c("q_glmnet", "q_model")
     return(m)
   }
   return(q_glmnet)
@@ -38,15 +39,43 @@ predict.q_glmnet <- function(object, new_AH, ...) {
   return(pred)
 }
 
-
-
-qr_sl <- (formula = ~ . ...){
+##' @export
+q_sl <- function(formula = ~ A*., SL.library=c("SL.mean", "SL.glm"), ...){
   if (!requireNamespace("SuperLearner"))
     stop("Package 'SuperLearner' required.")
-
   dotdotdot <- list(...)
+  #force(SL.library)
+  #force(formula)
+  q_sl <- function(V_res, AH) {
+    des <- get_design(formula, data=AH)
+    X <- as.data.frame(des$x)
+    colnames(X) <- gsub(":","_", colnames(X))
+    args_SL <- list(Y = V_res,
+                    X = X,
+                    SL.library = SL.library)
+    args_SL <- append(args_SL, dotdotdot)
+    SL_model <- suppressWarnings(do.call(SuperLearner::SuperLearner, args = args_SL))
+    m <- with(des, list(fit = SL_model,
+                        xlevels = x_levels,
+                        terms = terms))
+    class(m) <- c("q_sl", "q_model")
+    return(m)
+
+  }
+  return(q_sl)
 }
 
+##' @export
+predict.q_sl <- function(object, new_AH, ...) {
+  mf <- with(object, model.frame(terms, data=new_AH, xlev = xlevels,
+                                 drop.unused.levels=FALSE))
+  newx <- model.matrix(mf, data=as.data.frame(new_AH), xlev = object$xlevels)
+  newx <- as.data.frame(newx)
+  colnames(newx) <- gsub(":", "_", colnames(newx))
+  pred <- suppressWarnings(predict(getElement(object, "fit"),
+                                   newdata = newx)$pred[,1])
+  return(pred)
+}
 
 perf_ranger <- function(fit, data,  ...) {
   y <- as.numeric(data[,1])
@@ -68,7 +97,7 @@ q_rf <- function(formula = ~ .,
     function(data) {
       rf_args <- append(rf_args(p), list(y=data[,1], x=as.matrix(data[,-1,drop=FALSE])))
       rf_args <- append(rf_args, dotdotdot)
-      do.call("ranger", args=rf_args)
+      do.call(ranger::ranger, args=rf_args)
     })
 
   q_rf <- function(V_res, AH){
@@ -91,7 +120,7 @@ q_rf <- function(formula = ~ .,
                           num.trees=num.trees[best],
                           xlevels = x_levels,
                           terms = terms))
-    class(res) <- c("q_rf", "g_model")
+    class(res) <- c("q_rf", "q_model")
     return(res)
   }
   return(q_rf)
@@ -139,7 +168,7 @@ q_glm <- function(formula = ~ A * .,
       glm_model = glm_model
     )
 
-    class(m) <- c("q_glm", "g_model")
+    class(m) <- c("q_glm", "q_model")
     return(m)
   }
 
