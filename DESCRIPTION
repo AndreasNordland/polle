@@ -1,5 +1,5 @@
 Package: polle
-Title: What the Package Does (One Line, Title Case)
+Title: Policy Learning
 Version: 0.0.0.9000
 Authors@R: 
     person(given = "First",
@@ -15,16 +15,19 @@ Imports:
     data.table,
     lava,
     parallel,
-    DTRlearn2,
-    policytree,
-    glmnet,
-    mgcv
+    policytree
 Suggests:
+    DTRlearn2,
+    SuperLearner,
+    glmnet,
+    mgcv,
 	knitr,
     ranger,
     bookdown,
     rmarkdown,
     testthat (>= 3.0)
+Enhances:
+	sl3 (>= 1.4.1)
 Depends:
     R (>= 2.10)
 Roxygen: list(markdown = TRUE)

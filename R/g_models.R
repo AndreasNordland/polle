@@ -165,3 +165,37 @@ predict.g_rf <- function(object, new_H, ...) {
   pr <- predict(object$fit, data=newx, num.threads=1)$predictions
   return(pr)
 }
+
+##' @export
+g_sl <- function(formula = ~ ., SL.library=c("SL.mean", "SL.glm"),
+                 family=binomial(), ...) {
+  if (!requireNamespace("SuperLearner"))
+    stop("Package 'SuperLearner' required.")
+  dotdotdot <- list(...)
+  g_sl <- function(A, H) {
+    action_set <- sort(unique(A))
+    A <- as.numeric(factor(A, levels=action_set))-1
+    des <- get_design(formula, data=H)
+    X <- data.frame(des$x)
+    sl_args <- append(list(Y=A, X=X, family=family, SL.library=SL.library),
+                      dotdotdot)
+    fit <- do.call(SuperLearner::SuperLearner, sl_args)
+    m <- with(des, list(fit = fit,
+                        xlevels = x_levels,
+                        terms = terms,
+                        action_set = action_set))
+    class(m) <- c("g_sl", "g_model")
+    return(m)
+  }
+  return(g_sl)
+}
+
+#' @export
+predict.g_sl <- function(object, new_H, ...) {
+  mf <- with(object, model.frame(terms, data=new_H, xlev = xlevels,
+                                 drop.unused.levels=FALSE))
+  newx <- model.matrix(mf, data=new_H, xlev = object$xlevels)
+  pr <- predict(object$fit, data=as.data.frame(newx))$pred
+  pr <- cbind((1-pr), pr)
+  return(pr)
+}
