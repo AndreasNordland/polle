@@ -1,5 +1,5 @@
 Package: polle
-Title: What the Package Does (One Line, Title Case)
+Title: Policy Learning
 Version: 0.0.0.9000
 Authors@R: 
     person(given = "First",
@@ -15,9 +15,10 @@ Imports:
     data.table,
     lava,
     parallel,
-    DTRlearn2,
     policytree
 Suggests:
+    DTRlearn2,
+    SuperLearner,
     glmnet,
     mgcv,
 	knitr,
