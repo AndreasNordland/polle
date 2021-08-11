@@ -39,6 +39,15 @@ predict.q_glmnet <- function(object, new_AH, ...) {
 }
 
 
+
+qr_sl <- (formula = ~ . ...){
+  if (!requireNamespace("SuperLearner"))
+    stop("Package 'SuperLearner' required.")
+
+  dotdotdot <- list(...)
+}
+
+
 perf_ranger <- function(fit, data,  ...) {
   y <- as.numeric(data[,1])
   x <- data[,-1,drop=FALSE]
@@ -49,7 +58,7 @@ perf_ranger <- function(fit, data,  ...) {
 q_rf <- function(formula = ~ .,
                  num.trees=c(250,500,750), mtry=NULL,
                  cv_args=list(K=3, rep=1), ...) {
-  if (!requireNamespace("ranger")) stop("Package 'ranger' required")
+  if (!requireNamespace("ranger")) stop("Package 'ranger' required.")
   dotdotdot <- list(...)
   hyper_par <- expand.list(num.trees=num.trees, mtry=mtry)
   rf_args <- function(p) {
