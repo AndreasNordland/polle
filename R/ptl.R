@@ -35,14 +35,15 @@ ptl <- function(policy_data,
     folds <- NULL
   }
 
-  # cross-fitting the g-functions:
   g_functions_cf <- NULL
   if (is.null(folds)){
     if (is.null(g_functions)){
+      # fitting the g-functions:
       g_functions <- fit_g_functions(policy_data, g_models, full_history = g_full_history)
     }
     g_values <- evaluate(g_functions, policy_data)
   } else{
+    # cross-fitting the g-functions:
     g_cf <- fit_g_functions_cf(
       policy_data = policy_data,
       g_models = g_models,
@@ -70,6 +71,7 @@ ptl <- function(policy_data,
   q_functions_cf <- list()
   for (k in K:1){
     if (is.null(folds)){
+      # fitting the Q-function
       q_step_k <- q_step(
         policy_data = policy_data,
         k = k,
@@ -82,6 +84,7 @@ ptl <- function(policy_data,
       q_values_k <- q_step_k$q_values
       idx_k <- q_step_k$idx_k
     } else{
+      # cross-fitting the Q-function
       q_step_cf_k <- q_step_cf(
         folds = folds,
         policy_data = policy_data,

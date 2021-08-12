@@ -78,7 +78,7 @@ fit_g_functions <- function(policy_data, g_models, full_history){
     names(g_functions) <- paste("stage_", 1:K, sep = "")
   } else{
     history <- state_history(policy_data)
-    g_functions <- list(across_stages = fit_g_function(history, g_models))
+    g_functions <- list(all_stages = fit_g_function(history, g_models))
   }
 
   class(g_functions) <- "nuisance_functions"
