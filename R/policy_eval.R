@@ -211,8 +211,7 @@ policy_eval_dr <- function(policy_data,
   function_fits <- fit_functions(policy_data = policy_data,
                           policy = policy, policy_learner = policy_learner,
                           g_models = g_models, g_functions = g_functions, g_full_history = g_full_history,
-                          q_models = q_models, q_functions = q_functions, q_full_history = q_full_history,
-                          ...)
+                          q_models = q_models, q_functions = q_functions, q_full_history = q_full_history)
 
   # calculating the doubly robust score and value estimate:
   if (is.null(policy))
@@ -245,8 +244,7 @@ policy_eval_or <- function(policy_data,
   # fitting the Q-functions and policy (functions):
   function_fits <- fit_functions(policy_data = policy_data,
                                  policy = policy, policy_learner = policy_learner,
-                                 q_models = q_models, q_functions = q_functions, q_full_history = q_full_history,
-                                 ...)
+                                 q_models = q_models, q_functions = q_functions, q_full_history = q_full_history)
 
   # calculating the doubly robust score and value estimate:
   if (is.null(policy))
@@ -274,8 +272,7 @@ policy_eval_ipw <- function(policy_data,
   # fitting the g-functions and policy (functions):
   function_fits <- fit_functions(policy_data = policy_data,
                                  policy = policy, policy_learner = policy_learner,
-                                 g_models = g_models, g_functions = g_functions, g_full_history = g_full_history,
-                                 ...)
+                                 g_models = g_models, g_functions = g_functions, g_full_history = g_full_history)
 
   # calculating the doubly robust score and value estimate:
   if (is.null(policy))
