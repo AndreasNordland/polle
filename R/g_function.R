@@ -10,7 +10,7 @@ fit_g_function <- function(history, g_model){
   if (!all(action_set == sort(unique(A)))) stop("An action in the action set does not occur.")
 
   # fitting the model:
-  g_model <- g_model(A = A, H = H)
+  g_model <- g_model(A = A, H = H, action_set = action_set)
 
   g_function <- list(
     g_model = g_model,
