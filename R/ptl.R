@@ -115,7 +115,7 @@ ptl <- function(policy_data,
     Gamma <- Gamma_1 + Gamma_2 + Gamma_3
 
     # getting the policy history
-    policy_history_k <- get_stage_history(policy_data, stage = k, full_history = policy_full_history)
+    policy_history_k <- get_history(policy_data, stage = k, full_history = policy_full_history)
     if (policy_full_history == TRUE)
       vars <- policy_vars[[k]]
     else
@@ -136,9 +136,10 @@ ptl <- function(policy_data,
 
   }
 
-  if (length(q_functions) > 1){
+  if (length(q_functions) > 0){
     class(q_functions) <- "nuisance_functions"
     attr(q_functions, "full_history") <- q_full_history
+    names(q_functions) <- paste("stage_", 1:K, sep = "")
   } else{
     q_functions <- NULL
   }
@@ -149,6 +150,8 @@ ptl <- function(policy_data,
   Gamma_d <- apply(action_matrix(d, action_set) * Gamma, 1, sum)
 
   names(ptl_objects) <- paste("stage_", 1:K, sep = "")
+
+
   out <- list(
     ptl_objects = ptl_objects,
     depth = depth,

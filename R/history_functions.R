@@ -173,9 +173,9 @@ get_H <- function(history, vars = NULL){
 #' @export
 get_H_names <- function(policy_data, stage = NULL){
   if (is.null(stage)){
-    history <- get_stage_history(policy_data, stage = 1, full_history = FALSE)
+    history <- get_history(policy_data, stage = stage, full_history = FALSE)
   } else{
-    history <- get_stage_history(policy_data, stage = stage, full_history = TRUE)
+    history <- get_history(policy_data, stage = stage, full_history = TRUE)
   }
   AH <- history$AH
   action_name <- history$action_name
@@ -218,15 +218,20 @@ get_id_stage.history <- function(object){
 }
 
 #' @export
-get_stage_history <- function(object, stage, full_history)
-  UseMethod("get_stage_history")
+get_history <- function(object, stage = NULL, full_history = FALSE)
+  UseMethod("get_history")
 
 #' @export
-get_stage_history.policy_data <- function(object, stage, full_history){
+get_history.policy_data <- function(object, stage = NULL, full_history = FALSE){
   if (full_history == TRUE){
+    if (is.null(stage)) stop("Please provide a stage number.")
     his <- full_stage_history(object, stage = stage)
   } else{
-    his <- state_stage_history(object, stage = stage)
+    if (is.null(stage)){
+      his <- state_history(object)
+    } else{
+      his <- state_stage_history(object, stage = stage)
+    }
   }
   return(his)
 }

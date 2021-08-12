@@ -73,7 +73,7 @@ fit_g_functions <- function(policy_data, g_models, full_history){
   }
 
   if (class(g_models)[[1]] == "list"){
-    history <- lapply(1:K, function(s) get_stage_history(policy_data, stage = s, full_history = full_history))
+    history <- lapply(1:K, function(s) get_history(policy_data, stage = s, full_history = full_history))
     g_functions <- mapply(history, g_models, FUN = function(h, gm) fit_g_function(history = h, g_model = gm), SIMPLIFY = FALSE)
     names(g_functions) <- paste("stage_", 1:K, sep = "")
   } else{

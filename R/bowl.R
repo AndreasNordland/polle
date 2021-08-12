@@ -55,7 +55,7 @@ bowl <- function(policy_data,
   owl_objects <- list()
   for (k in K:1){
     # getting the policy history for stage k
-    policy_history_k <- get_stage_history(policy_data, stage = k, full_history = policy_full_history)
+    policy_history_k <- get_history(policy_data, stage = k, full_history = policy_full_history)
 
     # getting the IDs and ID-Indices at the kth stage:
     id_k <- get_id(policy_history_k)
@@ -104,6 +104,8 @@ bowl <- function(policy_data,
 
   }
 
+  names(owl_objects) <- paste("stage_", 1:K, sep = "")
+
   out <- list(
     owl_objects = owl_objects,
     X_scales = X_scales,
@@ -137,7 +139,7 @@ get_policy.BOWL <- function(object){
     policy_actions <- list()
     for (k in K:1){
       # getting the policy history:
-      policy_history_k <- get_stage_history(policy_data, stage = k, full_history = policy_full_history)
+      policy_history_k <- get_history(policy_data, stage = k, full_history = policy_full_history)
 
       if (policy_full_history == TRUE)
         vars <- policy_vars[[k]]

@@ -39,7 +39,7 @@ policy_def <- function(stage_policies, full_history = FALSE, reuse = FALSE){
     }
 
     if (class(stage_policies)[[1]] == "list"){
-      stage_histories <- lapply(1:K, function(k) get_stage_history(policy_data, stage = k, full_history = full_history))
+      stage_histories <- lapply(1:K, function(k) get_history(policy_data, stage = k, full_history = full_history))
       policy_actions <- mapply(function(sp, sh) sp(sh), stage_policies, stage_histories, SIMPLIFY = FALSE)
       policy_actions <- rbindlist(policy_actions)
       setkey(policy_actions, id, stage)

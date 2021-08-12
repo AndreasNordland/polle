@@ -92,7 +92,7 @@ q_step <- function(policy_data, k, full_history, Q, q_models){
   }
 
   # getting the Q-function history:
-  q_history <- get_stage_history(policy_data, stage = k, full_history = full_history)
+  q_history <- get_history(policy_data, stage = k, full_history = full_history)
   # fitting the Q-function:
   q_function <- fit_Q_function(q_history, Q = Q[idx_k], q_model = q_model)
   # getting the Q-function values for each action
@@ -124,7 +124,7 @@ q_step_cf <- function(folds, policy_data, k, full_history, Q, q_models){
 
       validation_id <- id[f]
       validation_policy_data <- subset(policy_data, validation_id)
-      validation_history <- get_stage_history(validation_policy_data, stage = k, full_history = full_history)
+      validation_history <- get_history(validation_policy_data, stage = k, full_history = full_history)
       validation_values <- evaluate(train_q_function, validation_history)
 
       out <- list(

@@ -186,7 +186,7 @@ rqvl <- function(policy_data,
     Z <- Z_1 + Z_2 + Z_3
 
     # getting the history for the QV model:
-    qv_history_k <- get_stage_history(policy_data, stage = k, full_history = qv_full_history)
+    qv_history_k <- get_history(policy_data, stage = k, full_history = qv_full_history)
     # fitting the QV-function:
     if (class(qv_models)[[1]] == "list"){
       qv_model_k <- qv_models[[k]]
@@ -222,9 +222,10 @@ rqvl <- function(policy_data,
     G[!idx_k,k] <- TRUE
   }
 
-  if (length(q_functions) > 1){
+  if (length(q_functions) > 0){
     class(q_functions) <- "nuisance_functions"
     attr(q_functions, "full_history") <- q_full_history
+    names(q_functions) <- paste("stage_", 1:K, sep = "")
   } else{
     q_functions <- NULL
   }
@@ -234,6 +235,7 @@ rqvl <- function(policy_data,
 
   class(qv_functions) <- "nuisance_functions"
   attr(qv_functions, "full_history") <- qv_full_history
+  names(qv_functions) <- paste("stage_", 1:K, sep = "")
 
   Zd <- apply(action_matrix(d, action_set) * Z, 1, sum)
 
