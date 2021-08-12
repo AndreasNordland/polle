@@ -44,12 +44,10 @@ q_sl <- function(formula = ~ A*., SL.library=c("SL.mean", "SL.glm"), ...){
   if (!requireNamespace("SuperLearner"))
     stop("Package 'SuperLearner' required.")
   dotdotdot <- list(...)
-  #force(SL.library)
-  #force(formula)
   q_sl <- function(V_res, AH) {
     des <- get_design(formula, data=AH)
     X <- as.data.frame(des$x)
-    colnames(X) <- gsub(":","_", colnames(X))
+    colnames(X) <- gsub("[^[:alnum:]]", "_", colnames(X))
     args_SL <- list(Y = V_res,
                     X = X,
                     SL.library = SL.library)
@@ -60,7 +58,6 @@ q_sl <- function(formula = ~ A*., SL.library=c("SL.mean", "SL.glm"), ...){
                         terms = terms))
     class(m) <- c("q_sl", "q_model")
     return(m)
-
   }
   return(q_sl)
 }
@@ -71,7 +68,7 @@ predict.q_sl <- function(object, new_AH, ...) {
                                  drop.unused.levels=FALSE))
   newx <- model.matrix(mf, data=as.data.frame(new_AH), xlev = object$xlevels)
   newx <- as.data.frame(newx)
-  colnames(newx) <- gsub(":", "_", colnames(newx))
+  colnames(newx) <- gsub("[^[:alnum:]]", "_", colnames(newx))
   pred <- suppressWarnings(predict(getElement(object, "fit"),
                                    newdata = newx)$pred[,1])
   return(pred)

@@ -41,9 +41,9 @@ get_design <- function(formula, data, intercept=FALSE) {
 #' @export
 g_glm <- function(formula = ~., family = binomial(), model = FALSE, ...) {
   dotdotdot <- list(...)
-  g_glm <- function(A, H){
+  g_glm <- function(A, H, action_set){
     formula <- update_g_formula(formula, A, H)
-    action_set <- attr(formula, "action_set")
+    ##action_set <- attr(formula, "action_set")
     args_glm <- append(list(formula = formula, data = H,
                             family = family, model = model), dotdotdot)
     glm_model <- do.call(what = "glm", args = args_glm)
@@ -69,9 +69,9 @@ g_glmnet <- function(formula = ~., family = "binomial",
                      alpha = 1, s = "lambda.min", ...) {
   if (!requireNamespace("glmnet")) stop("Package 'ranger' required")
   dotdotdot <- list(...)
-  g_glmnet <- function(A, H) {
+  g_glmnet <- function(A, H, action_set) {
     formula <- update_g_formula(formula, A, H)
-    action_set <- attr(formula, "action_set")
+    ##action_set <- attr(formula, "action_set")
     y <- get_response(formula, data=H)
     des <- get_design(formula, data=H)
     if (ncol(des$x)<2)
@@ -128,8 +128,8 @@ g_rf <- function(formula = ~.,
         do.call("ranger", args=rf_args)
       })
 
-  g_rf <- function(A, H) {
-    action_set <- sort(unique(A))
+  g_rf <- function(A, H, action_set) {
+    ##action_set <- sort(unique(A))
     A <- factor(A, levels=action_set)
     des <- get_design(formula, data=H)
     data <- data.frame(A, des$x)
@@ -172,11 +172,12 @@ g_sl <- function(formula = ~ ., SL.library=c("SL.mean", "SL.glm"),
   if (!requireNamespace("SuperLearner"))
     stop("Package 'SuperLearner' required.")
   dotdotdot <- list(...)
-  g_sl <- function(A, H) {
-    action_set <- sort(unique(A))
+  g_sl <- function(A, H, action_set) {
+    #action_set <- sort(unique(A))
     A <- as.numeric(factor(A, levels=action_set))-1
     des <- get_design(formula, data=H)
     X <- data.frame(des$x)
+    colnames(X) <- gsub("[^[:alnum:]]", "_", colnames(X))
     sl_args <- append(list(Y=A, X=X, family=family, SL.library=SL.library),
                       dotdotdot)
     fit <- do.call(SuperLearner::SuperLearner, sl_args)
@@ -194,8 +195,9 @@ g_sl <- function(formula = ~ ., SL.library=c("SL.mean", "SL.glm"),
 predict.g_sl <- function(object, new_H, ...) {
   mf <- with(object, model.frame(terms, data=new_H, xlev = xlevels,
                                  drop.unused.levels=FALSE))
-  newx <- model.matrix(mf, data=new_H, xlev = object$xlevels)
-  pr <- predict(object$fit, data=as.data.frame(newx))$pred
+  newx <- as.data.frame(model.matrix(mf, data=new_H, xlev = object$xlevels))
+  colnames(newx) <- gsub("[^[:alnum:]]", "_", colnames(newx))
+  pr <- predict(object$fit, data=newx)$pred
   pr <- cbind((1-pr), pr)
   return(pr)
 }
