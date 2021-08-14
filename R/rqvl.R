@@ -55,6 +55,8 @@ rqvl <- function(policy_data,
   if (!(is.numeric(alpha) &  (length(alpha) == 1) & (alpha >=0 & alpha < 0.5)))
     stop("alpha must be numeric and in [0, 0.5).")
 
+  if ((is.null(g_models) & is.null(g_functions))) stop("Provide either g-models or g-functions.")
+
   if (!is.null(g_functions)){
     if(!(class(g_functions)[[1]] == "nuisance_functions"))
       stop("g-functions must be of class 'nuisance_functions'.")

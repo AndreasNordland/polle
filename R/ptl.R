@@ -1,11 +1,13 @@
 #' @export
 ptl <- function(policy_data,
                 g_models = NULL, g_functions = NULL, g_full_history = FALSE,
-                q_models = NULL, q_full_history = FALSE,
+                q_models, q_full_history = FALSE,
                 policy_vars = NULL, policy_full_history = FALSE,
                 L = NULL, alpha = 0,
                 depth = 2, split.step = 1, min.node.size = 1,
                 ...){
+  if ((is.null(g_models) & is.null(g_functions))) stop("Provide either g-models or g-functions.")
+
   K <- get_K(policy_data)
   n <- get_n(policy_data)
   action_set <- get_action_set(policy_data)
