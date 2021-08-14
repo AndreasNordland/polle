@@ -51,7 +51,8 @@ full_stage_history.policy_data <- function(object, stage){
     U = U,
     action_name = action_name,
     action_utility_names = action_utility_names,
-    action_set = action_set
+    action_set = action_set,
+    stage = stage
   )
   class(history) <- "history"
 
@@ -105,7 +106,8 @@ state_stage_history.policy_data <- function(object, stage){
     U = U,
     action_name = "A",
     action_utility_names = action_utility_names,
-    action_set = action_set
+    action_set = action_set,
+    stage = stage
   )
   class(history) <- "history"
 

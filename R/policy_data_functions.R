@@ -7,6 +7,40 @@ copy_policy_data <- function(object){
   return(object)
 }
 
+partial_stage_data <- function(stage_data, K, action_utility_names){
+  if (is.data.frame(stage_data))
+    stage_data <- as.data.table(stage_data)
+
+  required_names <- c("id", "stage", "event", "A", "U")
+
+  # filtering stage_data rows up till stage K:
+  stage_data_K <- stage_data[stage <= K, ]
+
+  # filtering stage_data rows for stages above K and the required columns:
+  stage_data_res <- stage_data[stage > K, ..required_names]
+
+  # summarizing stage_data_res as a single row:
+  stage_data_res_sum <- stage_data_res[
+    ,
+    .(
+      stage = min(stage), # min(stage) is K + 1
+      event = max(event), # max(event) is the event at stage K*, which is either 1 or 2
+      U = sum(U) # sum(U) is the sum of the utility contributions from stage K+1 to K*
+    ),
+    id
+  ]
+  if (!is.null(action_utility_names))
+    stage_data_res_sum[, (action_utility_names) := NA]
+  # binding stage_data_K with stage_data_res_sum
+  stage_data <- rbindlist(list(stage_data_K, stage_data_res_sum), fill = TRUE, use.names = TRUE)
+
+  # setting keys and index
+  setkey(stage_data, id, stage)
+  setindex(stage_data, event)
+
+  return(stage_data)
+}
+
 #' @export
 partial <- function(object, K)
   UseMethod("partial")
@@ -19,35 +53,10 @@ partial.policy_data <- function(object, K){
   if(K >= object$dim$K)
     return(object)
 
-  # required column names in stage_data:
+  # column names of the deterministic rewards:
   action_utility_names <- object$colnames$action_utility_names
-  required_names <- c("id", "stage", "event", "A", "U")
 
-  # filtering stage_data rows up till stage K:
-  stage_data_K <- object$stage_data[stage <= K, ]
-
-  # filtering stage_data rows for stages above K and the required columns:
-  stage_data_res <- object$stage_data[stage > K, ..required_names]
-
-  # summarizing stage_data_res as a single row:
-  stage_data_res_sum <- stage_data_res[
-    ,
-    .(
-      stage = min(stage), # min(stage) is K + 1
-      event = max(event), # max(event) is the event at stage K*, which is either 1 or 2
-      U = sum(U) # sum(U) is the sum of the utility contributions from stage K+1 to K*
-    ),
-    id
-  ]
-  stage_data_res_sum[, (action_utility_names) := NA]
-  # binding stage_data_K with stage_data_res_sum
-  stage_data <- rbindlist(list(stage_data_K, stage_data_res_sum), fill = TRUE, use.names = TRUE)
-
-  # setting keys and index
-  setkey(stage_data, id, stage)
-  setindex(stage_data, event)
-
-  object$stage_data <- stage_data
+  object$stage_data <- partial_stage_data(stage_data = object[["stage_data"]], K = K, action_utility_names = action_utility_names)
   object$dim$K <- K
 
   return(object)

@@ -1,25 +1,27 @@
 #' @export
-fit_Q_function <- function(object, Q, q_model)
-  UseMethod("fit_Q_function")
+fit_Q_function <- function(history, Q, q_model){
 
-#' @export
-fit_Q_function.history <- function(object, Q, q_model){
-
-  action_name <- object$action_name
-  action_set <- object$action_set
-  action_utility_names <- object$action_utility_names
+  action_set <- history[["action_set"]]
+  action_utility_names <- history[["action_utility_names"]]
 
   # getting the action (A) and the model matrix (H):
-  A <- get_A(object)
-  H <- get_H(object)
+  A <- get_A(history)
+  H <- get_H(history)
 
   AH <- cbind(A, H)
 
   # checking that all actions in the actions set occur:
-  if (!all(action_set == sort(unique(A)))) stop("An action in the action set does not occur.")
+  if (!all(action_set == sort(unique(A)))){
+    mes <- "Not all actions occur at stage"
+    k <- history[["stage"]]
+    mes <- paste(mes, k)
+    mes <- paste(mes, ". Unable to fit Q-function.", sep = "")
+    stop(mes)
+  }
+
 
   # getting the historic rewards
-  U <- object$U
+  U <- history$U
   # calculating the residual (fitted) values
   U_A <- apply(action_matrix(a = A, action_set = action_set) * U[, ..action_utility_names], MARGIN = 1, sum)
   U[, V_res := Q - U_bar - U_A]

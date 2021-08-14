@@ -1,7 +1,10 @@
+#' @import data.table
+
 ##' @export
 policy_data <- function(data, baseline_data,
                         action, covariates, utility, deterministic_utility = NULL,
-                        ..., type="wide") {
+                        type="wide",
+                        ...) {
   if (is.data.frame(data)) data <- as.data.table(data)
   type <- tolower(type)
   if (type %in% c("wide")) {
@@ -74,16 +77,12 @@ new_policy_data <- function(stage_data, baseline_data = NULL, messages = FALSE){
 
     # checking the action variable (A):
     if (!is.character(stage_data$A)){
-      message("Coercing A to character type.")
+      message("Coercing A to type character.")
       stage_data$A <- as.character(stage_data$A)
       }
 
     # getting the set of actions (A):
     action_set <- sort(unique(stage_data$A))
-
-    # checking that all actions in the action set are observed at every stage:
-    if (!all(stage_data[event == 0, .(check = all(sort(unique(A)) == action_set)), stage]$check))
-      stop("Every action in the action must be observed at every stage.")
 
     # checking the utility variable (U):
     if (!all(is.numeric(stage_data$U))) stop("The utility (U) must be numeric.")
@@ -179,6 +178,10 @@ new_policy_data <- function(stage_data, baseline_data = NULL, messages = FALSE){
   # getting the dimensions:
   n <- length(unique(stage_data$id))
   K <- stage_data[event == 0, .(max(stage))][[1]]
+
+  # checking that all actions in the action set are observed at every stage:
+  # if (!all(stage_data[event == 0, .(check = all(sort(unique(A)) == action_set)), stage]$check))
+  #   stop("Every action in the action must be observed at every stage.")
 
   object <- list(
     stage_data = stage_data,

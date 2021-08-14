@@ -7,7 +7,13 @@ fit_g_function <- function(history, g_model){
   H <- get_H(history)
 
   # checking that all actions in the actions set occur:
-  if (!all(action_set == sort(unique(A)))) stop("An action in the action set does not occur.")
+  if (!all(action_set == sort(unique(A)))){
+    mes <- "Not all actions occur at stage"
+    k <- object[["stage"]]
+    mes <- paste(mes, k)
+    mes <- paste(mes, ". Unable to fit g-function.", sep = "")
+    stop(mes)
+  }
 
   # fitting the model:
   g_model <- g_model(A = A, H = H, action_set = action_set)
