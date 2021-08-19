@@ -239,6 +239,9 @@ g_sl3 <- function(formula = ~ ., learner, folds=5, ...) {
     des <- get_design(formula, data=H)
     X <- data.frame(des$x)
     tsk <- sl3::make_sl3_Task(data=cbind(A, X),
+    ##colnames(X) <- gsub("[^[:alnum:]]", "_", colnames(X))
+    dat <- cbind(A,X)
+    tsk <- sl3::make_sl3_Task(data=dat,
                               outcome_type="categorical",
                               outcome="A",
                               outcome_levels=action_set,

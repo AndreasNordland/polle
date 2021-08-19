@@ -9,7 +9,7 @@ q_glm <- function(formula = ~ A * .,
                   ...) {
   dotdotdot <- list(...)
 
-  q_glm <- function(V_res, AH){
+  q_glm <- function(V_res, AH) {
     data <- AH
 
     tt <- terms(formula, data = data)
@@ -41,7 +41,7 @@ q_glm <- function(formula = ~ A * .,
 }
 
 #' @export
-predict.q_glm <- function(object, new_AH){
+predict.q_glm <- function(object, new_AH) {
   glm_model <- getElement(object, "glm_model")
 
   newdata <- new_AH
@@ -64,7 +64,7 @@ q_glmnet <- function(formula = ~ A * .,
   if (!requireNamespace("glmnet"))
     stop("Package 'glmnet' required.")
   dotdotdot <- list(...)
-  q_glmnet <- function(V_res, AH){
+  q_glmnet <- function(V_res, AH) {
     des <- get_design(formula, data=AH)
     y <- V_res
     args_glmnet <- c(list(y = y, x = des$x,
@@ -95,19 +95,20 @@ predict.q_glmnet <- function(object, new_AH, ...) {
   return(pred)
 }
 
+
 ################################################################################
 ## ranger (Random Forest) interface
 ################################################################################
 
 perf_ranger <- function(fit, data,  ...) {
-  y <- as.numeric(data[,1])
-  x <- data[,-1,drop=FALSE]
-  mean((predict(fit, data=x, num.threads=1)-y)^2)^.5
+  y <- as.numeric(data[, 1])
+  x <- data[, -1, drop=FALSE]
+  mean((predict(fit, data=x, num.threads=1) - y)^2)^.5
 }
 
 #' @export
 q_rf <- function(formula = ~ .,
-                 num.trees=c(250,500,750), mtry=NULL,
+                 num.trees=c(250, 500, 750), mtry=NULL,
                  cv_args=list(K=3, rep=1), ...) {
   if (!requireNamespace("ranger")) stop("Package 'ranger' required.")
   dotdotdot <- list(...)
@@ -117,12 +118,13 @@ q_rf <- function(formula = ~ .,
   }
   ml <- future_lapply(hyper_par, function(p)
     function(data) {
-      rf_args <- append(rf_args(p), list(y=data[,1], x=as.matrix(data[,-1,drop=FALSE])))
+      rf_args <- append(rf_args(p), list(y=data[, 1],
+                                         x=as.matrix(data[, -1, drop=FALSE])))
       rf_args <- append(rf_args, dotdotdot)
       do.call(ranger::ranger, args=rf_args)
     })
 
-  q_rf <- function(V_res, AH){
+  q_rf <- function(V_res, AH) {
     des <- get_design(formula, data=AH)
     data <- data.frame(V_res, des$x)
     res <- NULL; best <- 1
@@ -149,7 +151,7 @@ q_rf <- function(formula = ~ .,
 }
 
 #' @export
-predict.q_rf <- function(object, new_AH, ...){
+predict.q_rf <- function(object, new_AH, ...) {
   mf <- with(object, model.frame(terms, data=new_AH, xlev = xlevels,
                                  drop.unused.levels=FALSE))
   newx <- model.matrix(mf, data=new_AH, xlev = object$xlevels)
@@ -194,6 +196,6 @@ predict.q_sl <- function(object, new_AH, ...) {
   newx <- as.data.frame(newx)
   colnames(newx) <- gsub("[^[:alnum:]]", "_", colnames(newx))
   pred <- suppressWarnings(predict(getElement(object, "fit"),
-                                   newdata = newx)$pred[,1])
+                                   newdata = newx)$pred[, 1])
   return(pred)
 }
