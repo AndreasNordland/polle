@@ -9,7 +9,7 @@ q_glm <- function(formula = ~ A * .,
                   ...) {
   dotdotdot <- list(...)
 
-  q_glm <- function(V_res, AH) {
+  q_glm <- function(V_res, AH){
     data <- AH
 
     tt <- terms(formula, data = data)
@@ -41,7 +41,7 @@ q_glm <- function(formula = ~ A * .,
 }
 
 #' @export
-predict.q_glm <- function(object, new_AH) {
+predict.q_glm <- function(object, new_AH){
   glm_model <- getElement(object, "glm_model")
 
   newdata <- new_AH
