@@ -38,12 +38,15 @@ get_design <- function(formula, data, intercept=FALSE) {
   return(list(terms=tt, x_levels=x_levels, x=x))
 }
 
+################################################################################
+## Generalized Linear Model interface
+################################################################################
+
 #' @export
 g_glm <- function(formula = ~., family = binomial(), model = FALSE, ...) {
   dotdotdot <- list(...)
   g_glm <- function(A, H, action_set){
     formula <- update_g_formula(formula, A, H)
-    ##action_set <- attr(formula, "action_set")
     args_glm <- append(list(formula = formula, data = H,
                             family = family, model = model), dotdotdot)
     glm_model <- do.call(what = "glm", args = args_glm)
@@ -64,6 +67,10 @@ predict.g_glm <- function(object, new_H){
   return(probs)
 }
 
+################################################################################
+## glmnet (Elastic Net) interface
+################################################################################
+
 #' @export
 g_glmnet <- function(formula = ~., family = "binomial",
                      alpha = 1, s = "lambda.min", ...) {
@@ -79,7 +86,7 @@ g_glmnet <- function(formula = ~., family = "binomial",
 
     args_glmnet <- list(y = y,  x = des$x, family = family, alpha = alpha)
     args_glmnet <- append(args_glmnet, dotdotdot)
-    glmnet_model <- do.call(what = "cv.glmnet", args = args_glmnet)
+    glmnet_model <- do.call(glmnet::cv.glmnet, args = args_glmnet)
     glmnet_model$call <- NULL
 
     m <- with(des, list(glmnet_model = glmnet_model,
@@ -110,10 +117,14 @@ perf_ranger_prob <- function(fit, data,  ...) {
               data[,1], ...)
 }
 
+################################################################################
+## ranger (Random Forest) interface
+################################################################################
+
 #' @export
 g_rf <- function(formula = ~.,
                  num.trees=c(500), mtry=NULL,
-                 cv_args=list(K=3, rep=1), ...) {
+                 cv_args=list(K=5, rep=1), ...) {
   if (!requireNamespace("ranger")) stop("Package 'ranger' required")
   dotdotdot <- list(...)
   hyper_par <- expand.list(num.trees=num.trees, mtry=mtry)
@@ -125,7 +136,7 @@ g_rf <- function(formula = ~.,
       function(data) {
         rf_args <- append(rf_args(p), list(y=data[,1], x=as.matrix(data[,-1,drop=FALSE])))
         rf_args <- append(rf_args, dotdotdot)
-        do.call("ranger", args=rf_args)
+        do.call(ranger::ranger, args=rf_args)
       })
 
   g_rf <- function(A, H, action_set) {
@@ -166,14 +177,18 @@ predict.g_rf <- function(object, new_H, ...) {
   return(pr)
 }
 
+################################################################################
+## SuperLearner interface
+################################################################################
+
 ##' @export
 g_sl <- function(formula = ~ ., SL.library=c("SL.mean", "SL.glm"),
                  family=binomial(), ...) {
   if (!requireNamespace("SuperLearner"))
     stop("Package 'SuperLearner' required.")
+  suppressPackageStartupMessages(require(SuperLearner))
   dotdotdot <- list(...)
   g_sl <- function(A, H, action_set) {
-    #action_set <- sort(unique(A))
     A <- as.numeric(factor(A, levels=action_set))-1
     des <- get_design(formula, data=H)
     X <- data.frame(des$x)
@@ -199,5 +214,55 @@ predict.g_sl <- function(object, new_H, ...) {
   colnames(newx) <- gsub("[^[:alnum:]]", "_", colnames(newx))
   pr <- predict(object$fit, data=newx)$pred
   pr <- cbind((1-pr), pr)
+  return(pr)
+}
+
+################################################################################
+## sl3 (SuperLearner) interface
+################################################################################
+
+##' @export
+g_sl3 <- function(formula = ~ ., learner, folds=5, ...) {
+  if (!requireNamespace("sl3"))
+    stop("Package 'sl3' required.")
+  suppressPackageStartupMessages(require(sl3))
+  dotdotdot <- list(...)
+  if (missing(learner)) {
+    lrn_enet <- sl3::make_learner(sl3::Lrnr_glmnet, alpha=0.5, outcome_type="binomial")
+    lrn_rf <- sl3::make_learner(sl3::Lrnr_ranger, num.trees = 500, outcome_type="binomial")
+    lrn_stack <- sl3::Stack$new(lrn_enet, lrn_enet)
+    learner <- sl3::make_learner(sl3::Lrnr_sl, learners = lrn_stack, outcome_type="binomial")
+  }
+  g_sl3 <- function(A, H, action_set) {
+    A <- factor(A, levels=action_set)
+    des <- get_design(formula, data=H)
+    X <- data.frame(des$x)
+    ##colnames(X) <- gsub("[^[:alnum:]]", "_", colnames(X))
+    dat <- cbind(A,X)
+    tsk <- sl3::make_sl3_Task(data=dat,
+                              outcome_type="categorical",
+                              outcome="A",
+                              outcome_levels=action_set,
+                              covariates=names(X),
+                              folds=folds)
+    browser()
+    fit <- learner$train(tsk)
+    m <- with(des, list(fit = fit,
+                        xlevels = x_levels,
+                        terms = terms,
+                        action_set = action_set))
+    class(m) <- c("g_sl3", "g_model")
+    return(m)
+  }
+  return(g_sl3)
+}
+
+#' @export
+predict.g_sl3 <- function(object, new_H, ...) {
+  mf <- with(object, model.frame(terms, data=new_H, xlev = xlevels,
+                                 drop.unused.levels=FALSE))
+  newx <- as.data.frame(model.matrix(mf, data=new_H, xlev = object$xlevels))
+  tsk <- sl3::make_sl3_Task(data=newx, covariates=names(newx))
+  pr <- object$fit$predict(tsk)
   return(pr)
 }

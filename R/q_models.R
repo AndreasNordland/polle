@@ -1,3 +1,59 @@
+################################################################################
+## Generalized Linear Model interface
+################################################################################
+
+#' @export
+q_glm <- function(formula = ~ A * .,
+                  family = gaussian(),
+                  model = FALSE,
+                  ...) {
+  dotdotdot <- list(...)
+
+  q_glm <- function(V_res, AH){
+    data <- AH
+
+    tt <- terms(formula, data = data)
+    if (length(attr(tt, "term.labels")) == 0)
+      formula <- V_res ~ 1
+    else
+      formula <- reformulate(attr(tt, "term.labels"), response = "V_res")
+
+    args_glm <- list(
+      formula = formula,
+      data = data,
+      family = family,
+      model = model
+    )
+    args_glm <- append(args_glm, dotdotdot)
+
+    glm_model <- do.call(what = "glm", args = args_glm)
+    glm_model$call <- NULL
+
+    m <- list(
+      glm_model = glm_model
+    )
+
+    class(m) <- c("q_glm", "q_model")
+    return(m)
+  }
+
+  return(q_glm)
+}
+
+#' @export
+predict.q_glm <- function(object, new_AH){
+  glm_model <- getElement(object, "glm_model")
+
+  newdata <- new_AH
+
+  pred <- predict(glm_model, newdata = newdata, type = "response")
+
+  return(pred)
+}
+
+################################################################################
+## glmnet (Elastic Net) interface
+################################################################################
 
 #' @export
 q_glmnet <- function(formula = ~ A * .,
@@ -39,40 +95,9 @@ predict.q_glmnet <- function(object, new_AH, ...) {
   return(pred)
 }
 
-##' @export
-q_sl <- function(formula = ~ A*., SL.library=c("SL.mean", "SL.glm"), ...){
-  if (!requireNamespace("SuperLearner"))
-    stop("Package 'SuperLearner' required.")
-  dotdotdot <- list(...)
-  q_sl <- function(V_res, AH) {
-    des <- get_design(formula, data=AH)
-    X <- as.data.frame(des$x)
-    colnames(X) <- gsub("[^[:alnum:]]", "_", colnames(X))
-    args_SL <- list(Y = V_res,
-                    X = X,
-                    SL.library = SL.library)
-    args_SL <- append(args_SL, dotdotdot)
-    SL_model <- suppressWarnings(do.call(SuperLearner::SuperLearner, args = args_SL))
-    m <- with(des, list(fit = SL_model,
-                        xlevels = x_levels,
-                        terms = terms))
-    class(m) <- c("q_sl", "q_model")
-    return(m)
-  }
-  return(q_sl)
-}
-
-##' @export
-predict.q_sl <- function(object, new_AH, ...) {
-  mf <- with(object, model.frame(terms, data=new_AH, xlev = xlevels,
-                                 drop.unused.levels=FALSE))
-  newx <- model.matrix(mf, data=as.data.frame(new_AH), xlev = object$xlevels)
-  newx <- as.data.frame(newx)
-  colnames(newx) <- gsub("[^[:alnum:]]", "_", colnames(newx))
-  pred <- suppressWarnings(predict(getElement(object, "fit"),
-                                   newdata = newx)$pred[,1])
-  return(pred)
-}
+################################################################################
+## ranger (Random Forest) interface
+################################################################################
 
 perf_ranger <- function(fit, data,  ...) {
   y <- as.numeric(data[,1])
@@ -133,52 +158,42 @@ predict.q_rf <- function(object, new_AH, ...){
 
 }
 
+################################################################################
+## SuperLearner interface
+################################################################################
 
-#' @export
-q_glm <- function(formula = ~ A * .,
-                  family = gaussian(),
-                  model = FALSE,
-                  ...) {
+##' @export
+q_sl <- function(formula = ~ A*., SL.library=c("SL.mean", "SL.glm"), ...){
+  if (!requireNamespace("SuperLearner"))
+    stop("Package 'SuperLearner' required.")
+  suppressPackageStartupMessages(require(SuperLearner))
   dotdotdot <- list(...)
-
-  q_glm <- function(V_res, AH){
-    data <- AH
-
-    tt <- terms(formula, data = data)
-    if (length(attr(tt, "term.labels")) == 0)
-      formula <- V_res ~ 1
-    else
-      formula <- reformulate(attr(tt, "term.labels"), response = "V_res")
-
-    args_glm <- list(
-      formula = formula,
-      data = data,
-      family = family,
-      model = model
-    )
-    args_glm <- append(args_glm, dotdotdot)
-
-    glm_model <- do.call(what = "glm", args = args_glm)
-    glm_model$call <- NULL
-
-    m <- list(
-      glm_model = glm_model
-    )
-
-    class(m) <- c("q_glm", "q_model")
+  q_sl <- function(V_res, AH) {
+    des <- get_design(formula, data=AH)
+    X <- as.data.frame(des$x)
+    colnames(X) <- gsub("[^[:alnum:]]", "_", colnames(X))
+    args_SL <- list(Y = V_res,
+                    X = X,
+                    SL.library = SL.library)
+    args_SL <- append(args_SL, dotdotdot)
+    SL_model <- suppressWarnings(do.call(SuperLearner::SuperLearner, args = args_SL))
+    m <- with(des, list(fit = SL_model,
+                        xlevels = x_levels,
+                        terms = terms))
+    class(m) <- c("q_sl", "q_model")
     return(m)
   }
-
-  return(q_glm)
+  return(q_sl)
 }
 
-#' @export
-predict.q_glm <- function(object, new_AH){
-  glm_model <- getElement(object, "glm_model")
-
-  newdata <- new_AH
-
-  pred <- predict(glm_model, newdata = newdata, type = "response")
-
+##' @export
+predict.q_sl <- function(object, new_AH, ...) {
+  mf <- with(object, model.frame(terms, data=new_AH, xlev = xlevels,
+                                 drop.unused.levels=FALSE))
+  newx <- model.matrix(mf, data=as.data.frame(new_AH), xlev = object$xlevels)
+  newx <- as.data.frame(newx)
+  colnames(newx) <- gsub("[^[:alnum:]]", "_", colnames(newx))
+  pred <- suppressWarnings(predict(getElement(object, "fit"),
+                                   newdata = newx)$pred[,1])
   return(pred)
 }
