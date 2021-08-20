@@ -230,22 +230,20 @@ g_sl3 <- function(formula = ~ ., learner, folds=5, ...) {
   if (missing(learner)) {
     lrn_enet <- sl3::make_learner(sl3::Lrnr_glmnet, alpha=0.5, outcome_type="binomial")
     lrn_rf <- sl3::make_learner(sl3::Lrnr_ranger, num.trees = 500, outcome_type="binomial")
-    lrn_stack <- sl3::Stack$new(lrn_enet, lrn_enet)
+    lrn_mean <- sl3::make_learner(sl3::Lrnr_mean, outcome_type="binomial")
+    lrn_stack <- sl3::Stack$new(lrn_enet, lrn_rf, lrn_mean)
     learner <- sl3::make_learner(sl3::Lrnr_sl, learners = lrn_stack, outcome_type="binomial")
   }
   g_sl3 <- function(A, H, action_set) {
     A <- factor(A, levels=action_set)
     des <- get_design(formula, data=H)
     X <- data.frame(des$x)
-    ##colnames(X) <- gsub("[^[:alnum:]]", "_", colnames(X))
-    dat <- cbind(A,X)
-    tsk <- sl3::make_sl3_Task(data=dat,
+    tsk <- sl3::make_sl3_Task(data=cbind(A, X),
                               outcome_type="categorical",
                               outcome="A",
                               outcome_levels=action_set,
                               covariates=names(X),
                               folds=folds)
-    browser()
     fit <- learner$train(tsk)
     m <- with(des, list(fit = fit,
                         xlevels = x_levels,
