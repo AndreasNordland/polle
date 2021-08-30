@@ -1,4 +1,4 @@
-#' #' @export
+
 #' simulate_two_stage_data_wide <- function(n, par, a_1, a_2){
 #' # stage 1
 #' L_1 <- par$mu_L[1] + rnorm(n = n, 0, par$sigma_L)
