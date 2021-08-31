@@ -13,23 +13,24 @@ Encoding: UTF-8
 LazyData: true
 Imports:
     data.table,
+    future.apply,
     lava,
     parallel,
-    policytree
+    policytree,
 Suggests:
     DTRlearn2,
     SuperLearner,
     glmnet,
     mgcv,
-	knitr,
+    knitr,
     ranger,
     bookdown,
     rmarkdown,
     testthat (>= 3.0)
 Enhances:
-	sl3 (>= 1.4.1)
+    sl3 (>= 1.4.1)
 Depends:
-    R (>= 2.10)
+    R (>= 4.0)
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.2
 VignetteBuilder: knitr

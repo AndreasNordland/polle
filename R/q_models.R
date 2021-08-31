@@ -115,7 +115,7 @@ q_rf <- function(formula = ~ .,
   rf_args <- function(p) {
     list(num.threads=1, num.trees=p$num.trees, mtry=p$mtry)
   }
-  ml <- lapply(hyper_par, function(p)
+  ml <- future_lapply(hyper_par, function(p)
     function(data) {
       rf_args <- append(rf_args(p), list(y=data[,1], x=as.matrix(data[,-1,drop=FALSE])))
       rf_args <- append(rf_args, dotdotdot)

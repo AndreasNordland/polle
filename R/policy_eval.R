@@ -154,7 +154,7 @@ policy_eval_cv_dr <- function(policy_data,
   folds <- split(sample(1:n, n), rep(1:M, length.out = n))
 
   dotdotdot <- list(...)
-  pe_dr_cv <- lapply(
+  pe_dr_cv <- future_lapply(
     folds,
     FUN = policy_eval_dr_fold,
     policy_data = policy_data,
@@ -163,20 +163,6 @@ policy_eval_cv_dr <- function(policy_data,
     q_models = q_models, q_functions = q_functions, q_full_history = q_full_history,
     dotdotdot = dotdotdot
   )
-
-  # dr_list <- parallel::mclapply(
-  #   folds,
-  #   FUN = dr_fold,
-  #   ...,
-  #   id = id,
-  #   policy_data = policy_data,
-  #   policy = policy,
-  #   g_models = g_models,
-  #   q_models = q_models,
-  #   g_full_history = g_full_history,
-  #   q_full_history = q_full_history
-  #   )
-  #
 
   id <- unlist(lapply(pe_dr_cv, function(x) x$id))
   iid <- unlist(lapply(pe_dr_cv, function(x) x$iid))
