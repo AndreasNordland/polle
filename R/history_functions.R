@@ -52,7 +52,7 @@ full_stage_history.policy_data <- function(object, stage){
     action_name = action_name,
     action_utility_names = action_utility_names,
     action_set = action_set,
-    stage = stage
+    stage = stage_
   )
   class(history) <- "history"
 
