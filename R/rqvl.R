@@ -271,6 +271,8 @@ get_policy.RQVL <- function(object){
   q_cols <- paste("Q_", action_set, sep = "")
 
   policy <- function(policy_data){
+    if (get_K(policy_data) != K)
+      stop("The policy do not have the same number of stages as the policy data object.")
     # evaluating the Q-functions:
     qv_values <- evaluate(qv_functions, policy_data = policy_data)
 
