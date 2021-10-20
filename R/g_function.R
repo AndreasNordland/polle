@@ -46,7 +46,10 @@ evaluate.g_function <- function(object, new_history){
   id_stage <- get_id_stage(new_history)
   new_H <- get_H(new_history)
 
-  if (!all(names(new_H) %in% H_names)) stop("new_history does not have the same variable names as the original history.")
+  if (!all(names(new_H) %in% H_names))
+    stop("new_history does not have the same column names as the original history.")
+  # if (!all(names(new_H) == H_names))
+  #   stop("new_history does not have the same column names as the original history.")
 
   g_values <- predict(g_model, new_H = new_H)
   colnames(g_values) <- paste("g", action_set, sep = "_")
