@@ -265,7 +265,63 @@ policy <- function(policy_data){
 return(policy)
 }
 
+#' @export
+get_stage_policy.PTL <- function(object, stage){
+  action_set <- object$action_set
+  K <- object$K
+
+  if(!((stage >= 0) & (stage <= K)))
+    stop("stage must be smaller than or equal to K.")
+
+  if (!is.null(object$g_functions))
+    g_function <- object$g_functions[[stage]]
+  g_full_history <- attr(object$g_functions, "full_history")
+
+  ptl_object <- object$ptl_objects[[stage]]
+  policy_vars <- getElement(object, "policy_vars")
+  policy_full_history <- object$policy_full_history
+
+  alpha <- object$alpha
+
+  if (alpha == 0){
+    stage_policy <- function(H, ...){
+      dd <- predict(ptl_object, newdata = H)
+      d <- action_set[dd]
+      return(d)
+    }
+  }
+  if (alpha > 0){
+    stage_policy <- function(H, g_H){
+      dd <- predict(ptl_object, newdata = H)
+      d <- action_set[dd]
+
+      # evaluating the g-function:
+      if (!all(g_function$H_names == names(g_H))){
+        mes <- paste(
+          "g_H must contain the columns",
+          paste(g_function$H_names, collapse = ","),
+          "(in that order)."
+        )
+        stop(mes)
+      }
+      g_values <- predict(g_function$g_model, new_H = g_H)
+      g_cols <- paste("g", action_set, sep = "_")
+      colnames(g_values) <- g_cols
+
+      d[(g_values[, g_cols[1]] < alpha)] <- action_set[2]
+      d[(g_values[, g_cols[2]] < alpha)] <- action_set[1]
+
+
+      return(d)
+    }
+  }
+
+  return(stage_policy)
+}
+
 # OLD ---------------------------------------------------------------------
+
+
 
 #' #' @export
 #' get_policy.PTL <- function(object){

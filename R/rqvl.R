@@ -31,7 +31,7 @@ evaluate.QV_function <- function(object, new_history){
     function(qvm){
       predict(qvm, new_H)
     }
-    )
+  )
 
   qv_values <- data.table(id_stage, qv_values)
   setkey(qv_values, id, stage)
@@ -234,7 +234,6 @@ rqvl <- function(policy_data,
   if (length(q_functions_cf) == 0){
     q_functions_cf <- NULL
   }
-
   class(qv_functions) <- "nuisance_functions"
   attr(qv_functions, "full_history") <- qv_full_history
   names(qv_functions) <- paste("stage_", 1:K, sep = "")
@@ -257,6 +256,73 @@ rqvl <- function(policy_data,
   class(out) <- "RQVL"
 
   return(out)
+}
+
+#' @export
+get_stage_policy.RQVL <- function(object, stage){
+  action_set <- object$action_set
+  K <- object$K
+
+  if(!((stage >= 0) & (stage <= K)))
+    stop("stage must be smaller than or equal to K.")
+
+  if (!is.null(object$g_functions))
+    g_function <- object$g_functions[[stage]]
+  g_full_history <- attr(object$g_functions, "full_history")
+
+  qv_model <- object$qv_functions[[stage]]$qv_model
+  qv_full_history <- attr(object$qv_functions, "full_history")
+
+  alpha <- object$alpha
+
+  if (alpha == 0){
+    stage_policy <- function(H, ...){
+      qv_values <- sapply(
+        qv_model,
+        function(qvm){
+          predict(qvm, H)
+        }
+      )
+      dd <- apply(qv_values, MARGIN = 1, which.max)
+      d <- action_set[dd]
+      return(d)
+    }
+  }
+  if (alpha > 0){
+    stage_policy <- function(H, g_H){
+      # getting the qv predictions for each action:
+
+      qv_values <- sapply(
+        qv_model,
+        function(qvm){
+          predict(qvm, H)
+        }
+      )
+
+      # evaluating the g-function:
+      if (!all(g_function$H_names == names(g_H))){
+        mes <- paste(
+          "g_H must contain the columns",
+          paste(g_function$H_names, collapse = ","),
+          "(in that order)."
+        )
+        stop(mes)
+      }
+      g_values <- predict(g_function$g_model, new_H = g_H)
+
+      # calculating the realistic actions:
+      realistic_actions <- t(apply(g_values, MARGIN = 1, function(x) x >= alpha))
+      realistic_actions[which(realistic_actions == FALSE)] <- NA
+
+      # getting the action with the maximal realistic Q-function value:
+      dd <- apply(qv_values * realistic_actions, MARGIN = 1, which.max)
+      d <- action_set[dd]
+
+      return(d)
+    }
+  }
+
+  return(stage_policy)
 }
 
 #' @export
