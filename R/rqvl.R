@@ -136,6 +136,8 @@ rqvl <- function(policy_data,
   # (n X K+1) matrix with entries Q_k(H_{k,i}, d_k(H_{k,i})), Q_{K+1} = U:
   Q <- matrix(nrow = n, ncol = K+1)
   Q[, K+1] <- U
+  # (n X K) matrix with entries d_k(H_k) (including unrealistic actions)
+  D <- matrix(nrow = n, ncol = K)
 
   g_cols <- paste("g_", action_set, sep = "")
   q_cols <- paste("Q_", action_set, sep = "")
@@ -221,6 +223,7 @@ rqvl <- function(policy_data,
     Q[!idx_k, k] <- Q[!idx_k, k+1]
     II[idx_k, k] <- (A_k == d)
     II[!idx_k, k] <- TRUE
+    D[idx_k, k] <- d
     G[!idx_k,k] <- TRUE
   }
 
@@ -246,8 +249,10 @@ rqvl <- function(policy_data,
     q_functions_cf = q_functions_cf,
     g_functions = g_functions,
     g_functions_cf = g_functions_cf,
+    g_values = g_values,
     value_estimate = mean(Zd),
     iid = Zd - mean(Zd),
+    D = D,
     action_set = action_set,
     alpha = alpha,
     K = K,
@@ -266,9 +271,15 @@ get_stage_policy.RQVL <- function(object, stage){
   if(!((stage >= 0) & (stage <= K)))
     stop("stage must be smaller than or equal to K.")
 
-  if (!is.null(object$g_functions))
-    g_function <- object$g_functions[[stage]]
-  g_full_history <- attr(object$g_functions, "full_history")
+  if (!is.null(object$g_functions)){
+    g_full_history <- attr(object$g_functions, "full_history")
+    if (length(object$g_functions) == K){
+      g_function <- object$g_functions[[stage]]
+    }
+    else{
+      g_function <- object$g_functions[[1]]
+    }
+  }
 
   qv_model <- object$qv_functions[[stage]]$qv_model
   qv_full_history <- attr(object$qv_functions, "full_history")

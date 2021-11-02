@@ -84,6 +84,8 @@ ptl <- function(policy_data,
   # (n X K+1) matrix with entries Q_k(H_{k,i}, d_k(H_{k,i})), Q_{K+1} = U:
   Q <- matrix(nrow = n, ncol = K+1)
   Q[, K+1] <- U
+  # (n X K) matrix with entries d_k(H_k) (including unrealistic actions)
+  D <- matrix(nrow = n, ncol = K)
 
   g_cols <- paste("g_", action_set, sep = "")
   q_cols <- paste("Q_", action_set, sep = "")
@@ -162,6 +164,7 @@ ptl <- function(policy_data,
     Q[!idx_k, k] <- Q[!idx_k, k+1]
     II[idx_k, k] <- (A_k == d)
     II[!idx_k, k] <- TRUE
+    D[idx_k, k] <- d
     G[!idx_k,k] <- TRUE
 
   }
@@ -191,10 +194,12 @@ ptl <- function(policy_data,
     iid = Gamma_d - mean(Gamma_d),
     g_functions = g_functions,
     g_functions_cf = g_functions_cf,
+    g_values = g_values,
     q_functions = q_functions,
     q_functions_cf = q_functions_cf,
     policy_full_history = policy_full_history,
     policy_vars = policy_vars,
+    D = D,
     action_set = action_set,
     alpha = alpha,
     K = K,
@@ -273,18 +278,35 @@ get_stage_policy.PTL <- function(object, stage){
   if(!((stage >= 0) & (stage <= K)))
     stop("stage must be smaller than or equal to K.")
 
-  if (!is.null(object$g_functions))
-    g_function <- object$g_functions[[stage]]
-  g_full_history <- attr(object$g_functions, "full_history")
+  if (!is.null(object$g_functions)){
+    g_full_history <- attr(object$g_functions, "full_history")
+    if (length(object$g_functions) == K){
+      g_function <- object$g_functions[[stage]]
+    }
+    else{
+      g_function <- object$g_functions[[1]]
+    }
+  }
 
   ptl_object <- object$ptl_objects[[stage]]
-  policy_vars <- getElement(object, "policy_vars")
+
   policy_full_history <- object$policy_full_history
+
+  if(policy_full_history)
+    policy_vars <- object$policy_vars[[stage]]
+  else
+    policy_vars <- object$policy_vars
 
   alpha <- object$alpha
 
   if (alpha == 0){
     stage_policy <- function(H, ...){
+      if(!all(policy_vars == colnames(H))){
+        mes <- "H must have column names "
+        mes <- paste(mes, paste(policy_vars, collapse = ", "), " (in that order).", sep = "")
+        stop(mes)
+      }
+
       dd <- predict(ptl_object, newdata = H)
       d <- action_set[dd]
       return(d)
@@ -292,6 +314,12 @@ get_stage_policy.PTL <- function(object, stage){
   }
   if (alpha > 0){
     stage_policy <- function(H, g_H){
+      if(!all(policy_vars == colnames(H))){
+        mes <- "H must have column names "
+        mes <- paste(mes, paste(policy_vars, collapse = ", "), " (in that order).", sep = "")
+        stop(mes)
+      }
+
       dd <- predict(ptl_object, newdata = H)
       d <- action_set[dd]
 
@@ -319,11 +347,8 @@ get_stage_policy.PTL <- function(object, stage){
   return(stage_policy)
 }
 
-# OLD ---------------------------------------------------------------------
+# Obsolete ---------------------------------------------------------------------
 
-
-
-#' #' @export
 #' get_policy.PTL <- function(object){
 #'   action_set <- object$action_set
 #'   K <- object$K

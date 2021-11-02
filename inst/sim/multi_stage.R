@@ -1,4 +1,6 @@
-sim_multi_stage_obs <- function(a, tau, lambda, alpha, sigma, beta, gamma, psi, rho, ...){
+library(data.table)
+
+sim_multi_stage_obs <- function(a, tau, lambda, alpha, sigma, beta, psi, xi, ...){
   a_fun <- a
   stage_vec <- vector("numeric")
   entry_vec <- vector("numeric")
@@ -6,27 +8,24 @@ sim_multi_stage_obs <- function(a, tau, lambda, alpha, sigma, beta, gamma, psi, 
   event_vec <- vector("numeric")
   a_vec <- vector("numeric")
 
-  # t_inc_vec <- vector("numeric")
+  # latent variable
+  w <- rnorm(n=1, 0, 1)
 
-  # baseline covariates
-  z <- rbinom(n = 1, size = 1, prob = 0.3)
-  z <- ifelse(z == 1, "a", "b")
+  # baseline variable
+  b <- rbinom(n = 1, size = 1, prob = xi)
 
-  # stage specific covariates
+  # stage specific variables
   x_vec <- vector("numeric")
   x_lead_vec <- vector("numeric")
 
   stage <- 1
   entry_vec <- c(entry_vec, 0)
-  # rate <- lambda
-  # t_increment <- rexp(n = 1, rate = rate)
-  # t <- t_increment
   t <- 0
   x_lead <- 0
 
   while (t<tau){
-    x <- rnorm(n = 1, mean = alpha[1] + (alpha[2] * t) + (alpha[3]*t^2) + (alpha[4] * x_lead) + (alpha[5] * (z == "a")), sd = sigma)
-    a <- a_fun(stage = stage, t = t, x = x, z = z, beta = beta)
+    x <- rnorm(n = 1, mean = alpha[1] + (alpha[2] * t) + (alpha[3]*t^2) + (alpha[4] * x_lead) + (alpha[5] * b), sd = sigma)
+    a <- a_fun(stage = stage, t = t, x = x, x_lead = x_lead, b = b, beta = beta)
 
     exit_vec <- c(exit_vec, t)
     stage_vec <- c(stage_vec, stage)
@@ -38,13 +37,11 @@ sim_multi_stage_obs <- function(a, tau, lambda, alpha, sigma, beta, gamma, psi, 
     if (a == 1){
       entry_vec <- c(entry_vec, t)
     }
-    # the time increment comes from an exponential distribution with mean exp(lambda + rho * x)
+    # the time increment comes from an exponential distribution with mean exp(lambda[1] + lambda[2] * x + lambda[3] * w)
     # remember that mean(t_increment)  = 1 / rate
-    t_increment <- if(a == 1) rexp(n = 1, 1) / exp(lambda + rho * x)  else Inf
+    t_increment <- if(a == 1) rexp(n = 1, 1) / exp(lambda[1] + lambda[2] * x + lambda[3] * w)  else Inf
 
-    #t_inc_vec <- c(t_inc_vec, t_increment)
-
-    t <- t + t_increment + psi # minimum increment psi
+    t <- t + t_increment + psi # minimum time increment psi
     stage <- stage + 1
     x_lead <- x
   }
@@ -57,8 +54,6 @@ sim_multi_stage_obs <- function(a, tau, lambda, alpha, sigma, beta, gamma, psi, 
     a_vec <- c(a_vec, NA)
     x_vec <- c(x_vec, NA)
     x_lead_vec <- c(x_lead_vec, NA)
-    #t_inc_vec <- c(t_inc_vec, NA)
-
   }
 
   if (a == 1){
@@ -68,14 +63,13 @@ sim_multi_stage_obs <- function(a, tau, lambda, alpha, sigma, beta, gamma, psi, 
     a_vec <- c(a_vec, NA)
     x_vec <- c(x_vec, NA)
     x_lead_vec <- c(x_lead_vec, NA)
-    #t_inc_vec <- c(t_inc_vec, NA)
   }
 
   stage_data <- matrix(c(stage_vec, entry_vec, exit_vec, event_vec, a_vec, x_vec, x_lead_vec), ncol = 7, byrow = FALSE)
   colnames(stage_data) <- c("stage", "entry", "exit", "event", "A", "X", "X_lead")
 
-  baseline_data <- matrix(z, ncol = 1)
-  colnames(baseline_data) <- c("Z")
+  baseline_data <- matrix(b, ncol = 1)
+  colnames(baseline_data) <- c("B")
 
   return(list(stage_data = stage_data, baseline_data = baseline_data))
 }
