@@ -66,6 +66,10 @@ policy_def <- function(stage_policies, full_history = FALSE, reuse = FALSE){
 get_policy <- function(object)
   UseMethod("get_policy")
 
+#' @export
+get_stage_policy <- function(object, stage)
+  UseMethod("get_stage_policy")
+
 ##' @export
 static_policy <- function(action, name=paste0("a=",action)) {
   action <- as.character(action)

@@ -167,7 +167,8 @@ get_H <- function(history, vars = NULL){
   } else
     vars <- H_names
 
-  H <- AH[, ..vars]
+  # H <- AH[, names(AH) %in% vars , with = FALSE] # keeps the original ordering of columns
+  H <- AH[, ..vars] # vars dictates the ordering of the selected columns
 
   return(H)
 }

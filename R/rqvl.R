@@ -31,7 +31,7 @@ evaluate.QV_function <- function(object, new_history){
     function(qvm){
       predict(qvm, new_H)
     }
-    )
+  )
 
   qv_values <- data.table(id_stage, qv_values)
   setkey(qv_values, id, stage)
@@ -136,6 +136,8 @@ rqvl <- function(policy_data,
   # (n X K+1) matrix with entries Q_k(H_{k,i}, d_k(H_{k,i})), Q_{K+1} = U:
   Q <- matrix(nrow = n, ncol = K+1)
   Q[, K+1] <- U
+  # (n X K) matrix with entries d_k(H_k) (including unrealistic actions)
+  D <- matrix(nrow = n, ncol = K)
 
   g_cols <- paste("g_", action_set, sep = "")
   q_cols <- paste("Q_", action_set, sep = "")
@@ -221,6 +223,7 @@ rqvl <- function(policy_data,
     Q[!idx_k, k] <- Q[!idx_k, k+1]
     II[idx_k, k] <- (A_k == d)
     II[!idx_k, k] <- TRUE
+    D[idx_k, k] <- d
     G[!idx_k,k] <- TRUE
   }
 
@@ -234,7 +237,6 @@ rqvl <- function(policy_data,
   if (length(q_functions_cf) == 0){
     q_functions_cf <- NULL
   }
-
   class(qv_functions) <- "nuisance_functions"
   attr(qv_functions, "full_history") <- qv_full_history
   names(qv_functions) <- paste("stage_", 1:K, sep = "")
@@ -247,8 +249,10 @@ rqvl <- function(policy_data,
     q_functions_cf = q_functions_cf,
     g_functions = g_functions,
     g_functions_cf = g_functions_cf,
+    g_values = g_values,
     value_estimate = mean(Zd),
     iid = Zd - mean(Zd),
+    D = D,
     action_set = action_set,
     alpha = alpha,
     K = K,
@@ -257,6 +261,79 @@ rqvl <- function(policy_data,
   class(out) <- "RQVL"
 
   return(out)
+}
+
+#' @export
+get_stage_policy.RQVL <- function(object, stage){
+  action_set <- object$action_set
+  K <- object$K
+
+  if(!((stage >= 0) & (stage <= K)))
+    stop("stage must be smaller than or equal to K.")
+
+  if (!is.null(object$g_functions)){
+    g_full_history <- attr(object$g_functions, "full_history")
+    if (length(object$g_functions) == K){
+      g_function <- object$g_functions[[stage]]
+    }
+    else{
+      g_function <- object$g_functions[[1]]
+    }
+  }
+
+  qv_model <- object$qv_functions[[stage]]$qv_model
+  qv_full_history <- attr(object$qv_functions, "full_history")
+
+  alpha <- object$alpha
+
+  if (alpha == 0){
+    stage_policy <- function(H, ...){
+      qv_values <- sapply(
+        qv_model,
+        function(qvm){
+          predict(qvm, H)
+        }
+      )
+      dd <- apply(qv_values, MARGIN = 1, which.max)
+      d <- action_set[dd]
+      return(d)
+    }
+  }
+  if (alpha > 0){
+    stage_policy <- function(H, g_H){
+      # getting the qv predictions for each action:
+
+      qv_values <- sapply(
+        qv_model,
+        function(qvm){
+          predict(qvm, H)
+        }
+      )
+
+      # evaluating the g-function:
+      if (!all(g_function$H_names == names(g_H))){
+        mes <- paste(
+          "g_H must contain the columns",
+          paste(g_function$H_names, collapse = ","),
+          "(in that order)."
+        )
+        stop(mes)
+      }
+      g_values <- predict(g_function$g_model, new_H = g_H)
+
+      # calculating the realistic actions:
+      realistic_actions <- t(apply(g_values, MARGIN = 1, function(x) x >= alpha))
+      realistic_actions[which(realistic_actions == FALSE)] <- NA
+
+      # getting the action with the maximal realistic Q-function value:
+      dd <- apply(qv_values * realistic_actions, MARGIN = 1, which.max)
+      d <- action_set[dd]
+
+      return(d)
+    }
+  }
+
+  return(stage_policy)
 }
 
 #' @export
@@ -271,6 +348,8 @@ get_policy.RQVL <- function(object){
   q_cols <- paste("Q_", action_set, sep = "")
 
   policy <- function(policy_data){
+    if (get_K(policy_data) != K)
+      stop("The policy do not have the same number of stages as the policy data object.")
     # evaluating the Q-functions:
     qv_values <- evaluate(qv_functions, policy_data = policy_data)
 
