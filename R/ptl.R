@@ -4,7 +4,7 @@ ptl <- function(policy_data,
                 q_models, q_full_history = FALSE,
                 policy_vars = NULL, policy_full_history = FALSE,
                 L = NULL, alpha = 0,
-                depth = 2, split.step = 1, min.node.size = 1,
+                depth = 2, split.step = 1, min.node.size = 1, hybrid = FALSE, search.depth = 2,
                 ...){
   if ((is.null(g_models) & is.null(g_functions))) stop("Provide either g-models or g-functions.")
 
@@ -145,7 +145,12 @@ ptl <- function(policy_data,
       vars <- policy_vars
     H <- get_H(policy_history_k, vars = vars)
 
-    ptl_k <- policytree::policy_tree(X = H, Gamma = Gamma, depth = depth, split.step = split.step, min.node.size = min.node.size)
+    if (hybrid == FALSE){
+      ptl_k <- policytree::policy_tree(X = H, Gamma = Gamma, depth = depth, split.step = split.step, min.node.size = min.node.size)
+    } else if (hybrid == TRUE){
+      ptl_k <- policytree::hybrid_policy_tree(X = H, Gamma = Gamma, depth = depth, split.step = split.step, min.node.size = min.node.size, search.depth = search.depth)
+    }
+
     ptl_objects[[k]] <- ptl_k
     dd <- policytree:::predict.policy_tree(ptl_k, H)
     d <- action_set[dd]

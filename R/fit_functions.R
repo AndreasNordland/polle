@@ -7,7 +7,6 @@ fit_functions <- function(policy_data,
     if(!(class(g_functions)[[1]] == "nuisance_functions")) stop("g-functions must be of class 'nuisance_functions'.")
   }
 
-  # if ((is.null(q_models) & is.null(q_functions))) stop("Provide either q-models or q-functions.")
   if (!is.null(q_functions)){
     if(!(class(q_functions)[[1]] == "nuisance_functions")) stop("q-functions must be of class 'nuisance_functions'.")
   }

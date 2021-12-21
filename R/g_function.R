@@ -101,9 +101,9 @@ fit_g_functions_cf <- function(folds, policy_data, g_models, full_history, ...){
   id <- get_id(policy_data)
   K <- policy_data$dim$K
 
-  fit_cf <- lapply(
+  fit_cf <- future_lapply(
     folds,
-    function(f){
+    FUN = function(f){
       train_id <- id[-f]
       train_policy_data <- subset(policy_data, train_id)
       if (train_policy_data$dim$K != K) stop("The number of stages K varies across the training policy data folds.")

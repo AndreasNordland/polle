@@ -114,9 +114,9 @@ q_step_cf <- function(folds, policy_data, k, full_history, Q, q_models){
   idx_k <- (id %in% id_k)
   K <- policy_data$dim$K
 
-  q_step_cf <- lapply(
+  q_step_cf <- future_lapply(
     folds,
-    function(f){
+    FUN = function(f){
       train_id <- id[-f]
       train_policy_data <- subset(policy_data, train_id)
       train_Q <- Q[-f]
