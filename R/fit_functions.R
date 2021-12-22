@@ -1,7 +1,8 @@
 fit_functions <- function(policy_data,
                           policy = NULL, policy_learner = NULL,
                           g_models = NULL, g_functions = NULL, g_full_history,
-                          q_models = NULL, q_functions = NULL, q_full_history){
+                          q_models = NULL, q_functions = NULL, q_full_history,
+                          verbose = FALSE){
 
   if (!is.null(g_functions)){
     if(!(class(g_functions)[[1]] == "nuisance_functions")) stop("g-functions must be of class 'nuisance_functions'.")
@@ -17,6 +18,8 @@ fit_functions <- function(policy_data,
   if (is.null(g_functions)){
     if (!is.null(g_models)){
       g_functions <- fit_g_functions(policy_data, g_models = g_models, full_history = g_full_history)
+      if (verbose == TRUE)
+        print("Policy Evaluation: g-functions completed.")
     }
   }
 
@@ -26,7 +29,8 @@ fit_functions <- function(policy_data,
     policy_object <- policy_learner(
       policy_data = policy_data,
       g_models = g_models, g_functions = g_functions, g_full_history = g_full_history,
-      q_models = q_models, q_full_history = q_full_history
+      q_models = q_models, q_full_history = q_full_history,
+      verbose = verbose
     )
     policy <- get_policy(policy_object)
   }
@@ -43,6 +47,8 @@ fit_functions <- function(policy_data,
         q_functions <- fit_Q_functions(policy_data,
                                        policy_actions = policy_actions,
                                        q_models = q_models, full_history = q_full_history)
+        if (verbose == TRUE)
+          print("Policy Evaluation: Q-functions completed.")
       }
     }
   }

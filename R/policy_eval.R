@@ -75,13 +75,14 @@ policy_eval <- function(policy_data,
                         policy = NULL, policy_learner = NULL,
                         g_functions=NULL, g_models=g_glm(), g_full_history = FALSE,
                         q_functions=NULL, q_models=q_glm(), q_full_history = FALSE,
-                        M=5, type="dr", ...) {
+                        M=5, type="dr", verbose = FALSE, ...) {
   type <- tolower(type)
   fm <- formals()[-(1:3)]
   fm[["..."]] <- NULL
   cl <- match.call(expand.dots=TRUE)
   for (i in setdiff(names(fm), names(cl)))
     cl[i] <- list(fm[[i]])
+
   if (type%in%c("cv", "crossfit", "cf", "cv_dr")) {
     cl[[1]] <- policy_eval_cv_dr
   }
@@ -105,7 +106,9 @@ policy_eval_dr_fold <- function(fold,
                                 policy, policy_learner,
                                 g_models, g_functions, g_full_history,
                                 q_models, q_functions, q_full_history,
+                                verbose,
                                 dotdotdot){
+
   K <- get_K(policy_data)
   id <- get_id(policy_data)
   train_id <- id[-fold]
@@ -119,7 +122,8 @@ policy_eval_dr_fold <- function(fold,
   train_args <- list(policy_data = train_policy_data,
                      policy = policy, policy_learner = policy_learner,
                      g_models = g_models, g_functions = g_functions, g_full_history = g_full_history,
-                     q_models = q_models, q_functions = q_functions, q_full_history = q_full_history)
+                     q_models = q_models, q_functions = q_functions, q_full_history = q_full_history,
+                     verbose = verbose)
   train_args <- append(train_args, dotdotdot)
   train_pe_dr <- do.call(what = "policy_eval_dr", args = train_args)
 
@@ -145,7 +149,7 @@ policy_eval_cv_dr <- function(policy_data,
                               policy = NULL, policy_learner = NULL,
                               g_models = NULL, g_functions = NULL, g_full_history,
                               q_models = NULL, q_functions = NULL, q_full_history,
-                              M, ...){
+                              M, verbose = FALSE, ...){
 
   n <- get_n(policy_data)
   id <- get_id(policy_data)
@@ -154,13 +158,14 @@ policy_eval_cv_dr <- function(policy_data,
   folds <- split(sample(1:n, n), rep(1:M, length.out = n))
 
   dotdotdot <- list(...)
-  pe_dr_cv <- future_lapply(
+  pe_dr_cv <- future.apply::future_lapply(
     folds,
     FUN = policy_eval_dr_fold,
     policy_data = policy_data,
     policy = policy, policy_learner = policy_learner,
     g_models = g_models, g_functions = g_functions, g_full_history = g_full_history,
     q_models = q_models, q_functions = q_functions, q_full_history = q_full_history,
+    verbose = verbose,
     dotdotdot = dotdotdot
   )
 
@@ -191,13 +196,16 @@ policy_eval_cv_dr <- function(policy_data,
 policy_eval_dr <- function(policy_data,
                            policy = NULL, policy_learner = NULL,
                            g_models = NULL, g_functions = NULL, g_full_history,
-                           q_models = NULL, q_functions = NULL, q_full_history, ...){
+                           q_models = NULL, q_functions = NULL, q_full_history,
+                           verbose = FALSE,
+                           ...){
 
   # fitting the g-functions, Q-functions and policy (functions):
   function_fits <- fit_functions(policy_data = policy_data,
                           policy = policy, policy_learner = policy_learner,
                           g_models = g_models, g_functions = g_functions, g_full_history = g_full_history,
-                          q_models = q_models, q_functions = q_functions, q_full_history = q_full_history)
+                          q_models = q_models, q_functions = q_functions, q_full_history = q_full_history,
+                          verbose = verbose)
 
   # calculating the doubly robust score and value estimate:
   if (is.null(policy))
@@ -225,12 +233,14 @@ policy_eval_dr <- function(policy_data,
 policy_eval_or <- function(policy_data,
                            policy = NULL, policy_learner = NULL,
                            q_models = NULL, q_functions = NULL, q_full_history,
+                           verbose = FALSE,
                            ...){
 
   # fitting the Q-functions and policy (functions):
   function_fits <- fit_functions(policy_data = policy_data,
                                  policy = policy, policy_learner = policy_learner,
-                                 q_models = q_models, q_functions = q_functions, q_full_history = q_full_history)
+                                 q_models = q_models, q_functions = q_functions, q_full_history = q_full_history,
+                                 verbose = verbose)
 
   # calculating the doubly robust score and value estimate:
   if (is.null(policy))
@@ -253,6 +263,7 @@ policy_eval_or <- function(policy_data,
 policy_eval_ipw <- function(policy_data,
                             policy = NULL, policy_learner = NULL,
                             g_models = NULL, g_functions = NULL, g_full_history,
+                            verbose = FALSE,
                             ...){
 
   # fitting the g-functions and policy (functions):

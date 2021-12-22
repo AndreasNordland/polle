@@ -19,7 +19,7 @@ policy_learn <- function(type = "rql",
   if (type %in% c("rql", "ql", "q_learning", "q-learning")) {
     pl <- function(policy_data,
                    g_models = NULL, g_functions = NULL, g_full_history = FALSE,
-                   q_models, q_full_history = FALSE){
+                   q_models, q_full_history = FALSE, verbose = FALSE){
       fm <- formals()
       cl <- match.call(expand.dots=TRUE)
       for (i in setdiff(names(fm), names(cl)))
@@ -34,7 +34,7 @@ policy_learn <- function(type = "rql",
   else if (type %in% c("rqvl", "qvl", "qv_learning", "qv-learning")) {
     pl <- function(policy_data,
                    g_models = NULL, g_functions = NULL, g_full_history = FALSE,
-                   q_models, q_full_history = FALSE){
+                   q_models, q_full_history = FALSE, verbose = FALSE){
       fm <- formals()
       cl <- match.call(expand.dots=TRUE)
       for (i in setdiff(names(fm), names(cl)))
@@ -51,7 +51,7 @@ policy_learn <- function(type = "rql",
     }
     pl <- function(policy_data,
                    g_models = NULL, g_functions = NULL, g_full_history = FALSE,
-                   q_models, q_full_history = FALSE){
+                   q_models, q_full_history = FALSE, verbose = FALSE){
 
       fm <- formals()
       cl <- match.call(expand.dots=TRUE)
