@@ -75,7 +75,8 @@ policy_eval <- function(policy_data,
                         policy = NULL, policy_learner = NULL,
                         g_functions=NULL, g_models=g_glm(), g_full_history = FALSE,
                         q_functions=NULL, q_models=q_glm(), q_full_history = FALSE,
-                        M=5, type="dr", verbose = FALSE, ...) {
+                        M=5, type="dr", verbose = FALSE,
+                        future.seed = NULL, ...) {
   type <- tolower(type)
   fm <- formals()[-(1:3)]
   fm[["..."]] <- NULL
@@ -149,7 +150,7 @@ policy_eval_cv_dr <- function(policy_data,
                               policy = NULL, policy_learner = NULL,
                               g_models = NULL, g_functions = NULL, g_full_history,
                               q_models = NULL, q_functions = NULL, q_full_history,
-                              M, verbose = FALSE, ...){
+                              M, verbose = FALSE, future.seed = NULL, ...){
 
   n <- get_n(policy_data)
   id <- get_id(policy_data)
@@ -166,6 +167,7 @@ policy_eval_cv_dr <- function(policy_data,
     g_models = g_models, g_functions = g_functions, g_full_history = g_full_history,
     q_models = q_models, q_functions = q_functions, q_full_history = q_full_history,
     verbose = verbose,
+    future.seed = future.seed,
     dotdotdot = dotdotdot
   )
 
