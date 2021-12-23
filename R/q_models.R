@@ -7,6 +7,7 @@ q_glm <- function(formula = ~ A * .,
                   family = gaussian(),
                   model = FALSE,
                   ...) {
+  force(formula)
   dotdotdot <- list(...)
 
   q_glm <- function(V_res, AH){
@@ -63,7 +64,9 @@ q_glmnet <- function(formula = ~ A * .,
                      ...) {
   if (!requireNamespace("glmnet"))
     stop("Package 'glmnet' required.")
+  force(formula)
   dotdotdot <- list(...)
+
   q_glmnet <- function(V_res, AH) {
     des <- get_design(formula, data=AH)
     y <- V_res
@@ -111,6 +114,7 @@ q_rf <- function(formula = ~ .,
                  num.trees=c(250, 500, 750), mtry=NULL,
                  cv_args=list(K=3, rep=1), ...) {
   if (!requireNamespace("ranger")) stop("Package 'ranger' required.")
+  force(formula)
   dotdotdot <- list(...)
   hyper_par <- expand.list(num.trees=num.trees, mtry=mtry)
   rf_args <- function(p) {
@@ -169,6 +173,7 @@ q_sl <- function(formula = ~ A*., SL.library=c("SL.mean", "SL.glm"), ...){
   if (!requireNamespace("SuperLearner"))
     stop("Package 'SuperLearner' required.")
   suppressPackageStartupMessages(require(SuperLearner))
+  force(formula)
   dotdotdot <- list(...)
   q_sl <- function(V_res, AH) {
     des <- get_design(formula, data=AH)

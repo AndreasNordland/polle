@@ -101,7 +101,7 @@ fit_g_functions_cf <- function(folds, policy_data, g_models, full_history, ...){
   id <- get_id(policy_data)
   K <- policy_data$dim$K
 
-  fit_cf <- future_lapply(
+  fit_cf <- future.apply::future_lapply(
     folds,
     FUN = function(f){
       train_id <- id[-f]

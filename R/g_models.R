@@ -45,6 +45,7 @@ get_design <- function(formula, data, intercept=FALSE) {
 #' @export
 g_glm <- function(formula = ~., family = binomial(), model = FALSE, ...) {
   dotdotdot <- list(...)
+  force(formula)
   g_glm <- function(A, H, action_set){
     formula <- update_g_formula(formula, A, H)
     args_glm <- append(list(formula = formula, data = H,
@@ -75,6 +76,7 @@ predict.g_glm <- function(object, new_H){
 g_glmnet <- function(formula = ~., family = "binomial",
                      alpha = 1, s = "lambda.min", ...) {
   if (!requireNamespace("glmnet")) stop("Package 'ranger' required")
+  force(formula)
   dotdotdot <- list(...)
   g_glmnet <- function(A, H, action_set) {
     formula <- update_g_formula(formula, A, H)
@@ -126,6 +128,7 @@ g_rf <- function(formula = ~.,
                  num.trees=c(500), mtry=NULL,
                  cv_args=list(K=5, rep=1), ...) {
   if (!requireNamespace("ranger")) stop("Package 'ranger' required")
+  force(formula)
   dotdotdot <- list(...)
   hyper_par <- expand.list(num.trees=num.trees, mtry=mtry)
     rf_args <- function(p) {
@@ -187,6 +190,7 @@ g_sl <- function(formula = ~ ., SL.library=c("SL.mean", "SL.glm"),
   if (!requireNamespace("SuperLearner"))
     stop("Package 'SuperLearner' required.")
   suppressPackageStartupMessages(require(SuperLearner))
+  force(formula)
   dotdotdot <- list(...)
   g_sl <- function(A, H, action_set) {
     A <- as.numeric(factor(A, levels=action_set))-1
@@ -226,6 +230,7 @@ g_sl3 <- function(formula = ~ ., learner, folds=5, ...) {
   if (!requireNamespace("sl3"))
     stop("Package 'sl3' required.")
   suppressPackageStartupMessages(require(sl3))
+  force(formula)
   dotdotdot <- list(...)
   if (missing(learner)) {
     lrn_enet <- sl3::make_learner(sl3::Lrnr_glmnet, alpha=0.5, outcome_type="binomial")
