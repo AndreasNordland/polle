@@ -46,7 +46,7 @@ rqvl <- function(policy_data,
                  g_models = NULL, g_functions = NULL, g_full_history,
                  q_models, q_full_history,
                  qv_models, qv_full_history = FALSE,
-                 L = NULL,
+                 L = NULL, seed = NULL,
                  ...){
   K <- get_K(policy_data)
   n <- get_n(policy_data)
@@ -90,6 +90,8 @@ rqvl <- function(policy_data,
 
   # constructing the folds for cross-fitting:
   if (!is.null(L)){
+    if (!is.null(seed))
+      set.seed(seed)
     folds <- split(sample(1:n, n), rep(1:L, length.out = n))
   } else{
     folds <- NULL

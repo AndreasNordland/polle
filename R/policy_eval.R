@@ -75,7 +75,7 @@ policy_eval <- function(policy_data,
                         policy = NULL, policy_learner = NULL,
                         g_functions=NULL, g_models=g_glm(), g_full_history = FALSE,
                         q_functions=NULL, q_models=q_glm(), q_full_history = FALSE,
-                        M=5, type="dr", verbose = FALSE,
+                        M=5, seed = NULL, type="dr", verbose = FALSE,
                         future.seed = NULL, ...) {
   type <- tolower(type)
   fm <- formals()[-(1:3)]
@@ -150,12 +150,16 @@ policy_eval_cv_dr <- function(policy_data,
                               policy = NULL, policy_learner = NULL,
                               g_models = NULL, g_functions = NULL, g_full_history,
                               q_models = NULL, q_functions = NULL, q_full_history,
-                              M, verbose = FALSE, future.seed = NULL, ...){
+                              M, seed = NULL,
+                              verbose = FALSE,
+                              future.seed = NULL, ...){
 
   n <- get_n(policy_data)
   id <- get_id(policy_data)
 
   # setting up the folds
+  if (!is.null(seed))
+    set.seed(seed)
   folds <- split(sample(1:n, n), rep(1:M, length.out = n))
 
   dotdotdot <- list(...)

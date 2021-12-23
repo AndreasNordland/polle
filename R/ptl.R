@@ -3,7 +3,9 @@ ptl <- function(policy_data,
                 g_models = NULL, g_functions = NULL, g_full_history = FALSE,
                 q_models, q_full_history = FALSE,
                 policy_vars = NULL, policy_full_history = FALSE,
-                L = NULL, alpha = 0,
+                L = NULL,
+                seed = NULL,
+                alpha = 0,
                 depth = 2, split.step = 1, min.node.size = 1, hybrid = FALSE, search.depth = 2,
                 verbose = FALSE,
                 ...){
@@ -40,6 +42,8 @@ ptl <- function(policy_data,
 
   # constructing the folds for cross-fitting
   if (!is.null(L)){
+    if (!is.null(seed))
+      set.seed(seed)
     folds <- split(sample(1:n, n), rep(1:L, length.out = n))
   } else{
     folds <- NULL
