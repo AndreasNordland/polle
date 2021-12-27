@@ -108,34 +108,33 @@ q_step <- function(policy_data, k, full_history, Q, q_models){
   return(out)
 }
 
-q_step_cf <- function(folds, policy_data, k, full_history, Q, q_models){
+q_step_cf <- function(folds, policy_data, k, full_history, Q, q_models, future_args){
   id <- get_id(policy_data)
   id_k <- get_id_stage(policy_data)[stage == k]$id
   idx_k <- (id %in% id_k)
   K <- policy_data$dim$K
 
-  q_step_cf <- future.apply::future_lapply(
-    folds,
-    FUN = function(f){
-      train_id <- id[-f]
-      train_policy_data <- subset(policy_data, train_id)
-      train_Q <- Q[-f]
-      if (train_policy_data$dim$K != K) stop("The number of stages varies accross the training folds.")
-      train_q_step <- q_step(train_policy_data, k = k, full_history = full_history, Q = train_Q, q_models = q_models)
-      train_q_function <- train_q_step$q_function
+  future_args <- append(future_args, list(X = folds,
+                                          FUN = function(f){
+                                            train_id <- id[-f]
+                                            train_policy_data <- subset(policy_data, train_id)
+                                            train_Q <- Q[-f]
+                                            if (train_policy_data$dim$K != K) stop("The number of stages varies accross the training folds.")
+                                            train_q_step <- q_step(train_policy_data, k = k, full_history = full_history, Q = train_Q, q_models = q_models)
+                                            train_q_function <- train_q_step$q_function
 
-      validation_id <- id[f]
-      validation_policy_data <- subset(policy_data, validation_id)
-      validation_history <- get_history(validation_policy_data, stage = k, full_history = full_history)
-      validation_values <- evaluate(train_q_function, validation_history)
+                                            validation_id <- id[f]
+                                            validation_policy_data <- subset(policy_data, validation_id)
+                                            validation_history <- get_history(validation_policy_data, stage = k, full_history = full_history)
+                                            validation_values <- evaluate(train_q_function, validation_history)
 
-      out <- list(
-        train_q_function = train_q_function,
-        validation_values = validation_values
-      )
-      return(out)
-    }
-  )
+                                            out <- list(
+                                              train_q_function = train_q_function,
+                                              validation_values = validation_values
+                                            )
+                                            return(out)
+                                          }))
+  q_step_cf <- do.call(what = future.apply::future_lapply, future_args)
   q_step_cf <- simplify2array(q_step_cf)
 
   q_functions_cf <- q_step_cf["train_q_function", ]

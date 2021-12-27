@@ -3,8 +3,7 @@ ptl <- function(policy_data,
                 g_models = NULL, g_functions = NULL, g_full_history = FALSE,
                 q_models, q_full_history = FALSE,
                 policy_vars = NULL, policy_full_history = FALSE,
-                L = NULL,
-                seed = NULL,
+                L = NULL, seed = NULL, future_args = NULL,
                 alpha = 0,
                 depth = 2, split.step = 1, min.node.size = 1, hybrid = FALSE, search.depth = 2,
                 verbose = FALSE,
@@ -66,7 +65,8 @@ ptl <- function(policy_data,
       policy_data = policy_data,
       g_models = g_models,
       full_history = g_full_history,
-      folds = folds
+      folds = folds,
+      future_args = future_args
     )
     if (verbose == TRUE)
       print("Policy tree: cross-fitted g-functions completed.")
@@ -132,7 +132,8 @@ ptl <- function(policy_data,
         k = k,
         full_history = q_full_history,
         Q = Q[, k+1],
-        q_models = q_models
+        q_models = q_models,
+        future_args = future_args
       )
       q_functions_cf[[k]] <- q_step_cf_k$q_function
       q_values_k <- q_step_cf_k$q_values

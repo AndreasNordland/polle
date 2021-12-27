@@ -97,28 +97,28 @@ fit_g_functions <- function(policy_data, g_models, full_history){
 }
 
 #' @export
-fit_g_functions_cf <- function(folds, policy_data, g_models, full_history, ...){
+fit_g_functions_cf <- function(folds, policy_data, g_models, full_history, future_args){
   id <- get_id(policy_data)
   K <- policy_data$dim$K
 
-  fit_cf <- future.apply::future_lapply(
-    folds,
-    FUN = function(f){
-      train_id <- id[-f]
-      train_policy_data <- subset(policy_data, train_id)
-      if (train_policy_data$dim$K != K) stop("The number of stages K varies across the training policy data folds.")
-      train_g_functions <- fit_g_functions(policy_data = train_policy_data, g_models = g_models, full_history = full_history, ...)
+  future_args <- append(future_args, list(X = folds,
+                                          FUN = function(f){
+                                            train_id <- id[-f]
+                                            train_policy_data <- subset(policy_data, train_id)
+                                            if (train_policy_data$dim$K != K) stop("The number of stages K varies across the training policy data folds.")
+                                            train_g_functions <- fit_g_functions(policy_data = train_policy_data, g_models = g_models, full_history = full_history)
 
-      validation_id <- id[f]
-      validation_policy_data <- subset(policy_data, validation_id)
-      validation_g_values <- evaluate(train_g_functions, validation_policy_data)
+                                            validation_id <- id[f]
+                                            validation_policy_data <- subset(policy_data, validation_id)
+                                            validation_g_values <- evaluate(train_g_functions, validation_policy_data)
 
-      list(
-        train_g_functions = train_g_functions,
-        validation_g_values = validation_g_values
-      )
-    }
-  )
+                                            list(
+                                              train_g_functions = train_g_functions,
+                                              validation_g_values = validation_g_values
+                                            )
+                                          }))
+
+  fit_cf <- do.call(what = future.apply::future_lapply, future_args)
   fit_cf <- simplify2array(fit_cf)
 
   g_functions_cf <- fit_cf["train_g_functions", ]
