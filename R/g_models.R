@@ -216,7 +216,7 @@ predict.g_sl <- function(object, new_H, ...) {
                                  drop.unused.levels=FALSE))
   newx <- as.data.frame(model.matrix(mf, data=new_H, xlev = object$xlevels))
   colnames(newx) <- gsub("[^[:alnum:]]", "_", colnames(newx))
-  pr <- predict(object$fit, data=newx)$pred
+  pr <- predict(object$fit, newdata=newx)$pred
   pr <- cbind((1-pr), pr)
   return(pr)
 }
