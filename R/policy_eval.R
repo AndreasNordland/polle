@@ -76,7 +76,7 @@ policy_eval <- function(policy_data,
                         g_functions=NULL, g_models=g_glm(), g_full_history = FALSE,
                         q_functions=NULL, q_models=q_glm(), q_full_history = FALSE,
                         M=5, seed = NULL, type="dr", verbose = FALSE,
-                        future.seed = NULL, ...) {
+                        future_args = NULL, ...) {
   type <- tolower(type)
   fm <- formals()[-(1:3)]
   fm[["..."]] <- NULL
@@ -152,7 +152,7 @@ policy_eval_cv_dr <- function(policy_data,
                               q_models = NULL, q_functions = NULL, q_full_history,
                               M, seed = NULL,
                               verbose = FALSE,
-                              future.seed = NULL, ...){
+                              future_args = NULL, ...){
 
   n <- get_n(policy_data)
   id <- get_id(policy_data)
@@ -163,17 +163,18 @@ policy_eval_cv_dr <- function(policy_data,
   folds <- split(sample(1:n, n), rep(1:M, length.out = n))
 
   dotdotdot <- list(...)
-  pe_dr_cv <- future.apply::future_lapply(
-    folds,
+
+  future_args <- append(future_args, list(
+    X = folds,
     FUN = policy_eval_dr_fold,
     policy_data = policy_data,
     policy = policy, policy_learner = policy_learner,
     g_models = g_models, g_functions = g_functions, g_full_history = g_full_history,
     q_models = q_models, q_functions = q_functions, q_full_history = q_full_history,
     verbose = verbose,
-    future.seed = future.seed,
     dotdotdot = dotdotdot
-  )
+  ))
+  pe_dr_cv <- do.call(what = future.apply::future_lapply, future_args)
 
   id <- unlist(lapply(pe_dr_cv, function(x) x$id))
   iid <- unlist(lapply(pe_dr_cv, function(x) x$iid))
