@@ -3,7 +3,7 @@ ptl <- function(policy_data,
                 g_models = NULL, g_functions = NULL, g_full_history = FALSE,
                 q_models, q_full_history = FALSE,
                 policy_vars = NULL, policy_full_history = FALSE,
-                L = NULL, seed = NULL, future_args = NULL,
+                L = NULL, seed = NULL, cf_models = FALSE, future_args = NULL,
                 alpha = 0,
                 depth = 2, split.step = 1, min.node.size = 1, hybrid = FALSE, search.depth = 2,
                 verbose = FALSE,
@@ -70,7 +70,10 @@ ptl <- function(policy_data,
     )
     if (verbose == TRUE)
       print("Policy tree: cross-fitted g-functions completed.")
-    g_functions_cf <- g_cf$g_functions_cf
+    if (cf_models == TRUE){
+      g_functions_cf <- g_cf$g_functions_cf
+    }
+
     g_values <- g_cf$g_values
     # fitting the non-cross-fitted g-functions
     # for determining future realistic actions:
@@ -135,7 +138,9 @@ ptl <- function(policy_data,
         q_models = q_models,
         future_args = future_args
       )
-      q_functions_cf[[k]] <- q_step_cf_k$q_function
+      if (cf_models == TRUE){
+        q_functions_cf[[k]] <- q_step_cf_k$q_function
+      }
       q_values_k <- q_step_cf_k$q_values
       idx_k <- q_step_cf_k$idx_k
       if (verbose == TRUE){

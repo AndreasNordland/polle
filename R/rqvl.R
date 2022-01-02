@@ -46,7 +46,7 @@ rqvl <- function(policy_data,
                  g_models = NULL, g_functions = NULL, g_full_history,
                  q_models, q_full_history,
                  qv_models, qv_full_history = FALSE,
-                 L = NULL, seed = NULL, future_args = NULL,
+                 L = NULL, seed = NULL, cf_models = FALSE, future_args = NULL,
                  ...){
   K <- get_K(policy_data)
   n <- get_n(policy_data)
@@ -114,7 +114,9 @@ rqvl <- function(policy_data,
       folds = folds,
       future_args = future_args
     )
-    g_functions_cf <- g_cf$g_functions_cf
+    if (cf_models == TRUE){
+      g_functions_cf <- g_cf$g_functions_cf
+    }
     g_values <- g_cf$g_values
     # fitting the non-cross-fitted g-functions
     # for determining future realistic actions:
@@ -172,7 +174,9 @@ rqvl <- function(policy_data,
         q_models = q_models,
         future_args = future_args
       )
-      q_functions_cf[[k]] <- q_step_cf_k$q_function
+      if (cf_models == TRUE){
+        q_functions_cf[[k]] <- q_step_cf_k$q_function
+      }
       q_values_k <- q_step_cf_k$q_values
       idx_k <- q_step_cf_k$idx_k
     }
