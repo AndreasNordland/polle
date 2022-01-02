@@ -15,7 +15,10 @@ policy_eval(
   q_models = q_glm(),
   q_full_history = FALSE,
   M = 5,
+  seed = NULL,
   type = "dr",
+  verbose = FALSE,
+  future_args = NULL,
   ...
 )
 }

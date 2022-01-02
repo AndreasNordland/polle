@@ -158,9 +158,15 @@ policy_eval_cv_dr <- function(policy_data,
   id <- get_id(policy_data)
 
   # setting up the folds
-  if (!is.null(seed))
-    set.seed(seed)
-  folds <- split(sample(1:n, n), rep(1:M, length.out = n))
+  if (!is.null(seed)){
+    withr::with_seed(seed, {
+      folds <- split(sample(1:n, n), rep(1:M, length.out = n))
+    })
+  } else{
+    withr::with_preserve_seed({
+      folds <- split(sample(1:n, n), rep(1:M, length.out = n))
+    })
+  }
 
   dotdotdot <- list(...)
 
