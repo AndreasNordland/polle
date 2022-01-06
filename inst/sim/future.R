@@ -87,8 +87,8 @@ ptl_eval <- policy_eval(
     L = 2,
     hybrid = TRUE,
     future_args = list(future.seed = 1,
-                       future.packages = c("SuperLearner", "ranger"),
-                       future.globals = c(q_model_learner_names, "q_model_learner_names", g_model_learner_names, "g_model_learner_names", SL_names, "SL_names", strip_names, "strip_names"))
+                       future.packages = c("SuperLearner", "ranger"))#,
+                       # future.globals = c(q_model_learner_names, "q_model_learner_names", g_model_learner_names, "g_model_learner_names", SL_names, "SL_names", strip_names, "strip_names"))
   ),
   q_models = q_sl(SL.library = q_model_learner_names,
                   cvControl = list(V=2)),
@@ -100,7 +100,7 @@ ptl_eval <- policy_eval(
   seed = 1,
   verbose = TRUE,
   future_args = list(future.seed = 1,
-                     future.packages = c("SuperLearner", "ranger"),
-                     future.globals = c(q_model_learner_names, "q_model_learner_names", g_model_learner_names, "g_model_learner_names", SL_names, "SL_names", strip_names, "strip_names"))
+                     future.packages = c("SuperLearner", "ranger"))#,
+                     # future.globals = c(q_model_learner_names, "q_model_learner_names", g_model_learner_names, "g_model_learner_names", SL_names, "SL_names", strip_names, "strip_names"))
 )
 ptl_eval
