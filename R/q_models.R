@@ -174,6 +174,7 @@ q_sl <- function(formula = ~ A*., SL.library=c("SL.mean", "SL.glm"), ...){
     stop("Package 'SuperLearner' required.")
   suppressPackageStartupMessages(require(SuperLearner))
   force(formula)
+  force(SL.library)
   dotdotdot <- list(...)
   q_sl <- function(V_res, AH) {
     des <- get_design(formula, data=AH)

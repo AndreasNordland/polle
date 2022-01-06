@@ -191,6 +191,7 @@ g_sl <- function(formula = ~ ., SL.library=c("SL.mean", "SL.glm"),
     stop("Package 'SuperLearner' required.")
   suppressPackageStartupMessages(require(SuperLearner))
   force(formula)
+  force(SL.library)
   dotdotdot <- list(...)
   g_sl <- function(A, H, action_set) {
     A <- as.numeric(factor(A, levels=action_set))-1

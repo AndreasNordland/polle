@@ -180,6 +180,8 @@ policy_eval_cv_dr <- function(policy_data,
     verbose = verbose,
     dotdotdot = dotdotdot
   ))
+  force(future_args)
+
   pe_dr_cv <- do.call(what = future.apply::future_lapply, future_args)
 
   id <- unlist(lapply(pe_dr_cv, function(x) x$id))
