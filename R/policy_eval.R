@@ -68,25 +68,38 @@ estimate.policy_eval <- function(x, ..., labels=x$name) {
 ##' @param q_functions
 ##' @param g_full_history Full history or Markov
 ##' @param q_full_history Full history or Markov
+##' @param cross_fit Should the evaluation be cross-fitted or not
 ##' @param M Number of folds
-##' @param type Type of model (dr, cv, ipw, or, ...)
+##' @param type Type of model (dr, ipw, or)
 ##' @param ... Additional arguments parsed to lower level functions
 policy_eval <- function(policy_data,
                         policy = NULL, policy_learner = NULL,
                         g_functions=NULL, g_models=g_glm(), g_full_history = FALSE,
                         q_functions=NULL, q_models=q_glm(), q_full_history = FALSE,
-                        M=5, seed = NULL, type="dr", verbose = FALSE,
-                        future_args = NULL, ...) {
+                        cross_fit = FALSE, M=5, future_args = NULL,
+                        type = "dr",
+                        verbose = FALSE
+                        #, ...
+                        ) {
   type <- tolower(type)
   fm <- formals()[-(1:3)]
-  fm[["..."]] <- NULL
-  cl <- match.call(expand.dots=TRUE)
+
+  tmp <- formals()[-1]
+
+  browser()
+
+  cl <- match.call()
   for (i in setdiff(names(fm), names(cl)))
     cl[i] <- list(fm[[i]])
 
-  if (type%in%c("cv", "crossfit", "cf", "cv_dr")) {
-    cl[[1]] <- policy_eval_cv_dr
-  }
+  cl_tmp <- match.call()
+  for (i in setdiff(names(tmp), names(cl_tmp)))
+    cl_tmp[i] <- list(fm[[i]])
+
+  # if (type%in%c("cv", "crossfit", "cf", "cv_dr")) {
+  #   cl[[1]] <- policy_eval_cv_dr
+  # }
+
   if (type%in%c("dr")) {
     cl[[1]] <- policy_eval_dr
   }
@@ -101,14 +114,59 @@ policy_eval <- function(policy_data,
   return(val)
 }
 
+# policy_eval_fold <- function(fold,
+#                              type,
+#                              policy_data,
+#                              policy, policy_learner,
+#                              g_models, g_functions, g_full_history,
+#                              q_models, q_functions, q_full_history,
+#                              verbose
+# ){
+#
+#   K <- get_K(policy_data)
+#   id <- get_id(policy_data)
+#   train_id <- id[-fold]
+#   validation_id <- id[fold]
+#
+#   train_policy_data <- subset(policy_data, train_id)
+#   if (train_policy_data$dim$K != K) stop("The number of stages varies accross the training folds.")
+#   validation_policy_data <- subset(policy_data, validation_id)
+#   if (validation_policy_data$dim$K != K) stop("The number of stages varies accross the validation folds.")
+#
+#   train_args <- list(policy_data = train_policy_data,
+#                      policy = policy, policy_learner = policy_learner,
+#                      g_models = g_models, g_functions = g_functions, g_full_history = g_full_history,
+#                      q_models = q_models, q_functions = q_functions, q_full_history = q_full_history,
+#                      verbose = verbose)
+#   # train_args <- append(train_args, dotdotdot)
+#   train_pe_dr <- do.call(what = "policy_eval_dr", args = train_args)
+#
+#   # getting the policy:
+#   if (is.null(policy)){
+#     policy <- get_policy(train_pe_dr$policy_object)
+#   }
+#
+#   validation_args <- list(policy_data = validation_policy_data,
+#                           policy = policy,
+#                           g_functions = train_pe_dr$g_functions,
+#                           q_functions = train_pe_dr$q_functions)
+#   validation_pe_dr <- do.call(what = "policy_eval_dr", args = validation_args)
+#
+#   if (!is.null(train_pe_dr$policy_object)){
+#     validation_pe_dr$policy_object <- train_pe_dr$policy_object
+#   }
+#
+#   return(validation_pe_dr)
+# }
 
 policy_eval_dr_fold <- function(fold,
                                 policy_data,
                                 policy, policy_learner,
                                 g_models, g_functions, g_full_history,
                                 q_models, q_functions, q_full_history,
-                                verbose,
-                                dotdotdot){
+                                verbose
+                                # ,dotdotdot
+                                ){
 
   K <- get_K(policy_data)
   id <- get_id(policy_data)
@@ -125,7 +183,7 @@ policy_eval_dr_fold <- function(fold,
                      g_models = g_models, g_functions = g_functions, g_full_history = g_full_history,
                      q_models = q_models, q_functions = q_functions, q_full_history = q_full_history,
                      verbose = verbose)
-  train_args <- append(train_args, dotdotdot)
+  # train_args <- append(train_args, dotdotdot)
   train_pe_dr <- do.call(what = "policy_eval_dr", args = train_args)
 
   # getting the policy:
@@ -150,25 +208,29 @@ policy_eval_cv_dr <- function(policy_data,
                               policy = NULL, policy_learner = NULL,
                               g_models = NULL, g_functions = NULL, g_full_history,
                               q_models = NULL, q_functions = NULL, q_full_history,
-                              M, seed = NULL,
-                              verbose = FALSE,
-                              future_args = NULL, ...){
+                              M,
+                              verbose,
+                              future_args = NULL,
+                              ...){
 
   n <- get_n(policy_data)
   id <- get_id(policy_data)
 
   # setting up the folds
-  if (!is.null(seed)){
-    withr::with_seed(seed, {
-      folds <- split(sample(1:n, n), rep(1:M, length.out = n))
-    })
-  } else{
-    withr::with_preserve_seed({
-      folds <- split(sample(1:n, n), rep(1:M, length.out = n))
-    })
-  }
+  folds <- split(sample(1:n, n), rep(1:M, length.out = n))
 
-  dotdotdot <- list(...)
+  # # setting up the folds
+  # if (!is.null(seed)){
+  #   withr::with_seed(seed, {
+  #     folds <- split(sample(1:n, n), rep(1:M, length.out = n))
+  #   })
+  # } else{
+  #   withr::with_preserve_seed({
+  #     folds <- split(sample(1:n, n), rep(1:M, length.out = n))
+  #   })
+  # }
+
+  # dotdotdot <- list(...)
 
   future_args <- append(future_args, list(
     X = folds,
@@ -177,8 +239,8 @@ policy_eval_cv_dr <- function(policy_data,
     policy = policy, policy_learner = policy_learner,
     g_models = g_models, g_functions = g_functions, g_full_history = g_full_history,
     q_models = q_models, q_functions = q_functions, q_full_history = q_full_history,
-    verbose = verbose,
-    dotdotdot = dotdotdot
+    verbose = verbose#,
+    # dotdotdot = dotdotdot
   ))
   force(future_args)
 
@@ -212,8 +274,9 @@ policy_eval_dr <- function(policy_data,
                            policy = NULL, policy_learner = NULL,
                            g_models = NULL, g_functions = NULL, g_full_history,
                            q_models = NULL, q_functions = NULL, q_full_history,
-                           verbose = FALSE,
-                           ...){
+                           verbose,
+                           ...
+                           ){
 
   # fitting the g-functions, Q-functions and policy (functions):
   function_fits <- fit_functions(policy_data = policy_data,
@@ -248,7 +311,7 @@ policy_eval_dr <- function(policy_data,
 policy_eval_or <- function(policy_data,
                            policy = NULL, policy_learner = NULL,
                            q_models = NULL, q_functions = NULL, q_full_history,
-                           verbose = FALSE,
+                           verbose,
                            ...){
 
   # fitting the Q-functions and policy (functions):
@@ -278,7 +341,7 @@ policy_eval_or <- function(policy_data,
 policy_eval_ipw <- function(policy_data,
                             policy = NULL, policy_learner = NULL,
                             g_models = NULL, g_functions = NULL, g_full_history,
-                            verbose = FALSE,
+                            verbose,
                             ...){
 
   # fitting the g-functions and policy (functions):
