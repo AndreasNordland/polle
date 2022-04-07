@@ -7,19 +7,17 @@
 policy_eval(
   policy_data,
   policy = NULL,
-  policy_learner = NULL,
+  policy_learn = NULL,
   g_functions = NULL,
   g_models = g_glm(),
   g_full_history = FALSE,
   q_functions = NULL,
   q_models = q_glm(),
   q_full_history = FALSE,
+  cross_fit = FALSE,
   M = 5,
-  seed = NULL,
-  type = "dr",
-  verbose = FALSE,
   future_args = NULL,
-  ...
+  type = "dr"
 )
 }
 \arguments{
@@ -27,19 +25,25 @@ policy_eval(
 
 \item{policy}{Policy object}
 
-\item{g_models}{Propensity model object}
+\item{policy_learn}{Policy learner object}
 
-\item{g_full_history}{Full history or Markov}
+\item{g_functions}{Fitted g-model object}
+
+\item{g_models}{Propensity model/g-model}
+
+\item{g_full_history}{g-model: Full history or single stage/Markov history}
+
+\item{q_functions}{Fitted Q-model object}
 
 \item{q_models}{Outcome regression/Q-model}
 
-\item{q_full_history}{Full history or Markov}
+\item{q_full_history}{Q-model: Full history or single stage/Markov history}
+
+\item{cross_fit}{Should the evaluation be cross-fitted or not}
 
 \item{M}{Number of folds}
 
-\item{type}{Type of model (dr, cv, ipw, or, ...)}
-
-\item{...}{Additional arguments parsed to lower level functions}
+\item{type}{Type of evaluation (dr/doubly robust, ipw/inverse propensity weighting, or/outcome regression)}
 }
 \description{
 Policy evaluation function

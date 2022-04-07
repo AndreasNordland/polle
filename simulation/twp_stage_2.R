@@ -133,7 +133,7 @@ pe
 # rql
 pe_rql <- policy_eval(
   pd,
-  policy_learner = policy_learn(type = "rql"),
+  policy_learn = policy_learn(type = "rql"),
   g_models = g_glm(),
   q_models = q_glm()
 )
@@ -155,7 +155,7 @@ pd_2_0 <- policy_data(data_2_0,
                      U_1 = c("U_1_1", "U_2_1")))
 pe_ptl <- policy_eval(
   pd0,
-  policy_learner = policy_learn(type = "ptl"),
+  policy_learn = policy_learn(type = "ptl"),
   g_models = g_glm(),
   q_models = q_glm()
 )
