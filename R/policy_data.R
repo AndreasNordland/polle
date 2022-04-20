@@ -1,10 +1,40 @@
-#' @import data.table
-
-##' @export
+#' Create Policy Data Object
+#'
+#' \code{policy_data} creates an object of class "policy_data".
+#'
+#' @param data [data.frame] or [data.table]; see Examples.
+#' @param baseline_data [data.frame] or [data.table]; see Examples.
+#' @param type Character string. If "wide", \code{data} is considered to be on wide format.
+#' If "long", \code{data} is considered to be on long format; see Examples.
+#' @param action Action variable name. Character string or character vector (one for each stage).
+#' @param covariates Stage specific covariate name(s). Character vector or named list of character vectors.
+#' \itemize{
+#'   \item{} A vector is only valid for single stage wide data or long data.
+#'   \item{} A named list is valid for multiple stage wide data. Each element of the list must be a character vector corresponding to the number of stages (K).
+#' }
+#' @param utility  Utility/reward variable name(s). Character string or vector.
+#' \itemize{
+  #'   \item{} A string is valid for long data and wide data with a single final utility/reward.
+  #'   \item{} A vector is valid for wide data with incremental utility/rewards. Must be of length K+1; see Examples.
+#' }
+#'
+#' @details
+#' Each observation has the sequential form
+#' \deqn{O= {B, U_1, X_1, A_1, ..., U_K, X_K, A_K, U_{K+1}},}
+#' for a possibly stochastic number of stages K.
+#' \itemize{
+#'  \item{} B is a vector of baseline information.
+#'  \item{} U_k is the reward at stage k.
+#'  \item{} X_k is a vector summarizing the state at stage k.
+#'  \item{} A_k is the categorical action at stage k.
+#' }
+#' The utility is given by the sum of the rewards, i.e., \eqn{U = sum_{k = 1}^{K+1} U_k}.
+#' @examples
+#'
+#' @export
 policy_data <- function(data, baseline_data,
-                        action, covariates, utility, deterministic_utility = NULL,
                         type="wide",
-                        ...) {
+                        action, covariates, utility, deterministic_utility = NULL) {
   if (is.data.frame(data)) data <- as.data.table(data)
   type <- tolower(type)
   if (type %in% c("wide")) {
@@ -12,8 +42,7 @@ policy_data <- function(data, baseline_data,
                                   A_cols = action,
                                   X_cols = covariates,
                                   U_cols = utility,
-                                  U_A_cols = deterministic_utility,
-                                  ...)
+                                  U_A_cols = deterministic_utility)
     res <- new_policy_data(pd)
   } else {
     res <- new_policy_data(data, baseline_data, ...)
@@ -21,35 +50,6 @@ policy_data <- function(data, baseline_data,
   return(res)
 }
 
-#' Create A Policy Data Object
-#'
-#' \code{new_policy_data} creates an object of class policy_data.
-#'
-
-#' @param stage_data A data.table on long format with required columns:
-#' \itemize{
-#'  \item{id}
-#'  \item{stage: }{stage number of type integer.}
-#'  \item{event: }{0 indicating an action stage, 1 indicating a terminal stage and 2 indicating a censoring stage.}
-#'  \item{A: }{action variable of type character.}
-#'  \item{U: }{reward variable of type numeric.}
-#' }
-#' It is possible to add deterministic reward variables U_a for every action a in the action set, see details.
-#' The remaining columns are considered state variables (X).
-#'
-#' @details
-#' Each observation has the sequential form
-#' \deqn{O= {Z, U_1, X_1, A_1, ..., U_K, X_K, A_K, U_{K+1}},}
-#' for a (possibly) stochastic number of stages K.
-#' \itemize{
-#'  \item{Z is a vector of baseline information.}
-#'  \item{U_k is the reward since the previous stage at stage k in \{1,...,K+1\}}
-#'  \item{X_k is a vector summarizing the state at stage k in \{1,...,K\}}
-#'  \item{A_k is the categorical action at stage k in \{1,...,K\}}
-#' }
-#' The utility is given by the sum of the rewards, i.e., \eqn{U = sum_{k = 1}^{K+1} U_k}.\
-#'
-#' @export
 new_policy_data <- function(stage_data, baseline_data = NULL, messages = FALSE){
 
   # checking and processing stage_data:
@@ -224,13 +224,13 @@ wide_stage_data_to_long <- function(wide_stage_data, id_col = NULL, A_cols, X_co
   if (is.vector(X_cols) & !is.list(X_cols))
     X_cols <- list(X_cols)
   if (!is.list(X_cols))
-    stop("X_cols must be a vector or a list of vectors or lists of type character.")
+    stop("X_cols must be a character vector or a list of character vectors.")
 
   X_cols <- lapply(X_cols, function(x_col){
     if (is.list(x_col))
       x_col <- unlist(x_col)
     if (!is.vector(x_col) | !is.character(x_col))
-      stop("X_cols must be a vector or a list of vectors or lists of type character.")
+      stop("X_cols must be a character vector or a list of character vectors.")
     return(x_col)
   })
 
@@ -238,7 +238,7 @@ wide_stage_data_to_long <- function(wide_stage_data, id_col = NULL, A_cols, X_co
     if (K == 1)
       names(X_cols) <- X_cols
     else
-      stop("X_cols has to be a named list when K >1.")
+      stop("X_cols must be a named list when K >1.")
   }
 
   if (length(U_cols)==1) {
