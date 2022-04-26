@@ -12,7 +12,7 @@ RATE(
   family = gaussian(),
   M = 5,
   pr.treatment,
-  treatment.level = 1,
+  treatment.level,
   SL.args.response = list(family = gaussian(), SL.library = c("SL.mean", "SL.glm")),
   SL.args.post.treatment = list(family = binomial(), SL.library = c("SL.mean",
     "SL.glm")),
@@ -39,13 +39,11 @@ RATE(
 
 \item{SL.args.response}{Arguments to SuperLearner for the response model}
 
-\item{SL.args.post.treatment}{Arguments to SuperLearner for the post treatment}
+\item{SL.args.post.treatment}{Arguments to SuperLearner for the post treatment indicator}
 
 \item{preprocess}{(optional) data preprocessing function}
 
 \item{...}{Additional arguments to lower level functions}
-
-\item{SL.library}{Models used in SuperLearner for the post treatment indicator}
 }
 \value{
 estimate object
@@ -54,5 +52,5 @@ estimate object
 Estimation of the Average Treatment Effect among Responders
 }
 \author{
-Klaus K. Holst, Andreas Nordland
+Andreas Nordland, Klaus K. Holst
 }

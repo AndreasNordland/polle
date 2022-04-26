@@ -10,24 +10,30 @@
 ##' @param pr.treatment (optional) randomization probabilty of A=1
 ##' @param treatment.level Treatment level in binary treatment (default 1)
 ##' @param SL.args.response Arguments to SuperLearner for the response model
-##' @param SL.library Models used in SuperLearner for the response model
-##' @param SL.args.post.treatment Arguments to SuperLearner for the post treatment
-##' @param SL.library Models used in SuperLearner for the post treatment indicator
+##' @param SL.args.post.treatment Arguments to SuperLearner for the post treatment indicator
 ##' @param preprocess (optional) data preprocessing function
 ##' @param ... Additional arguments to lower level functions
 ##' @return estimate object
-##' @author Klaus K. Holst, Andreas Nordland
+##' @author Andreas Nordland, Klaus K. Holst
 RATE <- function(response, post.treatment, treatment,
                  data, family = gaussian(), M = 5,
-                 pr.treatment, treatment.level = 1,
-                 SL.args.response = list(family = gaussian(), SL.library = c("SL.mean", "SL.glm")),
-                 SL.args.post.treatment = list(family = binomial(), SL.library = c("SL.mean", "SL.glm")),
+                 pr.treatment, treatment.level,
+                 SL.args.response = list(family = gaussian(),
+                                         SL.library = c("SL.mean", "SL.glm")),
+                 SL.args.post.treatment = list(family = binomial(),
+                                               SL.library = c("SL.mean", "SL.glm")),
                  preprocess = NULL, ...) {
   dots <- list(...)
   cl <- match.call()
 
+  A <- polle::get_response(treatment, data)
+  A.levels <- sort(unique(A))
+  if (length(A.levels)!=2) stop("Expected binary treatment variable")
+  if (missing(treatment.level)) {
+    treatment.level <- A.levels[2]
+  }
   if (missing(pr.treatment)) {
-    pr.treatment <- mean(polle::get_response(treatment, data) == treatment.level[1])
+    pr.treatment <- mean(A == treatment.level[1])
   }
 
   fit <- function(train_data, valid_data) {
@@ -58,20 +64,19 @@ RATE <- function(response, post.treatment, treatment,
     valid_data[lava::getoutcome(treatment)] <- treatment.level[1]
     pr.Ya <- predict(Y.est, valid_data)
     pr.Da <- predict(D.est, valid_data)
-    valid_data[lava::getoutcome(treatment)] <- treatment.level[1]
+    valid_data[lava::getoutcome(treatment)] <- setdiff(A.levels, treatment.level[1])
     pr.Y0 <- predict(Y.est, valid_data)
 
     phi.a <- A / pr.treatment * (Y - pr.Ya) + pr.Ya
-    phi.0 <- (1 - A) / (1 - pr.treatment) * (Y - pr.Y0) + pr.Y0
+    phi.0 <- (1-A) / (1 - pr.treatment) * (Y - pr.Y0) + pr.Y0
+
     phi.d <- A / pr.treatment * (D - pr.Da) + pr.Da
 
     phis <- list(a1 = phi.a, a0 = phi.0, d = phi.d)
     ests <- lapply(phis, mean)
     est <- with(ests, (a1 - a0) / d)
     iid <- 1 / ests$d *
-      {
-        with(phis, a1 - a0) - est * phis$d
-      } - est
+      ( with(phis, a1 - a0) - est * phis$d )  - est
     return(list(estimate = est, iid = iid))
   }
 
@@ -92,5 +97,5 @@ RATE <- function(response, post.treatment, treatment,
       est <- est + length(f) / n * est_f$estimate
     }
   }
-  lava::estimate(NULL, coef = est, iid = cbind(iid) / n, labels = "rate")
+  lava::estimate(NULL, coef = est, iid = cbind(iid), labels = "rate")
 }
