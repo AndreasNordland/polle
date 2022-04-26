@@ -73,10 +73,10 @@ RATE <- function(response, post.treatment, treatment,
     phi.d <- A / pr.treatment * (D - pr.Da) + pr.Da
 
     phis <- list(a1 = phi.a, a0 = phi.0, d = phi.d)
+    iids <- lapply(phis, function(x) x - mean(x))
     ests <- lapply(phis, mean)
     est <- with(ests, (a1 - a0) / d)
-    iid <- 1 / ests$d *
-      ( with(phis, a1 - a0) - est * phis$d )  - est
+    iid <- 1 / ests$d * (with(iids, a1 - a0) - est * iids$d)
     return(list(estimate = est, iid = iid))
   }
 
