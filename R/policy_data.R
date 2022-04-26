@@ -1,3 +1,20 @@
+
+
+# \code{policy_data} creates an object of class policy_data.
+#
+# @param stage_data A data.table on long format with required columns:
+# \itemize{
+#  \item{id}
+#  \item{stage: }{stage number of type integer.}
+#  \item{event: }{0 indicating an action stage, 1 indicating a terminal stage and 2 indicating a censoring stage.}
+#  \item{A: }{action variable of type character.}
+#  \item{U: }{reward variable of type numeric.}
+# }
+# It is possible to add deterministic reward variables U_a for every action a in the action set, see details.
+# The remaining columns are considered state variables (X).
+#
+
+#'
 #' Create Policy Data Object
 #'
 #' \code{policy_data} creates an object of class "policy_data".
@@ -34,23 +51,26 @@
 #' @export
 policy_data <- function(data, baseline_data,
                         type="wide",
-                        action, covariates, utility, deterministic_utility = NULL) {
+                        action, covariates, utility,
+                        id = NULL, deterministic_utility = NULL,
+                        verbose = FALSE) {
   if (is.data.frame(data)) data <- as.data.table(data)
   type <- tolower(type)
   if (type %in% c("wide")) {
     pd <- wide_stage_data_to_long(data,
-                                  A_cols = action,
-                                  X_cols = covariates,
-                                  U_cols = utility,
-                                  U_A_cols = deterministic_utility)
-    res <- new_policy_data(pd)
+                                  action = action,
+                                  covariates = covariates,
+                                  utility = utility,
+                                  id = id,
+                                  deterministic_utility = deterministic_utility)
+    res <- new_policy_data(pd, baseline_data = NULL, verbose = verbose) # ADD BASELINE
   } else {
-    res <- new_policy_data(data, baseline_data, ...)
+    res <- new_policy_data(data, baseline_data = baseline_data, verbose = verbose)
   }
   return(res)
 }
 
-new_policy_data <- function(stage_data, baseline_data = NULL, messages = FALSE){
+new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
 
   # checking and processing stage_data:
   {
@@ -93,15 +113,15 @@ new_policy_data <- function(stage_data, baseline_data = NULL, messages = FALSE){
     missing_action_utililty_names <- action_utility_names[!(action_utility_names %in% names(stage_data))]
     if (length(missing_action_utililty_names) > 0){
       mes <- paste(missing_action_utililty_names, collapse = ", ")
-      mes <- paste("setting ", mes, " to default value 0.", sep = "")
-      if (messages == TRUE){
+      mes <- paste("Setting the deterministic reward '", mes, "' in the stage data to default value 0.", sep = "")
+      if (verbose == TRUE){
         message(mes)
       }
       stage_data[, (missing_action_utililty_names) := 0]
     }
     if (!all(sapply(stage_data[, ..action_utility_names], function(col) is.numeric(col)))){
       mes <- paste(action_utility_names, collapse = ", ")
-      mes <- paste(mes, "must be numeric.", sep = " ")
+      mes <- paste("'",mes, "'must be numeric.", sep = " ")
       stop(mes)
     }
 
@@ -118,14 +138,14 @@ new_policy_data <- function(stage_data, baseline_data = NULL, messages = FALSE){
     rm(sd, sd_names, sdm)
 
 
-    # Coercing columns of type factor to type character in stage_data:
+    # coercing columns of type factor to type character in stage_data:
     sdf <- sapply(stage_data, function(x) is.factor(x))
     if (any(sdf)){
       f_names <- colnames(stage_data)[sdf]
       mes <- f_names
       mes <- paste(mes, collapse = ", ")
-      mes <- paste("Coercing ", mes, " to type character.", sep = "")
-      if (messages == TRUE){
+      mes <- paste("Coercing '", mes, "' to type character.", sep = "")
+      if (verbose == TRUE){
       message(mes)
       }
       stage_data[, (f_names) := lapply(.SD, as.character), .SDcols = f_names]
@@ -133,7 +153,7 @@ new_policy_data <- function(stage_data, baseline_data = NULL, messages = FALSE){
     }
     rm(sdf)
 
-    # getting the names of the stage specific state data (X_k):
+    # getting the names of the state data (X_k):
     rn <- c("id", "stage", "event", "A", "U", action_utility_names)
     stage_data_names <- names(stage_data)[!(names(stage_data) %in% rn)]
   }
@@ -162,7 +182,7 @@ new_policy_data <- function(stage_data, baseline_data = NULL, messages = FALSE){
       mes <- f_names
       mes <- paste(mes, collapse = ", ")
       mes <- paste("Coercing ", mes, " to type character.", sep = "")
-      if (messages == TRUE)
+      if (verbose == TRUE)
         message(mes)
       baseline_data[, (f_names) := lapply(.SD, as.character), .SDcols = f_names]
       rm(mes, f_names)
@@ -203,69 +223,121 @@ new_policy_data <- function(stage_data, baseline_data = NULL, messages = FALSE){
   return(object)
 }
 
-#' @export
-wide_stage_data_to_long <- function(wide_stage_data, id_col = NULL, A_cols, X_cols, U_cols, U_A_cols = NULL){
-  if (is.data.frame(wide_stage_data)) wide_stage_data <- as.data.table(wide_stage_data)
-  wide_stage_data <- copy(wide_stage_data)
+# long_stage_data <- function(stage_data, id = NULL, A_cols, X_cols, U_cols, U_A_cols = NULL){
+#
+# }
 
-  if (any("id" %in% colnames(wide_stage_data)) && !is.null(id_col))
-    stop("The wide_stage_data contains a variable called id, but id_col = NULL. Please set id_col = 'id' or change the name of the variable.")
-  if (is.null(id_col)){
-    wide_stage_data[, id := 1:.N]
-    id_col <- "id"
+wide_stage_data_to_long <- function(wide_data, id, action, covariates, utility, deterministic_utility){
+  # number of stages:
+  K <- length(action)
+
+  # converting to data.table:
+  if (is.data.frame(wide_data)) wide_data <- as.data.table(wide_data)
+  wide_data <- copy(wide_data)
+
+  # checking the ID variable:
+  if (!is.null(id) & !is.character(id))
+    stop("'id' is not a character.")
+  if (any("id" %in% colnames(wide_data)) && !is.null(id))
+    stop("The data has a variable called 'id', but id = NULL. Please set id = 'id' or change the name of the variable.")
+  if (is.null(id)){
+    # creating an ID variable:
+    wide_data[, id := 1:.N]
+    id <- "id"
   }
 
-  if (is.list(A_cols))
-    A_cols <- unlist(A_cols)
-  K <- length(A_cols)
-  if (!is.vector(A_cols) | !is.character(A_cols))
-    stop("A_cols must be a vector or a list of type character.")
+  # checking the action variable:
+  if (is.list(action))
+    action <- unlist(action)
+  if (!is.vector(action) | !is.character(action))
+    stop("action must be a vector or a list of type character.")
+  if (!all(action %in% names(wide_data))){
+    stop("One or more values in 'action' is invalid.")
+  }
 
-  if (is.vector(X_cols) & !is.list(X_cols))
-    X_cols <- list(X_cols)
-  if (!is.list(X_cols))
-    stop("X_cols must be a character vector or a list of character vectors.")
+  # checking the covariates variable:
+  if (!(is.list(covariates) | is.vector(covariates)))
+    stop("covariates must be a character vector or a list of character vectors.")
+  if (!all(unlist(covariates) %in% names(wide_data))){
+    stop("One or more values in 'covariates' is invalid.")
+  }
+  covariates <- lapply(covariates, function(covar){
+    if (is.list(covar))
+      covar <- unlist(covar)
+    if (!is.vector(covar) | !is.character(covar))
+      stop("covariates must be a character vector or a list of character vectors.")
 
-  X_cols <- lapply(X_cols, function(x_col){
-    if (is.list(x_col))
-      x_col <- unlist(x_col)
-    if (!is.vector(x_col) | !is.character(x_col))
-      stop("X_cols must be a character vector or a list of character vectors.")
-    return(x_col)
+    if(length(covar) != K)
+      stop("Each element in 'covariates' must have the same length as 'action'.")
+    return(covar)
   })
-
-  if (is.null(names(X_cols))){
+  if (is.null(names(covariates))){
     if (K == 1)
-      names(X_cols) <- X_cols
+      names(covariates) <- covariates
     else
-      stop("X_cols must be a named list when K >1.")
+      stop("covariates must be a named list when K >1.")
   }
 
-  if (length(U_cols)==1) {
+  # checking the utility variable
+  if (is.list(utility))
+    utility <- unlist(utility)
+  if (!is.vector(utility) | !is.character(utility))
+    stop("'utility' must be a vector or a list of type character.")
+  if (!all(utility %in% names(wide_data))){
+    stop("One or more values in 'utility' is invalid.")
+  }
+  if (length(utility) != 1){
+    if (length(utility) != (K+1)){
+      mes <- "'utility' must either be a character string or a character vector of length "
+      mes <- paste(mes, (K+1), ".", sep = "")
+      stop(mes)
+    }
+  }
+  # setting the rewards to 0 if only the final utility is provided.
+  if (length(utility)==1) {
     for (i in seq(K)) {
-      newU <- paste0("_", U_cols[1], "_", i)
-      wide_stage_data[, (newU) := 0]
-      U_cols <- c(newU, U_cols)
+      u <- paste0("_", utility[i], "_", i)
+      wide_data[, (u) := 0]
+      utility <- c(u, utility)
     }
   }
 
-  U_A_cols <- lapply(U_A_cols, function(u_a_col){
-    if (is.list(u_a_col))
-      u_a_col <- unlist(u_a_col)
-    if (!is.vector(u_a_col) | !is.character(u_a_col))
-      stop("U_A_cols must be a vector or a list of vectors or lists of type character.")
-    return(u_a_col)
+  # checking the deterministic utility variable:
+  deterministic_utility <- lapply(deterministic_utility, function(du){
+    if (is.list(du))
+      du <- unlist(du)
+    if (!is.vector(du) | !is.character(du))
+      stop("deterministic_utility must be a character vector or a list of character vectors.")
+    return(du)
   })
 
-  measure <- append(list(A = A_cols), X_cols)
-  measure <- append(measure, list(U = U_cols))
-  if (!is.null(U_A_cols)){
-    measure <- append(measure, U_A_cols)
+  # checking for overlapping values:
+  if (length(intersect(action, unlist(covariates)))>0)
+    stop("'action' and 'covariates' have overlapping values.")
+
+  # checking for duplicate values:
+  if (length(unique(action)) != length(action))
+    stop("'action' has duplicate values.")
+  if (length(unique(unlist(covariates))) != length(unlist(covariates)))
+    stop("'covariates' has duplicate values.")
+  if (length(unique(unlist(deterministic_utility))) != length(unlist(deterministic_utility)))
+    stop("'deterministic_utility' has duplicate values.")
+  if (length(unique(unlist(utility))) != length(unlist(utility)))
+    stop("'utility' has duplicate values.")
+
+  measure <- append(list(A = action), covariates)
+  measure <- append(measure, list(U = utility))
+  if (!is.null(deterministic_utility)){
+    measure <- append(measure, deterministic_utility)
   }
 
+  # subset data:
+  sel <- c(id, action, unlist(covariates), unlist(utility), unlist(deterministic_utility))
+  wide_data <- subset(wide_data, select = sel)
 
-  long_stage_data <- melt(wide_stage_data, id.vars = id_col, measure = measure, variable.name = "stage")
-  setnames(long_stage_data, id_col, "id")
+  # convert to long data:
+  long_stage_data <- melt(wide_data, id.vars = id, measure = measure, variable.name = "stage")
+  setnames(long_stage_data, id, "id")
   long_stage_data[ , stage := as.numeric(as.character(stage))]
   long_stage_data[, A := as.character(A)]
 
