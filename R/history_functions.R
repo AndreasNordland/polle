@@ -13,7 +13,7 @@ full_stage_history.policy_data <- function(object, stage){
   baseline_data <- object$baseline_data
   baseline_data_names <- object$colnames$baseline_data_names
   action_set <- object$action_set
-  action_utility_names <- object$colnames$action_utility_names
+  deterministic_reward_names <- object$colnames$deterministic_reward_names
   stage_ <- stage; rm(stage)
 
   # getting stage specific history names:
@@ -39,7 +39,7 @@ full_stage_history.policy_data <- function(object, stage){
   # getting the accumulated utility and deterministic utility contributions
   U <- stage_data[stage <= stage_][, U_bar := sum(U), id]
   U <- U[event == 0][stage == stage_,]
-  U_names <- c("id", "stage", "U_bar", action_utility_names)
+  U_names <- c("id", "stage", "U_bar", deterministic_reward_names)
   U <- U[, ..U_names]
 
   action_name <- paste("A", stage_, sep = "_")
@@ -50,7 +50,7 @@ full_stage_history.policy_data <- function(object, stage){
     AH = AH,
     U = U,
     action_name = action_name,
-    action_utility_names = action_utility_names,
+    deterministic_reward_names = deterministic_reward_names,
     action_set = action_set,
     stage = stage_
   )
@@ -74,7 +74,7 @@ state_stage_history.policy_data <- function(object, stage){
   baseline_data <- object$baseline_data
   baseline_data_names <- object$colnames$baseline_data_names
   action_set <- object$action_set
-  action_utility_names <- object$colnames$action_utility_names
+  deterministic_reward_names <- object$colnames$deterministic_reward_names
   stage_ <- stage
 
   # getting stage specific history names:
@@ -94,7 +94,7 @@ state_stage_history.policy_data <- function(object, stage){
   # getting the accumulated utility and deterministic utility contributions
   U <- stage_data[stage <= stage_][, U_bar := sum(U), id]
   U <- U[event == 0][stage == stage_,]
-  U_names <- c("id", "stage", "U_bar", action_utility_names)
+  U_names <- c("id", "stage", "U_bar", deterministic_reward_names)
   U <- U[, ..U_names]
 
   id_names <- c("id", "stage")
@@ -105,7 +105,7 @@ state_stage_history.policy_data <- function(object, stage){
     AH = AH,
     U = U,
     action_name = "A",
-    action_utility_names = action_utility_names,
+    deterministic_reward_names = deterministic_reward_names,
     action_set = action_set,
     stage = stage
   )

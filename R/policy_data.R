@@ -108,19 +108,21 @@ new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
     if (!all(is.numeric(stage_data$U))) stop("The utility (U) must be numeric.")
     if(any(is.na(stage_data$U))) stop("The utility (U) has missing values")
 
-    # checking the action dependent deterministic utility variable (U_.):
-    action_utility_names <- paste("U", action_set, sep = "_")
-    missing_action_utililty_names <- action_utility_names[!(action_utility_names %in% names(stage_data))]
-    if (length(missing_action_utililty_names) > 0){
-      mes <- paste(missing_action_utililty_names, collapse = ", ")
+    # checking the deterministic reward variables (U_A[.]):
+    # action_utility_names
+    deterministic_reward_names <- paste("U_A", action_set, sep = "")
+    # missing_action_utililty_names
+    missing_deterministic_reward_names <- deterministic_reward_names[!(deterministic_reward_names %in% names(stage_data))]
+    if (length(missing_deterministic_reward_names) > 0){
+      mes <- paste(missing_deterministic_reward_names, collapse = ", ")
       mes <- paste("Setting the deterministic reward '", mes, "' in the stage data to default value 0.", sep = "")
       if (verbose == TRUE){
         message(mes)
       }
-      stage_data[, (missing_action_utililty_names) := 0]
+      stage_data[, (missing_deterministic_reward_names) := 0]
     }
-    if (!all(sapply(stage_data[, ..action_utility_names], function(col) is.numeric(col)))){
-      mes <- paste(action_utility_names, collapse = ", ")
+    if (!all(sapply(stage_data[, ..deterministic_reward_names], function(col) is.numeric(col)))){
+      mes <- paste(deterministic_reward_names, collapse = ", ")
       mes <- paste("'",mes, "'must be numeric.", sep = " ")
       stop(mes)
     }
@@ -154,7 +156,7 @@ new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
     rm(sdf)
 
     # getting the names of the state data (X_k):
-    rn <- c("id", "stage", "event", "A", "U", action_utility_names)
+    rn <- c("id", "stage", "event", "A", "U", deterministic_reward_names)
     stage_data_names <- names(stage_data)[!(names(stage_data) %in% rn)]
   }
 
@@ -208,7 +210,7 @@ new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
     baseline_data = baseline_data,
     colnames = list(
       stage_data_names = stage_data_names,
-      action_utility_names = action_utility_names,
+      deterministic_reward_names = deterministic_reward_names,
       baseline_data_names = baseline_data_names
     ),
     action_set = action_set,

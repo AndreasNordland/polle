@@ -10,7 +10,6 @@ names(d) <- c("Z", "L", "B", "treat", "reward")
 
 d$ID <- paste("id", 1:nrow(d), sep = "_")
 
-
 tmp <- policy_data(d, action = c("treat"), covariates = list(Z = c("Z"), L = c("L")), utility = "reward", id = "ID")
 
 tmp
