@@ -78,8 +78,9 @@ plan(list(
 ))
 ptl_eval <- policy_eval(
   pd,
-  type = "cv",
-  policy_learner = policy_learn(
+  type = "dr",
+  cross_fit = TRUE,
+  policy_learn = policy_learn(
     type = "ptl",
     alpha = 0.05,
     policy_vars = c("Z", "B", "L"),
@@ -88,10 +89,11 @@ ptl_eval <- policy_eval(
     split.step = 1,
     L = NULL,
     hybrid = TRUE,
-    future_args = list(future.seed = 1,
-                       future.packages = c("SuperLearner", "ranger")
-                      #,future.globals=c(q_model_learner_names, strip_names)
-                       )
+    future_args = list(
+      future.seed = 1,
+      future.packages = c("SuperLearner", "ranger")
+      ,future.globals=c(q_model_learner_names, strip_names)
+    )
   ),
   q_models = q_sl(SL.library = q_model_learner_names,
                   cvControl = list(V=2)),
@@ -100,10 +102,11 @@ ptl_eval <- policy_eval(
                   cvControl = list(V=2)),
   g_full_history = FALSE,
   M = 2,
-  seed = 1,
-  verbose = TRUE,
-  future_args = list(future.seed = 1,
-                     future.packages = c("SuperLearner", "ranger")
-                     ##,future.globals=c(q_model_learner_names, strip_names)
-                     )
+  future_args = list(
+    future.seed = 1,
+    future.packages = c("SuperLearner", "ranger"),
+    future.globals=c(q_model_learner_names, strip_names)
+  )
 )
+
+ptl_eval
