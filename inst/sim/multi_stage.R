@@ -1,5 +1,4 @@
 library(data.table)
-
 sim_multi_stage_obs <- function(a, tau, lambda, alpha, sigma, beta, psi, xi, ...){
   a_fun <- a
   stage_vec <- vector("numeric")
@@ -97,8 +96,8 @@ sim_multi_stage <- function(n, par, a, seed = NULL){
   stage_data <- do.call(what  = "rbind", l["stage_data",])
   stage_data <- as.data.table(stage_data)
   stage_data[, U := (exit - entry) + shift(ifelse(!is.na(A), -X * A, 0), fill = 0)]
-  stage_data[event %in% c(0), U_0 := 0]
-  stage_data[event %in% c(0), U_1 := -X]
+  stage_data[event %in% c(0), U_A0 := 0]
+  stage_data[event %in% c(0), U_A1 := -X]
   stage_data[, A := as.character(A)]
 
   setnames(stage_data, "exit", "t")

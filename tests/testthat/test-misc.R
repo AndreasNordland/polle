@@ -1,5 +1,3 @@
-testthat::context("Utility functions")
-
 testthat::test_that("IPW construction", {
   d <- c(0,1,1)
   g <- c(0.1,0.2,0.3)
@@ -8,9 +6,9 @@ testthat::test_that("IPW construction", {
   testthat::expect_error(polle:::ipw_weight(c(NA,1,1),g))
 })
 
-testthat::test_that("IPW", {
-
-})
+# testthat::test_that("IPW", {
+#
+# })
 
 testthat::test_that("action_matrix", {
   A <- c(0,1,0,1)

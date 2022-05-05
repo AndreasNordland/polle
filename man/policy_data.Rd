@@ -11,7 +11,12 @@ policy_data(
   action,
   covariates,
   utility,
-  deterministic_utility = NULL
+  baseline = NULL,
+  deterministic_rewards = NULL,
+  id = NULL,
+  stage = NULL,
+  event = NULL,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -20,20 +25,30 @@ policy_data(
 \item{baseline_data}{\link{data.frame} or \link{data.table}; see Examples.}
 
 \item{type}{Character string. If "wide", \code{data} is considered to be on wide format.
-If "long", \code{data} is considered to be on long format; see Examples.}
+Otherwise, \code{data} is considered to be on long format; see Examples.}
 
-\item{action}{Action variable name. Character string or character vector (one for each stage).}
+\item{action}{Action variable name(s). Character vector or character string.
+\itemize{
+\item{} A vector is valid for wide data. The length of the vector determines the number of stages (K).
+\item{} A string is valid for single stage wide data or long data.
+}}
 
 \item{covariates}{Stage specific covariate name(s). Character vector or named list of character vectors.
 \itemize{
-\item{} A vector is only valid for single stage wide data or long data.
-\item{} A named list is valid for multiple stage wide data. Each element of the list must be a character vector corresponding to the number of stages (K).
+\item{} A vector is valid for single stage wide data or long data.
+\item{} A list is valid for multiple stage wide data. Each element of the list must be a character vector corresponding to the number of stages (K).
 }}
 
-\item{utility}{Utility/reward variable name(s). Character string or vector.
+\item{utility}{Utility/Reward variable name(s). Character string or vector.
 \itemize{
-\item{} A string is valid for long data and wide data with a single final utility/reward.
-\item{} A vector is valid for wide data with incremental utility/rewards. Must be of length K+1; see Examples.
+\item{} A string is valid for long data and wide data with a single final utility.
+\item{} A vector is valid for wide data with incremental rewards. Must be of length K+1; see Examples.
+}}
+
+\item{deterministic_rewards}{Deterministic reward variable name(s). Character vector or named list of character vectors.
+\itemize{
+\item{}
+\item{}
 }}
 }
 \description{
@@ -52,5 +67,5 @@ for a possibly stochastic number of stages K.
 The utility is given by the sum of the rewards, i.e., \eqn{U = sum_{k = 1}^{K+1} U_k}.
 }
 \examples{
-2+2
+
 }
