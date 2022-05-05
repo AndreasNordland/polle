@@ -11,28 +11,29 @@ d
 pd <- policy_data(d, action="A", covariates=list("Z", "B", "L"), utility="U")
 pd
 
-strip_glm <- function(cm) {
-  cm$y = c()
-  cm$model = c()
-
-  cm$residuals = c()
-  cm$fitted.values = c()
-  cm$effects = c()
-  cm$qr$qr = c()
-  cm$linear.predictors = c()
-  cm$weights = c()
-  cm$prior.weights = c()
-  cm$data = c()
-
-  attr(cm$terms, ".Environment") = c() # saveRDS saves the objects in environment when glm was called
-  attr(cm$formula, ".Environment") = c()
-
-  return(cm)
-}
 strip_names <- c("strip_glm")
 
 SL.glm_stripped <- function (Y, X, newX, family, obsWeights, model = TRUE, ...)
 {
+  strip_glm <- function(cm) {
+    cm$y = c()
+    cm$model = c()
+
+    cm$residuals = c()
+    cm$fitted.values = c()
+    cm$effects = c()
+    cm$qr$qr = c()
+    cm$linear.predictors = c()
+    cm$weights = c()
+    cm$prior.weights = c()
+    cm$data = c()
+
+    attr(cm$terms, ".Environment") = c() # saveRDS saves the objects in environment when glm was called
+    attr(cm$formula, ".Environment") = c()
+
+    return(cm)
+  }
+
   if (is.matrix(X)) {
     X = as.data.frame(X)
   }
@@ -50,6 +51,7 @@ SL.glm_stripped <- function (Y, X, newX, family, obsWeights, model = TRUE, ...)
   out <- list(pred = pred, fit = fit)
   return(out)
 }
+
 SL_names <- c("SL.glm_stripped")
 
 library(SuperLearner)
@@ -87,8 +89,9 @@ ptl_eval <- policy_eval(
     L = NULL,
     hybrid = TRUE,
     future_args = list(future.seed = 1,
-                       future.packages = c("SuperLearner", "ranger"),
-                       future.globals = c(q_model_learner_names, "q_model_learner_names", g_model_learner_names, "g_model_learner_names", SL_names, "SL_names", strip_names, "strip_names"))
+                       future.packages = c("SuperLearner", "ranger")
+                      #,future.globals=c(q_model_learner_names, strip_names)
+                       )
   ),
   q_models = q_sl(SL.library = q_model_learner_names,
                   cvControl = list(V=2)),
@@ -100,7 +103,7 @@ ptl_eval <- policy_eval(
   seed = 1,
   verbose = TRUE,
   future_args = list(future.seed = 1,
-                     future.packages = c("SuperLearner", "ranger"),
-                     future.globals = c(q_model_learner_names, g_model_learner_names, strip_names))
+                     future.packages = c("SuperLearner", "ranger")
+                     ##,future.globals=c(q_model_learner_names, strip_names)
+                     )
 )
-ptl_eval

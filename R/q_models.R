@@ -1,3 +1,11 @@
+##' @export
+print.q_model <- function(object, ...) {
+  if (!is.null(object$fit$family))
+    print(object$fit$family)
+  object$fit$call <- ""
+  print(object$fit)
+}
+
 ################################################################################
 ## Generalized Linear Model interface
 ################################################################################
@@ -10,7 +18,7 @@ q_glm <- function(formula = ~ A * .,
   force(formula)
   dotdotdot <- list(...)
 
-  q_glm <- function(V_res, AH){
+  q_glm <- function(AH, V_res) {
     data <- AH
 
     tt <- terms(formula, data = data)
@@ -67,7 +75,7 @@ q_glmnet <- function(formula = ~ A * .,
   force(formula)
   dotdotdot <- list(...)
 
-  q_glmnet <- function(V_res, AH) {
+  q_glmnet <- function(AH, V_res) {
     des <- get_design(formula, data=AH)
     y <- V_res
     args_glmnet <- c(list(y = y, x = des$x,
@@ -128,7 +136,7 @@ q_rf <- function(formula = ~ .,
       do.call(ranger::ranger, args=rf_args)
     })
 
-  q_rf <- function(V_res, AH) {
+  q_rf <- function(AH, V_res) {
     des <- get_design(formula, data=AH)
     data <- data.frame(V_res, des$x)
     res <- NULL; best <- 1
@@ -173,14 +181,15 @@ q_sl <- function(formula = ~ A*., SL.library=c("SL.mean", "SL.glm"), ...){
   if (!requireNamespace("SuperLearner"))
     stop("Package 'SuperLearner' required.")
   suppressPackageStartupMessages(require(SuperLearner))
-  force(formula)
-  force(SL.library)
   dotdotdot <- list(...)
-  q_sl <- function(V_res, AH) {
+  force(SL.library)
+  q_sl <- function(AH, V_res) {
     des <- get_design(formula, data=AH)
+    if (missing(V_res) || is.null(V_res))
+      V_res <- get_response(formula, data=AH)
     X <- as.data.frame(des$x)
     colnames(X) <- gsub("[^[:alnum:]]", "_", colnames(X))
-    args_SL <- list(Y = V_res,
+    args_SL <- list(Y = as.numeric(V_res),
                     X = X,
                     SL.library = SL.library)
     args_SL <- append(args_SL, dotdotdot)
