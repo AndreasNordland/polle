@@ -25,7 +25,7 @@ policy_data(
 \item{baseline_data}{\link{data.frame} or \link{data.table}; see Examples.}
 
 \item{type}{Character string. If "wide", \code{data} is considered to be on wide format.
-Otherwise, \code{data} is considered to be on long format; see Examples.}
+If "long", \code{data} is considered to be on long format; see Examples.}
 
 \item{action}{Action variable name(s). Character vector or character string.
 \itemize{
@@ -36,20 +36,17 @@ Otherwise, \code{data} is considered to be on long format; see Examples.}
 \item{covariates}{Stage specific covariate name(s). Character vector or named list of character vectors.
 \itemize{
 \item{} A vector is valid for single stage wide data or long data.
-\item{} A list is valid for multiple stage wide data. Each element of the list must be a character vector corresponding to the number of stages (K).
+\item{} A named list is valid for multiple stage wide data. Each element must be a character vector with length K.
 }}
 
 \item{utility}{Utility/Reward variable name(s). Character string or vector.
 \itemize{
 \item{} A string is valid for long data and wide data with a single final utility.
-\item{} A vector is valid for wide data with incremental rewards. Must be of length K+1; see Examples.
+\item{} A vector is valid for wide data with incremental rewards. Must have length K+1; see Examples.
 }}
 
-\item{deterministic_rewards}{Deterministic reward variable name(s). Character vector or named list of character vectors.
-\itemize{
-\item{}
-\item{}
-}}
+\item{deterministic_rewards}{Deterministic reward variable name(s). Named list of character vectors of length K.
+The name of each element must be on the form "U_Aa" where "a" corresponds to an action in the action set.}
 }
 \description{
 \code{policy_data} creates an object of class "policy_data".
@@ -59,13 +56,68 @@ Each observation has the sequential form
 \deqn{O= {B, U_1, X_1, A_1, ..., U_K, X_K, A_K, U_{K+1}},}
 for a possibly stochastic number of stages K.
 \itemize{
-\item{} B is a vector of baseline information.
+\item{} B is a vector of baseline covariates.
 \item{} U_k is the reward at stage k.
-\item{} X_k is a vector summarizing the state at stage k.
+\item{} X_k is a vector of covariates summarizing the state at stage k.
 \item{} A_k is the categorical action at stage k.
 }
 The utility is given by the sum of the rewards, i.e., \eqn{U = sum_{k = 1}^{K+1} U_k}.
 }
 \examples{
+library("polle")
+### Wide data: Single stage
+source(system.file("sim", "single_stage.R", package="polle"))
+par0 <- c(k = .1,  d = .5, a = 1, b = -2.5, c = 3, s = 1)
+d1 <- sim_single_stage(5e2, seed=1, par=par0); rm(par0)
+head(d1, 5)
+# constructing policy_data object:
+pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
+pd1
+head(get_actions(pd1), 5)
+head(utility(pd1), 5)
+head(get_history(pd1)$AH, 5)
+
+### Wide data: Two stages
+source(system.file("sim", "two_stage.R", package="polle"))
+par0 <- c(gamma = 0.5, beta = 1)
+d2 <- sim_two_stage(5e2, seed=1, par=par0); rm(par0)
+head(d2, 5)
+# constructing policy_data object:
+pd2 <- policy_data(d2,
+                  action = c("A_1", "A_2"),
+                  covariates = list(L = c("L_1", "L_2"),
+                                    C = c("C_1", "C_2")),
+                  utility = c("U_1", "U_2", "U_3"))
+pd2
+head(get_history(pd2, stage = 2)$AH, 5)
+head(get_history(pd2, stage = 2, full_history = T)$AH, 5)
+
+### Long data: Multiple stages
+source(system.file("sim", "multi_stage.R", package="polle"))
+a_obs <- function(t, x, beta, ...){
+  prob <- lava::expit(beta[1] + (beta[2] * t) + (beta[3] * x))
+  rbinom(n = 1, size = 1, prob = prob)
+}
+par0 <- list(tau = 10,
+             lambda = c(0, -0.4, 0.3),
+             alpha =  c(0, 0.5, 0.1, -0.5, 0.4),
+             beta = c(0.3, 0, -0.5),
+             sigma = 1,
+             xi = 0.3,
+             psi = 1)
+d3 <- sim_multi_stage(5e2, par0, a = a_obs, seed = 1); rm(a_obs, par0)
+head(d3$stage_data, 10)
+# constructing policy_data object:
+pd3 <- policy_data(data = d3$stage_data,
+                   baseline_data = d3$baseline_data,
+                   type = "long",
+                   id = "id",
+                   stage = "stage",
+                   event = "event",
+                   action = "A",
+                   utility = "U")
+pd3
+head(get_history(pd3, stage = 3)$AH, 5)
+head(get_history(pd3, stage = 2, full_history = T)$AH, 5)
 
 }
