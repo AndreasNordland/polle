@@ -48,5 +48,5 @@ policy_eval(
 \item{future_args}{Arguments passed to \code{\link[future.apply:future_apply]{future.apply::future_apply()}}.}
 }
 \description{
-\code{policy_eval} is used to estimate the value a given fixed policy or a data adaptive policy.
+\code{policy_eval} is used to estimate the value of a given fixed policy or a data adaptive policy (e.g. policy learned from the data).
 }

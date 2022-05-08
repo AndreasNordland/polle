@@ -58,8 +58,7 @@ estimate.policy_eval <- function(x, ..., labels=x$name) {
 
 ##' Policy Evaluation
 ##'
-##' \code{policy_eval} is used to estimate the value a given fixed policy or a data adaptive policy.
-##' @export
+##' \code{policy_eval} is used to estimate the value of a given fixed policy or a data adaptive policy (e.g. policy learned from the data).
 ##' @param policy_data Policy data object created by [policy_data()].
 ##' @param policy Policy object created by [policy_def()].
 ##' @param policy_learn Policy learner object created by [policy_learn()].
@@ -73,6 +72,7 @@ estimate.policy_eval <- function(x, ..., labels=x$name) {
 ##' @param M Number of folds for the cross-fitting.
 ##' @param type Type of evaluation (dr/doubly robust, ipw/inverse propensity weighting, or/outcome regression).
 ##' @param future_args Arguments passed to [future.apply::future_apply()].
+##' @export
 policy_eval <- function(policy_data,
                         policy = NULL, policy_learn = NULL,
                         g_functions=NULL, g_models=g_glm(), g_full_history = FALSE,
