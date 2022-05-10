@@ -1,16 +1,73 @@
-# a policy should take a policy data object as input and return a policy action data.table with id, stage and d (d: policy action)
-# a stage policy should take a history object as input and return a data.table with id, stage and d (d: policy action)
+# a stage policy should take a history object as input and outputs a data.table with id, stage and d (d: policy action)
 
+
+#' Define Policy
+#'
+#' \code{policy_def} returns a function taking a [policy_data] object as input
+#' and returns a data.table with variables id, stage number and policy action (d).
+#'
+#' @param policy_functions A single policy function or a list of policy functions; see [static_policy] and [dynamic_policy].
+#' A list of policy functions must have the same length as the number of stages.
+#' @param full_history If TRUE, the full history at each stage is used as input to the policy functions.
+#' @param reuse If TRUE, the policy function is reused at every stage.
+#'
+#' @examples
+#' library("polle")
+#' ### Single stage
+#' source(system.file("sim", "single_stage.R", package="polle"))
+#' par0 <- c(k = .1,  d = .5, a = 1, b = -2.5, c = 3, s = 1)
+#' d1 <- sim_single_stage(5e2, seed=1, par=par0); rm(par0)
+#' # constructing policy_data object:
+#' pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
+#' pd1
+#' # defining a static policy:
+#' p1_static <- policy_def(static_policy(1))
+#' head(p1_static(pd1),5)
+#' # defining a dynamic policy:
+#' p1_dynamic <- policy_def(dynamic_policy(fun = function(Z, L) ((3*Z + 1*L -2.5)>0)*1))
+#' head(p1_dynamic(pd1),5)
+#'
+#' ### Multiple stages
+#' source(system.file("sim", "two_stage.R", package="polle"))
+#' par0 <- c(gamma = 0.5, beta = 1)
+#' d2 <- sim_two_stage(5e2, seed=1, par=par0); rm(par0)
+#' pd2 <- policy_data(d2,
+#'                   action = c("A_1", "A_2"),
+#'                   covariates = list(L = c("L_1", "L_2"),
+#'                                     C = c("C_1", "C_2")),
+#'                   utility = c("U_1", "U_2", "U_3"))
+#' # defining a static policy:
+#' p2_static <- policy_def(static_policy(0),
+#'                         reuse = TRUE)
+#' head(p2_static(pd2),5)
+#'
+#' # defining a repeated dynamic policy:
+#' p2_dynamic_reuse <- policy_def(dynamic_policy(function(L) (L > 0) * 1), reuse = TRUE)
+#' head(p2_dynamic_reuse(pd2), 5)
+#'
+#' # defining dynamic policy for each stage based on the full history:
+#' get_history_names(pd2, stage = 1) # function arguments which can be used in the first stage
+#' get_history_names(pd2, stage = 2) # function arguments which can be used in the second stage
+#'
+#' p2_dynamic <- policy_def(
+#'  policy_functions = list(
+#'   dynamic_policy(function(L_1) (L_1 > 0)*1),
+#'   dynamic_policy(function(L_1, L_2) (L_1 + L_2 > 0)*1)
+#'  ),
+#'  full_history = TRUE
+#' )
+#' p2_dynamic(pd2)
+#'
 #' @export
-policy_def <- function(stage_policies, full_history = FALSE, reuse = FALSE){
-  force(stage_policies)
+policy_def <- function(policy_functions, full_history = FALSE, reuse = FALSE){
+  force(policy_functions)
   force(full_history)
   force(reuse)
 
   if (full_history == TRUE & reuse == TRUE)
     stop("full_history must be FALSE when reuse is TRUE.")
-  if (reuse == TRUE & class(stage_policies)[[1]] == "list")
-    stop("When reuse is TRUE stage_policies must be a single policy function.")
+  if (reuse == TRUE & class(policy_functions)[[1]] == "list")
+    stop("When reuse is TRUE policy_functions must be a single policy function.")
 
   policy <- function(policy_data){
     if(!any(class(policy_data) == "policy_data")){
@@ -21,31 +78,31 @@ policy_def <- function(stage_policies, full_history = FALSE, reuse = FALSE){
     K <- get_K(policy_data)
 
     if (reuse == TRUE){
-      stage_policies <- replicate(K, stage_policies)
+      policy_functions <- replicate(K, policy_functions)
     }
-    if (class(stage_policies)[[1]] != "list" & reuse == FALSE & K > 1)
-      stop("When reuse is FALSE and K>1, stage_policies must be a list of length K.")
+    if (class(policy_functions)[[1]] != "list" & reuse == FALSE & K > 1)
+      stop("When reuse is FALSE and K>1, policy_functions must be a list of length K.")
 
-    if (class(stage_policies)[[1]] == "list"){
-      if (length(stage_policies) != K)
-        stop("stage_policies must be a list of length K (or a single policy function).")
-      for (k in seq_along(stage_policies)){
-        if(!any(class(stage_policies[[k]]) == "function"))
-          stop("stage_policies must be a list of functions.")
+    if (class(policy_functions)[[1]] == "list"){
+      if (length(policy_functions) != K)
+        stop("policy_functions must be a list of length K (or a single policy function).")
+      for (k in seq_along(policy_functions)){
+        if(!any(class(policy_functions[[k]]) == "function"))
+          stop("policy_functions must be a list of functions.")
       }
     } else {
-      if(!any(class(stage_policies) == "function"))
-        stop("stage_policies must be a single function (or a list of functions of length K).")
+      if(!any(class(policy_functions) == "function"))
+        stop("policy_functions must be a single function (or a list of functions of length K).")
     }
 
-    if (class(stage_policies)[[1]] == "list"){
+    if (class(policy_functions)[[1]] == "list"){
       stage_histories <- lapply(1:K, function(k) get_history(policy_data, stage = k, full_history = full_history))
-      policy_actions <- mapply(function(sp, sh) sp(sh), stage_policies, stage_histories, SIMPLIFY = FALSE)
+      policy_actions <- mapply(function(sp, sh) sp(sh), policy_functions, stage_histories, SIMPLIFY = FALSE)
       policy_actions <- rbindlist(policy_actions)
       setkey(policy_actions, id, stage)
     } else{
       history <- state_history(policy_data)
-      policy_actions <- stage_policies(history)
+      policy_actions <- policy_functions(history)
     }
 
     stopifnot(
@@ -57,7 +114,7 @@ policy_def <- function(stage_policies, full_history = FALSE, reuse = FALSE){
     return(policy_actions)
   }
 
-  attr(policy, "name") <- attr(stage_policies, "name", exact = TRUE)
+  attr(policy, "name") <- attr(policy_functions, "name", exact = TRUE)
 
   return(policy)
 }
@@ -67,8 +124,8 @@ get_policy <- function(object)
   UseMethod("get_policy")
 
 #' @export
-get_stage_policy <- function(object, stage)
-  UseMethod("get_stage_policy")
+get_policy_functions <- function(object, stage)
+  UseMethod("get_policy_functions")
 
 ##' @export
 static_policy <- function(action, name=paste0("a=",action)) {

@@ -270,7 +270,7 @@ rqvl <- function(policy_data,
 }
 
 #' @export
-get_stage_policy.RQVL <- function(object, stage){
+get_policy_functions.RQVL <- function(object, stage){
   action_set <- object$action_set
   K <- object$K
 
