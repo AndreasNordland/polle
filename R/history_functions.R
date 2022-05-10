@@ -174,7 +174,7 @@ get_H <- function(history, vars = NULL){
 }
 
 #' @export
-get_H_names <- function(policy_data, stage = NULL){
+get_history_names <- function(policy_data, stage = NULL){
   if (is.null(stage)){
     history <- get_history(policy_data, stage = stage, full_history = FALSE)
   } else{
