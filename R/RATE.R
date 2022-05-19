@@ -5,6 +5,7 @@
 ##' @param post.treatment Post treatment marker formula (e.g., D~W)
 ##' @param treatment treatment formula (e.g, A~1)
 ##' @param data data.frame
+##' @param censoring censoring formula (only for survival endpoints)
 ##' @param family Exponential family for response (default gaussian)
 ##' @param M Number of folds in cross-fitting (M=1 is no cross-fitting)
 ##' @param pr.treatment (optional) randomization probabilty of A=1
@@ -16,7 +17,7 @@
 ##' @return estimate object
 ##' @author Andreas Nordland, Klaus K. Holst
 RATE <- function(response, post.treatment, treatment,
-                 data, family = gaussian(), M = 5,
+                 data, censoring=NULL, family = gaussian(), M = 5,
                  pr.treatment, treatment.level,
                  SL.args.response = list(family = gaussian(),
                                          SL.library = c("SL.mean", "SL.glm")),
