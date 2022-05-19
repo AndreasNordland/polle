@@ -58,177 +58,205 @@ estimate.policy_eval <- function(x, ..., labels=x$name) {
 
 ##' Policy Evaluation
 ##'
-##' Policy evaluation function
+##' \code{policy_eval} is used to estimate the value of a given fixed policy or a data adaptive policy (e.g. policy learned from the data).
+##' @param policy_data Policy data object created by [policy_data()].
+##' @param policy Policy object created by [policy_def()].
+##' @param policy_learn Policy learner object created by [policy_learn()].
+##' @param g_models Propensity models/g-models created by [g_glm()], [g_rf()], [g_sl()] or similar functions.
+##' @param q_models Outcome regression models/Q-models created by [q_glm()], [q_rf()], [q_sl()] or similar functions.
+##' @param g_functions Fitted g-model objects.
+##' @param q_functions Fitted Q-model objects.
+##' @param g_full_history If TRUE, the full history is used to fit each g-model. If FALSE, the single stage/"Markov type" history is used to fit each g-model.
+##' @param q_full_history Similar to g_full_history.
+##' @param cross_fit If TRUE, the evaluation will be cross-fitted.
+##' @param M Number of folds for the cross-fitting.
+##' @param type Type of evaluation (dr/doubly robust, ipw/inverse propensity weighting, or/outcome regression).
+##' @param future_args Arguments passed to [future.apply::future_apply()].
 ##' @export
-##' @param policy_data Policy data object
-##' @param policy Policy object
-##' @param g_models Propensity model object
-##' @param q_models Outcome regression/Q-model
-##' @param g_functions
-##' @param q_functions
-##' @param g_full_history Full history or Markov
-##' @param q_full_history Full history or Markov
-##' @param M Number of folds
-##' @param type Type of model (dr, cv, ipw, or, ...)
-##' @param ... Additional arguments parsed to lower level functions
 policy_eval <- function(policy_data,
-                        policy = NULL, policy_learner = NULL,
+                        policy = NULL, policy_learn = NULL,
                         g_functions=NULL, g_models=g_glm(), g_full_history = FALSE,
                         q_functions=NULL, q_models=q_glm(), q_full_history = FALSE,
-                        M=5, seed = NULL, type="dr", verbose = FALSE,
-                        future_args = NULL, ...) {
-  type <- tolower(type)
-  fm <- formals()[-(1:3)]
-  fm[["..."]] <- NULL
-  cl <- match.call(expand.dots=TRUE)
-  for (i in setdiff(names(fm), names(cl)))
-    cl[i] <- list(fm[[i]])
+                        type = "dr",
+                        cross_fit = FALSE, M=5, future_args = list(future.seed = TRUE)
+                        ) {
+  args <- list(
+    policy_data = policy_data,
+    policy = policy,
+    policy_learn = policy_learn,
+    g_functions = g_functions,
+    g_models = g_models,
+    g_full_history = g_full_history,
+    q_functions = q_functions,
+    q_models = q_models,
+    q_full_history = q_full_history
+  )
 
-  if (type%in%c("cv", "crossfit", "cf", "cv_dr")) {
-    cl[[1]] <- policy_eval_cv_dr
+  call <- NULL
+  if (type %in% c("dr")){
+    call <- "policy_eval_dr"
   }
-  if (type%in%c("dr")) {
-    cl[[1]] <- policy_eval_dr
+  if (type %in% c("ipw")){
+    call <- "policy_eval_ipw"
   }
-  if (type%in%c("or","q")) {
-    cl[[1]] <- policy_eval_or
+  if (type %in% c("or", "q")){
+    call <- "policy_eval_or"
   }
-  if (type%in%c("ipw")) {
-    cl[[1]] <- policy_eval_ipw
+  if (is.null(call)){
+    mes <- "type must be either 'dr', 'ipw' or 'or'"
+    stop(mes)
   }
-  val <- eval(cl)
+
+  if (cross_fit == FALSE){
+      val <- do.call(what = call, args = args)
+  }
+  if (cross_fit == TRUE){
+    val <- policy_eval_cross_fitted(call = call,
+                                    args = args,
+                                    M = M,
+                                    future_args = future_args)
+  }
+
   val$name <- attr(policy, "name")
   return(val)
 }
 
-
-policy_eval_dr_fold <- function(fold,
-                                policy_data,
-                                policy, policy_learner,
-                                g_models, g_functions, g_full_history,
-                                q_models, q_functions, q_full_history,
-                                verbose,
-                                dotdotdot){
-
+policy_eval_fold <- function(fold,
+                             call,
+                             policy_data,
+                             policy, policy_learn,
+                             g_models, g_functions, g_full_history,
+                             q_models, q_functions, q_full_history
+){
   K <- get_K(policy_data)
   id <- get_id(policy_data)
+
   train_id <- id[-fold]
   validation_id <- id[fold]
 
+  # training data:
   train_policy_data <- subset(policy_data, train_id)
   if (train_policy_data$dim$K != K) stop("The number of stages varies accross the training folds.")
+
+  # validation data:
   validation_policy_data <- subset(policy_data, validation_id)
   if (validation_policy_data$dim$K != K) stop("The number of stages varies accross the validation folds.")
 
+  # training the policy evaluation models:
   train_args <- list(policy_data = train_policy_data,
-                     policy = policy, policy_learner = policy_learner,
-                     g_models = g_models, g_functions = g_functions, g_full_history = g_full_history,
-                     q_models = q_models, q_functions = q_functions, q_full_history = q_full_history,
-                     verbose = verbose)
-  train_args <- append(train_args, dotdotdot)
-  train_pe_dr <- do.call(what = "policy_eval_dr", args = train_args)
+                     policy = policy,
+                     policy_learn = policy_learn,
+                     g_models = g_models,
+                     g_functions = g_functions,
+                     g_full_history = g_full_history,
+                     q_models = q_models,
+                     q_functions = q_functions,
+                     q_full_history = q_full_history)
+  train_policy_eval <- do.call(what = call, args = train_args)
 
   # getting the policy:
   if (is.null(policy)){
-    policy <- get_policy(train_pe_dr$policy_object)
+    policy <- get_policy(train_policy_eval$policy_object)
   }
 
+  # validating the policy evaluation models:
   validation_args <- list(policy_data = validation_policy_data,
                           policy = policy,
-                          g_functions = train_pe_dr$g_functions,
-                          q_functions = train_pe_dr$q_functions)
-  validation_pe_dr <- do.call(what = "policy_eval_dr", args = validation_args)
+                          g_functions = train_policy_eval$g_functions,
+                          q_functions = train_policy_eval$q_functions)
+  validation_policy_eval <- do.call(what = call, args = validation_args)
 
-  if (!is.null(train_pe_dr$policy_object)){
-    validation_pe_dr$policy_object <- train_pe_dr$policy_object
+  # saving the fitted policy objects (if available):
+  if (!is.null(train_policy_eval$policy_object)){
+    validation_policy_eval$policy_object <- train_policy_eval$policy_object
   }
 
-  return(validation_pe_dr)
+  return(validation_policy_eval)
 }
 
-policy_eval_cv_dr <- function(policy_data,
-                              policy = NULL, policy_learner = NULL,
-                              g_models = NULL, g_functions = NULL, g_full_history,
-                              q_models = NULL, q_functions = NULL, q_full_history,
-                              M, seed = NULL,
-                              verbose = FALSE,
-                              future_args = NULL, ...){
-
+policy_eval_cross_fitted <- function(call,
+                                     args,
+                                     M,
+                                     future_args){
+  policy_data <- args$policy_data
   n <- get_n(policy_data)
   id <- get_id(policy_data)
 
   # setting up the folds
-  if (!is.null(seed)){
-    withr::with_seed(seed, {
-      folds <- split(sample(1:n, n), rep(1:M, length.out = n))
-    })
-  } else{
-    withr::with_preserve_seed({
-      folds <- split(sample(1:n, n), rep(1:M, length.out = n))
-    })
-  }
+  folds <- split(sample(1:n, n), rep(1:M, length.out = n))
+  names(folds) <- paste("fold_", 1:M, sep = "")
 
-  dotdotdot <- list(...)
+  future_args <- append(future_args,
+                        list(X = folds,
+                             FUN = policy_eval_fold))
+  future_args <- append(future_args, list(call = call))
+  future_args <- append(future_args, args)
 
-  future_args <- append(future_args, list(
-    X = folds,
-    FUN = policy_eval_dr_fold,
-    policy_data = policy_data,
-    policy = policy, policy_learner = policy_learner,
-    g_models = g_models, g_functions = g_functions, g_full_history = g_full_history,
-    q_models = q_models, q_functions = q_functions, q_full_history = q_full_history,
-    verbose = verbose,
-    dotdotdot = dotdotdot
-  ))
-  force(future_args)
+  # cross fitting the evaluation of each fold:
+  cross_fit <- do.call(what = future.apply::future_lapply, future_args)
 
-  pe_dr_cv <- do.call(what = future.apply::future_lapply, future_args)
+  # collecting IDs:
+  id <- unlist(lapply(cross_fit, function(x) x$id), use.names = FALSE)
 
-  id <- unlist(lapply(pe_dr_cv, function(x) x$id))
-  iid <- unlist(lapply(pe_dr_cv, function(x) x$iid))
-
-  n <- unlist(lapply(pe_dr_cv, function(x) length(x$id)))
-  value_estimate <- unlist(lapply(pe_dr_cv, function(x) x$value_estimate))
+  # collecting the value estimate:
+  n <- unlist(lapply(cross_fit, function(x) length(x$id)))
+  value_estimate <- unlist(lapply(cross_fit, function(x) x$value_estimate))
   value_estimate <- sum((n / sum(n)) * value_estimate)
 
-  value_estimate_ipw <- unlist(lapply(pe_dr_cv, function(x) x$value_estimate_ipw))
-  value_estimate_ipw <- sum((n / sum(n)) * value_estimate_ipw)
+  # collecting the IID decomposition:
+  iid <- unlist(lapply(cross_fit, function(x) x$iid), use.names = FALSE)
 
+  # collecting the IPW value estimate (only if type = "dr")
+  value_estimate_ipw <- unlist(lapply(cross_fit, function(x) x$value_estimate_ipw))
+  if (!is.null(value_estimate_ipw)){
+    value_estimate_ipw <- sum((n / sum(n)) * value_estimate_ipw)
+  }
+
+  # collecting the OR value estimate (only if type = "dr")
+  value_estimate_or <- unlist(lapply(cross_fit, function(x) x$value_estimate_or))
+  if (!is.null(value_estimate_or)){
+    value_estimate_or <- sum((n / sum(n)) * value_estimate_or)
+  }
+
+  # sorting via the IDs:
   iid <- iid[order(id)]
   id <- id[order(id)]
 
   out <- list(value_estimate = value_estimate,
               iid = iid,
-              pe_dr_cv = pe_dr_cv,
-              id = id,
               value_estimate_ipw = value_estimate_ipw,
+              value_estimate_or = value_estimate_or,
+              id = id,
+              cross_fit = cross_fit,
               folds = folds
   )
-  class(out) <- c("policy_eval_cv_dr", "policy_eval")
+  out[sapply(out, is.null)] <- NULL
+
+  class(out) <- c("policy_eval_cross_fitted", "policy_eval")
   return(out)
 }
 
 policy_eval_dr <- function(policy_data,
-                           policy = NULL, policy_learner = NULL,
+                           policy = NULL, policy_learn = NULL,
                            g_models = NULL, g_functions = NULL, g_full_history,
                            q_models = NULL, q_functions = NULL, q_full_history,
-                           verbose = FALSE,
                            ...){
 
   # fitting the g-functions, Q-functions and policy (functions):
   function_fits <- fit_functions(policy_data = policy_data,
-                          policy = policy, policy_learner = policy_learner,
-                          g_models = g_models, g_functions = g_functions, g_full_history = g_full_history,
-                          q_models = q_models, q_functions = q_functions, q_full_history = q_full_history,
-                          verbose = verbose)
+                                 policy = policy, policy_learn = policy_learn,
+                                 g_models = g_models, g_functions = g_functions, g_full_history = g_full_history,
+                                 q_models = q_models, q_functions = q_functions, q_full_history = q_full_history)
 
-  # calculating the doubly robust score and value estimate:
+  # getting the fitted policy:
   if (is.null(policy))
     policy <- get_policy(function_fits$policy_object)
+
+  # calculating the doubly robust score and value estimate:
   value_object <- dr_value(policy_data = policy_data,
-                    policy = policy,
-                    g_functions = function_fits$g_functions,
-                    q_functions = function_fits$q_functions)
+                           policy = policy,
+                           g_functions = function_fits$g_functions,
+                           q_functions = function_fits$q_functions)
 
   out <- list(
     value_estimate = value_object$value_estimate,
@@ -246,20 +274,20 @@ policy_eval_dr <- function(policy_data,
 }
 
 policy_eval_or <- function(policy_data,
-                           policy = NULL, policy_learner = NULL,
+                           policy = NULL, policy_learn = NULL,
                            q_models = NULL, q_functions = NULL, q_full_history,
-                           verbose = FALSE,
                            ...){
 
   # fitting the Q-functions and policy (functions):
   function_fits <- fit_functions(policy_data = policy_data,
-                                 policy = policy, policy_learner = policy_learner,
-                                 q_models = q_models, q_functions = q_functions, q_full_history = q_full_history,
-                                 verbose = verbose)
+                                 policy = policy, policy_learn = policy_learn,
+                                 q_models = q_models, q_functions = q_functions, q_full_history = q_full_history)
 
-  # calculating the doubly robust score and value estimate:
+  # getting the fitted policy:
   if (is.null(policy))
     policy <- get_policy(function_fits$policy_object)
+
+  # calculating the doubly robust score and value estimate:
   value_object <- or_value(policy_data = policy_data,
                            policy = policy,
                            q_functions = function_fits$q_functions)
@@ -276,19 +304,20 @@ policy_eval_or <- function(policy_data,
 }
 
 policy_eval_ipw <- function(policy_data,
-                            policy = NULL, policy_learner = NULL,
+                            policy = NULL, policy_learn = NULL,
                             g_models = NULL, g_functions = NULL, g_full_history,
-                            verbose = FALSE,
                             ...){
 
   # fitting the g-functions and policy (functions):
   function_fits <- fit_functions(policy_data = policy_data,
-                                 policy = policy, policy_learner = policy_learner,
+                                 policy = policy, policy_learn = policy_learn,
                                  g_models = g_models, g_functions = g_functions, g_full_history = g_full_history)
 
-  # calculating the doubly robust score and value estimate:
+  # getting the fitted policy:
   if (is.null(policy))
     policy <- get_policy(function_fits$policy_object)
+
+  # calculating the doubly robust score and value estimate:
   value_object <- ipw_value(policy_data = policy_data,
                            policy = policy,
                            g_functions = function_fits$g_functions)

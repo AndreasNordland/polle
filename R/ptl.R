@@ -306,7 +306,7 @@ return(policy)
 }
 
 #' @export
-get_stage_policy.PTL <- function(object, stage){
+get_policy_functions.PTL <- function(object, stage){
   action_set <- object$action_set
   K <- object$K
 
@@ -381,43 +381,3 @@ get_stage_policy.PTL <- function(object, stage){
 
   return(stage_policy)
 }
-
-# Obsolete ---------------------------------------------------------------------
-
-#' get_policy.PTL <- function(object){
-#'   action_set <- object$action_set
-#'   K <- object$K
-#'   policy_full_history <- object$policy_full_history
-#'   ptl_objects <- object$ptl_objects
-#'   policy_vars <- getElement(object, "policy_vars")
-#'
-#'   if (!is.list(policy_vars))
-#'     policy_vars <- list(policy_vars)
-#'
-#'   stage_policies <- mapply(
-#'     ptl_objects,
-#'     policy_vars,
-#'     FUN = function(ptl, vars){
-#'       pf <- function(history){
-#'         H <- get_H(history, vars = vars)
-#'
-#'         dd <- predict(ptl, newdata = H)
-#'         d <- action_set[dd]
-#'
-#'         policy_actions <- get_id_stage(history)
-#'         policy_actions[, d:= d]
-#'         setkey(policy_actions, id, stage)
-#'
-#'         return(policy_actions)
-#'       }
-#'       return(pf)
-#'     }
-#'   )
-#'
-#'   policy <- policy_def(
-#'     stage_policies = stage_policies,
-#'     full_history = policy_full_history
-#'   )
-#'
-#'   return(policy)
-#' }

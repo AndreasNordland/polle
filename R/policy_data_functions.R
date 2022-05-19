@@ -7,7 +7,7 @@ copy_policy_data <- function(object){
   return(object)
 }
 
-partial_stage_data <- function(stage_data, K, action_utility_names){
+partial_stage_data <- function(stage_data, K, deterministic_reward_names){
   if (is.data.frame(stage_data))
     stage_data <- as.data.table(stage_data)
 
@@ -29,8 +29,8 @@ partial_stage_data <- function(stage_data, K, action_utility_names){
     ),
     id
   ]
-  if (!is.null(action_utility_names))
-    stage_data_res_sum[, (action_utility_names) := NA]
+  if (!is.null(deterministic_reward_names))
+    stage_data_res_sum[, (deterministic_reward_names) := NA]
   # binding stage_data_K with stage_data_res_sum
   stage_data <- rbindlist(list(stage_data_K, stage_data_res_sum), fill = TRUE, use.names = TRUE)
 
@@ -54,9 +54,9 @@ partial.policy_data <- function(object, K){
     return(object)
 
   # column names of the deterministic rewards:
-  action_utility_names <- object$colnames$action_utility_names
+  deterministic_reward_names <- object$colnames$deterministic_reward_names
 
-  object$stage_data <- partial_stage_data(stage_data = object[["stage_data"]], K = K, action_utility_names = action_utility_names)
+  object$stage_data <- partial_stage_data(stage_data = object[["stage_data"]], K = K, deterministic_reward_names = deterministic_reward_names)
   object$dim$K <- K
 
   return(object)

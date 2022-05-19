@@ -1,8 +1,7 @@
 fit_functions <- function(policy_data,
-                          policy = NULL, policy_learner = NULL,
+                          policy = NULL, policy_learn = NULL,
                           g_models = NULL, g_functions = NULL, g_full_history,
-                          q_models = NULL, q_functions = NULL, q_full_history,
-                          verbose = FALSE){
+                          q_models = NULL, q_functions = NULL, q_full_history){
 
   if (!is.null(g_functions)){
     if(!(class(g_functions)[[1]] == "nuisance_functions")) stop("g-functions must be of class 'nuisance_functions'.")
@@ -12,25 +11,22 @@ fit_functions <- function(policy_data,
     if(!(class(q_functions)[[1]] == "nuisance_functions")) stop("q-functions must be of class 'nuisance_functions'.")
   }
 
-  if ((is.null(policy) & is.null(policy_learner)) | (!is.null(policy_learner) & !is.null(policy))) stop("Provide either policy or policy_learner.")
+  if ((is.null(policy) & is.null(policy_learn)) | (!is.null(policy_learn) & !is.null(policy))) stop("Provide either policy or policy_learn.")
 
   # fitting the g-functions (if g_models is not NULL):
   if (is.null(g_functions)){
     if (!is.null(g_models)){
       g_functions <- fit_g_functions(policy_data, g_models = g_models, full_history = g_full_history)
-      if (verbose == TRUE)
-        print("Policy Evaluation: g-functions completed.")
     }
   }
 
   # learning the policy:
   policy_object <- NULL
   if (is.null(policy)){
-    policy_object <- policy_learner(
+    policy_object <- policy_learn(
       policy_data = policy_data,
       g_models = g_models, g_functions = g_functions, g_full_history = g_full_history,
-      q_models = q_models, q_full_history = q_full_history,
-      verbose = verbose
+      q_models = q_models, q_full_history = q_full_history
     )
     policy <- get_policy(policy_object)
   }
@@ -47,8 +43,6 @@ fit_functions <- function(policy_data,
         q_functions <- fit_Q_functions(policy_data,
                                        policy_actions = policy_actions,
                                        q_models = q_models, full_history = q_full_history)
-        if (verbose == TRUE)
-          print("Policy Evaluation: Q-functions completed.")
       }
     }
   }

@@ -1,3 +1,4 @@
+library(data.table)
 sim_two_stage <- function(n=1e4,
                           par=c(gamma = 1,  beta = .5),
                           seed=NULL,
@@ -5,8 +6,7 @@ sim_two_stage <- function(n=1e4,
                             rbinom(n = NROW(C_1), size = 1, prob = lava::expit(beta * C_1)),
                           action_model_2 = function(C_2, beta, ...)
                             rbinom(n = NROW(C_1), size = 1, prob = lava::expit(beta * C_2)),
-                          deterministic_utilities = FALSE,
-                          ...){
+                          deterministic_rewards = FALSE){
   if (!is.null(seed)) set.seed(seed)
 
   gamma <- par[1]
@@ -43,11 +43,11 @@ sim_two_stage <- function(n=1e4,
     U_2 = U_2,
     U_3 = U_3
   )
-  if (deterministic_utilities == TRUE){
-    data[, U_1_0 := U_1_0]
-    data[, U_1_1 := U_1_1]
-    data[, U_2_0 := U_2_0]
-    data[, U_2_1 := U_2_1]
+  if (deterministic_rewards == TRUE){
+    data[, U_1_A0 := U_1_0]
+    data[, U_1_A1 := U_1_1]
+    data[, U_2_A0 := U_2_0]
+    data[, U_2_A1 := U_2_1]
   }
 
   return(data)

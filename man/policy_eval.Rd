@@ -7,40 +7,46 @@
 policy_eval(
   policy_data,
   policy = NULL,
-  policy_learner = NULL,
+  policy_learn = NULL,
   g_functions = NULL,
   g_models = g_glm(),
   g_full_history = FALSE,
   q_functions = NULL,
   q_models = q_glm(),
   q_full_history = FALSE,
-  M = 5,
-  seed = NULL,
   type = "dr",
-  verbose = FALSE,
-  future_args = NULL,
-  ...
+  cross_fit = FALSE,
+  M = 5,
+  future_args = list(future.seed = TRUE)
 )
 }
 \arguments{
-\item{policy_data}{Policy data object}
+\item{policy_data}{Policy data object created by \code{\link[=policy_data]{policy_data()}}.}
 
-\item{policy}{Policy object}
+\item{policy}{Policy object created by \code{\link[=policy_def]{policy_def()}}.}
 
-\item{g_models}{Propensity model object}
+\item{policy_learn}{Policy learner object created by \code{\link[=policy_learn]{policy_learn()}}.}
 
-\item{g_full_history}{Full history or Markov}
+\item{g_functions}{Fitted g-model objects.}
 
-\item{q_models}{Outcome regression/Q-model}
+\item{g_models}{Propensity models/g-models created by \code{\link[=g_glm]{g_glm()}}, \code{\link[=g_rf]{g_rf()}}, \code{\link[=g_sl]{g_sl()}} or similar functions.}
 
-\item{q_full_history}{Full history or Markov}
+\item{g_full_history}{If TRUE, the full history is used to fit each g-model. If FALSE, the single stage/"Markov type" history is used to fit each g-model.}
 
-\item{M}{Number of folds}
+\item{q_functions}{Fitted Q-model objects.}
 
-\item{type}{Type of model (dr, cv, ipw, or, ...)}
+\item{q_models}{Outcome regression models/Q-models created by \code{\link[=q_glm]{q_glm()}}, \code{\link[=q_rf]{q_rf()}}, \code{\link[=q_sl]{q_sl()}} or similar functions.}
 
-\item{...}{Additional arguments parsed to lower level functions}
+\item{q_full_history}{Similar to g_full_history.}
+
+\item{type}{Type of evaluation (dr/doubly robust, ipw/inverse propensity weighting, or/outcome regression).}
+
+\item{cross_fit}{If TRUE, the evaluation will be cross-fitted.}
+
+\item{M}{Number of folds for the cross-fitting.}
+
+\item{future_args}{Arguments passed to \code{\link[future.apply:future_apply]{future.apply::future_apply()}}.}
 }
 \description{
-Policy evaluation function
+\code{policy_eval} is used to estimate the value of a given fixed policy or a data adaptive policy (e.g. policy learned from the data).
 }

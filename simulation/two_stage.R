@@ -333,7 +333,7 @@ two_stage_policy_data <- new_policy_data(stage_data = d, baseline_data = d[, .(i
 tmp <- policy_eval(
   type = "dr",
   two_stage_policy_data,
-  # policy_learner = policy_learn(
+  # policy_learn = policy_learn(
   #   type = "rqvl",
   #   alpha = 0,
   #   L = NULL,
@@ -386,7 +386,7 @@ tmp2 <- policy_eval(
   type = "ipw",
   two_stage_policy_data,
   policy = optimal_policy,
-  # policy_learner = rqvl,
+  # policy_learn = rqvl,
   qv_models = list(new_q_glm(formula = ~L+C), new_q_glm(formula = ~L+C)),
   alpha = 0,
   # policy = optimal_policy,

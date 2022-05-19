@@ -358,8 +358,8 @@ tmp$value_estimate_ipw
 tmp_train$value_estimate_ipw
 tmp_train$value_estimate_or
 
-tmp$pe_dr_cv$`1`$g_functions[[1]]$g_model$fit$call <- NULL
-tmp$pe_dr_cv$`1`$g_functions[[1]]$g_model$fit
+tmp$cross_fit$`1`$g_functions[[1]]$g_model$fit$call <- NULL
+tmp$cross_fit$`1`$g_functions[[1]]$g_model$fit
 
 id <- get_id(single_stage_policy_data)
 
@@ -373,7 +373,7 @@ sub_fit$g_model$fit$call <- NULL
 sub_fit$g_model$fit
 
 folds_g_functions <- lapply(
-  tmp$pe_dr_cv,
+  tmp$cross_fit,
   function(m){
     gf <- m$g_functions[[1]]
     gf$g_model$fit$call <- NULL
