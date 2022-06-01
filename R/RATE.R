@@ -3,16 +3,17 @@
 ##' @title Responder Average Treatment Effect
 ##' @param response Response formula (e.g, Y~D*A)
 ##' @param post.treatment Post treatment marker formula (e.g., D~W)
-##' @param treatment treatment formula (e.g, A~1)
+##' @param treatment Treatment formula (e.g, A~1)
 ##' @param data data.frame
-##' @param censoring censoring formula (only for survival endpoints)
+##' @param censoring Censoring formula (only for survival endpoints)
 ##' @param family Exponential family for response (default gaussian)
 ##' @param M Number of folds in cross-fitting (M=1 is no cross-fitting)
-##' @param pr.treatment (optional) randomization probabilty of A=1
+##' @param pr.treatment (optional) Randomization probability of treatment.
 ##' @param treatment.level Treatment level in binary treatment (default 1)
 ##' @param SL.args.response Arguments to SuperLearner for the response model
 ##' @param SL.args.post.treatment Arguments to SuperLearner for the post treatment indicator
-##' @param preprocess (optional) data preprocessing function
+##' @param preprocess (optional) Data preprocessing function
+##' @param efficient If TRUE, the estimate will be efficient. If FALSE, the estimate will be a simple plug-in estimate.
 ##' @param ... Additional arguments to lower level functions
 ##' @return estimate object
 ##' @author Andreas Nordland, Klaus K. Holst
@@ -23,11 +24,11 @@ RATE <- function(response, post.treatment, treatment,
                                          SL.library = c("SL.mean", "SL.glm")),
                  SL.args.post.treatment = list(family = binomial(),
                                                SL.library = c("SL.mean", "SL.glm")),
-                 preprocess = NULL, ...) {
+                 preprocess = NULL, efficient = TRUE, ...) {
   dots <- list(...)
   cl <- match.call()
 
-  A <- polle::get_response(treatment, data)
+  A <- get_response(treatment, data)
   A.levels <- sort(unique(A))
   if (length(A.levels)!=2) stop("Expected binary treatment variable")
   if (missing(treatment.level)) {
@@ -52,9 +53,9 @@ RATE <- function(response, post.treatment, treatment,
     D.est <- D.fit(train_data)
     Y.est <- Y.fit(train_data)
 
-    A <- as.numeric(polle::get_response(treatment, valid_data) == treatment.level[1])
-    D <- as.numeric(polle::get_response(post.treatment, valid_data))
-    Y <- polle::get_response(response, valid_data)
+    A <- as.numeric(get_response(treatment, valid_data) == treatment.level[1])
+    D <- as.numeric(get_response(post.treatment, valid_data))
+    Y <- get_response(response, valid_data)
 
     if (!is.null(preprocess)) {
       valid_data <- do.call(
@@ -81,22 +82,47 @@ RATE <- function(response, post.treatment, treatment,
     return(list(estimate = est, iid = iid))
   }
 
+  fit_plug_in <- function(){
+    A <- get_response(treatment, data)
+    D <- get_response(post.treatment, data)
+    Y <- get_response(response, data)
+
+    phi.1 <- A / pr.treatment * Y
+    phi.0 <- (1-A) / (1 - pr.treatment) * Y
+    phi.D <- A / pr.treatment * D
+
+    phis <- list(a1 = phi.1, a0 = phi.0, d = phi.D)
+    iids <- lapply(phis, function(x) x - mean(x))
+    ests <- lapply(phis, mean)
+    est <- with(ests, (a1 - a0) / d)
+    iid <- 1 / ests$d * (with(iids, a1 - a0) - est * iids$d)
+    return(list(estimate = est, iid = iid))
+  }
+
   n <- nrow(data)
   est <- 0
   iid <- numeric(n)
-  if (M < 2) {
-    est_f <- fit(data, data)
+
+  if(efficient == TRUE){
+    if (M < 2) {
+      est_f <- fit(data, data)
+      iid <- est_f$iid
+      est <- est_f$estimate
+    } else {
+      folds <- split(sample(1:n, n), rep(1:M, length.out = n))
+      for (f in folds) {
+        train_data <- data[-f, ]
+        valid_data <- data[f, ]
+        est_f <- fit(train_data, valid_data)
+        iid[f] <- est_f$iid
+        est <- est + length(f) / n * est_f$estimate
+      }
+    }
+  } else{
+    est_f <- fit_plug_in()
     iid <- est_f$iid
     est <- est_f$estimate
-  } else {
-    folds <- split(sample(1:n, n), rep(1:M, length.out = n))
-    for (f in folds) {
-      train_data <- data[-f, ]
-      valid_data <- data[f, ]
-      est_f <- fit(train_data, valid_data)
-      iid[f] <- est_f$iid
-      est <- est + length(f) / n * est_f$estimate
-    }
   }
+
   lava::estimate(NULL, coef = est, iid = cbind(iid), labels = "rate")
 }
