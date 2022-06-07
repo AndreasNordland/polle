@@ -1,8 +1,19 @@
+
+#' Specify Policy Learner Object
+#'
+#' @param type Character string. Type of policy learner method:
+#' \itemize{
+#'   \item{} "rql": Realistic Quality/Q-learning
+#'   \item{} "rqvl": Realistic V-restricted Q-learning
+#'   \item{} "ptl": Policy Tree Learning
+#' }
+#' @param alpha probability limit for determining realistic actions.
 #' @export
 policy_learn <- function(type = "rql",
                          alpha = 0,
                          qv_models = NULL, qv_full_history = FALSE,
-                         policy_vars = NULL, policy_full_history = FALSE, # note that the order of the policy_vars dictates the form of X in policy_tree
+                         policy_vars = NULL, # note that the order of the policy_vars dictates the form of X in policy_tree
+                         policy_full_history = FALSE,
                          L = NULL, seed = NULL,
                          ...){
   type <- tolower(type)
@@ -72,7 +83,7 @@ policy_learn <- function(type = "rql",
       do.call(what = "bowl", bowl_args)
     }
   } else{
-    stop("Unknown type of policy learner. Use 'rql', 'rqvl', 'ptl' or bowl.")
+    stop("Unknown type of policy learner. Use 'rql', 'rqvl' or 'ptl'")
   }
   class(pl) <- c("policy_function", "function")
   return(pl)
