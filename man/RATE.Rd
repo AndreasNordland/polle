@@ -18,6 +18,7 @@ RATE(
   SL.args.post.treatment = list(family = binomial(), SL.library = c("SL.mean",
     "SL.glm")),
   preprocess = NULL,
+  efficient = TRUE,
   ...
 )
 }
@@ -26,17 +27,17 @@ RATE(
 
 \item{post.treatment}{Post treatment marker formula (e.g., D~W)}
 
-\item{treatment}{treatment formula (e.g, A~1)}
+\item{treatment}{Treatment formula (e.g, A~1)}
 
 \item{data}{data.frame}
 
-\item{censoring}{censoring formula (only for survival endpoints)}
+\item{censoring}{Censoring formula (only for survival endpoints)}
 
 \item{family}{Exponential family for response (default gaussian)}
 
 \item{M}{Number of folds in cross-fitting (M=1 is no cross-fitting)}
 
-\item{pr.treatment}{(optional) randomization probabilty of A=1}
+\item{pr.treatment}{(optional) Randomization probability of treatment.}
 
 \item{treatment.level}{Treatment level in binary treatment (default 1)}
 
@@ -44,7 +45,9 @@ RATE(
 
 \item{SL.args.post.treatment}{Arguments to SuperLearner for the post treatment indicator}
 
-\item{preprocess}{(optional) data preprocessing function}
+\item{preprocess}{(optional) Data preprocessing function}
+
+\item{efficient}{If TRUE, the estimate will be efficient. If FALSE, the estimate will be a simple plug-in estimate.}
 
 \item{...}{Additional arguments to lower level functions}
 }
