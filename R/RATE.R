@@ -90,10 +90,15 @@ RATE <- function(response, post.treatment, treatment,
     phi.1 <- A / pr.treatment * Y
     phi.0 <- (1-A) / (1 - pr.treatment) * Y
     phi.D <- A / pr.treatment * D
-
     phis <- list(a1 = phi.1, a0 = phi.0, d = phi.D)
-    iids <- lapply(phis, function(x) x - mean(x))
     ests <- lapply(phis, mean)
+
+    iids <- list(
+      a1 = phi.1 - A / pr.treatment * mean(phi.1),
+      a0 = phi.0 - (1-A) / (1 - pr.treatment) * mean(phi.0),
+      d = phi.D - A / pr.treatment * mean(phi.D)
+    )
+
     est <- with(ests, (a1 - a0) / d)
     iid <- 1 / ests$d * (with(iids, a1 - a0) - est * iids$d)
     return(list(estimate = est, iid = iid))
