@@ -1,5 +1,5 @@
 
-#' Specify Policy Learner Object
+#' Create Policy Learner Object
 #'
 #' @param type Character string. Type of policy learner method:
 #' \itemize{
@@ -73,14 +73,6 @@ policy_learn <- function(type = "rql",
       ptl_args <- append(pl_args, eval_args)
 
       do.call(what = "ptl", ptl_args)
-    }
-  } else if (type %in% c("bowl", "owl", "outcome_weighted_learning")){
-    pl <- function(...){
-
-      eval_args <- list(...)
-      bowl_args <- append(pl_args, eval_args)
-
-      do.call(what = "bowl", bowl_args)
     }
   } else{
     stop("Unknown type of policy learner. Use 'rql', 'rqvl' or 'ptl'")
