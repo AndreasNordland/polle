@@ -51,9 +51,11 @@ head(p2_static(pd2),5)
 # defining a repeated dynamic policy:
 p2_dynamic_reuse <- policy_def(dynamic_policy(function(L) (L > 0) * 1), reuse = TRUE)
 head(p2_dynamic_reuse(pd2), 5)
+
 # defining dynamic policy for each stage based on the full history:
 get_history_names(pd2, stage = 1) # function arguments which can be used in the first stage
 get_history_names(pd2, stage = 2) # function arguments which can be used in the second stage
+
 p2_dynamic <- policy_def(
  policy_functions = list(
   dynamic_policy(function(L_1) (L_1 > 0)*1),
