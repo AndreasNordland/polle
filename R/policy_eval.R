@@ -6,7 +6,7 @@ coef.policy_eval <- function(object, ...) {
 ##' @export
 iid.policy_eval <- function(x, ...) {
   res <- cbind(x$iid)
-  return(res/NROW(res))
+  return(res)
 }
 
 ##' @export
