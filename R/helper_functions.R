@@ -54,3 +54,5 @@ colprod <- function(M){
   }
   return(out)
 }
+
+remove_null_elements <- function(x)  x[!sapply(x, is.null)]

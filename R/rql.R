@@ -1,6 +1,6 @@
 #' @export
-rql<- function(policy_data, alpha = 0,
-               g_models = NULL, g_functions = NULL, g_full_history,
+rql<- function(policy_data, alpha,
+               g_models, g_functions, g_full_history,
                q_models, q_full_history,
                ...){
   K <- policy_data$dim$K
@@ -78,18 +78,19 @@ rql<- function(policy_data, alpha = 0,
   class(q_functions) <- "nuisance_functions"
   attr(q_functions, "full_history") <- q_full_history
 
-  Zd_or <- Q[, 1]
+  # Zd_or <- Q[, 1]
 
   out <- list(
     q_functions = q_functions,
     g_functions = g_functions,
-    value_estimate = mean(Zd_or),
-    iid = Zd_or - mean(Zd_or),
+    # value_estimate = mean(Zd_or),
+    # iid = NULL, # Zd_or - mean(Zd_or),
     action_set = action_set,
     alpha = alpha,
     K = K
   )
-  class(out) <- "RQL"
+  out <- remove_null_elements(out)
+  class(out) <- c("RQL", "policy_object", "list")
 
   return(out)
 }

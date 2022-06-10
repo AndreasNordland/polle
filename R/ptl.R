@@ -1,13 +1,13 @@
-#' @export
 ptl <- function(policy_data,
-                g_models = NULL, g_functions = NULL, g_full_history = FALSE,
-                q_models, q_full_history = FALSE,
-                policy_vars = NULL, policy_full_history = FALSE,
-                L = NULL, cf_models = FALSE, future_args = NULL,
-                alpha = 0,
-                depth = 2, split.step = 1, min.node.size = 1, hybrid = FALSE, search.depth = 2,
-                verbose = FALSE,
-                ...){
+                g_models, g_functions, g_full_history,
+                q_models, q_full_history,
+                policy_vars, policy_full_history,
+                L, save_cross_fit_models, future_args,
+                alpha,
+                depth, split.step, min.node.size, hybrid, search.depth,
+                verbose,
+                ...
+                ){
   if ((is.null(g_models) & is.null(g_functions))) stop("Provide either g-models or g-functions.")
 
   K <- get_K(policy_data)
@@ -40,7 +40,7 @@ ptl <- function(policy_data,
   utility <- utility(policy_data)
 
   # constructing the folds for cross-fitting
-  if (!is.null(L)){
+  if (L > 1){
     folds <- split(sample(1:n, n), rep(1:L, length.out = n))
   } else{
     folds <- NULL
@@ -68,7 +68,7 @@ ptl <- function(policy_data,
     )
     if (verbose == TRUE)
       print("Policy tree: cross-fitted g-functions completed.")
-    if (cf_models == TRUE){
+    if (save_cross_fit_models == TRUE){
       g_functions_cf <- g_cf$g_functions_cf
     }
 
@@ -136,7 +136,7 @@ ptl <- function(policy_data,
         q_models = q_models,
         future_args = future_args
       )
-      if (cf_models == TRUE){
+      if (save_cross_fit_models == TRUE){
         q_functions_cf[[k]] <- q_step_cf_k$q_function
       }
       q_values_k <- q_step_cf_k$q_values
@@ -172,9 +172,9 @@ ptl <- function(policy_data,
     H <- get_H(policy_history_k, vars = vars)
 
     if (hybrid == FALSE){
-      ptl_k <- policytree::policy_tree(X = H, Gamma = Gamma, depth = depth, split.step = split.step, min.node.size = min.node.size)
+      ptl_k <- policytree::policy_tree(X = H, Gamma = Gamma, depth = depth, split.step = split.step, min.node.size = min.node.size, verbose = verbose)
     } else if (hybrid == TRUE){
-      ptl_k <- policytree::hybrid_policy_tree(X = H, Gamma = Gamma, depth = depth, split.step = split.step, min.node.size = min.node.size, search.depth = search.depth)
+      ptl_k <- policytree::hybrid_policy_tree(X = H, Gamma = Gamma, depth = depth, split.step = split.step, min.node.size = min.node.size, search.depth = search.depth, verbose = verbose)
     }
 
     ptl_objects[[k]] <- ptl_k
@@ -215,31 +215,29 @@ ptl <- function(policy_data,
     q_functions_cf <- NULL
   }
 
-  Gamma_d <- apply(action_matrix(d, action_set) * Gamma, 1, sum)
+  # Gamma_d <- apply(action_matrix(d, action_set) * Gamma, 1, sum)
 
   names(ptl_objects) <- paste("stage_", 1:K, sep = "")
 
 
   out <- list(
     ptl_objects = ptl_objects,
-    depth = depth,
-    split.step = split.step,
-    min.node.size = min.node.size,
-    value_estimate = mean(Gamma_d),
-    iid = Gamma_d - mean(Gamma_d),
+    # value_estimate = mean(Gamma_d),
+    # iid = Gamma_d - mean(Gamma_d),
     g_functions = g_functions,
     g_functions_cf = g_functions_cf,
-    g_values = g_values,
+    # g_values = g_values,
     q_functions = q_functions,
     q_functions_cf = q_functions_cf,
     policy_full_history = policy_full_history,
     policy_vars = policy_vars,
-    D = D,
+    # D = D,
     action_set = action_set,
     alpha = alpha,
     K = K,
     folds = folds
   )
+  out <- remove_null_elements(out)
   class(out) <- c("PTL", "policy_object")
 
   return(out)
@@ -373,7 +371,6 @@ get_policy_functions.PTL <- function(object, stage){
 
       d[(g_values[, g_cols[1]] < alpha)] <- action_set[2]
       d[(g_values[, g_cols[2]] < alpha)] <- action_set[1]
-
 
       return(d)
     }
