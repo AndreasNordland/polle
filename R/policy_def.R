@@ -14,12 +14,13 @@
 #' @examples
 #' library("polle")
 #' ### Single stage
+#' # simulating single-stage policy data
 #' source(system.file("sim", "single_stage.R", package="polle"))
 #' par0 <- c(k = .1,  d = .5, a = 1, b = -2.5, c = 3, s = 1)
 #' d1 <- sim_single_stage(5e2, seed=1, par=par0); rm(par0)
-#' # constructing policy_data object:
 #' pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
 #' pd1
+#'
 #' # defining a static policy:
 #' p1_static <- policy_def(static_policy(1))
 #' head(p1_static(pd1),5)
@@ -115,8 +116,29 @@ policy_def <- function(policy_functions, full_history = FALSE, reuse = FALSE){
   }
 
   attr(policy, "name") <- attr(policy_functions, "name", exact = TRUE)
+  class(policy) <- c("policy", "function")
 
   return(policy)
+}
+
+#' @export
+print.policy <- function(x) {
+
+  cat("Policy with arguments")
+
+  cp <- args(x)
+  cp <- capture.output(print.function(cp))
+  cp <- capture.output(print.function(x))
+  cp <- paste(cp, collapse = "")
+  cp <- gsub(" ", "", cp, fixed = TRUE)
+  cp <- gsub(",", ", ", cp, fixed = TRUE)
+  n_start <- 10
+  n_end <- gregexpr(")", cp)[[1]][1]
+  cp <- substr(cp,n_start, n_end-1)
+
+  cat("\n")
+  cat(cp)
+
 }
 
 #' @export
