@@ -8,7 +8,7 @@ fit_QV_function <- function(history, Z, qv_model){
     Z,
     MARGIN = 2,
     function(z){
-      qv_model(z, H)
+      qv_model(V_res = z, AH = H)
     }
   )
 
