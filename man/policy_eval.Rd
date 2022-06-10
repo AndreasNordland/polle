@@ -15,8 +15,7 @@ policy_eval(
   q_models = q_glm(),
   q_full_history = FALSE,
   type = "dr",
-  cross_fit = FALSE,
-  M = 5,
+  M = 1,
   future_args = list(future.seed = TRUE)
 )
 }
@@ -41,9 +40,7 @@ policy_eval(
 
 \item{type}{Type of evaluation (dr/doubly robust, ipw/inverse propensity weighting, or/outcome regression).}
 
-\item{cross_fit}{If TRUE, the evaluation will be cross-fitted.}
-
-\item{M}{Number of folds for the cross-fitting.}
+\item{M}{Number of folds for cross-fitting.}
 
 \item{future_args}{Arguments passed to \code{\link[future.apply:future_apply]{future.apply::future_apply()}}.}
 }

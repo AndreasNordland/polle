@@ -21,12 +21,13 @@ and returns a data.table with variables id, stage number and policy action (d).
 \examples{
 library("polle")
 ### Single stage
+# simulating single-stage policy data
 source(system.file("sim", "single_stage.R", package="polle"))
 par0 <- c(k = .1,  d = .5, a = 1, b = -2.5, c = 3, s = 1)
 d1 <- sim_single_stage(5e2, seed=1, par=par0); rm(par0)
-# constructing policy_data object:
 pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
 pd1
+
 # defining a static policy:
 p1_static <- policy_def(static_policy(1))
 head(p1_static(pd1),5)
