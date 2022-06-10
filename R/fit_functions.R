@@ -36,8 +36,8 @@ fit_functions <- function(policy_data,
 
   # fitting the Q-functions:
   if(is.null(q_functions)){
-    if(!is.null(policy_object$q_functions)){
-      q_functions <- policy_object$q_functions
+    if(!is.null(getElement(policy_object, "q_functions"))){
+      q_functions <- getElement(policy_object, "q_functions")
     } else{
       if (!is.null(q_models)){
         q_functions <- fit_Q_functions(policy_data,
