@@ -122,21 +122,6 @@ new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
   return(object)
 }
 
-# \code{policy_data} creates an object of class policy_data.
-#
-# @param stage_data A data.table on long format with required columns:
-# \itemize{
-#  \item{id}
-#  \item{stage: }{stage number of type integer.}
-#  \item{event: }{0 indicating an action stage, 1 indicating a terminal stage and 2 indicating a censoring stage.}
-#  \item{A: }{action variable of type character.}
-#  \item{U: }{reward variable of type numeric.}
-# }
-# It is possible to add deterministic reward variables U_a for every action a in the action set, see details.
-# The remaining columns are considered state variables (X).
-#
-
-
 #' Create Policy Data Object
 #'
 #' \code{policy_data} creates an object of class "policy_data".
