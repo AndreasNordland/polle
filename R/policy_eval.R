@@ -68,7 +68,7 @@ estimate.policy_eval <- function(x, ..., labels=x$name) {
 ##' @param q_functions Fitted Q-model objects.
 ##' @param g_full_history If TRUE, the full history is used to fit each g-model. If FALSE, the single stage/"Markov type" history is used to fit each g-model.
 ##' @param q_full_history Similar to g_full_history.
-##' @param M Number of folds for the cross-fitting.
+##' @param M Number of folds for cross-fitting.
 ##' @param type Type of evaluation (dr/doubly robust, ipw/inverse propensity weighting, or/outcome regression).
 ##' @param future_args Arguments passed to [future.apply::future_apply()].
 ##' @export
