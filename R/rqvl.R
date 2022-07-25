@@ -1,6 +1,5 @@
 #' @export
 fit_QV_function <- function(history, Z, qv_model){
-
   H <- get_H(history)
 
   # fitting the QV-model
@@ -43,10 +42,10 @@ evaluate.QV_function <- function(object, new_history){
 #' @export
 rqvl <- function(policy_data,
                  alpha,
-                 g_models = NULL, g_functions = NULL, g_full_history,
+                 g_models, g_functions, g_full_history,
                  q_models, q_full_history,
-                 qv_models, qv_full_history = FALSE,
-                 L = NULL, cf_models = FALSE, future_args = NULL,
+                 qv_models, qv_full_history,
+                 L, save_cross_fit_models, future_args,
                  ...){
   K <- get_K(policy_data)
   n <- get_n(policy_data)
@@ -73,12 +72,6 @@ rqvl <- function(policy_data,
     if (length(qv_models) != K) stop("qv_models must either be a list of length K or a single QV-model.")
   }
 
-  if (!is.null(L)){
-    if (!is.numeric(L) | (L<2)) stop("The number of folds L must be greater than 1.")
-    if (is.null(g_models)) stop("g_models must be provided when L > 1.")
-  }
-
-
   # getting the observed actions:
   actions <- get_actions(policy_data)
 
@@ -89,7 +82,7 @@ rqvl <- function(policy_data,
   utility <- utility(policy_data)
 
   # constructing the folds for cross-fitting:
-  if (!is.null(L)){
+  if (L > 1){
     folds <- split(sample(1:n, n), rep(1:L, length.out = n))
   } else{
     folds <- NULL
@@ -112,7 +105,7 @@ rqvl <- function(policy_data,
       folds = folds,
       future_args = future_args
     )
-    if (cf_models == TRUE){
+    if (save_cross_fit_models == TRUE){
       g_functions_cf <- g_cf$g_functions_cf
     }
     g_values <- g_cf$g_values
@@ -172,7 +165,7 @@ rqvl <- function(policy_data,
         q_models = q_models,
         future_args = future_args
       )
-      if (cf_models == TRUE){
+      if (save_cross_fit_models == TRUE){
         q_functions_cf[[k]] <- q_step_cf_k$q_function
       }
       q_values_k <- q_step_cf_k$q_values
@@ -247,7 +240,7 @@ rqvl <- function(policy_data,
   attr(qv_functions, "full_history") <- qv_full_history
   names(qv_functions) <- paste("stage_", 1:K, sep = "")
 
-  Zd <- apply(action_matrix(d, action_set) * Z, 1, sum)
+  # Zd <- apply(action_matrix(d, action_set) * Z, 1, sum)
 
   out <- list(
     qv_functions = qv_functions,
@@ -255,16 +248,17 @@ rqvl <- function(policy_data,
     q_functions_cf = q_functions_cf,
     g_functions = g_functions,
     g_functions_cf = g_functions_cf,
-    g_values = g_values,
-    value_estimate = mean(Zd),
-    iid = Zd - mean(Zd),
-    D = D,
+    # g_values = g_values,
+    # value_estimate = mean(Zd),
+    # iid = Zd - mean(Zd),
+    # D = D,
     action_set = action_set,
     alpha = alpha,
     K = K,
     folds = folds
   )
-  class(out) <- "RQVL"
+  out <- remove_null_elements(out)
+  class(out) <- c("RQVL", "policy_object", "list")
 
   return(out)
 }

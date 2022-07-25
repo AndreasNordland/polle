@@ -5,7 +5,4 @@
 \alias{polle-package}
 \alias{polle}
 \title{Policy Learning}
-\examples{
-
-}
 \keyword{package}

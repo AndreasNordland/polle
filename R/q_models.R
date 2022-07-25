@@ -1,4 +1,4 @@
-##' @export
+#' @export
 print.q_model <- function(object, ...) {
   if (!is.null(object$fit$family))
     print(object$fit$family)
@@ -39,7 +39,7 @@ q_glm <- function(formula = ~ A * .,
     glm_model$call <- NULL
 
     m <- list(
-      glm_model = glm_model
+      fit = glm_model
     )
 
     class(m) <- c("q_glm", "q_model")
@@ -51,11 +51,9 @@ q_glm <- function(formula = ~ A * .,
 
 #' @export
 predict.q_glm <- function(object, new_AH){
-  glm_model <- getElement(object, "glm_model")
-
   newdata <- new_AH
 
-  pred <- predict(glm_model, newdata = newdata, type = "response")
+  pred <- predict(object$fit, newdata = newdata, type = "response")
 
   return(pred)
 }

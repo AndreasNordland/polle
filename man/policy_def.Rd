@@ -21,12 +21,13 @@ and returns a data.table with variables id, stage number and policy action (d).
 \examples{
 library("polle")
 ### Single stage
+# simulating single-stage policy data
 source(system.file("sim", "single_stage.R", package="polle"))
 par0 <- c(k = .1,  d = .5, a = 1, b = -2.5, c = 3, s = 1)
 d1 <- sim_single_stage(5e2, seed=1, par=par0); rm(par0)
-# constructing policy_data object:
 pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
 pd1
+
 # defining a static policy:
 p1_static <- policy_def(static_policy(1))
 head(p1_static(pd1),5)
@@ -51,9 +52,11 @@ head(p2_static(pd2),5)
 # defining a repeated dynamic policy:
 p2_dynamic_reuse <- policy_def(dynamic_policy(function(L) (L > 0) * 1), reuse = TRUE)
 head(p2_dynamic_reuse(pd2), 5)
+
 # defining dynamic policy for each stage based on the full history:
 get_history_names(pd2, stage = 1) # function arguments which can be used in the first stage
 get_history_names(pd2, stage = 2) # function arguments which can be used in the second stage
+
 p2_dynamic <- policy_def(
  policy_functions = list(
   dynamic_policy(function(L_1) (L_1 > 0)*1),
