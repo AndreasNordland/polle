@@ -101,8 +101,8 @@ onerun_cox <- function(n.grp){
   )
   return(out)
 }
-set.seed(1)
-onerun_cox(1e3)
+# set.seed(1)
+# onerun_cox(1e3)
 
 future::plan("multicore")
 progressr::handlers(global = TRUE)
@@ -141,8 +141,8 @@ onerun_ranger <- function(n.grp){
   )
   return(out)
 }
-set.seed(1)
-onerun_ranger(1e3)
+# set.seed(1)
+# onerun_ranger(1e3)
 
 future::plan("multicore")
 progressr::handlers(global = TRUE)
