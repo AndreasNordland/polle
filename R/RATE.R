@@ -188,10 +188,15 @@ RATE.surv <- function(response, post.treatment, treatment, censoring,
   dots <- list(...)
   cl <- match.call()
 
+  surv.response <- get_response(formula = response, data)
+  surv.censoring <- get_response(formula = censoring, data)
   stopifnot(
-    all(get_response(response, data)[ ,1] == get_response(censoring, data)[ ,1]),
-    all(order(get_response(response, data)[ ,1]) == (1:nrow(data))) # data must be ordered by time
+    attr(surv.response, "type") == "right", # only allows right censoring
+    attr(surv.censoring, "type") == "right", # only allows right censoring
+    all(surv.response[,1] == surv.censoring[ ,1]), # time must be equal
+    all(order(surv.response[,1]) == (1:nrow(data))) # data must be ordered by time
   )
+  rm(surv.response, surv.censoring)
 
   A.levels <- sort(unique(get_response(treatment, data)))
   if (all(A.levels != c(0,1))) stop("Expected binary treatment variable (0,1).")
@@ -242,6 +247,9 @@ RATE.surv <- function(response, post.treatment, treatment, censoring,
       )
     }
 
+    valid.time <- get_response(formula = response, valid_data)[,1]
+    valid.event <- get_response(formula = response, valid_data)[,2]
+
     # constructing the one-step estimator
     f.0 <-  F.tau(
       T.est = T.est,
@@ -265,20 +273,19 @@ RATE.surv <- function(response, post.treatment, treatment, censoring,
       T.est = T.est,
       C.est = C.est,
       data = valid_data,
+      time = valid.time,
+      event = valid.event,
       tau = tau
     )
-
-    times <- get_response(T.est$formula, valid_data)[,1]
-    sc <- diag(cumhaz(C.est, newdata = valid_data, times = times)$surv)
+    sc <- diag(cumhaz(C.est, newdata = valid_data, times = valid.time)$surv)
 
     A <- as.numeric(get_response(treatment, valid_data))
     if (is.null(pr.treatment)) {
       pr.treatment <- mean(A)
     }
-    event <- get_response(T.est$formula, valid_data)[,2]
 
-    phi.0 <- (1-A) / (1-pr.treatment) * (event / sc * (times <= tau) + hmc) + (1 - (1-A) / (1-pr.treatment)) * f.0
-    phi.1 <- A / (pr.treatment) * (event / sc * (times <= tau) + hmc) + (1 - A / (pr.treatment)) * f.1
+    phi.0 <- (1-A) / (1-pr.treatment) * (valid.event / sc * (valid.time <= tau) + hmc) + (1 - (1-A) / (1-pr.treatment)) * f.0
+    phi.1 <- A / (pr.treatment) * (valid.event / sc * (valid.time <= tau) + hmc) + (1 - A / (pr.treatment)) * f.1
 
     D <- as.numeric(get_response(post.treatment, valid_data))
     valid_data[lava::getoutcome(treatment)] <- 1
@@ -377,35 +384,34 @@ F.tau <- function(T.est, D.est, data, tau, a, treatment, post.treatment){
 }
 
 # vector of dim 1:n with values \int_0^tau {S(u|X_i) - S(tau|X_i)} / {S(u|X_i) S^c(u|X_i)} d M_i^c
-HMc.tau <- function(T.est, C.est, data, tau){
+HMc.tau <- function(T.est, C.est, data, time, event, tau){
   n <- nrow(data)
 
-  times <- get_response(C.est$formula, data)[,1]
-  jumps <- (times <= tau)
+  jump <- (time <= tau)
 
-  data.C <- data[get_response(C.est$formula, data)[,2] == 1, ]
-  times.C <- get_response(C.est$formula, data.C)[,1]
+  data.C <- data[event == 0, ]
+  time.C <- time[event == 0]
 
-  S <- diag(cumhaz(T.est, newdata = data.C, times = times.C)$surv)
+  S <- diag(cumhaz(T.est, newdata = data.C, times = time.C)$surv)
   S.tau <- cumhaz(T.est, newdata = data.C, times = tau)$surv[1,]
-  Sc <- diag(cumhaz(C.est, newdata = data.C, times = times.C)$surv)
+  Sc <- diag(cumhaz(C.est, newdata = data.C, times = time.C)$surv)
   stopifnot(all(S * Sc> 0))
 
   Nc <- vector(mode = "numeric", length = n)
-  Nc[(get_response(C.est$formula, data)[,2] == 1)] <- (S - S.tau) / (S * Sc)
-  Nc[get_response(C.est$formula, data)[,1] > tau] <- 0
+  Nc[(event == 0)] <- (S - S.tau) / (S * Sc)
+  Nc[time > tau] <- 0
   rm(S, S.tau, Sc)
 
   Lc <- vector(mode = "numeric", length = n)
-  S <- cumhaz(T.est, newdata = data, times = times)$surv
+  S <- cumhaz(T.est, newdata = data, times = time)$surv
   S.tau <- cumhaz(T.est, newdata = data, times = tau)$surv
-  Sc <- cumhaz(C.est, newdata = data, times = times)
+  Sc <- cumhaz(C.est, newdata = data, times = time)
   for(i in 1:n){
     at.risk <- c(rep(1, i), rep(0, n-i))
 
     h <- (S[,i] - S.tau[,i]) / (S[,i] * Sc$surv[,i])
 
-    lc <- sum((h * at.risk * Sc$dchf[,i])[jumps])
+    lc <- sum((h * at.risk * Sc$dchf[,i])[jump])
     Lc[i] <- lc
   }
 
