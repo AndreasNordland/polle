@@ -9,7 +9,6 @@ RATE(
   post.treatment,
   treatment,
   data,
-  censoring = NULL,
   family = gaussian(),
   M = 5,
   pr.treatment,
@@ -30,8 +29,6 @@ RATE(
 \item{treatment}{Treatment formula (e.g, A~1)}
 
 \item{data}{data.frame}
-
-\item{censoring}{Censoring formula (only for survival endpoints)}
 
 \item{family}{Exponential family for response (default gaussian)}
 
