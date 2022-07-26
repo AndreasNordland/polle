@@ -108,6 +108,7 @@ future::plan("multicore")
 progressr::handlers(global = TRUE)
 progressr::handlers("progress")
 sim.res.cox <- sim(onerun_cox, R = 1e3, args = list(n.grp = 1e3), seed = 1)
+future::plan("sequential")
 summary(sim.res.cox, estimate = 1:4, se = 5:8, true = c(Psi0_A1, Psi0_A0, Psi0_D1, Psi0))
 
 ## Super Learner & Ranger -----------------------------------------
@@ -141,10 +142,50 @@ onerun_ranger <- function(n.grp){
   )
   return(out)
 }
-# set.seed(1)
-# onerun_ranger(1e3)
 
-future::plan("multicore")
+onerun_rfsrc <- function(n.grp){
+  dt <- sim_surv(
+    n = n.grp,
+    beta = par0$beta,
+    zeta = par0$zeta,
+    kappa = par0$kappa
+  )
+
+  require("randomForestSRC")
+  est <- polle:::RATE.surv(
+    treatment = A ~ 1,
+    post.treatment = D ~ A * W,
+    SL.args.post.treatment = list(family = binomial(),
+                                  SL.library = c("SL.glm")),
+    response = Surv(time, event) ~ W + D,
+    call.response = "rfsrc",
+    args.response = list(save.memory = TRUE, ntime = NULL),
+    censoring = Surv(time, event == 0) ~ W + A + D,
+    args.censoring = list(save.memory = TRUE, ntime = NULL),
+    call.censoring = "rfsrc",
+    tau = par0$tau,
+    data = dt,
+    M = 2
+  )
+
+  out <- c(
+    est$coef,
+    setNames(diag(est$vcov)^(0.5), paste(names(est$coef), ".se", sep = ""))
+  )
+  return(out)
+}
+# set.seed(1)
+# onerun_rfsrc(1e3)
+
+# rfsrc
+# future::plan("sequential")
+# progressr::handlers(global = TRUE)
+# progressr::handlers("progress")
+# sim.res.rfsrc <- sim(onerun_rfsrc, R = 10, args = list(n.grp = 1e3), seed = 1)
+# summary(sim.res.rfsrc, estimate = 1:4, se = 5:8, true = c(Psi0_A1, Psi0_A0, Psi0_D1, Psi0))
+
+# ranger
+future::plan("sequential")
 progressr::handlers(global = TRUE)
 progressr::handlers("progress")
 sim.res.ranger <- sim(onerun_ranger, R = 1e3, args = list(n.grp = 1e3), seed = 1)
