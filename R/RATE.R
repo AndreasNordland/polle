@@ -279,6 +279,8 @@ RATE.surv <- function(response, post.treatment, treatment, censoring,
     )
     sc <- diag(cumhaz(C.est, newdata = valid_data, times = valid.time)$surv)
 
+    rm(T.est, C.est)
+
     A <- as.numeric(get_response(treatment, valid_data))
     if (is.null(pr.treatment)) {
       pr.treatment <- mean(A)
@@ -340,7 +342,7 @@ cumhaz <- function(object, newdata, times=NULL, ...) {
     tt <- pp$times
   } else if (inherits(object, "rfsrc")) {
     pp <- predict(object, newdata=newdata, oob=TRUE, ...)
-    chf <- t(rbind(pp$chf[,,2]))
+    chf <- t(rbind(pp$chf))
     tt <- pp$time.interest
     if (!is.null(times)) {
       idx <- mets::fast.approx(tt, times)
