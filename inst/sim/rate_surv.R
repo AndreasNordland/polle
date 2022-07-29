@@ -187,7 +187,7 @@ onerun_rfsrc <- function(n.grp){
 # summary(sim.res.rfsrc, estimate = 1:4, se = 5:8, true = c(Psi0_A1, Psi0_A0, Psi0_D1, Psi0))
 
 # ranger
-future::plan(list(tweak("multicore", workers = 3)))
+future::plan(list(tweak("multicore", workers = 4)))
 progressr::handlers(global = TRUE)
 progressr::handlers("progress")
 sim.res.ranger <- sim(onerun_ranger, R = 10, args = list(n.grp = 1e3), seed = 1)
