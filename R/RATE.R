@@ -350,7 +350,8 @@ cumhaz <- function(object, newdata, times=NULL, ...) {
       tt <- times
     }
   } else if (inherits(object, "ranger")) {
-    pp <- predict(object, type="response", data=newdata, ...)
+    num.threads <- object$call$num.threads
+    pp <- predict(object, type="response", data=newdata, num.threads = num.threads, ...)
     chf <- t(rbind(pp$chf))
     tt <- pp$unique.death.times
     if (!is.null(times)) {
