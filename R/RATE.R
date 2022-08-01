@@ -184,17 +184,18 @@ RATE.surv <- function(response, post.treatment, treatment, censoring,
                       call.censoring,
                       args.censoring = list(),
                       preprocess = NULL,
-                      efficient = TRUE, ...) {
+                      ...){
   dots <- list(...)
   cl <- match.call()
 
   surv.response <- get_response(formula = response, data)
   surv.censoring <- get_response(formula = censoring, data)
+
   stopifnot(
     attr(surv.response, "type") == "right", # only allows right censoring
     attr(surv.censoring, "type") == "right", # only allows right censoring
     all(surv.response[,1] == surv.censoring[ ,1]), # time must be equal
-    all(order(surv.response[,1]) == (1:nrow(data))) # data must be ordered by time
+    all(order(surv.response[,1]) == (1:nrow(data))) # data must be ordered by time and have no missing values
   )
   rm(surv.response, surv.censoring)
 
@@ -300,25 +301,23 @@ RATE.surv <- function(response, post.treatment, treatment, censoring,
     return(phis)
   }
 
+  folds <- NULL
   n <- nrow(data)
-  if(efficient == TRUE){
-    if (M < 2) {
-      phis <- fit.phis(data, data)
-    } else {
-      phis <- matrix(nrow = n, ncol = 3)
-      folds <- split(sample(1:n, n), rep(1:M, length.out = n))
-      folds <- lapply(folds, sort)
-      for (f in folds) {
-        train_data <- data[-f, ]
-        valid_data <- data[f, ]
-        ph <- fit.phis(train_data = train_data, valid_data = valid_data)
-        phis[f,] <- ph
-        colnames(phis) <- colnames(ph)
-      }
+  if (M < 2) {
+    phis <- fit.phis(data, data)
+  } else {
+    phis <- matrix(nrow = n, ncol = 3)
+    folds <- split(sample(1:n, n), rep(1:M, length.out = n))
+    folds <- lapply(folds, sort)
+    for (f in folds) {
+      train_data <- data[-f, ]
+      valid_data <- data[f, ]
+      ph <- fit.phis(train_data = train_data, valid_data = valid_data)
+      phis[f,] <- ph
+      colnames(phis) <- colnames(ph)
     }
-  } else{
-    stop()
   }
+
 
   estimates <- apply(phis, 2, mean)
   rate <- (estimates[["a1"]] - estimates[["a0"]]) / estimates[["d"]]
@@ -329,7 +328,10 @@ RATE.surv <- function(response, post.treatment, treatment, censoring,
   estimates <- c(estimates, rate = rate)
   iids <- cbind(iids, rate = rate.iid)
 
-  return(lava::estimate(NULL, coef = estimates, iid = iids))
+  out <- lava::estimate(NULL, coef = estimates, iid = iids)
+  attr(out, "folds") <- folds
+
+  return(out)
 }
 
 cumhaz <- function(object, newdata, times=NULL, ...) {
