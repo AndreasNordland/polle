@@ -1,4 +1,5 @@
 fit_functions <- function(policy_data,
+                          type = type,
                           policy = NULL, policy_learn = NULL,
                           g_models = NULL, g_functions = NULL, g_full_history,
                           q_models = NULL, q_functions = NULL, q_full_history){
@@ -15,7 +16,8 @@ fit_functions <- function(policy_data,
 
   # fitting the g-functions (if g_models is not NULL):
   if (is.null(g_functions)){
-    if (!is.null(g_models)){
+    # g-models are not fitted if type is "or".
+    if (!is.null(g_models) & (type %in% c("dr", "ipw"))){
       g_functions <- fit_g_functions(policy_data, g_models = g_models, full_history = g_full_history)
     }
   }
@@ -39,7 +41,8 @@ fit_functions <- function(policy_data,
     if(!is.null(getElement(policy_object, "q_functions"))){
       q_functions <- getElement(policy_object, "q_functions")
     } else{
-      if (!is.null(q_models)){
+      # q-models are not fitted if type is "ipw".
+      if (!is.null(q_models) & (type %in% c("dr", "or"))){
         q_functions <- fit_Q_functions(policy_data,
                                        policy_actions = policy_actions,
                                        q_models = q_models, full_history = q_full_history)

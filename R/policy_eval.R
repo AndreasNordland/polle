@@ -229,8 +229,23 @@ policy_eval_type <- function(type,
                              g_models, g_functions, g_full_history,
                              q_models, q_functions, q_full_history){
 
-  # fitting the g-functions, the Q-functions and the policy (functions):
+  type <- tolower(type)
+  if (length(type) != 1)
+    stop("type must be a character string.")
+
+  if (type %in% c("dr", "aipw")){
+    type <- "dr"
+  } else if (type %in% c("ipw")){
+    type <- "ipw"
+  } else if (type %in% c("or", "q")) {
+    type <- "or"
+  } else{
+    stop("type must be either 'dr', 'ipw' or  'or'.")
+  }
+
+  # fitting the g-functions, the q-functions and the policy (functions):
   fits <- fit_functions(policy_data = train_policy_data,
+                        type = type,
                         policy = policy, policy_learn = policy_learn,
                         g_models = g_models, g_functions = g_functions, g_full_history = g_full_history,
                         q_models = q_models, q_functions = q_functions, q_full_history = q_full_history)
@@ -257,6 +272,7 @@ policy_eval_type <- function(type,
     id = get_id(valid_policy_data),
     policy_object = getElement(fits, "policy_object")
   )
+  out <- Filter(Negate(is.null), out)
 
   class(out) <- c("policy_eval")
   return(out)

@@ -5,18 +5,15 @@ value <- function(type, policy_data, policy, g_functions, q_functions){
     g_functions = g_functions,
     q_functions = q_functions
   )
-  type <- tolower(type)
-  if (length(type) != 1)
-    stop("type must be a character string.")
 
-  if (type %in% c("dr", "aipw")){
+  if (type == "dr"){
     out <- do.call(what = "dr_value", args)
-  } else if (type %in% c("ipw")){
+  } else if (type == "ipw"){
     out <- do.call(what = "ipw_value", args)
-  } else if (type %in% c("or", "q")) {
+  } else if (type == "or") {
     out <- do.call(what = "or_value", args)
   } else{
-    stop("type must be either 'dr', 'ipw' or  'or'.")
+    stop()
   }
 
   return(out)
