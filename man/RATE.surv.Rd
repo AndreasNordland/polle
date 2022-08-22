@@ -20,7 +20,6 @@ RATE.surv(
   call.censoring,
   args.censoring = list(),
   preprocess = NULL,
-  efficient = TRUE,
   ...
 )
 }
@@ -53,9 +52,9 @@ RATE.surv(
 
 \item{preprocess}{(optional) Data pre-processing function.}
 
-\item{efficient}{If TRUE, the estimate will be efficient.}
-
 \item{...}{Additional arguments to lower level data pre-processing functions.}
+
+\item{efficient}{If TRUE, the estimate will be efficient.}
 }
 \value{
 estimate object

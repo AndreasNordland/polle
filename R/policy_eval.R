@@ -184,6 +184,7 @@ policy_eval_cross_fitted <- function(call,
 
   # setting up the folds
   folds <- split(sample(1:n, n), rep(1:M, length.out = n))
+  folds <- lapply(folds, sort)
   names(folds) <- paste("fold_", 1:M, sep = "")
 
   future_args <- append(future_args,
