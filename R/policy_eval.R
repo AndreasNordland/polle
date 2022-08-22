@@ -80,7 +80,6 @@ policy_eval <- function(policy_data,
                         M=1, future_args = list(future.seed = TRUE)
                         ) {
   args <- list(
-    policy_data = policy_data,
     policy = policy,
     policy_learn = policy_learn,
     g_functions = g_functions,
@@ -88,16 +87,18 @@ policy_eval <- function(policy_data,
     g_full_history = g_full_history,
     q_functions = q_functions,
     q_models = q_models,
-    q_full_history = q_full_history
+    q_full_history = q_full_history,
+    type = type
   )
 
   if (M > 1){
-    val <- policy_eval_cross_fitted(type = type,
-                                    args = args,
+    val <- policy_eval_cross_fitted(args = args,
                                     M = M,
                                     future_args = future_args)
   } else {
-    val <- do.call(what = call, args = args)
+    args[["train_policy_data"]] <- policy_data
+    args[["valid_policy_data"]] <- policy_data
+    val <- do.call(what = policy_eval_type, args = args)
   }
 
   val$name <- attr(policy, "name")
