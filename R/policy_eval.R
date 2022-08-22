@@ -103,7 +103,6 @@ policy_eval <- function(policy_data,
   }
 
   val$name <- attr(policy, "name")
-
   return(val)
 }
 
@@ -183,6 +182,7 @@ policy_eval_cross <- function(args,
   id <- id[order(id)]
 
   out <- list(value_estimate = value_estimate,
+              type = getElement(args, "type"),
               iid = iid,
               value_estimate_ipw = value_estimate_ipw,
               value_estimate_or = value_estimate_or,
