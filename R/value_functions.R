@@ -1,3 +1,24 @@
+value <- function(type, policy_data, policy, g_functions, q_functions){
+  args <- list(
+    policy_data = policy_data,
+    policy = policy,
+    g_functions = g_functions,
+    q_functions = q_functions
+  )
+
+  if (type == "dr"){
+    out <- do.call(what = "dr_value", args)
+  } else if (type == "ipw"){
+    out <- do.call(what = "ipw_value", args)
+  } else if (type == "or") {
+    out <- do.call(what = "or_value", args)
+  } else{
+    stop("type must be either 'dr', 'ipw' or  'or'.")
+  }
+
+  return(out)
+}
+
 dr_value <- function(policy_data,
                      policy,
                      g_functions,
