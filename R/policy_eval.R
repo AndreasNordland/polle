@@ -248,6 +248,7 @@ policy_eval_type <- function(type,
 
   out <- list(
     value_estimate = getElement(value_object, "value_estimate"),
+    type = type,
     iid = getElement(value_object, "iid"),
     value_estimate_ipw = getElement(value_object, "value_estimate_ipw"),
     value_estimate_or = getElement(value_object, "value_estimate_or"),
