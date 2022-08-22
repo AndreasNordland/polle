@@ -233,7 +233,7 @@ policy_eval_cross_fitted <- function(call,
   )
   out[sapply(out, is.null)] <- NULL
 
-  class(out) <- c("policy_eval_cross_fitted", "policy_eval")
+  class(out) <- c("policy_eval")
   return(out)
 }
 
@@ -270,7 +270,7 @@ policy_eval_dr <- function(policy_data,
     policy_object = getElement(function_fits, "policy_object")
   )
 
-  class(out) <- c("policy_eval_dr", "policy_eval")
+  class(out) <- c("policy_eval")
   return(out)
 }
 
@@ -302,7 +302,7 @@ policy_eval_or <- function(policy_data,
     id = get_id(policy_data),
     policy_object = getElement(function_fits, "policy_object")
   )
-  class(out) <- c("policy_eval_or", "policy_eval")
+  class(out) <- c("policy_eval")
   return(out)
 }
 
@@ -334,6 +334,6 @@ policy_eval_ipw <- function(policy_data,
     id = get_id(policy_data),
     policy_object = getElement(function_fits, "policy_object")
   )
-  class(out) <- c("policy_eval_ipw", "policy_eval")
+  class(out) <- c("policy_eval")
   return(out)
 }
