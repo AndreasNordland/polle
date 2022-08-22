@@ -236,103 +236,41 @@ policy_eval_cross_fitted <- function(call,
   return(out)
 }
 
-policy_eval_dr <- function(policy_data,
-                           policy = NULL, policy_learn = NULL,
-                           g_models = NULL, g_functions = NULL, g_full_history,
-                           q_models = NULL, q_functions = NULL, q_full_history,
-                           ...){
+policy_eval_type <- function(type,
+                             train_policy_data,
+                             valid_policy_data,
+                             policy, policy_learn,
+                             g_models, g_functions, g_full_history,
+                             q_models, q_functions, q_full_history){
 
-  # fitting the g-functions, Q-functions and policy (functions):
-  function_fits <- fit_functions(policy_data = policy_data,
-                                 policy = policy, policy_learn = policy_learn,
-                                 g_models = g_models, g_functions = g_functions, g_full_history = g_full_history,
-                                 q_models = q_models, q_functions = q_functions, q_full_history = q_full_history)
+  # fitting the g-functions, the Q-functions and the policy (functions):
+  fits <- fit_functions(policy_data = train_policy_data,
+                        policy = policy, policy_learn = policy_learn,
+                        g_models = g_models, g_functions = g_functions, g_full_history = g_full_history,
+                        q_models = q_models, q_functions = q_functions, q_full_history = q_full_history)
 
   # getting the fitted policy:
   if (is.null(policy))
-    policy <- get_policy(getElement(function_fits, "policy_object"))
+    policy <- get_policy(getElement(fits, "policy_object"))
 
   # calculating the doubly robust score and value estimate:
-  value_object <- dr_value(policy_data = policy_data,
-                           policy = policy,
-                           g_functions = getElement(function_fits, "g_functions"),
-                           q_functions = getElement(function_fits, "q_functions"))
+  value_object <- value(type = type,
+                        policy_data = valid_policy_data,
+                        policy = policy,
+                        g_functions = getElement(fits, "g_functions"),
+                        q_functions = getElement(fits, "q_functions"))
 
   out <- list(
     value_estimate = getElement(value_object, "value_estimate"),
     iid = getElement(value_object, "iid"),
     value_estimate_ipw = getElement(value_object, "value_estimate_ipw"),
     value_estimate_or = getElement(value_object, "value_estimate_or"),
-    g_functions = getElement(function_fits, "g_functions"),
-    q_functions = getElement(function_fits, "q_functions"),
-    id = get_id(policy_data),
-    policy_object = getElement(function_fits, "policy_object")
+    g_functions = getElement(fits, "g_functions"),
+    q_functions = getElement(fits, "q_functions"),
+    id = get_id(valid_policy_data),
+    policy_object = getElement(fits, "policy_object")
   )
 
-  class(out) <- c("policy_eval_dr", "policy_eval")
-  return(out)
-}
-
-policy_eval_or <- function(policy_data,
-                           policy = NULL, policy_learn = NULL,
-                           g_models = NULL, g_functions = NULL, g_full_history,
-                           q_models = NULL, q_functions = NULL, q_full_history,
-                           ...){
-
-  # fitting the Q-functions and policy (functions):
-  function_fits <- fit_functions(policy_data = policy_data,
-                                 policy = policy, policy_learn = policy_learn,
-                                 q_models = q_models, q_functions = q_functions, q_full_history = q_full_history,
-                                 g_models = g_models, g_functions = g_functions, g_full_history = g_full_history)
-
-  # getting the fitted policy:
-  if (is.null(policy))
-    policy <- get_policy(getElement(function_fits, "policy_object"))
-
-  # calculating the doubly robust score and value estimate:
-  value_object <- or_value(policy_data = policy_data,
-                           policy = policy,
-                           q_functions = getElement(function_fits, "q_functions"))
-
-  out <- list(
-    value_estimate = getElement(value_object, "value_estimate"),
-    iid = getElement(value_object, "iid"),
-    q_functions = getElement(function_fits, "q_functions"),
-    id = get_id(policy_data),
-    policy_object = getElement(function_fits, "policy_object")
-  )
-  class(out) <- c("policy_eval_or", "policy_eval")
-  return(out)
-}
-
-policy_eval_ipw <- function(policy_data,
-                            policy = NULL, policy_learn = NULL,
-                            g_models = NULL, g_functions = NULL, g_full_history,
-                            q_models = NULL, q_functions = NULL, q_full_history,
-                            ...){
-
-  # fitting the g-functions and policy (functions):
-  function_fits <- fit_functions(policy_data = policy_data,
-                                 policy = policy, policy_learn = policy_learn,
-                                 q_models = q_models, q_functions = q_functions, q_full_history = q_full_history,
-                                 g_models = g_models, g_functions = g_functions, g_full_history = g_full_history)
-
-  # getting the fitted policy:
-  if (is.null(policy))
-    policy <- get_policy(getElement(function_fits, "policy_object"))
-
-  # calculating the doubly robust score and value estimate:
-  value_object <- ipw_value(policy_data = policy_data,
-                           policy = policy,
-                           g_functions = function_fits$g_functions)
-
-  out <- list(
-    value_estimate = getElement(value_object, "value_estimate"),
-    iid = getElement(value_object, "iid"),
-    g_functions = getElement(function_fits, "g_functions"),
-    id = get_id(policy_data),
-    policy_object = getElement(function_fits, "policy_object")
-  )
-  class(out) <- c("policy_eval_ipw", "policy_eval")
+  class(out) <- c("policy_eval")
   return(out)
 }
