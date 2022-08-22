@@ -106,30 +106,59 @@ policy_eval <- function(policy_data,
   return(val)
 }
 
-policy_eval_fold <- function(fold,
-                             policy_data,
-                             args
-){
+policy_eval_type <- function(type,
+                             train_policy_data,
+                             valid_policy_data,
+                             policy, policy_learn,
+                             g_models, g_functions, g_full_history,
+                             q_models, q_functions, q_full_history){
 
-  K <- get_K(policy_data)
-  id <- get_id(policy_data)
+  type <- tolower(type)
+  if (length(type) != 1)
+    stop("type must be a character string.")
 
-  train_id <- id[-fold]
-  validation_id <- id[fold]
+  if (type %in% c("dr", "aipw")){
+    type <- "dr"
+  } else if (type %in% c("ipw")){
+    type <- "ipw"
+  } else if (type %in% c("or", "q")) {
+    type <- "or"
+  } else{
+    stop("type must be either 'dr', 'ipw' or  'or'.")
+  }
 
-  # training data:
-  train_policy_data <- subset(policy_data, train_id)
-  if (get_K(train_policy_data) != K) stop("The number of stages varies accross the training folds.")
+  # fitting the g-functions, the q-functions and the policy (functions):
+  fits <- fit_functions(policy_data = train_policy_data,
+                        type = type,
+                        policy = policy, policy_learn = policy_learn,
+                        g_models = g_models, g_functions = g_functions, g_full_history = g_full_history,
+                        q_models = q_models, q_functions = q_functions, q_full_history = q_full_history)
 
-  # validation data:
-  valid_policy_data <- subset(policy_data, validation_id)
-  if (get_K(valid_policy_data) != K) stop("The number of stages varies accross the validation folds.")
+  # getting the fitted policy:
+  if (is.null(policy))
+    policy <- get_policy(getElement(fits, "policy_object"))
 
-  eval_args <- append(args, list(valid_policy_data = valid_policy_data,
-                                 train_policy_data = train_policy_data))
+  # calculating the doubly robust score and value estimate:
+  value_object <- value(type = type,
+                        policy_data = valid_policy_data,
+                        policy = policy,
+                        g_functions = getElement(fits, "g_functions"),
+                        q_functions = getElement(fits, "q_functions"))
 
-  out <- do.call(what = "policy_eval_type", args = eval_args)
+  out <- list(
+    value_estimate = getElement(value_object, "value_estimate"),
+    type = type,
+    iid = getElement(value_object, "iid"),
+    value_estimate_ipw = getElement(value_object, "value_estimate_ipw"),
+    value_estimate_or = getElement(value_object, "value_estimate_or"),
+    g_functions = getElement(fits, "g_functions"),
+    q_functions = getElement(fits, "q_functions"),
+    id = get_id(valid_policy_data),
+    policy_object = getElement(fits, "policy_object")
+  )
+  out <- Filter(Negate(is.null), out)
 
+  class(out) <- c("policy_eval")
   return(out)
 }
 
@@ -196,58 +225,30 @@ policy_eval_cross <- function(args,
   return(out)
 }
 
-policy_eval_type <- function(type,
-                             train_policy_data,
-                             valid_policy_data,
-                             policy, policy_learn,
-                             g_models, g_functions, g_full_history,
-                             q_models, q_functions, q_full_history){
+policy_eval_fold <- function(fold,
+                             policy_data,
+                             args
+){
 
-  type <- tolower(type)
-  if (length(type) != 1)
-    stop("type must be a character string.")
+  K <- get_K(policy_data)
+  id <- get_id(policy_data)
 
-  if (type %in% c("dr", "aipw")){
-    type <- "dr"
-  } else if (type %in% c("ipw")){
-    type <- "ipw"
-  } else if (type %in% c("or", "q")) {
-    type <- "or"
-  } else{
-    stop("type must be either 'dr', 'ipw' or  'or'.")
-  }
+  train_id <- id[-fold]
+  validation_id <- id[fold]
 
-  # fitting the g-functions, the q-functions and the policy (functions):
-  fits <- fit_functions(policy_data = train_policy_data,
-                        type = type,
-                        policy = policy, policy_learn = policy_learn,
-                        g_models = g_models, g_functions = g_functions, g_full_history = g_full_history,
-                        q_models = q_models, q_functions = q_functions, q_full_history = q_full_history)
+  # training data:
+  train_policy_data <- subset(policy_data, train_id)
+  if (get_K(train_policy_data) != K) stop("The number of stages varies accross the training folds.")
 
-  # getting the fitted policy:
-  if (is.null(policy))
-    policy <- get_policy(getElement(fits, "policy_object"))
+  # validation data:
+  valid_policy_data <- subset(policy_data, validation_id)
+  if (get_K(valid_policy_data) != K) stop("The number of stages varies accross the validation folds.")
 
-  # calculating the doubly robust score and value estimate:
-  value_object <- value(type = type,
-                        policy_data = valid_policy_data,
-                        policy = policy,
-                        g_functions = getElement(fits, "g_functions"),
-                        q_functions = getElement(fits, "q_functions"))
+  eval_args <- append(args, list(valid_policy_data = valid_policy_data,
+                                 train_policy_data = train_policy_data))
 
-  out <- list(
-    value_estimate = getElement(value_object, "value_estimate"),
-    type = type,
-    iid = getElement(value_object, "iid"),
-    value_estimate_ipw = getElement(value_object, "value_estimate_ipw"),
-    value_estimate_or = getElement(value_object, "value_estimate_or"),
-    g_functions = getElement(fits, "g_functions"),
-    q_functions = getElement(fits, "q_functions"),
-    id = get_id(valid_policy_data),
-    policy_object = getElement(fits, "policy_object")
-  )
-  out <- Filter(Negate(is.null), out)
+  out <- do.call(what = "policy_eval_type", args = eval_args)
 
-  class(out) <- c("policy_eval")
   return(out)
 }
+
