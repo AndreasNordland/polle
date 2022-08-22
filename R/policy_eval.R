@@ -34,7 +34,7 @@ estimate.policy_eval <- function(x, ..., labels=x$name) {
       labels <- paste0("value", seq(p))
     }
   }
-  return(lava::estimate(NULL, coef=coef(x), iid=iid(x), labels=labels, ...))
+  return(lava::estimate(NULL, coef=coef(x), IC=iid(x), labels=labels, ...))
 }
 
 ##' @export

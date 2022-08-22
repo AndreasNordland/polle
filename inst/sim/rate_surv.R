@@ -104,12 +104,12 @@ onerun_cox <- function(n.grp){
 # set.seed(1)
 # onerun_cox(1e3)
 
-# future::plan("multicore")
-# progressr::handlers(global = TRUE)
-# progressr::handlers("progress")
-# sim.res.cox <- sim(onerun_cox, R = 1e3, args = list(n.grp = 1e3), seed = 1)
-# future::plan("sequential")
-# summary(sim.res.cox, estimate = 1:4, se = 5:8, true = c(Psi0_A1, Psi0_A0, Psi0_D1, Psi0))
+future::plan("multisession")
+progressr::handlers(global = TRUE)
+progressr::handlers("progress")
+sim.res.cox <- sim(onerun_cox, R = 500, args = list(n.grp = 1e3), seed = 1)
+future::plan("sequential")
+summary(sim.res.cox, estimate = 1:4, se = 5:8, true = c(Psi0_A1, Psi0_A0, Psi0_D1, Psi0))
 
 ## Super Learner & Ranger -----------------------------------------
 
@@ -187,12 +187,12 @@ onerun_rfsrc <- function(n.grp){
 # summary(sim.res.rfsrc, estimate = 1:4, se = 5:8, true = c(Psi0_A1, Psi0_A0, Psi0_D1, Psi0))
 
 # ranger
-# future::plan(list(tweak("multisession", workers = 2)))
-# future::plan("sequential")
-# progressr::handlers(global = TRUE)
-# progressr::handlers("progress")
-# sim.res.ranger <- sim(onerun_ranger, R = 500, args = list(n.grp = 1e3), seed = 2)
-# summary(sim.res.ranger, estimate = 1:4, se = 5:8, true = c(Psi0_A1, Psi0_A0, Psi0_D1, Psi0))
+future::plan(list(tweak("multisession", workers = 2)))
+future::plan("sequential")
+progressr::handlers(global = TRUE)
+progressr::handlers("progress")
+sim.res.ranger <- sim(onerun_ranger, R = 500, args = list(n.grp = 1e3), seed = 2)
+summary(sim.res.ranger, estimate = 1:4, se = 5:8, true = c(Psi0_A1, Psi0_A0, Psi0_D1, Psi0))
 
 ### Doubly Robist ----
 
@@ -262,10 +262,12 @@ future::plan("sequential")
 progressr::handlers(global = TRUE)
 progressr::handlers("progress")
 sim.res.ranger.response <- sim(onerun_ranger_response, R = 500, args = list(n.grp = 1e3), seed = 2)
+summary(sim.res.ranger.response, estimate = 1:4, se = 5:8, true = c(Psi0_A1, Psi0_A0, Psi0_D1, Psi0))
 progressr::handlers(global = TRUE)
 progressr::handlers("progress")
 sim.res.ranger.censoring <- sim(onerun_ranger_censoring, R = 500, args = list(n.grp = 1e3), seed = 2)
+summary(sim.res.ranger.censoring, estimate = 1:4, se = 5:8, true = c(Psi0_A1, Psi0_A0, Psi0_D1, Psi0))
 
 # save --------------------------------------------------------------------
 
-save.image(file = "rate_surv_dr.RData")
+save.image(file = "rate_surv.RData")

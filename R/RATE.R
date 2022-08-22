@@ -130,7 +130,7 @@ RATE <- function(response, post.treatment, treatment,
   estimates <- c(estimates, rate = rate)
   iids <- cbind(iids, rate = rate.iid)
 
-  return(lava::estimate(NULL, coef = estimates, iid = iids))
+  return(lava::estimate(NULL, coef = estimates, IC = iids))
 }
 
 ##' Estimation of the Average Treatment Effect among Responders for Survival Outcomes
@@ -328,7 +328,7 @@ RATE.surv <- function(response, post.treatment, treatment, censoring,
   estimates <- c(estimates, rate = rate)
   iids <- cbind(iids, rate = rate.iid)
 
-  out <- lava::estimate(NULL, coef = estimates, iid = iids)
+  out <- lava::estimate(NULL, coef = estimates, IC = iids)
   attr(out, "folds") <- folds
 
   return(out)
