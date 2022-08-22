@@ -91,23 +91,8 @@ policy_eval <- function(policy_data,
     q_full_history = q_full_history
   )
 
-  call <- NULL
-  if (type %in% c("dr")){
-    call <- "policy_eval_dr"
-  }
-  if (type %in% c("ipw")){
-    call <- "policy_eval_ipw"
-  }
-  if (type %in% c("or", "q")){
-    call <- "policy_eval_or"
-  }
-  if (is.null(call)){
-    mes <- "type must be either 'dr', 'ipw' or 'or'"
-    stop(mes)
-  }
-
   if (M > 1){
-    val <- policy_eval_cross_fitted(call = call,
+    val <- policy_eval_cross_fitted(type = type,
                                     args = args,
                                     M = M,
                                     future_args = future_args)
