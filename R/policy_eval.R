@@ -111,7 +111,6 @@ policy_eval_fold <- function(fold,
                              policy_data,
                              args
 ){
-  policy_data <- getElement(args, "policy_data")
 
   K <- get_K(policy_data)
   id <- get_id(policy_data)
@@ -124,39 +123,15 @@ policy_eval_fold <- function(fold,
   if (get_K(train_policy_data) != K) stop("The number of stages varies accross the training folds.")
 
   # validation data:
-  validation_policy_data <- subset(policy_data, validation_id)
-  if (get_K(validation_policy_data) != K) stop("The number of stages varies accross the validation folds.")
+  valid_policy_data <- subset(policy_data, validation_id)
+  if (get_K(valid_policy_data) != K) stop("The number of stages varies accross the validation folds.")
 
-  # training the policy evaluation models:
-  train_args <- list(policy_data = train_policy_data,
-                     policy = policy,
-                     policy_learn = policy_learn,
-                     g_models = g_models,
-                     g_functions = g_functions,
-                     g_full_history = g_full_history,
-                     q_models = q_models,
-                     q_functions = q_functions,
-                     q_full_history = q_full_history)
-  train_policy_eval <- do.call(what = call, args = train_args)
+  eval_args <- append(args, list(valid_policy_data = valid_policy_data,
+                                 train_policy_data = train_policy_data))
 
-  # getting the policy:
-  if (is.null(policy)){
-    policy <- get_policy(getElement(train_policy_eval, "policy_object"))
-  }
+  out <- do.call(what = "policy_eval_type", args = eval_args)
 
-  # validating the policy evaluation models:
-  validation_args <- list(policy_data = validation_policy_data,
-                          policy = policy,
-                          g_functions = getElement(train_policy_eval, "g_functions"),
-                          q_functions = getElement(train_policy_eval, "q_functions"))
-  validation_policy_eval <- do.call(what = call, args = validation_args)
-
-  # saving the fitted policy objects (if available):
-  if (!is.null(getElement(train_policy_eval, "policy_object"))){
-    validation_policy_eval$policy_object <- getElement(train_policy_eval, "policy_object")
-  }
-
-  return(validation_policy_eval)
+  return(out)
 }
 
 policy_eval_cross <- function(args,
@@ -171,33 +146,33 @@ policy_eval_cross <- function(args,
   folds <- lapply(folds, sort)
   names(folds) <- paste("fold_", 1:M, sep = "")
 
-  future_args <- append(future_args,
-                        list(X = folds,
-                             FUN = policy_eval_fold))
-  future_args <- append(future_args, list(call = call))
-  future_args <- append(future_args, args)
+  cross_args <- append(list(X = folds,
+                             FUN = policy_eval_fold,
+                             policy_data = policy_data,
+                             args = args),
+                        future_args)
 
-  # cross fitting the evaluation of each fold:
-  cross_fits <- do.call(what = future.apply::future_lapply, future_args)
+  # cross fitting the policy evaluation using the folds:
+  cross_fits <- do.call(what = future.apply::future_lapply, cross_args)
 
-  # collecting IDs:
+  # collecting ids:
   id <- unlist(lapply(cross_fits, function(x) getElement(x, "id")), use.names = FALSE)
 
-  # collecting the value estimate:
+  # collecting the value estimates:
   n <- unlist(lapply(cross_fits, function(x) length(getElement(x, "id"))))
   value_estimate <- unlist(lapply(cross_fits, function(x) getElement(x, "value_estimate")))
   value_estimate <- sum((n / sum(n)) * value_estimate)
 
-  # collecting the IID decomposition:
+  # collecting the iid decompositions:
   iid <- unlist(lapply(cross_fits, function(x) getElement(x, "iid")), use.names = FALSE)
 
-  # collecting the IPW value estimate (only if type = "dr")
+  # collecting the IPW value estimates (only if type == "dr")
   value_estimate_ipw <- unlist(lapply(cross_fits, function(x) getElement(x, "value_estimate_ipw")))
   if (!is.null(value_estimate_ipw)){
     value_estimate_ipw <- sum((n / sum(n)) * value_estimate_ipw)
   }
 
-  # collecting the OR value estimate (only if type = "dr")
+  # collecting the OR value estimates (only if type = "dr")
   value_estimate_or <- unlist(lapply(cross_fits, function(x) getElement(x, "value_estimate_or")))
   if (!is.null(value_estimate_or)){
     value_estimate_or <- sum((n / sum(n)) * value_estimate_or)
@@ -215,9 +190,9 @@ policy_eval_cross <- function(args,
               cross_fits = cross_fits,
               folds = folds
   )
-  out[sapply(out, is.null)] <- NULL
+  out <- Filter(Negate(is.null), out)
 
-  class(out) <- c("policy_eval_cross", "policy_eval")
+  class(out) <- c("policy_eval")
   return(out)
 }
 
