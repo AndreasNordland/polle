@@ -92,7 +92,8 @@ policy_eval <- function(policy_data,
   )
 
   if (M > 1){
-    val <- policy_eval_cross_fitted(args = args,
+    val <- policy_eval_cross(args = args,
+                                    policy_data = policy_data,
                                     M = M,
                                     future_args = future_args)
   } else {
@@ -107,12 +108,11 @@ policy_eval <- function(policy_data,
 }
 
 policy_eval_fold <- function(fold,
-                             call,
                              policy_data,
-                             policy, policy_learn,
-                             g_models, g_functions, g_full_history,
-                             q_models, q_functions, q_full_history
+                             args
 ){
+  policy_data <- getElement(args, "policy_data")
+
   K <- get_K(policy_data)
   id <- get_id(policy_data)
 
@@ -159,17 +159,16 @@ policy_eval_fold <- function(fold,
   return(validation_policy_eval)
 }
 
-policy_eval_cross_fitted <- function(call,
-                                     args,
-                                     M,
-                                     future_args){
-
-  policy_data <- getElement(args, "policy_data")
+policy_eval_cross <- function(args,
+                              policy_data,
+                              M,
+                              future_args){
   n <- get_n(policy_data)
   id <- get_id(policy_data)
 
   # setting up the folds
   folds <- split(sample(1:n, n), rep(1:M, length.out = n))
+  folds <- lapply(folds, sort)
   names(folds) <- paste("fold_", 1:M, sep = "")
 
   future_args <- append(future_args,
@@ -218,7 +217,7 @@ policy_eval_cross_fitted <- function(call,
   )
   out[sapply(out, is.null)] <- NULL
 
-  class(out) <- c("policy_eval_cross_fitted", "policy_eval")
+  class(out) <- c("policy_eval_cross", "policy_eval")
   return(out)
 }
 
