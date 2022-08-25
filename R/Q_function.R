@@ -123,14 +123,14 @@ q_step_cf <- function(folds, policy_data, k, full_history, Q, q_models, future_a
                                             train_q_step <- q_step(train_policy_data, k = k, full_history = full_history, Q = train_Q, q_models = q_models)
                                             train_q_function <- train_q_step$q_function
 
-                                            validation_id <- id[f]
-                                            validation_policy_data <- subset(policy_data, validation_id)
-                                            validation_history <- get_history(validation_policy_data, stage = k, full_history = full_history)
-                                            validation_values <- evaluate(train_q_function, validation_history)
+                                            valid_id <- id[f]
+                                            valid_policy_data <- subset(policy_data, valid_id)
+                                            valid_history <- get_history(valid_policy_data, stage = k, full_history = full_history)
+                                            valid_values <- evaluate(train_q_function, valid_history)
 
                                             out <- list(
                                               train_q_function = train_q_function,
-                                              validation_values = validation_values
+                                              valid_values = valid_values
                                             )
                                             return(out)
                                           }))
@@ -138,7 +138,7 @@ q_step_cf <- function(folds, policy_data, k, full_history, Q, q_models, future_a
   q_step_cf <- simplify2array(q_step_cf)
 
   q_functions_cf <- q_step_cf["train_q_function", ]
-  q_values <- q_step_cf["validation_values", ]
+  q_values <- q_step_cf["valid_values", ]
 
   q_values <- rbindlist(q_values)
   setkeyv(q_values, c("id", "stage"))

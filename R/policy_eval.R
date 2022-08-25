@@ -219,6 +219,7 @@ policy_eval_cross <- function(args,
               cross_fits = cross_fits,
               folds = folds
   )
+
   out <- Filter(Negate(is.null), out)
 
   class(out) <- c("policy_eval")

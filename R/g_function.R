@@ -108,13 +108,13 @@ fit_g_functions_cf <- function(folds, policy_data, g_models, full_history, futur
                                             if (train_policy_data$dim$K != K) stop("The number of stages K varies across the training policy data folds.")
                                             train_g_functions <- fit_g_functions(policy_data = train_policy_data, g_models = g_models, full_history = full_history)
 
-                                            validation_id <- id[f]
-                                            validation_policy_data <- subset(policy_data, validation_id)
-                                            validation_g_values <- evaluate(train_g_functions, validation_policy_data)
+                                            valid_id <- id[f]
+                                            valid_policy_data <- subset(policy_data, valid_id)
+                                            valid_g_values <- evaluate(train_g_functions, valid_policy_data)
 
                                             list(
                                               train_g_functions = train_g_functions,
-                                              validation_g_values = validation_g_values
+                                              valid_g_values = valid_g_values
                                             )
                                           }))
 
@@ -122,7 +122,7 @@ fit_g_functions_cf <- function(folds, policy_data, g_models, full_history, futur
   fit_cf <- simplify2array(fit_cf)
 
   g_functions_cf <- fit_cf["train_g_functions", ]
-  g_values <- fit_cf["validation_g_values", ]
+  g_values <- fit_cf["valid_g_values", ]
 
   g_values <- rbindlist(g_values)
   setkeyv(g_values, c("id", "stage"))
