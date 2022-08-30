@@ -2,7 +2,7 @@
 ##' Policy Learning
 ##'
 ##' @name polle-package
-##' @importFrom lava iid estimate
+##' @importFrom lava IC estimate
 ##' @import data.table
 ##' @aliases polle-package polle
 ##' @docType package

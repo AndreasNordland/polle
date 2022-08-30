@@ -215,8 +215,6 @@ ptl <- function(policy_data,
     q_functions_cf <- NULL
   }
 
-  # Gamma_d <- apply(action_matrix(d, action_set) * Gamma, 1, sum)
-
   names(ptl_objects) <- paste("stage_", 1:K, sep = "")
 
 
@@ -224,8 +222,6 @@ ptl <- function(policy_data,
     ptl_objects = ptl_objects,
     policy_full_history = policy_full_history,
     policy_vars = policy_vars,
-    # value_estimate = mean(Gamma_d),
-    # iid = Gamma_d - mean(Gamma_d),
     g_functions = g_functions,
     g_functions_cf = g_functions_cf,
     q_functions = q_functions,

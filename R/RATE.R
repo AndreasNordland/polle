@@ -79,11 +79,6 @@ RATE <- function(response, post.treatment, treatment,
 
     phis <- list(a1 = phi.a, a0 = phi.0, d = phi.d)
 
-    # iids <- lapply(phis, function(x) x - mean(x))
-    # ests <- lapply(phis, mean)
-    # est <- with(ests, (a1 - a0) / d)
-    # iid <- 1 / ests$d * (with(iids, a1 - a0) - est * iids$d)
-
     phis <- do.call(cbind, phis)
 
     return(phis)
@@ -124,13 +119,13 @@ RATE <- function(response, post.treatment, treatment,
   estimates <- apply(phis, 2, mean)
   rate <- (estimates[["a1"]] - estimates[["a0"]]) / estimates[["d"]]
 
-  iids <- apply(phis, 2, function(x) x - mean(x))
-  rate.iid <- 1 / estimates[["d"]] * (iids[,"a1"] - iids[,"a0"] - rate * iids[,"d"])
+  IC <- apply(phis, 2, function(x) x - mean(x))
+  rate.IC <- 1 / estimates[["d"]] * (IC[,"a1"] - IC[,"a0"] - rate * IC[,"d"])
 
   estimates <- c(estimates, rate = rate)
-  iids <- cbind(iids, rate = rate.iid)
+  IC <- cbind(IC, rate = rate.IC)
 
-  return(lava::estimate(NULL, coef = estimates, IC = iids))
+  return(lava::estimate(NULL, coef = estimates, IC = IC))
 }
 
 ##' Estimation of the Average Treatment Effect among Responders for Survival Outcomes
@@ -322,13 +317,13 @@ RATE.surv <- function(response, post.treatment, treatment, censoring,
   estimates <- apply(phis, 2, mean)
   rate <- (estimates[["a1"]] - estimates[["a0"]]) / estimates[["d"]]
 
-  iids <- apply(phis, 2, function(x) x - mean(x))
-  rate.iid <- 1 / estimates[["d"]] * (iids[,"a1"] - iids[,"a0"] - rate * iids[,"d"])
+  IC <- apply(phis, 2, function(x) x - mean(x))
+  rate.IC <- 1 / estimates[["d"]] * (IC[,"a1"] - IC[,"a0"] - rate * IC[,"d"])
 
   estimates <- c(estimates, rate = rate)
-  iids <- cbind(iids, rate = rate.iid)
+  IC <- cbind(IC, rate = rate.IC)
 
-  out <- lava::estimate(NULL, coef = estimates, IC = iids)
+  out <- lava::estimate(NULL, coef = estimates, IC = IC)
   attr(out, "folds") <- folds
 
   return(out)

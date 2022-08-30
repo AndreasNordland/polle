@@ -4,14 +4,14 @@ coef.policy_eval <- function(object, ...) {
 }
 
 ##' @export
-iid.policy_eval <- function(x, ...) {
-  res <- cbind(getElement(x, "iid"))
+IC.policy_eval <- function(x, ...) {
+  res <- cbind(getElement(x, "IC"))
   return(res)
 }
 
 ##' @export
 vcov.policy_eval <- function(object, ...) {
-  return(crossprod(iid(object)))
+  return(crossprod(IC(object)))
 }
 
 ##' @export
@@ -34,7 +34,7 @@ estimate.policy_eval <- function(x, ..., labels=x$name) {
       labels <- paste0("value", seq(p))
     }
   }
-  return(lava::estimate(NULL, coef=coef(x), IC=iid(x), labels=labels, ...))
+  return(lava::estimate(NULL, coef=coef(x), IC=IC(x), labels=labels, ...))
 }
 
 ##' @export
@@ -148,7 +148,7 @@ policy_eval_type <- function(type,
   out <- list(
     value_estimate = getElement(value_object, "value_estimate"),
     type = type,
-    iid = getElement(value_object, "iid"),
+    IC = getElement(value_object, "IC"),
     value_estimate_ipw = getElement(value_object, "value_estimate_ipw"),
     value_estimate_or = getElement(value_object, "value_estimate_or"),
     g_functions = getElement(fits, "g_functions"),
@@ -191,8 +191,8 @@ policy_eval_cross <- function(args,
   value_estimate <- unlist(lapply(cross_fits, function(x) getElement(x, "value_estimate")))
   value_estimate <- sum((n / sum(n)) * value_estimate)
 
-  # collecting the iid decompositions:
-  iid <- unlist(lapply(cross_fits, function(x) getElement(x, "iid")), use.names = FALSE)
+  # collecting the IC decompositions:
+  IC <- unlist(lapply(cross_fits, function(x) getElement(x, "IC")), use.names = FALSE)
 
   # collecting the IPW value estimates (only if type == "dr")
   value_estimate_ipw <- unlist(lapply(cross_fits, function(x) getElement(x, "value_estimate_ipw")))
@@ -207,12 +207,12 @@ policy_eval_cross <- function(args,
   }
 
   # sorting via the IDs:
-  iid <- iid[order(id)]
+  IC <- IC[order(id)]
   id <- id[order(id)]
 
   out <- list(value_estimate = value_estimate,
               type = getElement(args, "type"),
-              iid = iid,
+              IC = IC,
               value_estimate_ipw = value_estimate_ipw,
               value_estimate_or = value_estimate_or,
               id = id,

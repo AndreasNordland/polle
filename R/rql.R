@@ -83,8 +83,6 @@ rql<- function(policy_data, alpha,
   out <- list(
     q_functions = q_functions,
     g_functions = g_functions,
-    # value_estimate = mean(Zd_or),
-    # iid = NULL, # Zd_or - mean(Zd_or),
     action_set = action_set,
     alpha = alpha,
     K = K

@@ -77,7 +77,7 @@ dr_value <- function(policy_data,
 
   out <- list(
     value_estimate = mean(Zd),
-    iid=Zd-mean(Zd),
+    IC=Zd-mean(Zd),
     value_estimate_ipw = mean(Zd_ipw),
     value_estimate_or = mean(Zd_or),
     id = get_id(policy_data)
@@ -116,7 +116,7 @@ or_value <- function(policy_data,
 
   out <- list(
     value_estimate = mean(Zd_or),
-    iid = Zd_or-mean(Zd_or),
+    IC = Zd_or-mean(Zd_or),
     id = get_id(policy_data)
   )
   return(out)
@@ -160,7 +160,7 @@ ipw_value <- function(policy_data,
 
   out <- list(
     value_estimate = mean(Zd_ipw),
-    iid = Zd_ipw-mean(Zd_ipw),
+    IC = Zd_ipw-mean(Zd_ipw),
     id = get_id(policy_data)
   )
   return(out)
