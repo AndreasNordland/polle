@@ -106,9 +106,9 @@ rqvl <- function(policy_data,
       future_args = future_args
     )
     if (save_cross_fit_models == TRUE){
-      g_functions_cf <- g_cf$g_functions_cf
+      g_functions_cf <- getElement(g_cf, "functions")
     }
-    g_values <- g_cf$g_values
+    g_values <- getElement(g_cf, "values")
     # fitting the non-cross-fitted g-functions
     # for determining future realistic actions:
     if (alpha > 0){

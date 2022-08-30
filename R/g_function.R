@@ -1,4 +1,30 @@
+#' Fit single g-function
+#'
+#' \code{fit_g_function} is used to fit a single g-model
+#' @param history History object created by [get_history()]
+#' @param g_model Propensity model/g-model created by [g_glm()], [g_rf()], [g_sl()] or similar functions.
 #' @export
+#' @examples
+#' library("polle")
+#' ### Simulating two-stage policy data
+#' source(system.file("sim", "two_stage.R", package="polle"))
+#' par0 <- c(gamma = 0.5, beta = 1)
+#' d <- sim_two_stage(2e3, seed=1, par=par0)
+#' pd <- policy_data(d,
+#'                   action = c("A_1", "A_2"),
+#'                   covariates = list(L = c("L_1", "L_2"),
+#'                                     C = c("C_1", "C_2")),
+#'                   utility = c("U_1", "U_2", "U_3"))
+#' pd
+#'
+#' history <- get_history(pd, stage = 1)
+#' head(history$AH)
+#'
+#' g_function <- fit_g_function(
+#'   history = get_history(pd, stage = 1),
+#'   g_model = g_glm()
+#' )
+#' g_function
 fit_g_function <- function(history, g_model){
   action_set <- history$action_set
 
@@ -67,7 +93,37 @@ evaluate.g_function <- function(object, new_history){
   return(g_values)
 }
 
+#' Fit g-functions
+#'
+#' \code{fit_g_functions} is used to fit a list of g-models
+#' @param policy_data Policy data object created by [policy_data()].
+#' @param g_models Propensity models/g-models created by [g_glm()], [g_rf()], [g_sl()] or similar functions.
+#' @param full_history If TRUE, the full history is used to fit each g-model. If FALSE, the single stage/"Markov type" history is used to fit each g-model.
 #' @export
+#' @examples
+#' library("polle")
+#' ### Simulating two-stage policy data
+#' source(system.file("sim", "two_stage.R", package="polle"))
+#' par0 <- c(gamma = 0.5, beta = 1)
+#' d <- sim_two_stage(2e3, seed=1, par=par0)
+#' pd <- policy_data(d,
+#'                   action = c("A_1", "A_2"),
+#'                   covariates = list(L = c("L_1", "L_2"),
+#'                                     C = c("C_1", "C_2")),
+#'                   utility = c("U_1", "U_2", "U_3"))
+#' pd
+#'
+#' # fitting a single g-model across all stages:
+#' g_functions <- fit_g_functions(policy_data = pd,
+#'                                g_models = g_glm(),
+#'                                full_history = FALSE)
+#' g_functions
+#'
+#' # fitting a g-model for each stage:
+#' g_functions <- fit_g_functions(policy_data = pd,
+#'                                g_models = list(g_glm(), g_glm()),
+#'                                full_history = TRUE)
+#' g_functions
 fit_g_functions <- function(policy_data, g_models, full_history){
   K <- get_K(policy_data)
 
@@ -96,8 +152,51 @@ fit_g_functions <- function(policy_data, g_models, full_history){
   return(g_functions)
 }
 
-#' @export
-fit_g_functions_cf <- function(folds, policy_data, g_models, full_history, future_args){
+#' Cross-fit g-functions
+#'
+#' \code{fit_g_functions_cf} is used to cross-fit a list of g-models
+#'
+#' @param folds List of vectors of indices for each validation fold, see examples.
+#' @param policy_data Policy data object created by [policy_data()].
+#' @param g_models Propensity models/g-models created by [g_glm()], [g_rf()], [g_sl()] or similar functions.
+#' @param full_history If TRUE, the full history is used to fit each g-model. If FALSE, the single stage/"Markov type" history is used to fit each g-model.
+#' @param future_args arguments passed to [future.apply::future_lapply].
+#' @examples
+#' #' library("polle")
+#' ### Simulating two-stage policy data
+#' source(system.file("sim", "two_stage.R", package="polle"))
+#' par0 <- c(gamma = 0.5, beta = 1)
+#' d <- sim_two_stage(2e3, seed=1, par=par0)
+#' pd <- policy_data(d,
+#'                   action = c("A_1", "A_2"),
+#'                   covariates = list(L = c("L_1", "L_2"),
+#'                                     C = c("C_1", "C_2")),
+#'                   utility = c("U_1", "U_2", "U_3"))
+#' pd
+#'
+#' # creating 2 folds (indices for each validation fold)
+#' folds <- split(sample(1:get_n(pd), get_n(pd)), rep(1:2, length.out = get_n(pd)))
+#'
+#' # fitting a single g-model across all stages for each fold:
+#' g_functions <- fit_g_functions_cf(folds = folds,
+#'                                   policy_data = pd,
+#'                                   g_models = g_glm(),
+#'                                   full_history = FALSE)
+#' g_functions
+#' # fitting a g-model for each stage for each fold (in parallel):
+#' future::plan("multisession")
+#' g_functions <- fit_g_functions_cf(folds = folds,
+#'                                   policy_data = pd,
+#'                                   g_models = list(g_glm(), g_glm()),
+#'                                   full_history = TRUE)
+#' future::plan("sequential")
+#' g_functions$functions
+#'@export
+fit_g_functions_cf <- function(folds,
+                               policy_data,
+                               g_models,
+                               full_history,
+                               future_args = list(future.seed = TRUE)){
   id <- get_id(policy_data)
   K <- policy_data$dim$K
 
@@ -121,15 +220,15 @@ fit_g_functions_cf <- function(folds, policy_data, g_models, full_history, futur
   fit_cf <- do.call(what = future.apply::future_lapply, future_args)
   fit_cf <- simplify2array(fit_cf)
 
-  g_functions_cf <- fit_cf["train_g_functions", ]
-  g_values <- fit_cf["valid_g_values", ]
+  functions <- fit_cf["train_g_functions", ]
+  values <- fit_cf["valid_g_values", ]
 
-  g_values <- rbindlist(g_values)
-  setkeyv(g_values, c("id", "stage"))
+  values <- rbindlist(values)
+  setkeyv(values, c("id", "stage"))
 
   out <- list(
-    g_functions_cf = g_functions_cf,
-    g_values = g_values
+    functions = functions,
+    values = values
   )
   return(out)
 }

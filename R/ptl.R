@@ -5,7 +5,6 @@ ptl <- function(policy_data,
                 L, save_cross_fit_models, future_args,
                 alpha,
                 depth, split.step, min.node.size, hybrid, search.depth,
-                verbose,
                 ...
                 ){
   if ((is.null(g_models) & is.null(g_functions))) stop("Provide either g-models or g-functions.")
@@ -51,10 +50,6 @@ ptl <- function(policy_data,
     if (is.null(g_functions)){
       # fitting the g-functions:
       g_functions <- fit_g_functions(policy_data, g_models, full_history = g_full_history)
-      if (verbose == TRUE){
-        print("Policy tree: g-functions completed.")
-      }
-
     }
     g_values <- evaluate(g_functions, policy_data)
   } else{
@@ -66,13 +61,11 @@ ptl <- function(policy_data,
       folds = folds,
       future_args = future_args
     )
-    if (verbose == TRUE)
-      print("Policy tree: cross-fitted g-functions completed.")
     if (save_cross_fit_models == TRUE){
-      g_functions_cf <- g_cf$g_functions_cf
+      g_functions_cf <- getElement(g_cf, "functions")
     }
 
-    g_values <- g_cf$g_values
+    g_values <- getElement(g_cf, "values")
     # fitting the non-cross-fitted g-functions
     # for determining future realistic actions:
     if (alpha > 0){
@@ -80,8 +73,6 @@ ptl <- function(policy_data,
         g_functions <- fit_g_functions(policy_data,
                                        g_models = g_models,
                                        full_history = g_full_history)
-        if (verbose == TRUE)
-          print("Policy tree: g-functions completed.")
       }
     } else{
       g_functions <- NULL
@@ -121,10 +112,6 @@ ptl <- function(policy_data,
       q_values_k <- q_step_k$q_values
       idx_k <- q_step_k$idx_k
 
-      if (verbose == TRUE){
-        mes <- paste("Policy tree: Q-function at stage ",k, " completed.", sep = "")
-        print(mes)
-      }
     } else{
       # cross-fitting the Q-function
       q_step_cf_k <- q_step_cf(
@@ -141,10 +128,6 @@ ptl <- function(policy_data,
       }
       q_values_k <- q_step_cf_k$q_values
       idx_k <- q_step_cf_k$idx_k
-      if (verbose == TRUE){
-        mes <- paste("Policy tree: Cross-fitted Q-function at stage ",k, " completed.", sep = "")
-        print(mes)
-      }
     }
 
     # getting the action matrix for stage k:
@@ -172,9 +155,9 @@ ptl <- function(policy_data,
     H <- get_H(policy_history_k, vars = vars)
 
     if (hybrid == FALSE){
-      ptl_k <- policytree::policy_tree(X = H, Gamma = Gamma, depth = depth, split.step = split.step, min.node.size = min.node.size, verbose = verbose)
+      ptl_k <- policytree::policy_tree(X = H, Gamma = Gamma, depth = depth, split.step = split.step, min.node.size = min.node.size)
     } else if (hybrid == TRUE){
-      ptl_k <- policytree::hybrid_policy_tree(X = H, Gamma = Gamma, depth = depth, split.step = split.step, min.node.size = min.node.size, search.depth = search.depth, verbose = verbose)
+      ptl_k <- policytree::hybrid_policy_tree(X = H, Gamma = Gamma, depth = depth, split.step = split.step, min.node.size = min.node.size, search.depth = search.depth)
     }
 
     ptl_objects[[k]] <- ptl_k
@@ -198,10 +181,6 @@ ptl <- function(policy_data,
     D[idx_k, k] <- d
     G[!idx_k,k] <- TRUE
 
-    if (verbose == TRUE){
-      mes <- paste("Policy tree: stage ",k, " completed.", sep = "")
-      print(mes)
-    }
   }
 
   if (length(q_functions) > 0){
