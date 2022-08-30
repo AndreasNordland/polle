@@ -26,15 +26,15 @@ policy_eval(
 
 \item{policy_learn}{Policy learner object created by \code{\link[=policy_learn]{policy_learn()}}.}
 
-\item{g_functions}{Fitted g-model objects.}
+\item{g_functions}{Fitted g-model objects, see \code{\link[=fit_g_functions]{fit_g_functions()}}. Preferably, use \code{g_models}.}
 
-\item{g_models}{Propensity models/g-models created by \code{\link[=g_glm]{g_glm()}}, \code{\link[=g_rf]{g_rf()}}, \code{\link[=g_sl]{g_sl()}} or similar functions.}
+\item{g_models}{Propensity models/g-models created by \code{\link[=g_glm]{g_glm()}}, \code{\link[=g_rf]{g_rf()}}, \code{\link[=g_sl]{g_sl()}} or similar functions. Only used for evaluation if \code{g_functions} is NULL.}
 
 \item{g_full_history}{If TRUE, the full history is used to fit each g-model. If FALSE, the single stage/"Markov type" history is used to fit each g-model.}
 
-\item{q_functions}{Fitted Q-model objects.}
+\item{q_functions}{Fitted Q-model objects, see \code{\link[=fit_Q_functions]{fit_Q_functions()}}. Only valid if the Q-functions are fitted using the same policy. Preferably, use \code{q_models}.}
 
-\item{q_models}{Outcome regression models/Q-models created by \code{\link[=q_glm]{q_glm()}}, \code{\link[=q_rf]{q_rf()}}, \code{\link[=q_sl]{q_sl()}} or similar functions.}
+\item{q_models}{Outcome regression models/Q-models created by \code{\link[=q_glm]{q_glm()}}, \code{\link[=q_rf]{q_rf()}}, \code{\link[=q_sl]{q_sl()}} or similar functions. Only used for evaluation if \code{q_functions} is NULL.}
 
 \item{q_full_history}{Similar to g_full_history.}
 
@@ -45,5 +45,50 @@ policy_eval(
 \item{future_args}{Arguments passed to \code{\link[future.apply:future_apply]{future.apply::future_apply()}}.}
 }
 \description{
-\code{policy_eval} is used to estimate the value of a given fixed policy or a data adaptive policy (e.g. policy learned from the data).
+\code{policy_eval} is used to estimate the value of a given fixed policy or a data adaptive policy (e.g. a policy learned from the data).
+}
+\examples{
+
+library("polle")
+### Single stage case
+source(system.file("sim", "single_stage.R", package="polle"))
+par0 <- c(k = .1,  d = .5, a = 1, b = -2.5, c = 3, s = 1)
+d1 <- sim_single_stage(5e2, seed=1, par=par0); rm(par0)
+# constructing policy_data object:
+pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
+pd1
+# defining a static policy:
+pl1 <- policy_def(static_policy(1))
+# evaluating the policy:
+pe1 <- policy_eval(policy_data = pd1,
+            policy = pl1,
+            g_models = g_glm(),
+            q_models = q_glm())
+# printing the estimated value:
+pe1
+
+### Two stage case
+source(system.file("sim", "two_stage.R", package="polle"))
+par0 <- c(gamma = 0.5, beta = 1)
+d2 <- sim_two_stage(5e2, seed=1, par=par0); rm(par0)
+# constructing policy_data object:
+pd2 <- policy_data(d2,
+                  action = c("A_1", "A_2"),
+                  covariates = list(L = c("L_1", "L_2"),
+                                    C = c("C_1", "C_2")),
+                  utility = c("U_1", "U_2", "U_3"))
+pd2
+# defining a policy learner based on cross-fitted doubly robust Q-learning:
+pl2 <- policy_learn(type = "rqvl",
+                   qv_models = list(q_glm(~C_1), q_glm(~C_1+C_2)),
+                   qv_full_history = TRUE,
+                   L = 2) # number of folds for cross-fitting
+
+pe2 <- policy_eval(type = "dr",
+            policy_data = pd2,
+            policy_learn = pl2,
+            q_models = q_glm(),
+            g_models = g_glm(),
+            M = 2) # number of folds for cross-evaluation
+pe2
 }

@@ -56,22 +56,66 @@ estimate.policy_eval <- function(x, ..., labels=x$name) {
   merge(x, ...)
 }
 
-##' Policy Evaluation
-##'
-##' \code{policy_eval} is used to estimate the value of a given fixed policy or a data adaptive policy (e.g. policy learned from the data).
-##' @param policy_data Policy data object created by [policy_data()].
-##' @param policy Policy object created by [policy_def()].
-##' @param policy_learn Policy learner object created by [policy_learn()].
-##' @param g_models Propensity models/g-models created by [g_glm()], [g_rf()], [g_sl()] or similar functions.
-##' @param q_models Outcome regression models/Q-models created by [q_glm()], [q_rf()], [q_sl()] or similar functions.
-##' @param g_functions Fitted g-model objects.
-##' @param q_functions Fitted Q-model objects.
-##' @param g_full_history If TRUE, the full history is used to fit each g-model. If FALSE, the single stage/"Markov type" history is used to fit each g-model.
-##' @param q_full_history Similar to g_full_history.
-##' @param M Number of folds for cross-fitting.
-##' @param type Type of evaluation (dr/doubly robust, ipw/inverse propensity weighting, or/outcome regression).
-##' @param future_args Arguments passed to [future.apply::future_apply()].
-##' @export
+#' Policy Evaluation
+#'
+#' \code{policy_eval} is used to estimate the value of a given fixed policy or a data adaptive policy (e.g. a policy learned from the data).
+#' @param policy_data Policy data object created by [policy_data()].
+#' @param policy Policy object created by [policy_def()].
+#' @param policy_learn Policy learner object created by [policy_learn()].
+#' @param g_models Propensity models/g-models created by [g_glm()], [g_rf()], [g_sl()] or similar functions. Only used for evaluation if \code{g_functions} is NULL.
+#' @param q_models Outcome regression models/Q-models created by [q_glm()], [q_rf()], [q_sl()] or similar functions. Only used for evaluation if \code{q_functions} is NULL.
+#' @param g_functions Fitted g-model objects, see [fit_g_functions()]. Preferably, use \code{g_models}.
+#' @param q_functions Fitted Q-model objects, see [fit_Q_functions()]. Only valid if the Q-functions are fitted using the same policy. Preferably, use \code{q_models}.
+#' @param g_full_history If TRUE, the full history is used to fit each g-model. If FALSE, the single stage/"Markov type" history is used to fit each g-model.
+#' @param q_full_history Similar to g_full_history.
+#' @param M Number of folds for cross-fitting.
+#' @param type Type of evaluation (dr/doubly robust, ipw/inverse propensity weighting, or/outcome regression).
+#' @param future_args Arguments passed to [future.apply::future_apply()].
+#' @export
+#' @examples
+#'
+#' library("polle")
+#' ### Single stage case
+#' source(system.file("sim", "single_stage.R", package="polle"))
+#' par0 <- c(k = .1,  d = .5, a = 1, b = -2.5, c = 3, s = 1)
+#' d1 <- sim_single_stage(5e2, seed=1, par=par0); rm(par0)
+#' # constructing policy_data object:
+#' pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
+#' pd1
+#' # defining a static policy:
+#' pl1 <- policy_def(static_policy(1))
+#' # evaluating the policy:
+#' pe1 <- policy_eval(policy_data = pd1,
+#'             policy = pl1,
+#'             g_models = g_glm(),
+#'             q_models = q_glm())
+#' # printing the estimated value:
+#' pe1
+#'
+#' ### Two stage case
+#' source(system.file("sim", "two_stage.R", package="polle"))
+#' par0 <- c(gamma = 0.5, beta = 1)
+#' d2 <- sim_two_stage(5e2, seed=1, par=par0); rm(par0)
+#' # constructing policy_data object:
+#' pd2 <- policy_data(d2,
+#'                   action = c("A_1", "A_2"),
+#'                   covariates = list(L = c("L_1", "L_2"),
+#'                                     C = c("C_1", "C_2")),
+#'                   utility = c("U_1", "U_2", "U_3"))
+#' pd2
+#' # defining a policy learner based on cross-fitted doubly robust Q-learning:
+#' pl2 <- policy_learn(type = "rqvl",
+#'                    qv_models = list(q_glm(~C_1), q_glm(~C_1+C_2)),
+#'                    qv_full_history = TRUE,
+#'                    L = 2) # number of folds for cross-fitting
+#'
+#' pe2 <- policy_eval(type = "dr",
+#'             policy_data = pd2,
+#'             policy_learn = pl2,
+#'             q_models = q_glm(),
+#'             g_models = g_glm(),
+#'             M = 2) # number of folds for cross-evaluation
+#' pe2
 policy_eval <- function(policy_data,
                         policy = NULL, policy_learn = NULL,
                         g_functions=NULL, g_models=g_glm(), g_full_history = FALSE,
