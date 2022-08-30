@@ -1,4 +1,3 @@
-#' @export
 bowl <- function(policy_data,
                  alpha = 0,
                  g_models = NULL, g_functions = NULL, g_full_history = FALSE,
@@ -123,7 +122,6 @@ bowl <- function(policy_data,
   return(out)
 }
 
-#' @export
 get_policy.BOWL <- function(object){
   owl_objects <- object$owl_objects
   X_scales <- object$X_scales
