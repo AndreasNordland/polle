@@ -151,8 +151,40 @@ q_step_cf <- function(folds, policy_data, k, full_history, Q, q_models, future_a
   return(out)
 }
 
+#' Fit Q-functions
+#'
+#' \code{fit_Q_functions} is used to fit a list of Q-models
+#' @param policy_data Policy data object created by [policy_data()].
+#' @param policy_actions Policy actions, see [policy_def].
+#' @param q_models Outcome regression models/Q-models created by [q_glm()], [q_rf()], [q_sl()] or similar functions.
+#' @param full_history If TRUE, the full history is used to fit each Q-model. If FALSE, the single stage/"Markov type" history is used to fit each Q-model.
 #' @export
-fit_Q_functions <- function(policy_data, policy_actions, q_models, full_history = FALSE){
+#' @examples
+#' library("polle")
+#' ### Simulating two-stage policy data
+#' source(system.file("sim", "two_stage.R", package="polle"))
+#' par0 <- c(gamma = 0.5, beta = 1)
+#' d <- sim_two_stage(2e3, seed=1, par=par0)
+#' pd <- policy_data(d,
+#'                   action = c("A_1", "A_2"),
+#'                   covariates = list(L = c("L_1", "L_2"),
+#'                                     C = c("C_1", "C_2")),
+#'                   utility = c("U_1", "U_2", "U_3"))
+#' pd
+#'
+#' # Defining a static policy
+#' pl <- policy_def(static_policy(1), reuse = TRUE)
+#'
+#' # fitting a Q-model for each stage:
+#' q_functions <- fit_Q_functions(policy_data = pd,
+#'                                policy_actions = pl(pd),
+#'                                q_models = list(q_glm(), q_glm()),
+#'                                full_history = TRUE)
+#' q_functions
+fit_Q_functions <- function(policy_data,
+                            policy_actions,
+                            q_models,
+                            full_history = FALSE){
   K <- get_K(policy_data)
   n <- get_n(policy_data)
   action_set <- get_action_set(policy_data)
