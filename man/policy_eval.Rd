@@ -48,9 +48,8 @@ policy_eval(
 \code{policy_eval} is used to estimate the value of a given fixed policy or a data adaptive policy (e.g. a policy learned from the data).
 }
 \examples{
-
 library("polle")
-### Single stage case
+### Single stage:
 source(system.file("sim", "single_stage.R", package="polle"))
 par0 <- c(k = .1,  d = .5, a = 1, b = -2.5, c = 3, s = 1)
 d1 <- sim_single_stage(5e2, seed=1, par=par0); rm(par0)
@@ -67,7 +66,7 @@ pe1 <- policy_eval(policy_data = pd1,
 # printing the estimated value:
 pe1
 
-### Two stage case
+### Two stages:
 source(system.file("sim", "two_stage.R", package="polle"))
 par0 <- c(gamma = 0.5, beta = 1)
 d2 <- sim_two_stage(5e2, seed=1, par=par0); rm(par0)

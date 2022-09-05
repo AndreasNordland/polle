@@ -1,4 +1,3 @@
-#' @export
 fit_QV_function <- function(history, Z, qv_model){
   H <- get_H(history)
 
@@ -18,7 +17,7 @@ fit_QV_function <- function(history, Z, qv_model){
 
   return(qv_function)
 }
-#' @export
+
 evaluate.QV_function <- function(object, new_history){
 
   id_stage <- get_id_stage(new_history)
@@ -38,8 +37,7 @@ evaluate.QV_function <- function(object, new_history){
   return(qv_values)
 }
 
-# note: if L > 1 and alpha > 0 then the g_functions fitting on the complete data is used to determine future realistic actions.
-#' @export
+# note: if L > 1 and alpha > 0 then the g_functions fitted on the complete data is used to determine future realistic actions.
 rqvl <- function(policy_data,
                  alpha,
                  g_models, g_functions, g_full_history,

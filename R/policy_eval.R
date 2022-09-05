@@ -73,9 +73,8 @@ estimate.policy_eval <- function(x, ..., labels=x$name) {
 #' @param future_args Arguments passed to [future.apply::future_apply()].
 #' @export
 #' @examples
-#'
 #' library("polle")
-#' ### Single stage case
+#' ### Single stage:
 #' source(system.file("sim", "single_stage.R", package="polle"))
 #' par0 <- c(k = .1,  d = .5, a = 1, b = -2.5, c = 3, s = 1)
 #' d1 <- sim_single_stage(5e2, seed=1, par=par0); rm(par0)
@@ -92,7 +91,7 @@ estimate.policy_eval <- function(x, ..., labels=x$name) {
 #' # printing the estimated value:
 #' pe1
 #'
-#' ### Two stage case
+#' ### Two stages:
 #' source(system.file("sim", "two_stage.R", package="polle"))
 #' par0 <- c(gamma = 0.5, beta = 1)
 #' d2 <- sim_two_stage(5e2, seed=1, par=par0); rm(par0)
