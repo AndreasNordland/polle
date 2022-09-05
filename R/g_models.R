@@ -38,12 +38,104 @@ get_design <- function(formula, data, intercept=FALSE) {
   return(list(terms=tt, x_levels=x_levels, x=x))
 }
 
-################################################################################
-## Generalized Linear Model interface
-################################################################################
 
+# g-model documentation -----------------------------------------------------------
+
+#' Define a propensity model/g-model object constructor
+#'
+#' Use \code{g_glm}, \code{g_glmnet}, \code{g_rf}, and \code{g_sl} to define
+#' a propensity model/g-model object constructor.
+#' The constructors are used as input for [policy_eval()] and [policy_learn()].
+#'
+#' @param formula An object of class [formula] specifying the design matrix for
+#' the propensity model/g-model. Use [get_history_names()] to se the available
+#' variable names.
+#' @param family A description of the error distribution and link function to
+#' be used in the model.
+#' @param alpha (Only used by \code{g_glmnet}) The elasticnet mixing parameter
+#' between 0 and 1. alpha equal to 1 is the lasso penalty, and alpha equal
+#' to 0 the ridge penalty.
+#' @param s (Only used by \code{g_glmnet}) Value(s) of the penalty parameter
+#' lambda at which predictions are required, see [glmnet::predict.glmnet()].
+#' @param num.trees (Only used by \code{g_rf}) Number of trees.
+#' @param mtry (Only used by \code{g_rf}) Number of variables to possibly split
+#'  at in each node.
+#' @param cv_args (Only used by \code{g_rf}) Cross-validation parameters.
+#' Only used if multiple hyper-parameters are given. \code{K} is the number
+#' of folds and
+#' \code{rep} is the number of replications.
+#' @param SL.library (Only used by \code{g_sl}) Either a character vector of prediction algorithms or
+#' a list containing character vectors, see [SuperLearner::SuperLearner].
+#' @param ... Additional arguments passed to [glm()], [glmnet::glmnet],
+#' [ranger::ranger] or [SuperLearner::SuperLearner].
+#' @details
+#' \code{g_glm} is a constructor for a generalized linear model. Specifically,
+#' it is a wrapper of [glm()].\cr
+#' \code{g_glmnet} is a constructor for a generalized linear model via
+#' penalized maximum likelihood. It is a wrapper of [glmnet::glmnet()].\cr
+#' \code{g_rf} is a constructor for a random forest model. It is a wrapper of
+#' [ranger::ranger()]. When multiple hyper-parameters are given, the
+#'  model with the lowest cross-validation error is selected.
+#' @returns g-model object constructor function with arguments 'A'
+#' (action vector), 'H' (history matrix) and 'action_set'.
+#' @name g_model
+#' @examples
+#' library("polle")
+#' ### Single stage case
+#' source(system.file("sim", "single_stage.R", package="polle"))
+#' par0 <- c(k = .1,  d = .5, a = 1, b = -2.5, c = 3, s = 1)
+#' d <- sim_single_stage(5e2, seed=1, par=par0); rm(par0)
+#' pd <- policy_data(d, action="A", covariates=list("Z", "B", "L"), utility="U")
+#' pd
+#'
+#' # defining a g-model:
+#' get_history_names(pd)
+#' g_model <- g_glm(formula = ~Z)
+#'
+#' # evaluating the static policy a=1 using inverse
+#' # propensity weighting based on the given g-model:
+#' pe <- policy_eval(type = "ipw",
+#'             policy_data = pd,
+#'             policy = policy_def(static_policy(1)),
+#'             g_model = g_model)
+#' pe
+#' pe$g_functions
+#'
+#' ### Two stages:
+#' source(system.file("sim", "two_stage.R", package="polle"))
+#' par0 <- c(gamma = 0.5, beta = 1)
+#' d2 <- sim_two_stage(5e2, seed=1, par=par0); rm(par0)
+#' pd2 <- policy_data(d2,
+#'                   action = c("A_1", "A_2"),
+#'                   covariates = list(L = c("L_1", "L_2"),
+#'                                     C = c("C_1", "C_2")),
+#'                   utility = c("U_1", "U_2", "U_3"))
+#' pd2
+#'
+#' # available full history variable names at each stage:
+#' get_history_names(pd2, stage = 1)
+#' get_history_names(pd2, stage = 2)
+#'
+#' # evaluating the static policy a=1 using inverse
+#' # propensity weighting based on a glm model for each stage:
+#' pe2 <- policy_eval(type = "ipw",
+#'             policy_data = pd2,
+#'             policy = policy_def(static_policy(1), reuse = TRUE),
+#'             g_model = list(g_glm(~ L_1),
+#'                            g_glm(~ L_1 + L_2)),
+#'             g_full_history = TRUE)
+#' pe2
+#' pe2$g_functions
+NULL
+
+# glm interface --------------------------------------
+
+#' @rdname g_model
 #' @export
-g_glm <- function(formula = ~., family = binomial(), model = FALSE, ...) {
+g_glm <- function(formula = ~.,
+                  family = "binomial",
+                  model = FALSE,
+                  ...) {
   dotdotdot <- list(...)
   force(formula)
   g_glm <- function(A, H, action_set){
@@ -60,7 +152,6 @@ g_glm <- function(formula = ~., family = binomial(), model = FALSE, ...) {
   }
   return(g_glm)
 }
-#' @export
 predict.g_glm <- function(object, new_H){
   glm_model <- getElement(object, "glm_model")
   fit <- predict.glm(object = glm_model, newdata = new_H, type = "response")
@@ -68,13 +159,15 @@ predict.g_glm <- function(object, new_H){
   return(probs)
 }
 
-################################################################################
-## glmnet (Elastic Net) interface
-################################################################################
 
+# glmnet (Elastic Net) interface ------------------------------------------
+
+#' @rdname g_model
 #' @export
-g_glmnet <- function(formula = ~., family = "binomial",
-                     alpha = 1, s = "lambda.min", ...) {
+g_glmnet <- function(formula = ~.,
+                     family = "binomial",
+                     alpha = 1,
+                     s = "lambda.min", ...) {
   if (!requireNamespace("glmnet")) stop("Package 'ranger' required")
   force(formula)
   dotdotdot <- list(...)
@@ -102,7 +195,6 @@ g_glmnet <- function(formula = ~., family = "binomial",
   return(g_glmnet)
 }
 
-#' @export
 predict.g_glmnet <- function(object, new_H) {
   glmnet_model <- object$glmnet_model
   mf <- with(object, model.frame(terms, data=new_H, xlev = xlevels,
@@ -119,28 +211,29 @@ perf_ranger_prob <- function(fit, data,  ...) {
               data[,1], ...)
 }
 
-################################################################################
-## ranger (Random Forest) interface
-################################################################################
+# ranger (Random Forest) interface ----------------------------------------
 
+#' @rdname g_model
 #' @export
 g_rf <- function(formula = ~.,
-                 num.trees=c(500), mtry=NULL,
-                 cv_args=list(K=5, rep=1), ...) {
+                 num.trees=c(500),
+                 mtry=NULL,
+                 cv_args=list(K=5, rep=1),
+                 ...) {
   if (!requireNamespace("ranger")) stop("Package 'ranger' required")
   force(formula)
   dotdotdot <- list(...)
   hyper_par <- expand.list(num.trees=num.trees, mtry=mtry)
-    rf_args <- function(p) {
-        list(probability=TRUE, num.threads=1,
-             num.trees=p$num.trees, mtry=p$mtry)
-    }
-    ml <- lapply(hyper_par, function(p)
-      function(data) {
-        rf_args <- append(rf_args(p), list(y=data[,1], x=as.matrix(data[,-1,drop=FALSE])))
-        rf_args <- append(rf_args, dotdotdot)
-        do.call(ranger::ranger, args=rf_args)
-      })
+  rf_args <- function(p) {
+    list(probability=TRUE, num.threads=1,
+         num.trees=p$num.trees, mtry=p$mtry)
+  }
+  ml <- lapply(hyper_par, function(p)
+    function(data) {
+      rf_args <- append(rf_args(p), list(y=data[,1], x=as.matrix(data[,-1,drop=FALSE])))
+      rf_args <- append(rf_args, dotdotdot)
+      do.call(ranger::ranger, args=rf_args)
+    })
 
   g_rf <- function(A, H, action_set) {
     ##action_set <- sort(unique(A))
@@ -159,6 +252,7 @@ g_rf <- function(formula = ~.,
     } else {
       fit <- ml[[best]](data)
     }
+    fit$call <- NULL
     m <- with(des, list(fit = fit,
                         rf_args = rf_args(hyper_par[[best]]),
                         num.trees=num.trees[best],
@@ -171,7 +265,6 @@ g_rf <- function(formula = ~.,
   return(g_rf)
 }
 
-#' @export
 predict.g_rf <- function(object, new_H, ...) {
   mf <- with(object, model.frame(terms, data=new_H, xlev = xlevels,
                                  drop.unused.levels=FALSE))
@@ -180,13 +273,14 @@ predict.g_rf <- function(object, new_H, ...) {
   return(pr)
 }
 
-################################################################################
-## SuperLearner interface
-################################################################################
+# SuperLearner interface --------------------------------------------------
 
-##' @export
-g_sl <- function(formula = ~ ., SL.library=c("SL.mean", "SL.glm"),
-                 family=binomial(), ...) {
+#' @rdname g_model
+#' @export
+g_sl <- function(formula = ~ .,
+                 SL.library=c("SL.mean", "SL.glm"),
+                 family=binomial(),
+                 ...) {
   if (!requireNamespace("SuperLearner"))
     stop("Package 'SuperLearner' required.")
   suppressPackageStartupMessages(require(SuperLearner))
