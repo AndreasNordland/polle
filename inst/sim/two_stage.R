@@ -1,6 +1,7 @@
 library(data.table)
+
 sim_two_stage <- function(n=1e4,
-                          par=c(gamma = 1,  beta = .5),
+                          par=c(gamma = 0.5,  beta = 1),
                           seed=NULL,
                           action_model_1 = function(C_1, beta, ...)
                             rbinom(n = NROW(C_1), size = 1, prob = lava::expit(beta * C_1)),
@@ -9,8 +10,11 @@ sim_two_stage <- function(n=1e4,
                           deterministic_rewards = FALSE){
   if (!is.null(seed)) set.seed(seed)
 
-  gamma <- par[1]
-  beta <- par[2]
+  gamma <- getElement(par, "gamma")
+  beta <- getElement(par, "beta")
+
+  # baseline
+  B <- rnorm(n = n)
 
   # stage 1
   L_1 <- rnorm(n = n)
@@ -32,6 +36,7 @@ sim_two_stage <- function(n=1e4,
   U_3 <- A_2 * C_2 + L_3
 
   data <- data.table(
+    B = B,
     L_1 = L_1,
     C_1 = C_1,
     A_1 = A_1,

@@ -45,33 +45,65 @@ If "long", \code{data} is considered to be on long format; see Examples.}
 \item{} A vector is valid for wide data with incremental rewards. Must have length K+1; see Examples.
 }}
 
+\item{baseline}{Baseline covariate name(s). Character vector.}
+
 \item{deterministic_rewards}{Deterministic reward variable name(s). Named list of character vectors of length K.
 The name of each element must be on the form "U_Aa" where "a" corresponds to an action in the action set.}
+
+\item{id}{ID variable name. Character string.}
+
+\item{stage}{Stage number variable name.}
+
+\item{event}{Event indicator name.}
+
+\item{verbose}{Logical. If TRUE, formatting comments are printed to the console.}
+}
+\value{
+\code{policy_data()} returns an object of class "policy_data".
+The object is a list containing the following elements:
+\item{\code{stage_data}}{\link{data.table} containing the id, stage number, event
+indicator, action (\eqn{A_k}), state covariates
+(\eqn{X_k}), reward (\eqn{U_k}), and the
+deterministic rewards.}
+\item{\code{baseline_data}}{\link{data.table} containing the id and baseline
+covariates (\eqn{B}).}
+\item{\code{colnames}}{list containing the state covariate names, baseline
+covariate names, and the deterministic reward variable
+names.}
+\item{\code{action_set}}{Character vector describing the action set, i.e.,
+the possible actions at each stage.}
+\item{\code{dim}}{list containing the number of observations (n) and the
+number of stages (K).}
 }
 \description{
-\code{policy_data} creates an object of class "policy_data".
+\code{policy_data} creates a policy data object which
+is used as input to \code{\link[=policy_eval]{policy_eval()}} and \code{\link[=policy_learn]{policy_learn()}} for policy
+evaluation and data adaptive policy learning.
 }
 \details{
 Each observation has the sequential form
 \deqn{O= {B, U_1, X_1, A_1, ..., U_K, X_K, A_K, U_{K+1}},}
 for a possibly stochastic number of stages K.
 \itemize{
-\item{} B is a vector of baseline covariates.
-\item{} U_k is the reward at stage k.
-\item{} X_k is a vector of covariates summarizing the state at stage k.
-\item{} A_k is the categorical action at stage k.
+\item{} \eqn{B} is a vector of baseline covariates.
+\item{} \eqn{U_k} is the reward at stage k (not influenced by the action \eqn{A_k}).
+\item{} \eqn{X_k} is a vector of state covariates summarizing the state at stage k.
+\item{} \eqn{A_k} is the categorical action at stage k.
 }
-The utility is given by the sum of the rewards, i.e., \eqn{U = sum_{k = 1}^{K+1} U_k}.
+The utility is given by the sum of the rewards, i.e.,
+\eqn{U = \sum_{k = 1}^{K+1} U_k}.
 }
 \examples{
 library("polle")
 ### Wide data: Single stage
 source(system.file("sim", "single_stage.R", package="polle"))
-par0 <- c(k = .1,  d = .5, a = 1, b = -2.5, c = 3, s = 1)
-d1 <- sim_single_stage(5e2, seed=1, par=par0); rm(par0)
+d1 <- sim_single_stage(5e2, seed=1)
 head(d1, 5)
 # constructing policy_data object:
-pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
+pd1 <- policy_data(d1,
+                   action="A",
+                   covariates=c("Z", "B", "L"),
+                   utility="U")
 pd1
 head(get_actions(pd1), 5)
 head(utility(pd1), 5)
@@ -79,33 +111,22 @@ head(get_history(pd1)$AH, 5)
 
 ### Wide data: Two stages
 source(system.file("sim", "two_stage.R", package="polle"))
-par0 <- c(gamma = 0.5, beta = 1)
-d2 <- sim_two_stage(5e2, seed=1, par=par0); rm(par0)
+d2 <- sim_two_stage(5e2, seed=1)
 head(d2, 5)
 # constructing policy_data object:
 pd2 <- policy_data(d2,
                   action = c("A_1", "A_2"),
+                  baseline = c("B"),
                   covariates = list(L = c("L_1", "L_2"),
                                     C = c("C_1", "C_2")),
                   utility = c("U_1", "U_2", "U_3"))
 pd2
-head(get_history(pd2, stage = 2)$AH, 5)
-head(get_history(pd2, stage = 2, full_history = T)$AH, 5)
+head(get_history(pd2, stage = 2)$AH, 5) # state/Markov type history and action, (H_k,A_k).
+head(get_history(pd2, stage = 2, full_history = TRUE)$AH, 5) # Full history and action, (H_k,A_k).
 
 ### Long data: Multiple stages
 source(system.file("sim", "multi_stage.R", package="polle"))
-a_obs <- function(t, x, beta, ...){
-  prob <- lava::expit(beta[1] + (beta[2] * t) + (beta[3] * x))
-  rbinom(n = 1, size = 1, prob = prob)
-}
-par0 <- list(tau = 10,
-             lambda = c(0, -0.4, 0.3),
-             alpha =  c(0, 0.5, 0.1, -0.5, 0.4),
-             beta = c(0.3, 0, -0.5),
-             sigma = 1,
-             xi = 0.3,
-             psi = 1)
-d3 <- sim_multi_stage(5e2, par0, a = a_obs, seed = 1); rm(a_obs, par0)
+d3 <- sim_multi_stage(5e2, seed = 1)
 head(d3$stage_data, 10)
 # constructing policy_data object:
 pd3 <- policy_data(data = d3$stage_data,
@@ -117,7 +138,6 @@ pd3 <- policy_data(data = d3$stage_data,
                    action = "A",
                    utility = "U")
 pd3
-head(get_history(pd3, stage = 3)$AH, 5)
-head(get_history(pd3, stage = 2, full_history = T)$AH, 5)
-
+head(get_history(pd3, stage = 3)$AH, 5) # state/Markov type history and action, (H_k,A_k).
+head(get_history(pd3, stage = 2, full_history = T)$AH, 5) # Full history and action, (H_k,A_k).
 }
