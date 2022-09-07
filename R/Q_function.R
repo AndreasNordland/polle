@@ -1,8 +1,8 @@
 #' @export
 fit_Q_function <- function(history, Q, q_model){
 
-  action_set <- history[["action_set"]]
-  deterministic_reward_names <- history[["deterministic_reward_names"]]
+  action_set <- getElement(history, "action_set")
+  deterministic_rewards <- getElement(history, "deterministic_rewards")
 
   # getting the action (A) and the model matrix (H):
   A <- get_A(history)
@@ -13,7 +13,7 @@ fit_Q_function <- function(history, Q, q_model){
   # checking that all actions in the actions set occur:
   if (!all(action_set == sort(unique(A)))){
     mes <- "Not all actions occur at stage"
-    k <- history[["stage"]]
+    k <- getElement(history, "stage")
     mes <- paste(mes, k)
     mes <- paste(mes, ". Unable to fit Q-function.", sep = "")
     stop(mes)
@@ -21,9 +21,9 @@ fit_Q_function <- function(history, Q, q_model){
 
 
   # getting the historic rewards
-  U <- history$U
+  U <- getElement(history, "U")
   # calculating the residual (fitted) values
-  U_A <- apply(action_matrix(a = A, action_set = action_set) * U[, ..deterministic_reward_names], MARGIN = 1, sum)
+  U_A <- apply(action_matrix(a = A, action_set = action_set) * U[, ..deterministic_rewards], MARGIN = 1, sum)
   U[, V_res := Q - U_bar - U_A]
   V_res <- U$V_res
 
@@ -49,9 +49,9 @@ print.Q_function <- function(x){
 
 #' @export
 evaluate.Q_function <- function(object, new_history){
-  q_model <- object$q_model
-  action_set <- new_history$action_set
-  deterministic_reward_names <- new_history$deterministic_reward_names
+  q_model <- getElement(object, "q_model")
+  action_set <- getElement(new_history, "action_set")
+  deterministic_rewards <- getElement(new_history, "deterministic_rewards")
 
   id_stage <- get_id_stage(new_history)
   new_H <- get_H(new_history)
@@ -62,7 +62,7 @@ evaluate.Q_function <- function(object, new_history){
   # getting the residual predictions
   residual_q_predictions <- sapply(action_set, function(a) predict(q_model, new_AH = cbind(A = a, new_H)))
   # adding the historic utilities and deterministic rewards
-  q_values <- U$U_bar + U[, ..deterministic_reward_names] + residual_q_predictions
+  q_values <- U$U_bar + U[, ..deterministic_rewards] + residual_q_predictions
   names(q_values) <- paste("Q", action_set, sep = "_")
 
   if (!all(complete.cases(q_values))){

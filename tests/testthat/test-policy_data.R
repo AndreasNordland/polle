@@ -189,7 +189,7 @@ test_that("policy_data melts wide data correctly in a single stage case.", {
   #
   pd <- policy_data(data = wide_data, action = "treat", covariates = c("B", "Z", "L"), utility = "outcome")
   expect_equal(
-    pd$colnames$stage_data_names,
+    pd$colnames$state_names,
     c("B", "Z", "L")
   )
 
@@ -202,7 +202,7 @@ test_that("policy_data melts wide data correctly in a single stage case.", {
     pd$baseline_data
   )
   expect_equal(
-    pd$colnames$baseline_data_names,
+    pd$colnames$baseline_names,
     c("B")
   )
   rm(pd)

@@ -61,12 +61,12 @@ new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
 
     # getting the names of the state data (X_k):
     rn <- c("id", "stage", "event", "A", "U", deterministic_reward_names)
-    stage_data_names <- names(stage_data)[!(names(stage_data) %in% rn)]
+    state_names <- names(stage_data)[!(names(stage_data) %in% rn)]
   }
 
   # checking and processing baseline_data:
   {
-    baseline_data_names <- NULL
+    baseline_names <- NULL
     if (!is.null(baseline_data)){
       if (is.data.frame(baseline_data))
         baseline_data <- as.data.table(baseline_data)
@@ -92,7 +92,7 @@ new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
       rm(bdf)
 
       # getting the names of the baseline state data:
-      baseline_data_names <- names(baseline_data)[!(names(baseline_data) %in% c("id"))]
+      baseline_names <- names(baseline_data)[!(names(baseline_data) %in% c("id"))]
     } else {
       baseline_data <- stage_data[, .(id =unique(id))]
     }
@@ -106,9 +106,9 @@ new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
     stage_data = stage_data,
     baseline_data = baseline_data,
     colnames = list(
-      stage_data_names = stage_data_names,
-      deterministic_reward_names = deterministic_reward_names,
-      baseline_data_names = baseline_data_names
+      state_names = state_names,
+      deterministic_rewards = deterministic_reward_names,
+      baseline_names = baseline_names
     ),
     action_set = action_set,
     dim = list(
@@ -580,12 +580,12 @@ print.policy_data <- function(x, digits = 2, ...){
   print(stable)
 
   cat("\n")
-  bc <- paste(x$colnames$baseline_data_names, collapse = ", ")
+  bc <- paste(x$colnames$baseline_names, collapse = ", ")
   cat(
     paste("Baseline covariates: ", bc, sep = "")
   )
   cat("\n")
-  sc <- paste(x$colnames$stage_data_names, collapse = ", ")
+  sc <- paste(x$colnames$state_names, collapse = ", ")
   cat(
     paste("State covariates: ", sc, sep = "")
   )

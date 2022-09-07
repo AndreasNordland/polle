@@ -40,7 +40,7 @@ copy_policy_data <- function(object){
   return(object)
 }
 
-partial_stage_data <- function(stage_data, K, deterministic_reward_names){
+partial_stage_data <- function(stage_data, K, deterministic_rewards){
   if (is.data.frame(stage_data))
     stage_data <- as.data.table(stage_data)
 
@@ -62,8 +62,8 @@ partial_stage_data <- function(stage_data, K, deterministic_reward_names){
     ),
     id
   ]
-  if (!is.null(deterministic_reward_names))
-    stage_data_res_sum[, (deterministic_reward_names) := NA]
+  if (!is.null(deterministic_rewards))
+    stage_data_res_sum[, (deterministic_rewards) := NA]
   # binding stage_data_K with stage_data_res_sum
   stage_data <- rbindlist(list(stage_data_K, stage_data_res_sum), fill = TRUE, use.names = TRUE)
 
@@ -113,9 +113,9 @@ partial.policy_data <- function(object, K){
     return(object)
 
   # column names of the deterministic rewards:
-  deterministic_reward_names <- object$colnames$deterministic_reward_names
+  deterministic_rewards <- object$colnames$deterministic_rewards
 
-  object$stage_data <- partial_stage_data(stage_data = object[["stage_data"]], K = K, deterministic_reward_names = deterministic_reward_names)
+  object$stage_data <- partial_stage_data(stage_data = object[["stage_data"]], K = K, deterministic_rewards = deterministic_rewards)
   object$dim$K <- K
 
   return(object)
@@ -161,21 +161,21 @@ subset.policy_data <- function(object, id){
 #' @param object object of class [policy_data()].
 #' @param stage stage number.
 #' @return Object of class "history".
-full_stage_history <- function(object, stage){
+full_history <- function(object, stage){
 
   if (stage > object$dim$K)
     stop("The stage number must be lower or equal to maximal number of stages observed.")
 
   stage_data <- object$stage_data
-  stage_data_names <- object$colnames$stage_data_names
+  state_names <- object$colnames$state_names
   baseline_data <- object$baseline_data
-  baseline_data_names <- object$colnames$baseline_data_names
+  baseline_names <- object$colnames$baseline_names
   action_set <- object$action_set
-  deterministic_reward_names <- object$colnames$deterministic_reward_names
+  deterministic_rewards <- object$colnames$deterministic_rewards
   stage_ <- stage; rm(stage)
 
   # getting stage specific history names:
-  AH_names <- c("id", "stage", "A", stage_data_names)
+  AH_names <- c("id", "stage", "A", state_names)
   # filtering rows which have an action (event = 0):
   AH <- stage_data[event == 0, ]
   # filtering rows up till the given stage number:
@@ -187,8 +187,8 @@ full_stage_history <- function(object, stage){
   # inserting stage column:
   AH[, stage := stage_]
   # merging the stage specific histories and the the baseline data by reference:
-  if(length(baseline_data_names) > 0){
-    AH[baseline_data, (baseline_data_names) := mget(paste0('i.', baseline_data_names))]
+  if(length(baseline_names) > 0){
+    AH[baseline_data, (baseline_names) := mget(paste0('i.', baseline_names))]
   }
   # setting key and column order
   setkey(AH, id, stage)
@@ -203,7 +203,7 @@ full_stage_history <- function(object, stage){
   # getting the accumulated utility and deterministic utility contributions
   U <- stage_data[stage <= stage_][, U_bar := sum(U), id]
   U <- U[event == 0][stage == stage_,]
-  U_names <- c("id", "stage", "U_bar", deterministic_reward_names)
+  U_names <- c("id", "stage", "U_bar", deterministic_rewards)
   U <- U[, ..U_names]
 
   history <- list(
@@ -211,7 +211,7 @@ full_stage_history <- function(object, stage){
     A = A,
     U = U,
     action_name = action_name,
-    deterministic_reward_names = deterministic_reward_names,
+    deterministic_rewards = deterministic_rewards,
     action_set = action_set,
     stage = stage_
   )
@@ -225,28 +225,28 @@ full_stage_history <- function(object, stage){
 #' @param object object of class [policy_data()].
 #' @param stage stage number.
 #' @return Object of class "history".
-state_stage_history <- function(object, stage){
+stage_state_history <- function(object, stage){
 
   if (stage > object$dim$K)
     stop("The stage number must be lower or equal to maximal number of stages observed.")
 
   stage_data <- object$stage_data
-  stage_data_names <- object$colnames$stage_data_names
+  state_names <- object$colnames$state_names
   baseline_data <- object$baseline_data
-  baseline_data_names <- object$colnames$baseline_data_names
+  baseline_names <- object$colnames$baseline_names
   action_set <- object$action_set
-  deterministic_reward_names <- object$colnames$deterministic_reward_names
+  deterministic_rewards <- object$colnames$deterministic_rewards
   stage_ <- stage
 
   # getting the state names:
-  AH_names <- c("id", "stage", "A", stage_data_names)
+  AH_names <- c("id", "stage", "A", state_names)
   # filtering rows which have an action (event = 0):
   AH <- stage_data[event == 0, ]
   # filtering observations with an action at the given stage:
   AH <- AH[stage == stage_, ..AH_names]
   # merging the state history and the the baseline data:
-  if(length(baseline_data_names) > 0){
-    AH[baseline_data, (baseline_data_names) := mget(paste0('i.', baseline_data_names))]
+  if(length(baseline_names) > 0){
+    AH[baseline_data, (baseline_names) := mget(paste0('i.', baseline_names))]
   }
 
   ### constructing H and A:
@@ -258,7 +258,7 @@ state_stage_history <- function(object, stage){
   # getting the accumulated utility and deterministic utility contributions
   U <- stage_data[stage <= stage_][, U_bar := sum(U), id]
   U <- U[event == 0][stage == stage_,]
-  U_names <- c("id", "stage", "U_bar", deterministic_reward_names)
+  U_names <- c("id", "stage", "U_bar", deterministic_rewards)
   U <- U[, ..U_names]
 
   id_names <- c("id", "stage")
@@ -268,7 +268,7 @@ state_stage_history <- function(object, stage){
     A = A,
     U = U,
     action_name = "A",
-    deterministic_reward_names = deterministic_reward_names,
+    deterministic_rewards = deterministic_rewards,
     action_set = action_set,
     stage = stage
   )
@@ -283,19 +283,19 @@ state_stage_history <- function(object, stage){
 #' @return Object of class "history".
 state_history <- function(object){
   stage_data <- object$stage_data
-  stage_data_names <- object$colnames$stage_data_names
+  state_names <- object$colnames$state_names
   baseline_data <- object$baseline_data
-  baseline_data_names <- object$colnames$baseline_data_names
+  baseline_names <- object$colnames$baseline_names
   action_set <- object$action_set
 
   # getting stage specific history names:
-  AH_names <- c("id", "stage", "A", stage_data_names)
+  AH_names <- c("id", "stage", "A", state_names)
   # filtering rows which have an action (event = 0):
   AH <- stage_data[event == 0, ]
   AH <- AH[, ..AH_names]
   # merging the stage specific histories and the the baseline data by reference:
-  if(length(baseline_data_names) > 0){
-    AH[baseline_data, (baseline_data_names) := mget(paste0('i.', baseline_data_names))]
+  if(length(baseline_names) > 0){
+    AH[baseline_data, (baseline_names) := mget(paste0('i.', baseline_names))]
   }
 
   ### constructing H and A:
@@ -321,7 +321,7 @@ get_history <- function(object, stage = NULL, full_history = FALSE)
 
 #' Get History Object
 #'
-#' \code{get_history} extracts the available history at a given stage from a
+#' \code{get_history} extracts the history and action at a given stage from a
 #' [policy_data] object.
 #' @param object Object of class [policy_data].
 #' @param stage Stage number.
@@ -363,12 +363,12 @@ get_history <- function(object, stage = NULL, full_history = FALSE)
 get_history.policy_data <- function(object, stage = NULL, full_history = FALSE){
   if (full_history == TRUE){
     if (is.null(stage)) stop("Please provide a stage number.")
-    his <- full_stage_history(object, stage = stage)
+    his <- full_history(object, stage = stage)
   } else{
     if (is.null(stage)){
       his <- state_history(object)
     } else{
-      his <- state_stage_history(object, stage = stage)
+      his <- stage_state_history(object, stage = stage)
     }
   }
   return(his)
@@ -389,7 +389,7 @@ get_history_names <- function(object, stage)
 #' @return Character vector.
 #' @examples
 #' library("polle")
-#' ### Multiple stage case
+#' ### Multiple stages:
 #' source(system.file("sim", "multi_stage.R", package="polle"))
 #' d3 <- sim_multi_stage(5e2, seed = 1)
 #' # constructing policy_data object:
