@@ -27,3 +27,6 @@ pe1 <- list(
 )
 
 # tmp1 <- pe1
+
+# all(unlist(lapply(tmp1, coef)) == unlist(lapply(pe1, coef)))
+# all(unlist(lapply(tmp1, IC)) == unlist(lapply(pe1, IC)))
