@@ -28,7 +28,7 @@ pd <- policy_data(d,
 pd
 
 history <- get_history(pd, stage = 1)
-head(history$AH)
+head(history$H)
 
 g_function <- fit_g_function(
   history = get_history(pd, stage = 1),
