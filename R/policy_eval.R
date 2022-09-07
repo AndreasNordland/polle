@@ -66,7 +66,7 @@ estimate.policy_eval <- function(x, ..., labels=x$name) {
 #' @param q_models Outcome regression models/Q-models created by [q_glm()], [q_rf()], [q_sl()] or similar functions. Only used for evaluation if \code{q_functions} is NULL.
 #' @param g_functions Fitted g-model objects, see [fit_g_functions()]. Preferably, use \code{g_models}.
 #' @param q_functions Fitted Q-model objects, see [fit_Q_functions()]. Only valid if the Q-functions are fitted using the same policy. Preferably, use \code{q_models}.
-#' @param g_full_history If TRUE, the full history is used to fit each g-model. If FALSE, the single stage/"Markov type" history is used to fit each g-model.
+#' @param g_full_history If TRUE, the full history is used to fit each g-model. If FALSE, the state/Markov type history is used to fit each g-model.
 #' @param q_full_history Similar to g_full_history.
 #' @param M Number of folds for cross-fitting.
 #' @param type Type of evaluation (dr/doubly robust, ipw/inverse propensity weighting, or/outcome regression).
@@ -76,8 +76,7 @@ estimate.policy_eval <- function(x, ..., labels=x$name) {
 #' library("polle")
 #' ### Single stage:
 #' source(system.file("sim", "single_stage.R", package="polle"))
-#' par0 <- c(k = .1,  d = .5, a = 1, b = -2.5, c = 3, s = 1)
-#' d1 <- sim_single_stage(5e2, seed=1, par=par0); rm(par0)
+#' d1 <- sim_single_stage(5e2, seed=1)
 #' # constructing policy_data object:
 #' pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
 #' pd1
@@ -93,8 +92,7 @@ estimate.policy_eval <- function(x, ..., labels=x$name) {
 #'
 #' ### Two stages:
 #' source(system.file("sim", "two_stage.R", package="polle"))
-#' par0 <- c(gamma = 0.5, beta = 1)
-#' d2 <- sim_two_stage(5e2, seed=1, par=par0); rm(par0)
+#' d2 <- sim_two_stage(5e2, seed=1)
 #' # constructing policy_data object:
 #' pd2 <- policy_data(d2,
 #'                   action = c("A_1", "A_2"),

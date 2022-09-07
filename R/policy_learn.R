@@ -21,7 +21,6 @@
 #' @param min.node.size (only used if type = "ptl") An integer indicating the smallest terminal node size permitted, see [policy_tree()].
 #' @param hybrid (only used if type = "ptl") If TRUE, [hybrid_policy_tree()] is used to fit a policy tree.
 #' @param search.depth (only used if type = "ptl" and hybrid = TRUE) Depth to look ahead when splitting.
-#'
 #' @details
 #'
 #' rqvl: a model is  fitted for each model in the action set

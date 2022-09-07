@@ -182,9 +182,11 @@ new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
 #'                          the possible actions at each stage.}
 #' \item{\code{dim}}{List containing the number of observations (n) and the
 #'                   number of stages (K).}
+#' @seealso
+#' [policy_eval()], [policy_learn()], [get_history()], [get_actions()], [utility()].
 #' @examples
 #' library("polle")
-#' ### Wide data: Single stage
+#' ### Single stage case: Wide data
 #' source(system.file("sim", "single_stage.R", package="polle"))
 #' d1 <- sim_single_stage(5e2, seed=1)
 #' head(d1, 5)
@@ -198,7 +200,7 @@ new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
 #' head(utility(pd1), 5)
 #' head(get_history(pd1)$AH, 5)
 #'
-#' ### Wide data: Two stages
+#' ### Two stage caseL Wide data
 #' source(system.file("sim", "two_stage.R", package="polle"))
 #' d2 <- sim_two_stage(5e2, seed=1)
 #' head(d2, 5)
@@ -213,7 +215,7 @@ new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
 #' head(get_history(pd2, stage = 2)$AH, 5) # state/Markov type history and action, (H_k,A_k).
 #' head(get_history(pd2, stage = 2, full_history = TRUE)$AH, 5) # Full history and action, (H_k,A_k).
 #'
-#' ### Long data: Multiple stages
+#' ### Multiple stage case: Long data
 #' source(system.file("sim", "multi_stage.R", package="polle"))
 #' d3 <- sim_multi_stage(5e2, seed = 1)
 #' head(d3$stage_data, 10)

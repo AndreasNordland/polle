@@ -1,5 +1,18 @@
 library(data.table)
-sim_multi_stage_obs <- function(a, tau, lambda, alpha, sigma, beta, psi, xi, ...){
+
+a_obs <- function(t, x, beta, ...){
+  prob <- lava::expit(beta[1] + (beta[2] * t) + (beta[3] * x))
+  rbinom(n = 1, size = 1, prob = prob)
+}
+
+sim_multi_stage_obs <- function(a = a_obs,
+                                tau = 10,
+                                lambda = c(0, -0.4, 0.3),
+                                alpha = c(0, 0.5, 0.1, -0.5, 0.4),
+                                sigma = 1,
+                                beta = c(0.3, 0, -0.5),
+                                psi = 1,
+                                xi = 0.3, ...){
   a_fun <- a
   stage_vec <- vector("numeric")
   entry_vec <- vector("numeric")
@@ -73,10 +86,12 @@ sim_multi_stage_obs <- function(a, tau, lambda, alpha, sigma, beta, psi, xi, ...
   return(list(stage_data = stage_data, baseline_data = baseline_data))
 }
 
-sim_multi_stage <- function(n, par, a, seed = NULL){
+sim_multi_stage <- function(n, par = list(), a = NULL, seed = NULL){
   if (!is.null(seed)) set.seed(seed)
 
-  par <- append(par, list(a = a))
+  if (!is.null(a)){
+    par <- append(par, list(a = a))
+  }
 
   l <- sapply(
     1:n,

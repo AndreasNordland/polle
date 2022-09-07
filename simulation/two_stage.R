@@ -104,7 +104,7 @@ predict.g0 <- function(object, new_H){
 #
 # # two_stage_history <- state_stage_history(two_stage_policy_data, stage = 1)
 # two_stage_history <- state_history(two_stage_policy_data)
-# # two_stage_history <- full_stage_history(two_stage_policy_data, stage = 2)
+# # two_stage_history <- polle:::full_stage_history(two_stage_policy_data, stage = 2)
 #
 # get_H_names(two_stage_policy_data, stage = 2)
 # get_H(two_stage_history)
