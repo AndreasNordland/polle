@@ -30,3 +30,4 @@ pe1 <- list(
 
 # all(unlist(lapply(tmp1, coef)) == unlist(lapply(pe1, coef)))
 # all(unlist(lapply(tmp1, IC)) == unlist(lapply(pe1, IC)))
+# mapply(function(pe1, pe2) all.equal(pe1$policy_object, pe2$policy_object), tmp1, pe1)
