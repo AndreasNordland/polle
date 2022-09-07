@@ -157,8 +157,8 @@ pe2 <- list(
 
 # tmp2 <- pe2
 
-# all(unlist(lapply(tmp, coef)) == unlist(lapply(pe1, coef)))
-# all(unlist(lapply(tmp, IC)) == unlist(lapply(pe1, IC)))
+# all(unlist(lapply(tmp2, coef)) == unlist(lapply(pe2, coef)))
+# all(unlist(lapply(tmp2, IC)) == unlist(lapply(pe2, IC)))
 
 # Multiple stages ---------------------------------------------------------
 
@@ -219,5 +219,5 @@ pe3 <- list(
 
 # tmp3 <- pe3
 
-# all(unlist(lapply(tmp, coef)) == unlist(lapply(pe1, coef)))
-# all(unlist(lapply(tmp, IC)) == unlist(lapply(pe1, IC)))
+# all(unlist(lapply(tmp3, coef)) == unlist(lapply(pe3, coef)))
+# all(unlist(lapply(tmp3, IC)) == unlist(lapply(pe3, IC)))
