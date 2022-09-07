@@ -1,4 +1,37 @@
+#' Copy Policy Data Object
+#'
+#' Objects of class [policy_data] contains elements of class [data.table].
+#' \code{data.table} provide functions that operate on objects by reference.
+#' Thus, the \code{policy_data} object is not copied when modified by reference,
+#' see examples. An explicit copy can be made by \code{copy_policy_data}. The
+#' function is a wrapper of [data.table::copy()].
+#' @param object Object of class [policy_data].
+#' @return Object of class [policy_data].
 #' @export
+#' @examples
+#' library("polle")
+#' ### Single stage case: Wide data
+#' source(system.file("sim", "single_stage.R", package="polle"))
+#' d1 <- sim_single_stage(5e2, seed=1)
+#' head(d1, 5)
+#' # constructing policy_data object:
+#' pd1 <- policy_data(d1,
+#'                    action="A",
+#'                    covariates=c("Z", "B", "L"),
+#'                    utility="U")
+#' pd1
+#'
+#' # True copy
+#' pd2 <- copy_policy_data(pd1)
+#' # manipulating the data.table by reference:
+#' pd2$baseline_data[, id := id + 1]
+#' head(pd2$baseline_data$id - pd1$baseline_data$id)
+#'
+#' # False copy
+#' pd2 <- pd1
+#' # manipulating the data.table by reference:
+#' pd2$baseline_data[, id := id + 1]
+#' head(pd2$baseline_data$id - pd1$baseline_data$id)
 copy_policy_data <- function(object){
 
   object$stage_data <- copy(object$stage_data)
@@ -45,9 +78,35 @@ partial_stage_data <- function(stage_data, K, deterministic_reward_names){
 partial <- function(object, K)
   UseMethod("partial")
 
-#' @export
+#' Trim Number of Stages
+#'
+#' \code{partial} creates a partial policy data object by trimming
+#'  the maximal number of stages in the policy data object to a fixed
+#'  given number.
+#' @param object Object of class [policy_data].
+#' @param K Maximal number of stages.
+#' @return Object of class [policy_data].
+#' @examples
+#' library("polle")
+#' ### Multiple stage case
+#' source(system.file("sim", "multi_stage.R", package="polle"))
+#' d <- sim_multi_stage(5e2, seed = 1)
+#' # constructing policy_data object:
+#' pd <- policy_data(data = d$stage_data,
+#'                    baseline_data = d$baseline_data,
+#'                    type = "long",
+#'                    id = "id",
+#'                    stage = "stage",
+#'                    event = "event",
+#'                    action = "A",
+#'                    utility = "U")
+#' pd
+#' # Creating a partial policy data object with 3 stages
+#' pd3 <- partial(pd, K = 3)
+#' pd3
+#'@export
 partial.policy_data <- function(object, K){
-  # copy object to avoid references in data.table
+  # copy object to avoid reference issues in data.table
   object <- copy_policy_data(object)
 
   if(K >= object$dim$K)
@@ -62,17 +121,293 @@ partial.policy_data <- function(object, K){
   return(object)
 }
 
+#' Subset Policy Data on ID
+#'
+#' \code{subset} returns a policy data object containing the given IDs.
+#' @param object Object of class [policy_data].
+#' @param id character vectors of IDs.
+#' @return Object of class [policy_data].
+#' @examples
+#' library("polle")
+#' ### Single stage:
+#' source(system.file("sim", "single_stage.R", package="polle"))
+#' d <- sim_single_stage(5e2, seed=1)
+#' # constructing policy_data object:
+#' pd <- policy_data(d, action="A", covariates=list("Z", "B", "L"), utility="U")
+#' pd
+#'
+#' # getting the observation IDs:
+#' get_id(pd)[1:10]
+#'
+#' # subsetting on IDs:
+#' pdsub <- subset(pd, id = 250:500)
+#' get_id(pdsub)[1:10]
 #' @export
-subset.policy_data <- function(x, id){
-  if (!all(id %in% get_id(x))) stop("Invalid subset of IDs.")
+subset.policy_data <- function(object, id){
+  if (!all(id %in% get_id(object))) stop("Invalid subset of IDs.")
   id_ <- id; rm(id)
 
   spd <- new_policy_data(
-    stage_data = x$stage_data[id %in% id_],
-    baseline_data = x$baseline_data[id %in% id_]
+    stage_data = object$stage_data[id %in% id_],
+    baseline_data = object$baseline_data[id %in% id_]
   )
 
   return(spd)
+}
+
+
+#' Get the full history for a given stage
+#'
+#' @param object object of class [policy_data()].
+#' @param stage stage number.
+#' @return Object of class "history".
+full_stage_history <- function(object, stage){
+
+  if (stage > object$dim$K)
+    stop("The stage number must be lower or equal to maximal number of stages observed.")
+
+  stage_data <- object$stage_data
+  stage_data_names <- object$colnames$stage_data_names
+  baseline_data <- object$baseline_data
+  baseline_data_names <- object$colnames$baseline_data_names
+  action_set <- object$action_set
+  deterministic_reward_names <- object$colnames$deterministic_reward_names
+  stage_ <- stage; rm(stage)
+
+  # getting stage specific history names:
+  AH_names <- c("id", "stage", "A", stage_data_names)
+  # filtering rows which have an action (event = 0):
+  AH <- stage_data[event == 0, ]
+  # filtering rows up till the given stage number:
+  AH <- AH[stage <= stage_, ..AH_names]
+  # filtering observations with an action at the given stage:
+  AH <- AH[, if(any(stage == stage_)) .SD, id]
+  # transforming the data from long to wide format:
+  AH <- dcast(AH, id ~ stage, value.var = AH_names[-c(1,2)])
+  # inserting stage column:
+  AH[, stage := stage_]
+  # merging the stage specific histories and the the baseline data by reference:
+  if(length(baseline_data_names) > 0){
+    AH[baseline_data, (baseline_data_names) := mget(paste0('i.', baseline_data_names))]
+  }
+  # setting key and column order
+  setkey(AH, id, stage)
+  setcolorder(AH, neworder = c("id", "stage"))
+
+  # getting the accumulated utility and deterministic utility contributions
+  U <- stage_data[stage <= stage_][, U_bar := sum(U), id]
+  U <- U[event == 0][stage == stage_,]
+  U_names <- c("id", "stage", "U_bar", deterministic_reward_names)
+  U <- U[, ..U_names]
+
+  action_name <- paste("A", stage_, sep = "_")
+  # id_names <- c("id", "stage")
+  # AH_names <- names(AH)[!(names(AH) %in% c(id_names, action_name))]
+
+  history <- list(
+    AH = AH,
+    U = U,
+    action_name = action_name,
+    deterministic_reward_names = deterministic_reward_names,
+    action_set = action_set,
+    stage = stage_
+  )
+  class(history) <- "history"
+
+  return(history)
+}
+
+#' Get the state/Markov-type history for a given stage
+#'
+#' @param object object of class [policy_data()].
+#' @param stage stage number.
+#' @return Object of class "history".
+state_stage_history <- function(object, stage){
+
+  if (stage > object$dim$K)
+    stop("The stage number must be lower or equal to maximal number of stages observed.")
+
+  stage_data <- object$stage_data
+  stage_data_names <- object$colnames$stage_data_names
+  baseline_data <- object$baseline_data
+  baseline_data_names <- object$colnames$baseline_data_names
+  action_set <- object$action_set
+  deterministic_reward_names <- object$colnames$deterministic_reward_names
+  stage_ <- stage
+
+  # getting stage specific history names:
+  AH_names <- c("id", "stage", "A", stage_data_names)
+  # filtering rows which have an action (event = 0):
+  AH <- stage_data[event == 0, ]
+  # filtering observations with an action at the given stage:
+  AH <- AH[stage == stage_, ..AH_names]
+  # setting new names:
+  # new_names <- paste(c("A", stage_data_names), stage_, sep = "_")
+  # setnames(AH, old = c("A", stage_data_names), new = new_names)
+  # merging the stage specific histories and the the baseline data by reference:
+  if(length(baseline_data_names) > 0){
+    AH[baseline_data, (baseline_data_names) := mget(paste0('i.', baseline_data_names))]
+  }
+
+  # getting the accumulated utility and deterministic utility contributions
+  U <- stage_data[stage <= stage_][, U_bar := sum(U), id]
+  U <- U[event == 0][stage == stage_,]
+  U_names <- c("id", "stage", "U_bar", deterministic_reward_names)
+  U <- U[, ..U_names]
+
+  id_names <- c("id", "stage")
+  # action_name <- paste("A", stage_, sep = "_")
+  # AH_names <- names(AH)[!(names(AH) %in% c(id_names, action_name))]
+
+  history <- list(
+    AH = AH,
+    U = U,
+    action_name = "A",
+    deterministic_reward_names = deterministic_reward_names,
+    action_set = action_set,
+    stage = stage
+  )
+  class(history) <- "history"
+
+  return(history)
+}
+
+#' Get the state/Markov-type history for all stages
+#'
+#' @param object object of class [policy_data()].
+#' @return Object of class "history".
+state_history <- function(object){
+  stage_data <- object$stage_data
+  stage_data_names <- object$colnames$stage_data_names
+  baseline_data <- object$baseline_data
+  baseline_data_names <- object$colnames$baseline_data_names
+  action_set <- object$action_set
+
+  # getting stage specific history names:
+  AH_names <- c("id", "stage", "A", stage_data_names)
+  # filtering rows which have an action (event = 0):
+  AH <- stage_data[event == 0, ]
+  AH <- AH[, ..AH_names]
+  # merging the stage specific histories and the the baseline data by reference:
+  if(length(baseline_data_names) > 0){
+    AH[baseline_data, (baseline_data_names) := mget(paste0('i.', baseline_data_names))]
+  }
+
+  # id_names <- c("id", "stage")
+  action_name <- "A"
+  # AH_names <- names(history)[!(names(history) %in% c(id_names, action_name))]
+
+  history <- list(
+    AH = AH,
+    action_name = action_name,
+    action_set = action_set
+  )
+  class(history) <- "history"
+
+  return(history)
+}
+
+#'@export
+get_history <- function(object, stage = NULL, full_history = FALSE)
+  UseMethod("get_history")
+
+#' Get History Object
+#'
+#' \code{get_history} extracts the available history at a given stage from a
+#' [policy_data] object.
+#' @param object Object of class [policy_data].
+#' @param stage Stage number.
+#' @param full_history Logical. If TRUE, the full history will be used.
+#' If FALSE, only the state/Markov-type history will be used.
+#' @examples
+#' library("polle")
+#' ### Single stage:
+#' source(system.file("sim", "single_stage.R", package="polle"))
+#' d1 <- sim_single_stage(5e2, seed=1)
+#' # constructing policy_data object:
+#' pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
+#' pd1
+#' # In the single stage case, set stage = NULL
+#' h1 <- get_history(pd1)
+#' head(h1$AH)
+#'
+#' ### Two stages:
+#' source(system.file("sim", "two_stage.R", package="polle"))
+#' d2 <- sim_two_stage(5e2, seed=1)
+#' # constructing policy_data object:
+#' pd2 <- policy_data(d2,
+#'                   action = c("A_1", "A_2"),
+#'                   covariates = list(L = c("L_1", "L_2"),
+#'                                     C = c("C_1", "C_2")),
+#'                   utility = c("U_1", "U_2", "U_3"))
+#' pd2
+#' # getting the state/Markov-type history across all stages:
+#' h2 <- get_history(pd2)
+#' head(h2$AH)
+#' # getting the full history at stage 2:
+#' h2 <- get_history(pd2, stage = 2, full_history = TRUE)
+#' head(h2$AH)
+#' # getting the state/Markov-type history at stage 2:
+#' h2 <- get_history(pd2, stage = 2, full_history = FALSE)
+#' head(h2$AH)
+#' @export
+get_history.policy_data <- function(object, stage = NULL, full_history = FALSE){
+  if (full_history == TRUE){
+    if (is.null(stage)) stop("Please provide a stage number.")
+    his <- full_stage_history(object, stage = stage)
+  } else{
+    if (is.null(stage)){
+      his <- state_history(object)
+    } else{
+      his <- state_stage_history(object, stage = stage)
+    }
+  }
+  return(his)
+}
+
+#' @export
+get_history_names <- function(object, stage)
+  UseMethod("get_history_names")
+
+#' Get history variable names
+#'
+#' [get_history_names()] returns the variable names of the history matrix
+#' \eqn{H_k} for the given stage \eqn{k}. The function is useful when specifying
+#' the design matrix for [g_model()] and [q_model()].
+#' @param policy_data Policy data object created by [policy_data()].
+#' @param stage Stage number. If NULL, the state/Markov-type history variable
+#' names are returned.
+#' @return Character vector.
+#' @examples
+#' library("polle")
+#' ### Multiple stage case
+#' source(system.file("sim", "multi_stage.R", package="polle"))
+#' d3 <- sim_multi_stage(5e2, seed = 1)
+#' # constructing policy_data object:
+#' pd3 <- policy_data(data = d3$stage_data,
+#'                    baseline_data = d3$baseline_data,
+#'                    type = "long",
+#'                    id = "id",
+#'                    stage = "stage",
+#'                    event = "event",
+#'                    action = "A",
+#'                    utility = "U")
+#' pd3
+#' # state/Markov type history variable names (H):
+#' get_history_names(pd3)
+#' # Full history variable names (H_k) at stage 2:
+#' get_history_names(pd3, stage = 2)
+#' @export
+get_history_names.policy_data <- function(object, stage = NULL){
+  if (is.null(stage)){
+    history <- get_history(object, full_history = FALSE)
+  } else{
+    history <- get_history(object, stage = stage, full_history = TRUE)
+  }
+  AH <- history$AH
+  action_name <- history$action_name
+  history_names <- names(AH)[!(names(AH) %in% c("id", "stage", action_name))]
+  return(history_names)
 }
 
 #' @export
@@ -107,6 +442,10 @@ get_id.policy_data <- function(object){
   id <- unique(object$stage_data$id)
   return(id)
 }
+
+#' @export
+get_id_stage <- function(object)
+  UseMethod("get_id_stage")
 
 #' @export
 get_id_stage.policy_data <- function(object){

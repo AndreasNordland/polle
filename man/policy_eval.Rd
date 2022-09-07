@@ -30,7 +30,7 @@ policy_eval(
 
 \item{g_models}{Propensity models/g-models created by \code{\link[=g_glm]{g_glm()}}, \code{\link[=g_rf]{g_rf()}}, \code{\link[=g_sl]{g_sl()}} or similar functions. Only used for evaluation if \code{g_functions} is NULL.}
 
-\item{g_full_history}{If TRUE, the full history is used to fit each g-model. If FALSE, the single stage/"Markov type" history is used to fit each g-model.}
+\item{g_full_history}{If TRUE, the full history is used to fit each g-model. If FALSE, the state/Markov type history is used to fit each g-model.}
 
 \item{q_functions}{Fitted Q-model objects, see \code{\link[=fit_Q_functions]{fit_Q_functions()}}. Only valid if the Q-functions are fitted using the same policy. Preferably, use \code{q_models}.}
 
@@ -51,8 +51,7 @@ policy_eval(
 library("polle")
 ### Single stage:
 source(system.file("sim", "single_stage.R", package="polle"))
-par0 <- c(k = .1,  d = .5, a = 1, b = -2.5, c = 3, s = 1)
-d1 <- sim_single_stage(5e2, seed=1, par=par0); rm(par0)
+d1 <- sim_single_stage(5e2, seed=1)
 # constructing policy_data object:
 pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
 pd1
@@ -68,8 +67,7 @@ pe1
 
 ### Two stages:
 source(system.file("sim", "two_stage.R", package="polle"))
-par0 <- c(gamma = 0.5, beta = 1)
-d2 <- sim_two_stage(5e2, seed=1, par=par0); rm(par0)
+d2 <- sim_two_stage(5e2, seed=1)
 # constructing policy_data object:
 pd2 <- policy_data(d2,
                   action = c("A_1", "A_2"),

@@ -67,12 +67,12 @@ indicator, action (\eqn{A_k}), state covariates
 deterministic rewards.}
 \item{\code{baseline_data}}{\link{data.table} containing the id and baseline
 covariates (\eqn{B}).}
-\item{\code{colnames}}{list containing the state covariate names, baseline
+\item{\code{colnames}}{List containing the state covariate names, baseline
 covariate names, and the deterministic reward variable
 names.}
 \item{\code{action_set}}{Character vector describing the action set, i.e.,
 the possible actions at each stage.}
-\item{\code{dim}}{list containing the number of observations (n) and the
+\item{\code{dim}}{List containing the number of observations (n) and the
 number of stages (K).}
 }
 \description{
@@ -95,7 +95,7 @@ The utility is given by the sum of the rewards, i.e.,
 }
 \examples{
 library("polle")
-### Wide data: Single stage
+### Single stage case: Wide data
 source(system.file("sim", "single_stage.R", package="polle"))
 d1 <- sim_single_stage(5e2, seed=1)
 head(d1, 5)
@@ -109,7 +109,7 @@ head(get_actions(pd1), 5)
 head(utility(pd1), 5)
 head(get_history(pd1)$AH, 5)
 
-### Wide data: Two stages
+### Two stage caseL Wide data
 source(system.file("sim", "two_stage.R", package="polle"))
 d2 <- sim_two_stage(5e2, seed=1)
 head(d2, 5)
@@ -124,7 +124,7 @@ pd2
 head(get_history(pd2, stage = 2)$AH, 5) # state/Markov type history and action, (H_k,A_k).
 head(get_history(pd2, stage = 2, full_history = TRUE)$AH, 5) # Full history and action, (H_k,A_k).
 
-### Long data: Multiple stages
+### Multiple stage case: Long data
 source(system.file("sim", "multi_stage.R", package="polle"))
 d3 <- sim_multi_stage(5e2, seed = 1)
 head(d3$stage_data, 10)
@@ -140,4 +140,7 @@ pd3 <- policy_data(data = d3$stage_data,
 pd3
 head(get_history(pd3, stage = 3)$AH, 5) # state/Markov type history and action, (H_k,A_k).
 head(get_history(pd3, stage = 2, full_history = T)$AH, 5) # Full history and action, (H_k,A_k).
+}
+\seealso{
+\code{\link[=policy_eval]{policy_eval()}}, \code{\link[=policy_learn]{policy_learn()}}, \code{\link[=get_history]{get_history()}}, \code{\link[=get_actions]{get_actions()}}, \code{\link[=utility]{utility()}}.
 }
