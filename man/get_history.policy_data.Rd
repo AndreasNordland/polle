@@ -15,7 +15,7 @@
 If FALSE, only the state/Markov-type history will be used.}
 }
 \description{
-\code{get_history} extracts the available history at a given stage from a
+\code{get_history} extracts the history and action at a given stage from a
 \link{policy_data} object.
 }
 \examples{

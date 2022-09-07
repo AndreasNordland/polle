@@ -28,18 +28,18 @@ fit_g_functions_cf(
 }
 \examples{
 #' library("polle")
-### Simulating two-stage policy data
+### Two stage:
 source(system.file("sim", "two_stage.R", package="polle"))
-par0 <- c(gamma = 0.5, beta = 1)
-d <- sim_two_stage(2e3, seed=1, par=par0)
+d <- sim_two_stage(2e3, seed=1)
 pd <- policy_data(d,
                   action = c("A_1", "A_2"),
+                  baseline = c("B"),
                   covariates = list(L = c("L_1", "L_2"),
                                     C = c("C_1", "C_2")),
                   utility = c("U_1", "U_2", "U_3"))
 pd
 
-# creating 2 folds (indices for each validation fold)
+# creating 2 folds (indices for each validation fold):
 folds <- split(sample(1:get_n(pd), get_n(pd)), rep(1:2, length.out = get_n(pd)))
 
 # fitting a single g-model across all stages for each fold:

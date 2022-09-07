@@ -22,7 +22,7 @@ the design matrix for \code{\link[=g_model]{g_model()}} and \code{\link[=q_model
 }
 \examples{
 library("polle")
-### Multiple stage case
+### Multiple stages:
 source(system.file("sim", "multi_stage.R", package="polle"))
 d3 <- sim_multi_stage(5e2, seed = 1)
 # constructing policy_data object:
