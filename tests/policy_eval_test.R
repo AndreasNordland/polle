@@ -73,8 +73,6 @@ pe1 <- list(
 # all(unlist(lapply(tmp, coef)) == unlist(lapply(pe1, coef)))
 # all(unlist(lapply(tmp, IC)) == unlist(lapply(pe1, IC)))
 
-
-
 # Two stages ---------------------------------------------------------------
 
 source(system.file("sim", "two_stage.R", package="polle"))
@@ -219,5 +217,7 @@ pe3 <- list(
                    M = 2)
 )
 
-tmp3 <- pe3
+# tmp3 <- pe3
 
+# all(unlist(lapply(tmp, coef)) == unlist(lapply(pe1, coef)))
+# all(unlist(lapply(tmp, IC)) == unlist(lapply(pe1, IC)))
