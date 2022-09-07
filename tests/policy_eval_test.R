@@ -68,7 +68,7 @@ pe1 <- list(
                        M = 2)
 )
 
-tmp <- pe1
+# tmp <- pe1
 
 # all(unlist(lapply(tmp, coef)) == unlist(lapply(pe1, coef)))
 # all(unlist(lapply(tmp, IC)) == unlist(lapply(pe1, IC)))
@@ -157,7 +157,7 @@ pe2 <- list(
                          M = 2)
 )
 
-tmp2 <- pe2
+# tmp2 <- pe2
 
 # all(unlist(lapply(tmp, coef)) == unlist(lapply(pe1, coef)))
 # all(unlist(lapply(tmp, IC)) == unlist(lapply(pe1, IC)))
