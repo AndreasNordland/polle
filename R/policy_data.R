@@ -198,7 +198,7 @@ new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
 #' pd1
 #' head(get_actions(pd1), 5)
 #' head(utility(pd1), 5)
-#' head(get_history(pd1)$AH, 5)
+#' head(get_history(pd1)$H, 5)
 #'
 #' ### Two stage caseL Wide data
 #' source(system.file("sim", "two_stage.R", package="polle"))
@@ -212,8 +212,8 @@ new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
 #'                                     C = c("C_1", "C_2")),
 #'                   utility = c("U_1", "U_2", "U_3"))
 #' pd2
-#' head(get_history(pd2, stage = 2)$AH, 5) # state/Markov type history and action, (H_k,A_k).
-#' head(get_history(pd2, stage = 2, full_history = TRUE)$AH, 5) # Full history and action, (H_k,A_k).
+#' head(get_history(pd2, stage = 2)$H, 5) # state/Markov type history and action, (H_k,A_k).
+#' head(get_history(pd2, stage = 2, full_history = TRUE)$H, 5) # Full history and action, (H_k,A_k).
 #'
 #' ### Multiple stage case: Long data
 #' source(system.file("sim", "multi_stage.R", package="polle"))
@@ -229,8 +229,8 @@ new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
 #'                    action = "A",
 #'                    utility = "U")
 #' pd3
-#' head(get_history(pd3, stage = 3)$AH, 5) # state/Markov type history and action, (H_k,A_k).
-#' head(get_history(pd3, stage = 2, full_history = T)$AH, 5) # Full history and action, (H_k,A_k).
+#' head(get_history(pd3, stage = 3)$H, 5) # state/Markov type history and action, (H_k,A_k).
+#' head(get_history(pd3, stage = 2, full_history = T)$H, 5) # Full history and action, (H_k,A_k).
 #' @export
 policy_data <- function(data, baseline_data,
                         type="wide",

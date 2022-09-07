@@ -194,18 +194,21 @@ full_stage_history <- function(object, stage){
   setkey(AH, id, stage)
   setcolorder(AH, neworder = c("id", "stage"))
 
+  # separating the action at the given stage
+  action_name <- paste("A", stage_, sep = "_")
+  A_names <- c("id", "stage", action_name)
+  A <- AH[ , ..A_names]
+  H <- AH[, c(action_name) := NULL]
+
   # getting the accumulated utility and deterministic utility contributions
   U <- stage_data[stage <= stage_][, U_bar := sum(U), id]
   U <- U[event == 0][stage == stage_,]
   U_names <- c("id", "stage", "U_bar", deterministic_reward_names)
   U <- U[, ..U_names]
 
-  action_name <- paste("A", stage_, sep = "_")
-  # id_names <- c("id", "stage")
-  # AH_names <- names(AH)[!(names(AH) %in% c(id_names, action_name))]
-
   history <- list(
-    AH = AH,
+    H = H,
+    A = A,
     U = U,
     action_name = action_name,
     deterministic_reward_names = deterministic_reward_names,
@@ -235,19 +238,22 @@ state_stage_history <- function(object, stage){
   deterministic_reward_names <- object$colnames$deterministic_reward_names
   stage_ <- stage
 
-  # getting stage specific history names:
+  # getting the state names:
   AH_names <- c("id", "stage", "A", stage_data_names)
   # filtering rows which have an action (event = 0):
   AH <- stage_data[event == 0, ]
   # filtering observations with an action at the given stage:
   AH <- AH[stage == stage_, ..AH_names]
-  # setting new names:
-  # new_names <- paste(c("A", stage_data_names), stage_, sep = "_")
-  # setnames(AH, old = c("A", stage_data_names), new = new_names)
-  # merging the stage specific histories and the the baseline data by reference:
+  # merging the state history and the the baseline data:
   if(length(baseline_data_names) > 0){
     AH[baseline_data, (baseline_data_names) := mget(paste0('i.', baseline_data_names))]
   }
+
+  ### constructing H and A:
+  # separating the action at the given stage
+  A_names <- c("id", "stage", "A")
+  A <- AH[ , ..A_names]
+  H <- AH[, c("A") := NULL]
 
   # getting the accumulated utility and deterministic utility contributions
   U <- stage_data[stage <= stage_][, U_bar := sum(U), id]
@@ -256,11 +262,10 @@ state_stage_history <- function(object, stage){
   U <- U[, ..U_names]
 
   id_names <- c("id", "stage")
-  # action_name <- paste("A", stage_, sep = "_")
-  # AH_names <- names(AH)[!(names(AH) %in% c(id_names, action_name))]
 
   history <- list(
-    AH = AH,
+    H = H,
+    A = A,
     U = U,
     action_name = "A",
     deterministic_reward_names = deterministic_reward_names,
@@ -293,13 +298,16 @@ state_history <- function(object){
     AH[baseline_data, (baseline_data_names) := mget(paste0('i.', baseline_data_names))]
   }
 
-  # id_names <- c("id", "stage")
-  action_name <- "A"
-  # AH_names <- names(history)[!(names(history) %in% c(id_names, action_name))]
+  ### constructing H and A:
+  # separating the action at the given stage
+  A_names <- c("id", "stage", "A")
+  A <- AH[ , ..A_names]
+  H <- AH[, c("A") := NULL]
 
   history <- list(
-    AH = AH,
-    action_name = action_name,
+    H = H,
+    A = A,
+    action_name = "A",
     action_set = action_set
   )
   class(history) <- "history"
@@ -329,7 +337,7 @@ get_history <- function(object, stage = NULL, full_history = FALSE)
 #' pd1
 #' # In the single stage case, set stage = NULL
 #' h1 <- get_history(pd1)
-#' head(h1$AH)
+#' head(h1$H)
 #'
 #' ### Two stages:
 #' source(system.file("sim", "two_stage.R", package="polle"))
@@ -337,19 +345,20 @@ get_history <- function(object, stage = NULL, full_history = FALSE)
 #' # constructing policy_data object:
 #' pd2 <- policy_data(d2,
 #'                   action = c("A_1", "A_2"),
+#'                   baseline = c("B"),
 #'                   covariates = list(L = c("L_1", "L_2"),
 #'                                     C = c("C_1", "C_2")),
 #'                   utility = c("U_1", "U_2", "U_3"))
 #' pd2
 #' # getting the state/Markov-type history across all stages:
 #' h2 <- get_history(pd2)
-#' head(h2$AH)
+#' head(h2$H)
 #' # getting the full history at stage 2:
 #' h2 <- get_history(pd2, stage = 2, full_history = TRUE)
-#' head(h2$AH)
+#' head(h2$H)
 #' # getting the state/Markov-type history at stage 2:
 #' h2 <- get_history(pd2, stage = 2, full_history = FALSE)
-#' head(h2$AH)
+#' head(h2$H)
 #' @export
 get_history.policy_data <- function(object, stage = NULL, full_history = FALSE){
   if (full_history == TRUE){
@@ -404,9 +413,9 @@ get_history_names.policy_data <- function(object, stage = NULL){
   } else{
     history <- get_history(object, stage = stage, full_history = TRUE)
   }
-  AH <- history$AH
-  action_name <- history$action_name
-  history_names <- names(AH)[!(names(AH) %in% c("id", "stage", action_name))]
+  H <- getElement(history, "H")
+  stopifnot(!is.null(H))
+  history_names <- names(H)[!(names(H) %in% c("id", "stage"))]
   return(history_names)
 }
 
