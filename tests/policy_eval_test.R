@@ -68,8 +68,8 @@ pe1 <- list(
                        M = 2)
 )
 
-# save(pe1, file = "tests/policy_eval_test_pe1.RData")
-pe1_master <- load(file = "tests/policy_eval_test_pe1.RData")
+# saveRDS(pe1, file = "tests/policy_eval_test_pe1.Rds")
+pe1_master <- readRDS(file = "tests/policy_eval_test_pe1.Rds")
 
 # tmp <- pe1
 
@@ -82,6 +82,7 @@ source(system.file("sim", "two_stage.R", package="polle"))
 d2 <- sim_two_stage(1e3, seed=1)
 pd2 <- policy_data(d2,
                    action = c("A_1", "A_2"),
+                   baseline = "B",
                    covariates = list(L = c("L_1", "L_2"),
                                      C = c("C_1", "C_2")),
                    utility = c("U_1", "U_2", "U_3"))
@@ -157,8 +158,8 @@ pe2 <- list(
                          M = 2)
 )
 
-# save(pe2, file = "tests/policy_eval_test_pe2.RData")
-pe2_master <- load(file = "tests/policy_eval_test_pe2.RData")
+# saveRDS(pe2, file = "tests/policy_eval_test_pe2.Rds")
+pe2_master <- readRDS(file = "tests/policy_eval_test_pe2.Rds")
 
 # tmp2 <- pe2
 
@@ -181,8 +182,7 @@ pl3_dynamic <- policy_def(
   reuse = TRUE
 )
 
-get_history_names(pd3, stage = 2)
-
+set.seed(1)
 pe3 <- list(
   ipw =  policy_eval(type = "ipw",
                      policy_data = pd3,
@@ -221,6 +221,9 @@ pe3 <- list(
                    q_full_history = TRUE,
                    M = 2)
 )
+
+# saveRDS(pe3, file = "tests/policy_eval_test_pe3.Rds")
+pe3_master <- readRDS(file = "tests/policy_eval_test_pe3.Rds")
 
 # tmp3 <- pe3
 
