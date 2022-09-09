@@ -125,4 +125,3 @@ sim_multi_stage <- function(n, par = list(), a = NULL, seed = NULL){
 
   return(list(stage_data = stage_data, baseline_data = baseline_data))
 }
-
