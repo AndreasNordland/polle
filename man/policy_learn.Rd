@@ -137,17 +137,19 @@ head(get_policy(pe$policy_object)(pd)); rm(pl, pe)
 ### V-restricted Policy Tree Learning
 
 # specifying the learner:
-pl <- policy_learn(type = "ptl", policy_vars = c("C", "BB"))
+pl <- policy_learn(type = "ptl",
+                   policy_vars = list(c("C_1", "BB"),
+                                      c("L_1", "BB")),
+                   policy_full_history = TRUE)
 
 # evaluating the learned policy:
+set.seed(1)
 pe <- policy_eval(policy_data = pd,
                   policy_learn = pl,
                   q_models = q_glm(),
                   g_models = g_glm())
 pe
 pe$policy_object$ptl_objects
-
-### Cross-fitted Policy Learning
 }
 \seealso{
 \code{\link[=policy_def]{policy_def()}}, \code{\link[=get_policy_functions]{get_policy_functions()}}.

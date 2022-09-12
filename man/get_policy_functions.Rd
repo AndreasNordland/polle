@@ -13,10 +13,12 @@ get_policy_functions(object, stage)
 }
 \value{
 Functions with arguments:
-\item{\code{H}}{\link{data.table}}
+\item{\code{H}}{\link{data.table} containing the variables needed to evaluate the policy (and g-function).}
 }
 \description{
-\code{get_policy_functions()}
+\code{get_policy_functions()} returns a function defining the policy at
+the given stage. \code{get_policy_functions()} is useful when implementing
+the learned policy.
 }
 \examples{
 library("polle")
@@ -31,10 +33,13 @@ pd <- policy_data(d,
                   utility = c("U_1", "U_2", "U_3"))
 pd
 
-### V-restricted (Doubly Robust) Q-learning
+### Realistic V-restricted (Doubly Robust) Q-learning
 # specifying the learner:
 pl <- policy_learn(type = "rqvl",
-                   qv_models = q_glm(formula = ~ C))
+                   qv_full_history = TRUE,
+                   qv_models = list(q_glm(formula = ~ C_1),
+                                    q_glm(formula = ~ L_2)),
+                   alpha = 0.05)
 # applying the learner:
 po <- pl(policy_data = pd,
          q_models = q_glm(),
@@ -47,12 +52,20 @@ args(pf2)
 
 # applying the policy function to new data:
 set.seed(1)
-d2 <- pf2(H = data.table(C = rnorm(n = 10)))
+L_2 <- rnorm(n = 10)
+new_H <- data.table(BB = "group1",
+                    C = rnorm(n = 10),
+                    L = L_2,
+                    L_2 = L_2)
+d2 <- pf2(H = new_H)
 d2
 
 # comparing get_policy_functions() and get_policy():
+new_H <- get_history(pd, stage = 2, full_history = TRUE)$H
+new_H$L <- new_H$L_2
+new_H$C <- new_H$C_2
 all.equal(
- pf2(H = get_history(pd, stage = 2)$H),
+ pf2(H = new_H),
  get_policy(po)(pd)[stage == 2]$d
 )
 rm(pl, po, d2)
@@ -60,7 +73,9 @@ rm(pl, po, d2)
 ### Realistic V-restricted Policy Tree Learning
 # specifying the learner:
 pl <- policy_learn(type = "ptl",
-                   policy_vars = c("C", "BB"),
+                   policy_vars = list(c("C_1", "BB"),
+                                      c("L_1", "BB")),
+                   policy_full_history = TRUE,
                    alpha = 0.05)
 
 # applying the learner:
@@ -74,15 +89,20 @@ args(pf2)
 
 # applying the policy function to new data:
 set.seed(1)
+L_1 <- rnorm(n = 10)
 new_H <- data.table(C = rnorm(n = 10),
-                    L = rnorm(n = 10),
+                    L = L_1,
+                    L_1 = L_1,
                     BB = "group1")
-d2 <- pf2(H = new_H, g_H = new_H)
+d2 <- pf2(H = new_H)
 d2
 
 # comparing get_policy_functions() and get_policy():
+new_H <- get_history(pd, stage = 2, full_history = TRUE)$H
+new_H$L <- new_H$L_2
+new_H$C <- new_H$C_2
 all.equal(
- pf2(H = get_history(pd, stage = 2)$H, g_H = get_history(pd, stage = 2)$H),
+ pf2(H = new_H),
  get_policy(po)(pd)[stage == 2]$d
 )
 }
