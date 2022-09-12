@@ -282,40 +282,29 @@ get_policy_functions.RQVL <- function(object, stage){
 
   alpha <- object$alpha
 
-  if (alpha == 0){
-    stage_policy <- function(H, ...){
-      qv_values <- sapply(
-        qv_model,
-        function(qvm){
-          predict(qvm, H)
-        }
-      )
+
+  stage_policy <- function(H){
+    qv_values <- sapply(
+      qv_model,
+      function(qvm){
+        predict(qvm, H)
+      }
+    )
+
+    if (alpha == 0){
       dd <- apply(qv_values, MARGIN = 1, which.max)
       d <- action_set[dd]
-      return(d)
-    }
-  }
-  if (alpha > 0){
-    stage_policy <- function(H, g_H){
-      # getting the qv predictions for each action:
-
-      qv_values <- sapply(
-        qv_model,
-        function(qvm){
-          predict(qvm, H)
-        }
-      )
-
+    } else{
       # evaluating the g-function:
-      if (!all(g_function$H_names == names(g_H))){
+      if (!all(g_function$H_names %in% names(H))){
         mes <- paste(
-          "g_H must contain the columns",
+          "H must contain the columns",
           paste(g_function$H_names, collapse = ","),
-          "(in that order)."
+          "."
         )
         stop(mes)
       }
-      g_values <- predict(g_function$g_model, new_H = g_H)
+      g_values <- predict(g_function$g_model, new_H = H)
 
       # calculating the realistic actions:
       realistic_actions <- t(apply(g_values, MARGIN = 1, function(x) x >= alpha))
@@ -324,9 +313,9 @@ get_policy_functions.RQVL <- function(object, stage){
       # getting the action with the maximal realistic Q-function value:
       dd <- apply(qv_values * realistic_actions, MARGIN = 1, which.max)
       d <- action_set[dd]
-
-      return(d)
     }
+
+    return(d)
   }
 
   return(stage_policy)
