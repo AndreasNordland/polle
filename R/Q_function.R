@@ -1,4 +1,3 @@
-#' @export
 fit_Q_function <- function(history, Q, q_model){
 
   action_set <- getElement(history, "action_set")
@@ -47,7 +46,6 @@ print.Q_function <- function(x){
   print(y)
 }
 
-#' @export
 evaluate.Q_function <- function(object, new_history){
   q_model <- getElement(object, "q_model")
   action_set <- getElement(new_history, "action_set")
@@ -154,11 +152,11 @@ q_step_cf <- function(folds, policy_data, k, full_history, Q, q_models, future_a
 #' Fit Q-functions
 #'
 #' \code{fit_Q_functions} is used to fit a list of Q-models
+#' @noRd
 #' @param policy_data Policy data object created by [policy_data()].
 #' @param policy_actions Policy actions, see [policy_def].
 #' @param q_models Outcome regression models/Q-models created by [q_glm()], [q_rf()], [q_sl()] or similar functions.
 #' @param full_history If TRUE, the full history is used to fit each Q-model. If FALSE, the single stage/"Markov type" history is used to fit each Q-model.
-#' @export
 #' @examples
 #' library("polle")
 #' ### Simulating two-stage policy data
