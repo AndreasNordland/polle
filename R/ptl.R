@@ -309,11 +309,13 @@ get_policy_functions.PTL <- function(object, stage){
 
   if (alpha == 0){
     stage_policy <- function(H, ...){
-      if(!all(policy_vars == colnames(H))){
+      H <- as.data.table(H)
+      if(!all(policy_vars %in% colnames(H))){
         mes <- "H must have column names "
-        mes <- paste(mes, paste(policy_vars, collapse = ", "), " (in that order).", sep = "")
+        mes <- paste(mes, paste(policy_vars, collapse = ", "), ".", sep = "")
         stop(mes)
       }
+      H <- H[, ..policy_vars]
 
       dd <- predict(ptl_object, newdata = H)
       d <- action_set[dd]
@@ -322,21 +324,23 @@ get_policy_functions.PTL <- function(object, stage){
   }
   if (alpha > 0){
     stage_policy <- function(H, g_H){
-      if(!all(policy_vars == colnames(H))){
+      H <- as.data.table(H)
+      if(!all(policy_vars %in% colnames(H))){
         mes <- "H must have column names "
-        mes <- paste(mes, paste(policy_vars, collapse = ", "), " (in that order).", sep = "")
+        mes <- paste(mes, paste(policy_vars, collapse = ", "), ".", sep = "")
         stop(mes)
       }
+      H <- H[, ..policy_vars]
 
       dd <- predict(ptl_object, newdata = H)
       d <- action_set[dd]
 
       # evaluating the g-function:
-      if (!all(g_function$H_names == names(g_H))){
+      if (!all(g_function$H_names %in% names(g_H))){
         mes <- paste(
           "g_H must contain the columns",
           paste(g_function$H_names, collapse = ","),
-          "(in that order)."
+          "."
         )
         stop(mes)
       }

@@ -7,9 +7,9 @@
 full_history(object, stage)
 }
 \arguments{
-\item{object}{object of class \code{\link[=policy_data]{policy_data()}}.}
-
 \item{stage}{stage number.}
+
+\item{x}{Object of class \code{\link[=policy_data]{policy_data()}}.}
 }
 \value{
 Object of class "history".

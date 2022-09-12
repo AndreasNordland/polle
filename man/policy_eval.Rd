@@ -2,6 +2,11 @@
 % Please edit documentation in R/policy_eval.R
 \name{policy_eval}
 \alias{policy_eval}
+\alias{coef.policy_eval}
+\alias{IC.policy_eval}
+\alias{vcov.policy_eval}
+\alias{summary.policy_eval}
+\alias{estimate.policy_eval}
 \title{Policy Evaluation}
 \usage{
 policy_eval(
@@ -18,6 +23,16 @@ policy_eval(
   M = 1,
   future_args = list(future.seed = TRUE)
 )
+
+\method{coef}{policy_eval}(object, ...)
+
+\method{IC}{policy_eval}(x, ...)
+
+\method{vcov}{policy_eval}(object, ...)
+
+\method{summary}{policy_eval}(object, ...)
+
+\method{estimate}{policy_eval}(x, ..., labels = x$name)
 }
 \arguments{
 \item{policy_data}{Policy data object created by \code{\link[=policy_data]{policy_data()}}.}
@@ -52,7 +67,6 @@ library("polle")
 ### Single stage:
 source(system.file("sim", "single_stage.R", package="polle"))
 d1 <- sim_single_stage(5e2, seed=1)
-# constructing policy_data object:
 pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
 pd1
 # defining a static policy:
@@ -62,13 +76,12 @@ pe1 <- policy_eval(policy_data = pd1,
             policy = pl1,
             g_models = g_glm(),
             q_models = q_glm())
-# printing the estimated value:
+# summarising the estimated value of the policy:
 pe1
 
 ### Two stages:
 source(system.file("sim", "two_stage.R", package="polle"))
 d2 <- sim_two_stage(5e2, seed=1)
-# constructing policy_data object:
 pd2 <- policy_data(d2,
                   action = c("A_1", "A_2"),
                   covariates = list(L = c("L_1", "L_2"),
@@ -80,12 +93,13 @@ pl2 <- policy_learn(type = "rqvl",
                    qv_models = list(q_glm(~C_1), q_glm(~C_1+C_2)),
                    qv_full_history = TRUE,
                    L = 2) # number of folds for cross-fitting
-
 pe2 <- policy_eval(type = "dr",
-            policy_data = pd2,
-            policy_learn = pl2,
-            q_models = q_glm(),
-            g_models = g_glm(),
-            M = 2) # number of folds for cross-evaluation
+                   policy_data = pd2,
+                   policy_learn = pl2,
+                   q_models = q_glm(),
+                   g_models = g_glm(),
+                   M = 2) # number of folds for cross-evaluation
 pe2
+# getting the influence curve for the value:
+head(IC(pe2))
 }

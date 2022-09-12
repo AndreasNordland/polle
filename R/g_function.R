@@ -1,9 +1,9 @@
-#' Fit single g-function
+#' Fit Single g-function
 #'
-#' \code{fit_g_function} is used to fit a single g-model
+#' \code{fit_g_function} is used to fit a single g-model.
 #' @param history History object created by [get_history()]
 #' @param g_model Propensity model/g-model created by [g_glm()], [g_rf()], [g_sl()] or similar functions.
-#' @export
+#' @returns Object of class "g_function".
 #' @examples
 #' library("polle")
 #' ### Simulating two-stage policy data
@@ -25,6 +25,7 @@
 #'   g_model = g_glm()
 #' )
 #' g_function
+#' @noRd
 fit_g_function <- function(history, g_model){
   action_set <- history$action_set
 
@@ -63,7 +64,6 @@ print.g_function <- function(x){
   print(y)
 }
 
-#' @export
 evaluate.g_function <- function(object, new_history){
   g_model <- object$g_model
   H_names <- object$H_names
@@ -99,7 +99,6 @@ evaluate.g_function <- function(object, new_history){
 #' @param policy_data Policy data object created by [policy_data()].
 #' @param g_models Propensity models/g-models created by [g_glm()], [g_rf()], [g_sl()] or similar functions.
 #' @param full_history If TRUE, the full history is used to fit each g-model. If FALSE, the single stage/"Markov type" history is used to fit each g-model.
-#' @export
 #' @examples
 #' library("polle")
 #' ### Simulating two-stage policy data
@@ -124,6 +123,7 @@ evaluate.g_function <- function(object, new_history){
 #'                                g_models = list(g_glm(), g_glm()),
 #'                                full_history = TRUE)
 #' g_functions
+#' @noRd
 fit_g_functions <- function(policy_data, g_models, full_history){
   K <- get_K(policy_data)
 
@@ -191,7 +191,7 @@ fit_g_functions <- function(policy_data, g_models, full_history){
 #'                                   full_history = TRUE)
 #' future::plan("sequential")
 #' g_functions$functions
-#'@export
+#' @noRd
 fit_g_functions_cf <- function(folds,
                                policy_data,
                                g_models,

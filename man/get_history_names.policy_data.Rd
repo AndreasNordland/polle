@@ -16,8 +16,8 @@ names are returned.}
 Character vector.
 }
 \description{
-\code{\link[=get_history_names]{get_history_names()}} returns the variable names of the history matrix
-\eqn{H_k} for the given stage \eqn{k}. The function is useful when specifying
+\code{\link[=get_history_names]{get_history_names()}} returns the state covariate names of the history data
+table for a given stage. The function is useful when specifying
 the design matrix for \code{\link[=g_model]{g_model()}} and \code{\link[=q_model]{q_model()}}.
 }
 \examples{
@@ -25,7 +25,6 @@ library("polle")
 ### Multiple stages:
 source(system.file("sim", "multi_stage.R", package="polle"))
 d3 <- sim_multi_stage(5e2, seed = 1)
-# constructing policy_data object:
 pd3 <- policy_data(data = d3$stage_data,
                    baseline_data = d3$baseline_data,
                    type = "long",
@@ -37,6 +36,6 @@ pd3 <- policy_data(data = d3$stage_data,
 pd3
 # state/Markov type history variable names (H):
 get_history_names(pd3)
-# Full history variable names (H_k) at stage 2:
+# full history variable names (H_k) at stage 2:
 get_history_names(pd3, stage = 2)
 }

@@ -1,16 +1,14 @@
-# a stage policy should take a history object as input and outputs a data.table with id, stage and d (d: policy action)
-
-
 #' Define Policy
 #'
-#' \code{policy_def} returns a function taking a [policy_data] object as input
-#' and returns a data.table with variables id, stage number and policy action (d).
+#' \code{policy_def} returns a function taking a [policy_data] object as input.
+#' The function returns a [data.table] with keys id and stage and variable d
+#' (action given by the policy).
 #'
 #' @param policy_functions A single policy function or a list of policy functions; see [static_policy] and [dynamic_policy].
 #' A list of policy functions must have the same length as the number of stages.
 #' @param full_history If TRUE, the full history at each stage is used as input to the policy functions.
 #' @param reuse If TRUE, the policy function is reused at every stage.
-#'
+#' @returns Function with argument \code{policy_data}.
 #' @examples
 #' library("polle")
 #' ### Single stage
@@ -140,14 +138,6 @@ print.policy <- function(x) {
   cat(cp)
 
 }
-
-#' @export
-get_policy <- function(object)
-  UseMethod("get_policy")
-
-#' @export
-get_policy_functions <- function(object, stage)
-  UseMethod("get_policy_functions")
 
 ##' @export
 static_policy <- function(action, name=paste0("a=",action)) {

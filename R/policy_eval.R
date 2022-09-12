@@ -1,60 +1,4 @@
-##' @export
-coef.policy_eval <- function(object, ...) {
-  return(object$value_estimate)
-}
 
-##' @export
-IC.policy_eval <- function(x, ...) {
-  res <- cbind(getElement(x, "IC"))
-  return(res)
-}
-
-##' @export
-vcov.policy_eval <- function(object, ...) {
-  return(crossprod(IC(object)))
-}
-
-##' @export
-print.policy_eval <- function(x, ...) {
-  print(summary(x, ...))
-}
-
-##' @export
-summary.policy_eval <- function(object, ...) {
-  lava::estimate(object, ...)
-}
-
-##' @export
-estimate.policy_eval <- function(x, ..., labels=x$name) {
-  p <- length(coef(x))
-  if (is.null(labels)) {
-    if (p==1) {
-      "value"
-    } else {
-      labels <- paste0("value", seq(p))
-    }
-  }
-  return(lava::estimate(NULL, coef=coef(x), IC=IC(x), labels=labels, ...))
-}
-
-##' @export
-"merge.policy_eval" <- function(x, y, ..., paired=TRUE) {
-  dots <- list(...)
-  idx <- names(dots)%in%formalArgs(lava::estimate.default)[-1]
-  est_args <- list()
-  if (length(idx)>0) {
-    est_args <- dots[which(idx)]
-    dots <- dots[-which(idx)]
-  }
-  m <- lapply(c(list(x, y),dots), function(p)
-    do.call(estimate, c(list(p),est_args)))
-  do.call("merge", c(m, list(paired=paired)))
-}
-
-##' @export
-"+.policy_eval" <- function(x,...) {
-  merge(x, ...)
-}
 
 #' Policy Evaluation
 #'
@@ -77,7 +21,6 @@ estimate.policy_eval <- function(x, ..., labels=x$name) {
 #' ### Single stage:
 #' source(system.file("sim", "single_stage.R", package="polle"))
 #' d1 <- sim_single_stage(5e2, seed=1)
-#' # constructing policy_data object:
 #' pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
 #' pd1
 #' # defining a static policy:
@@ -87,13 +30,12 @@ estimate.policy_eval <- function(x, ..., labels=x$name) {
 #'             policy = pl1,
 #'             g_models = g_glm(),
 #'             q_models = q_glm())
-#' # printing the estimated value:
+#' # summarising the estimated value of the policy:
 #' pe1
 #'
 #' ### Two stages:
 #' source(system.file("sim", "two_stage.R", package="polle"))
 #' d2 <- sim_two_stage(5e2, seed=1)
-#' # constructing policy_data object:
 #' pd2 <- policy_data(d2,
 #'                   action = c("A_1", "A_2"),
 #'                   covariates = list(L = c("L_1", "L_2"),
@@ -105,14 +47,15 @@ estimate.policy_eval <- function(x, ..., labels=x$name) {
 #'                    qv_models = list(q_glm(~C_1), q_glm(~C_1+C_2)),
 #'                    qv_full_history = TRUE,
 #'                    L = 2) # number of folds for cross-fitting
-#'
 #' pe2 <- policy_eval(type = "dr",
-#'             policy_data = pd2,
-#'             policy_learn = pl2,
-#'             q_models = q_glm(),
-#'             g_models = g_glm(),
-#'             M = 2) # number of folds for cross-evaluation
+#'                    policy_data = pd2,
+#'                    policy_learn = pl2,
+#'                    q_models = q_glm(),
+#'                    g_models = g_glm(),
+#'                    M = 2) # number of folds for cross-evaluation
 #' pe2
+#' # getting the influence curve for the value:
+#' head(IC(pe2))
 policy_eval <- function(policy_data,
                         policy = NULL, policy_learn = NULL,
                         g_functions=NULL, g_models=g_glm(), g_full_history = FALSE,
@@ -294,3 +237,67 @@ policy_eval_fold <- function(fold,
   return(out)
 }
 
+#' @rdname policy_eval
+#' @export
+coef.policy_eval <- function(object, ...) {
+  return(object$value_estimate)
+}
+
+
+#' @rdname policy_eval
+#' @export
+IC.policy_eval <- function(x, ...) {
+  res <- cbind(getElement(x, "IC"))
+  return(res)
+}
+
+#' @rdname policy_eval
+#' @export
+vcov.policy_eval <- function(object, ...) {
+  return(crossprod(IC(object)))
+}
+
+#' @export
+print.policy_eval <- function(x, ...) {
+  print(summary(x, ...))
+}
+
+
+#' @rdname policy_eval
+#' @export
+summary.policy_eval <- function(object, ...) {
+  lava::estimate(object, ...)
+}
+
+#' @rdname policy_eval
+#' @export
+estimate.policy_eval <- function(x, ..., labels=x$name) {
+  p <- length(coef(x))
+  if (is.null(labels)) {
+    if (p==1) {
+      "value"
+    } else {
+      labels <- paste0("value", seq(p))
+    }
+  }
+  return(lava::estimate(NULL, coef=coef(x), IC=IC(x), labels=labels, ...))
+}
+
+#' @export
+"merge.policy_eval" <- function(x, y, ..., paired=TRUE) {
+  dots <- list(...)
+  idx <- names(dots)%in%formalArgs(lava::estimate.default)[-1]
+  est_args <- list()
+  if (length(idx)>0) {
+    est_args <- dots[which(idx)]
+    dots <- dots[-which(idx)]
+  }
+  m <- lapply(c(list(x, y),dots), function(p)
+    do.call(estimate, c(list(p),est_args)))
+  do.call("merge", c(m, list(paired=paired)))
+}
+
+#' @export
+"+.policy_eval" <- function(x,...) {
+  merge(x, ...)
+}

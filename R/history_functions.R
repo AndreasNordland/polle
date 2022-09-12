@@ -3,6 +3,7 @@
 #' @param history Object of class "history".
 #' @param vars Character vector. Subset of the history matrix.
 #' @return [data.table] H
+#' @noRd
 get_H <- function(history, vars = NULL){
 
   H <- getElement(history, "H")
@@ -30,6 +31,7 @@ get_H <- function(history, vars = NULL){
 #'
 #' @param history Object of class "history".
 #' @return Character vector.
+#' @noRd
 get_A <- function(history){
   A <- getElement(history, "A")
   stopifnot(!is.null(A))
@@ -45,6 +47,7 @@ get_A <- function(history){
 #'
 #' @param history Object of class "history".
 #' @return Character vector.
+#' @noRd
 get_id.history <- function(object){
   H <- getElement(object, "H")
   stopifnot(!is.null(H))
@@ -57,6 +60,7 @@ get_id.history <- function(object){
 #'
 #' @param object Object of class "history".
 #' @return [data.table] with variables id and stage.
+#' @noRd
 get_id_stage.history <- function(object){
   H <- getElement(object, "H")
   stopifnot(!is.null(H))

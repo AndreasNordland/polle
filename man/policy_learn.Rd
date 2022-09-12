@@ -2,6 +2,9 @@
 % Please edit documentation in R/policy_learn.R
 \name{policy_learn}
 \alias{policy_learn}
+\alias{print.policy_object}
+\alias{print.policy_learner}
+\alias{get_policy}
 \title{Create Policy Learner Object:}
 \usage{
 policy_learn(
@@ -20,55 +23,73 @@ policy_learn(
   hybrid = FALSE,
   search.depth = 2
 )
+
+\method{print}{policy_object}(x)
+
+\method{print}{policy_learner}(x)
+
+get_policy(object)
 }
 \arguments{
 \item{type}{Type of policy learner method:
 \itemize{
-\item{} "rql": Realistic Quality/Q-learning.
-\item{} "rqvl": Realistic V-restricted (doubly robust) Q-learning.
-\item{} "ptl": Policy Tree Learning.
+\item{} \code{"rql"}: Realistic Quality/Q-learning.
+\item{} \code{"rqvl"}: Realistic V-restricted (doubly robust) Q-learning.
+\item{} \code{"ptl"}: Policy Tree Learning.
 }}
 
 \item{alpha}{Probability threshold for determining realistic actions.}
 
-\item{L}{(only used if type = "rqvl" or type = "ptl") Number of folds for cross-fitting.}
+\item{L}{(only used if \code{type = "rqvl"} or \code{type = "ptl"}) Number of folds for
+cross-fitting.}
 
-\item{save_cross_fit_models}{If TRUE, the cross-fitted models will be saved.}
+\item{save_cross_fit_models}{If \code{TRUE}, the cross-fitted models will be saved.}
 
 \item{future_args}{Arguments passed to \code{\link[future.apply:future_apply]{future.apply::future_apply()}}.}
 
-\item{qv_models}{(only used if type = "rqvl") V-restricted Q-models created by \code{\link[=q_glm]{q_glm()}}, \code{\link[=q_rf]{q_rf()}}, \code{\link[=q_sl]{q_sl()}} or similar functions.}
+\item{qv_models}{(only used if \code{type = "rqvl"}) V-restricted Q-models created
+by \code{\link[=q_glm]{q_glm()}}, \code{\link[=q_rf]{q_rf()}}, \code{\link[=q_sl]{q_sl()}} or similar functions.}
 
-\item{qv_full_history}{(only used if type = "rqvl") If TRUE, the full history is used to fit each QV-model. If FALSE, the single stage/"Markov type" history is used to fit each QV-model.}
+\item{qv_full_history}{(only used if \code{type = "rqvl"}) If \code{TRUE}, the full
+history is used to fit each QV-model. If FALSE, the single stage/
+"Markov type" history is used to fit each QV-model.}
 
-\item{policy_vars}{(only used if type = "ptl") Character vector/string or list of character vectors/strings. Variable names used to construct a V-restricted policy tree. The names must be a subset of the history variable names, see \code{\link[=get_history_names]{get_history_names()}}.}
+\item{policy_vars}{(only used if \code{type = "ptl"}) Character vector/string or
+list of character vectors/strings. Variable names used to construct a
+V-restricted policy tree. The names must be a subset of the history variable
+names, see \code{\link[=get_history_names]{get_history_names()}}.}
 
-\item{policy_full_history}{(only used if type = "ptl") If TRUE, the full history is parsed to policy_tree. If FALSE, the single stage/"Markov type" history is parsed to policy_tree.}
+\item{policy_full_history}{(only used if \code{type = "ptl"}) If \code{TRUE}, the full
+history is parsed to policy_tree. If FALSE, the single stage/"Markov type"
+history is parsed to policy_tree.}
 
-\item{depth}{(only used if type = "ptl") The depth of the fitted policy tree, see \code{\link[=policy_tree]{policy_tree()}}.}
+\item{depth}{(only used if \code{type = "ptl"}) The depth of the fitted policy
+tree, see \code{\link[=policy_tree]{policy_tree()}}.}
 
-\item{split.step}{(only used if type = "ptl") The number of possible splits to consider when performing policy tree search, see \code{\link[=policy_tree]{policy_tree()}}.}
+\item{split.step}{(only used if \code{type = "ptl"}) The number of possible splits
+to consider when performing policy tree search, see \code{\link[=policy_tree]{policy_tree()}}.}
 
-\item{min.node.size}{(only used if type = "ptl") An integer indicating the smallest terminal node size permitted, see \code{\link[=policy_tree]{policy_tree()}}.}
+\item{min.node.size}{(only used if \code{type = "ptl"}) An integer indicating the
+smallest terminal node size permitted, see \code{\link[=policy_tree]{policy_tree()}}.}
 
-\item{hybrid}{(only used if type = "ptl") If TRUE, \code{\link[=hybrid_policy_tree]{hybrid_policy_tree()}} is used to fit a policy tree.}
+\item{hybrid}{(only used if \code{type = "ptl"}) If \code{TRUE}, \code{\link[=hybrid_policy_tree]{hybrid_policy_tree()}} is
+used to fit a policy tree.}
 
-\item{search.depth}{(only used if type = "ptl" and hybrid = TRUE) Depth to look ahead when splitting.}
+\item{search.depth}{(only used if \code{type = "ptl"} and \code{hybrid = TRUE}) Depth to
+look ahead when splitting.}
+}
+\value{
+Function of inherited class \code{"policy_learner"}.
+Evaluating the function returns an object of class \code{"policy_object"}.
 }
 \description{
-\code{policy_learn} is used to specify a policy learning method (Q-learning, V-restricted (doubly robust) Q-learning and V-restricted policy tree learning).
+\code{policy_learn} is used to specify a policy learning method (Q-learning,
+V-restricted (doubly robust) Q-learning and V-restricted policy tree
+learning). Evaluating the policy learner returns a policy object.
 }
-\details{
-rqvl: a model is  fitted for each model in the action set
-}
-\section{Value}{
-
-Returns a function of class "policy_function".
-}
-
 \examples{
 library("polle")
-### Simulating two-stage policy data
+### Two stages:
 source(system.file("sim", "two_stage.R", package="polle"))
 par0 <- c(gamma = 0.5, beta = 1)
 d <- sim_two_stage(2e3, seed=1, par=par0)
@@ -126,4 +147,7 @@ pe
 pe$policy_object$ptl_objects
 
 ### Cross-fitted Policy Learning
+}
+\seealso{
+\code{\link[=policy_def]{policy_def()}}, \code{\link[=get_policy_functions]{get_policy_functions()}}.
 }

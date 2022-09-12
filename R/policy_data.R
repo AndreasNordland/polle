@@ -166,7 +166,7 @@ new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
 #' }
 #' The utility is given by the sum of the rewards, i.e.,
 #' \eqn{U = \sum_{k = 1}^{K+1} U_k}.
-#' @return
+#' @returns
 #' \code{policy_data()} returns an object of class "policy_data".
 #' The object is a list containing the following elements:
 #' \item{\code{stage_data}}{[data.table] containing the id, stage number, event
@@ -196,6 +196,8 @@ new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
 #'                    covariates=c("Z", "B", "L"),
 #'                    utility="U")
 #' pd1
+#' # associated methods:
+#' methods(class = "policy_data")
 #' head(get_actions(pd1), 5)
 #' head(utility(pd1), 5)
 #' head(get_history(pd1)$H, 5)
@@ -556,45 +558,4 @@ format_long_data <- function(long_data, baseline_data, id, action, stage, event,
     baseline_data = baseline_data
   )
   return(out)
-}
-
-# policy_data S3 functions -----------------------------------------------
-
-#' @export
-print.policy_data <- function(x, digits = 2, ...){
-  K <- get_K(x)
-  n <- get_n(x)
-
-  cat(
-    paste("Object of class policy_data with n = ", n, " observations and maximum K = ", K, " stages.", sep = "")
-  )
-  cat("\n")
-
-  action_set <- get_action_set(x)
-
-  cat("\n")
-  st <- x$stage_data[event == 0,][, c("stage", "A"), with = FALSE]
-  colnames(st) <- c("stage", "action")
-  stable <- addmargins(table(st), 2, FUN = list(n = sum))
-
-  print(stable)
-
-  cat("\n")
-  bc <- paste(x$colnames$baseline_names, collapse = ", ")
-  cat(
-    paste("Baseline covariates: ", bc, sep = "")
-  )
-  cat("\n")
-  sc <- paste(x$colnames$state_names, collapse = ", ")
-  cat(
-    paste("State covariates: ", sc, sep = "")
-  )
-  cat("\n")
-  mean_utility <- mean(utility(x)$U)
-  mean_utility <- round(mean_utility, digits = digits)
-
-  cat(
-    paste("Average utility: ", mean_utility, sep = "")
-  )
-  cat("\n")
 }

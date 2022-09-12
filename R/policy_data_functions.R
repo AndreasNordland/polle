@@ -1,3 +1,43 @@
+#' @rdname policy_data
+#' @export
+print.policy_data <- function(x, digits = 2, ...){
+  K <- get_K(x)
+  n <- get_n(x)
+
+  cat(
+    paste("Object of class policy_data with n = ", n, " observations and maximum K = ", K, " stages.", sep = "")
+  )
+  cat("\n")
+
+  action_set <- get_action_set(x)
+
+  cat("\n")
+  st <- x$stage_data[event == 0,][, c("stage", "A"), with = FALSE]
+  colnames(st) <- c("stage", "action")
+  stable <- addmargins(table(st), 2, FUN = list(n = sum))
+
+  print(stable)
+
+  cat("\n")
+  bc <- paste(x$colnames$baseline_names, collapse = ", ")
+  cat(
+    paste("Baseline covariates: ", bc, sep = "")
+  )
+  cat("\n")
+  sc <- paste(x$colnames$state_names, collapse = ", ")
+  cat(
+    paste("State covariates: ", sc, sep = "")
+  )
+  cat("\n")
+  mean_utility <- mean(utility(x)$U)
+  mean_utility <- round(mean_utility, digits = digits)
+
+  cat(
+    paste("Average utility: ", mean_utility, sep = "")
+  )
+  cat("\n")
+}
+
 #' Copy Policy Data Object
 #'
 #' Objects of class [policy_data] contains elements of class [data.table].
@@ -126,7 +166,8 @@ partial.policy_data <- function(object, K){
 #' \code{subset} returns a policy data object containing the given IDs.
 #' @param object Object of class [policy_data].
 #' @param id character vectors of IDs.
-#' @return Object of class [policy_data].
+#' @method subset policy_data
+#' @returns Object of class [policy_data].
 #' @examples
 #' library("polle")
 #' ### Single stage:
@@ -141,15 +182,16 @@ partial.policy_data <- function(object, K){
 #'
 #' # subsetting on IDs:
 #' pdsub <- subset(pd, id = 250:500)
+#' pdsub
 #' get_id(pdsub)[1:10]
 #' @export
-subset.policy_data <- function(object, id){
-  if (!all(id %in% get_id(object))) stop("Invalid subset of IDs.")
+subset.policy_data <- function(x, id){
+  if (!all(id %in% get_id(x))) stop("Invalid subset of IDs.")
   id_ <- id; rm(id)
 
   spd <- new_policy_data(
-    stage_data = object$stage_data[id %in% id_],
-    baseline_data = object$baseline_data[id %in% id_]
+    stage_data = x$stage_data[id %in% id_],
+    baseline_data = x$baseline_data[id %in% id_]
   )
 
   return(spd)
@@ -158,7 +200,7 @@ subset.policy_data <- function(object, id){
 
 #' Get the full history for a given stage
 #'
-#' @param object object of class [policy_data()].
+#' @param x Object of class [policy_data()].
 #' @param stage stage number.
 #' @return Object of class "history".
 full_history <- function(object, stage){
@@ -315,18 +357,45 @@ state_history <- function(object){
   return(history)
 }
 
-#'@export
+#' @export
 get_history <- function(object, stage = NULL, full_history = FALSE)
   UseMethod("get_history")
 
 #' Get History Object
 #'
-#' \code{get_history} extracts the history and action at a given stage from a
+#' \code{get_history} summarises the history and action at a given stage from a
 #' [policy_data] object.
 #' @param object Object of class [policy_data].
-#' @param stage Stage number.
-#' @param full_history Logical. If TRUE, the full history will be used.
-#' If FALSE, only the state/Markov-type history will be used.
+#' @param stage Stage number. If NULL, the state/Markov-type history across
+#' all stages is returned.
+#' @param full_history Logical. If TRUE, the full history is returned
+#' If FALSE, only the state/Markov-type history is returned.
+#' @details
+#' Each observation has the sequential form
+#' \deqn{O= {B, U_1, X_1, A_1, ..., U_K, X_K, A_K, U_{K+1}},}
+#' for a possibly stochastic number of stages K.
+#' \itemize{
+#'  \item{} \eqn{B} is a vector of baseline covariates.
+#'  \item{} \eqn{U_k} is the reward at stage k (not influenced by the action \eqn{A_k}).
+#'  \item{} \eqn{X_k} is a vector of state covariates summarizing the state at stage k.
+#'  \item{} \eqn{A_k} is the categorical action at stage k.
+#' }
+#' @method get_history policy_data
+#' @returns Object of class "history". The object is a list
+#' containing the following elements:
+#' \item{\code{H}}{[data.table] with keys id and stage and with variables
+#'                 \{\eqn{B}, \eqn{X_k}\} (state history) or
+#'                 \{\eqn{B}, \eqn{X_1}, \eqn{A_1}, ..., \eqn{X_k}\}
+#'                 (full history), see details.}
+#' \item{\code{A}}{[data.table] with keys id and stage and variable \eqn{A_k}, see
+#'                 details.}
+#' \item{action_name}{Name of the action variable in \code{A}.}
+#' \item{action_set}{Sorted character vector defining the action set.}
+#' \item{U}{(If \code{stage} is not NULL) [data.table] with keys id and stage
+#'          and with variables U_bar and U_Aa for every a in the actions set.
+#'          U_bar is the accumulated rewards up till and including the given
+#'          stage, i.e., \eqn{\sum_{j=1}^k U_j}. U_Aa is the deterministic
+#'          reward of action a.}
 #' @examples
 #' library("polle")
 #' ### Single stage:
@@ -338,6 +407,7 @@ get_history <- function(object, stage = NULL, full_history = FALSE)
 #' # In the single stage case, set stage = NULL
 #' h1 <- get_history(pd1)
 #' head(h1$H)
+#' head(h1$A)
 #'
 #' ### Two stages:
 #' source(system.file("sim", "two_stage.R", package="polle"))
@@ -353,12 +423,39 @@ get_history <- function(object, stage = NULL, full_history = FALSE)
 #' # getting the state/Markov-type history across all stages:
 #' h2 <- get_history(pd2)
 #' head(h2$H)
+#' head(h2$A)
+#'
 #' # getting the full history at stage 2:
 #' h2 <- get_history(pd2, stage = 2, full_history = TRUE)
 #' head(h2$H)
+#' head(h2$A)
+#' head(h2$U)
+#'
 #' # getting the state/Markov-type history at stage 2:
 #' h2 <- get_history(pd2, stage = 2, full_history = FALSE)
 #' head(h2$H)
+#' head(h2$A)
+#'
+#' ### Multiple stages
+#' source(system.file("sim", "multi_stage.R", package="polle"))
+#' d3 <- sim_multi_stage(5e2, seed = 1)
+#' # constructing policy_data object:
+#' pd3 <- policy_data(data = d3$stage_data,
+#'                    baseline_data = d3$baseline_data,
+#'                    type = "long",
+#'                    id = "id",
+#'                    stage = "stage",
+#'                    event = "event",
+#'                    action = "A",
+#'                    utility = "U")
+#' pd3
+#'
+#' # getting the full history at stage 2:
+#' h3 <- get_history(pd3, stage = 2, full_history = TRUE)
+#' head(h3$H)
+#' # note that not all observations have two stages:
+#' nrow(h3$H) # number of observations with two stages.
+#' get_n(pd3) # number of observations in total.
 #' @export
 get_history.policy_data <- function(object, stage = NULL, full_history = FALSE){
   if (full_history == TRUE){
@@ -380,8 +477,8 @@ get_history_names <- function(object, stage)
 
 #' Get history variable names
 #'
-#' [get_history_names()] returns the variable names of the history matrix
-#' \eqn{H_k} for the given stage \eqn{k}. The function is useful when specifying
+#' [get_history_names()] returns the state covariate names of the history data
+#' table for a given stage. The function is useful when specifying
 #' the design matrix for [g_model()] and [q_model()].
 #' @param policy_data Policy data object created by [policy_data()].
 #' @param stage Stage number. If NULL, the state/Markov-type history variable
@@ -392,7 +489,6 @@ get_history_names <- function(object, stage)
 #' ### Multiple stages:
 #' source(system.file("sim", "multi_stage.R", package="polle"))
 #' d3 <- sim_multi_stage(5e2, seed = 1)
-#' # constructing policy_data object:
 #' pd3 <- policy_data(data = d3$stage_data,
 #'                    baseline_data = d3$baseline_data,
 #'                    type = "long",
@@ -404,7 +500,7 @@ get_history_names <- function(object, stage)
 #' pd3
 #' # state/Markov type history variable names (H):
 #' get_history_names(pd3)
-#' # Full history variable names (H_k) at stage 2:
+#' # full history variable names (H_k) at stage 2:
 #' get_history_names(pd3, stage = 2)
 #' @export
 get_history_names.policy_data <- function(object, stage = NULL){
@@ -419,10 +515,33 @@ get_history_names.policy_data <- function(object, stage = NULL){
   return(history_names)
 }
 
-#' @export
+
+#'@export
 utility <- function(object)
   UseMethod("utility")
 
+#' Get the Utility
+#'
+#' \code{utility} returns the utility, i.e., the sum of the rewards,
+#' for every observation in the policy data object.
+#'
+#' @param object Object of class [policy_data].
+#' @returns [data.table] with key id and numeric variable U.
+#' @examples
+#' ### Two stages:
+#' source(system.file("sim", "two_stage.R", package="polle"))
+#' d2 <- sim_two_stage(5e2, seed=1)
+#' # constructing policy_data object:
+#' pd2 <- policy_data(d2,
+#'                   action = c("A_1", "A_2"),
+#'                   baseline = c("B"),
+#'                   covariates = list(L = c("L_1", "L_2"),
+#'                                     C = c("C_1", "C_2")),
+#'                   utility = c("U_1", "U_2", "U_3"))
+#' pd2
+#'
+#' # getting the utility:
+#' head(utility(pd2))
 #' @export
 utility.policy_data <- function(object){
   stage_data <- object$stage_data
@@ -436,6 +555,27 @@ utility.policy_data <- function(object){
 get_actions <- function(object)
   UseMethod("get_actions")
 
+#' Get Actions
+#'
+#' \code{get_actions} returns the actions at every stage for every observation
+#' in the policy data object.
+#' @param object Object of class [policy_data].
+#' @returns [data.table] with keys id and stage and character variable A.
+#' @examples
+#' ### Two stages:
+#' source(system.file("sim", "two_stage.R", package="polle"))
+#' d2 <- sim_two_stage(5e2, seed=1)
+#' # constructing policy_data object:
+#' pd2 <- policy_data(d2,
+#'                   action = c("A_1", "A_2"),
+#'                   baseline = c("B"),
+#'                   covariates = list(L = c("L_1", "L_2"),
+#'                                     C = c("C_1", "C_2")),
+#'                   utility = c("U_1", "U_2", "U_3"))
+#' pd2
+#'
+#' # getting the actions:
+#' head(get_actions(pd2))
 #' @export
 get_actions.policy_data <- function(object){
   actions <- object$stage_data[event == 0, c("id", "stage", "A"), with = FALSE]
@@ -446,6 +586,26 @@ get_actions.policy_data <- function(object){
 get_id <- function(object)
   UseMethod("get_id")
 
+#' Get IDs
+#'
+#' \code{get_id} returns the ID for every observation in the policy data object.
+#' @param object Object of class [policy_data].
+#' @returns Character vector.
+#' @examples
+#' ### Two stages:
+#' source(system.file("sim", "two_stage.R", package="polle"))
+#' d2 <- sim_two_stage(5e2, seed=1)
+#' # constructing policy_data object:
+#' pd2 <- policy_data(d2,
+#'                   action = c("A_1", "A_2"),
+#'                   baseline = c("B"),
+#'                   covariates = list(L = c("L_1", "L_2"),
+#'                                     C = c("C_1", "C_2")),
+#'                   utility = c("U_1", "U_2", "U_3"))
+#' pd2
+#'
+#' # getting the IDs:
+#' head(get_id(pd2))
 #' @export
 get_id.policy_data <- function(object){
   id <- unique(object$stage_data$id)
@@ -456,6 +616,26 @@ get_id.policy_data <- function(object){
 get_id_stage <- function(object)
   UseMethod("get_id_stage")
 
+#' Get IDs and Stages
+#'
+#' \code{get_id} returns the stages for every ID for every observation in the policy data object.
+#' @param object Object of class [policy_data].
+#' @returns [data.table] with keys id and stage.
+#' @examples
+#' ### Two stages:
+#' source(system.file("sim", "two_stage.R", package="polle"))
+#' d2 <- sim_two_stage(5e2, seed=1)
+#' # constructing policy_data object:
+#' pd2 <- policy_data(d2,
+#'                   action = c("A_1", "A_2"),
+#'                   baseline = c("B"),
+#'                   covariates = list(L = c("L_1", "L_2"),
+#'                                     C = c("C_1", "C_2")),
+#'                   utility = c("U_1", "U_2", "U_3"))
+#' pd2
+#'
+#' # getting the IDs and stages:
+#' head(get_id_stage(pd2))
 #' @export
 get_id_stage.policy_data <- function(object){
   stage_data <- object$stage_data
@@ -470,6 +650,28 @@ get_id_stage.policy_data <- function(object){
 #' @export
 get_K <- function(object)
   UseMethod("get_K")
+
+
+#' Get Maximal Stages
+#'
+#' \code{get_K} returns the maximal number of stages for the observations in
+#' the policy data object.
+#' @param object Object of class [policy_data].
+#' @returns Integer.
+#' @examples
+#' source(system.file("sim", "multi_stage.R", package="polle"))
+#' d <- sim_multi_stage(5e2, seed = 1)
+#' pd <- policy_data(data = d$stage_data,
+#'                    baseline_data = d$baseline_data,
+#'                    type = "long",
+#'                    id = "id",
+#'                    stage = "stage",
+#'                    event = "event",
+#'                    action = "A",
+#'                    utility = "U")
+#' pd
+#' # getting the maximal number of stages:
+#' get_K(pd)
 #' @export
 get_K.policy_data <- function(object){
   K <- object$dim$K
@@ -479,6 +681,28 @@ get_K.policy_data <- function(object){
 #' @export
 get_n <- function(object)
   UseMethod("get_n")
+
+#' Get Number of Observations
+#'
+#' \code{get_n} returns the number of observations in
+#' the policy data object.
+#' @param object Object of class [policy_data].
+#' @returns Integer.
+#' @examples
+#' ### Two stages:
+#' source(system.file("sim", "two_stage.R", package="polle"))
+#' d2 <- sim_two_stage(5e2, seed=1)
+#' # constructing policy_data object:
+#' pd2 <- policy_data(d2,
+#'                   action = c("A_1", "A_2"),
+#'                   baseline = c("B"),
+#'                   covariates = list(L = c("L_1", "L_2"),
+#'                                     C = c("C_1", "C_2")),
+#'                   utility = c("U_1", "U_2", "U_3"))
+#' pd2
+#'
+#' # getting the number of observations:
+#' get_n(pd2)
 #' @export
 get_n.policy_data <- function(object){
   n <- object$dim$n
@@ -488,6 +712,29 @@ get_n.policy_data <- function(object){
 #' @export
 get_action_set <- function(object)
   UseMethod("get_action_set")
+
+
+#' Get Action Set
+#'
+#' \code{get_action_set} returns the action set, i.e., the possible
+#' actions at each stage for the policy data object.
+#' @param object Object of class [policy_data].
+#' @returns Character vector.
+#' @examples
+#' ### Two stages:
+#' source(system.file("sim", "two_stage.R", package="polle"))
+#' d2 <- sim_two_stage(5e2, seed=1)
+#' # constructing policy_data object:
+#' pd2 <- policy_data(d2,
+#'                   action = c("A_1", "A_2"),
+#'                   baseline = c("B"),
+#'                   covariates = list(L = c("L_1", "L_2"),
+#'                                     C = c("C_1", "C_2")),
+#'                   utility = c("U_1", "U_2", "U_3"))
+#' pd2
+#'
+#' # getting the actions set:
+#' get_action_set(pd2)
 #' @export
 get_action_set.policy_data <- function(object){
   action_set <- object$action_set

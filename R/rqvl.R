@@ -254,7 +254,7 @@ rqvl <- function(policy_data,
     folds = folds
   )
   out <- remove_null_elements(out)
-  class(out) <- c("RQVL", "policy_object", "list")
+  class(out) <- c("RQVL","policy_object","list")
 
   return(out)
 }

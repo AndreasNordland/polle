@@ -4,12 +4,12 @@
 \alias{subset.policy_data}
 \title{Subset Policy Data on ID}
 \usage{
-\method{subset}{policy_data}(object, id)
+\method{subset}{policy_data}(x, id)
 }
 \arguments{
-\item{object}{Object of class \link{policy_data}.}
-
 \item{id}{character vectors of IDs.}
+
+\item{object}{Object of class \link{policy_data}.}
 }
 \value{
 Object of class \link{policy_data}.
@@ -31,5 +31,6 @@ get_id(pd)[1:10]
 
 # subsetting on IDs:
 pdsub <- subset(pd, id = 250:500)
+pdsub
 get_id(pdsub)[1:10]
 }

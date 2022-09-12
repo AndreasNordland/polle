@@ -14,9 +14,13 @@ A list of policy functions must have the same length as the number of stages.}
 
 \item{reuse}{If TRUE, the policy function is reused at every stage.}
 }
+\value{
+Function with argument \code{policy_data}.
+}
 \description{
-\code{policy_def} returns a function taking a \link{policy_data} object as input
-and returns a data.table with variables id, stage number and policy action (d).
+\code{policy_def} returns a function taking a \link{policy_data} object as input.
+The function returns a \link{data.table} with keys id and stage and variable d
+(action given by the policy).
 }
 \examples{
 library("polle")
