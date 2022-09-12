@@ -319,54 +319,38 @@ get_policy_functions.PTL <- function(object, stage){
   }
   alpha <- getElement(object, "alpha")
 
-  if (alpha == 0){
-    stage_policy <- function(H, ...){
-      H <- as.data.table(H)
-      if(!all(policy_vars %in% colnames(H))){
-        mes <- "H must have column names "
-        mes <- paste(mes, paste(policy_vars, collapse = ", "), ".", sep = "")
-        stop(mes)
-      }
-      H <- H[, ..policy_vars]
-      mf <- with(ptl_design, model.frame(terms, data = H, xlev = x_levels, drop.unused.levels=FALSE))
-      newdata <- model.matrix(mf, data = H, xlev = ptl_design$x_levels)
-      dd <- predict(ptl_object, newdata = newdata)
-      d <- action_set[dd]
-      return(d)
+  stage_policy <- function(H){
+    H <- as.data.table(H)
+    if(!all(policy_vars %in% colnames(H))){
+      mes <- "H must have column names "
+      mes <- paste(mes, paste(policy_vars, collapse = ", "), ".", sep = "")
+      stop(mes)
     }
-  }
-  if (alpha > 0){
-    stage_policy <- function(H, g_H){
-      H <- as.data.table(H)
-      if(!all(policy_vars %in% colnames(H))){
-        mes <- "H must have column names "
-        mes <- paste(mes, paste(policy_vars, collapse = ", "), ".", sep = "")
-        stop(mes)
-      }
-      H <- H[, ..policy_vars]
-      mf <- with(ptl_design, model.frame(terms, data = H, xlev = x_levels, drop.unused.levels=FALSE))
-      newdata <- model.matrix(mf, data = H, xlev = ptl_design$x_levels)
-      dd <- predict(ptl_object, newdata = newdata)
-      d <- action_set[dd]
+    newdata <- H[, ..policy_vars]
+    mf <- with(ptl_design, model.frame(terms, data = newdata, xlev = x_levels, drop.unused.levels=FALSE))
+    newdata <- model.matrix(mf, data = newdata, xlev = ptl_design$x_levels)
+    dd <- predict(ptl_object, newdata = newdata)
+    d <- action_set[dd]
 
+    if (alpha >0){
       # evaluating the g-function:
-      if (!all(g_function$H_names %in% names(g_H))){
+      if (!all(g_function$H_names %in% names(H))){
         mes <- paste(
-          "g_H must contain the columns",
+          "H must contain the columns",
           paste(g_function$H_names, collapse = ","),
           "."
         )
         stop(mes)
       }
-      g_values <- predict(g_function$g_model, new_H = g_H)
+      g_values <- predict(g_function$g_model, new_H = H)
       g_cols <- paste("g", action_set, sep = "_")
       colnames(g_values) <- g_cols
 
       d[(g_values[, g_cols[1]] < alpha)] <- action_set[2]
       d[(g_values[, g_cols[2]] < alpha)] <- action_set[1]
-
-      return(d)
     }
+
+    return(d)
   }
 
   return(stage_policy)
