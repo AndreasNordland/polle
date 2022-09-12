@@ -71,10 +71,8 @@ pe1 <- list(
 # saveRDS(pe1, file = "tests/policy_eval_test_pe1.Rds")
 pe1_master <- readRDS(file = "tests/policy_eval_test_pe1.Rds")
 
-# tmp <- pe1
-
-# all(unlist(lapply(tmp, coef)) == unlist(lapply(pe1, coef)))
-# all(unlist(lapply(tmp, IC)) == unlist(lapply(pe1, IC)))
+all(unlist(lapply(pe1_master, coef)) == unlist(lapply(pe1, coef)))
+all(unlist(lapply(pe1_master, IC)) == unlist(lapply(pe1, IC)))
 
 # Two stages ---------------------------------------------------------------
 
@@ -161,10 +159,8 @@ pe2 <- list(
 # saveRDS(pe2, file = "tests/policy_eval_test_pe2.Rds")
 pe2_master <- readRDS(file = "tests/policy_eval_test_pe2.Rds")
 
-# tmp2 <- pe2
-
-# all(unlist(lapply(tmp2, coef)) == unlist(lapply(pe2, coef)))
-# all(unlist(lapply(tmp2, IC)) == unlist(lapply(pe2, IC)))
+all(unlist(lapply(pe2_master, coef)) == unlist(lapply(pe2, coef)))
+all(unlist(lapply(pe2_master, IC)) == unlist(lapply(pe2, IC)))
 
 # Multiple stages ---------------------------------------------------------
 
@@ -225,7 +221,5 @@ pe3 <- list(
 # saveRDS(pe3, file = "tests/policy_eval_test_pe3.Rds")
 pe3_master <- readRDS(file = "tests/policy_eval_test_pe3.Rds")
 
-# tmp3 <- pe3
-
-# all(unlist(lapply(tmp3, coef)) == unlist(lapply(pe3, coef)))
-# all(unlist(lapply(tmp3, IC)) == unlist(lapply(pe3, IC)))
+all(unlist(lapply(pe3_master, coef)) == unlist(lapply(pe3, coef)))
+all(unlist(lapply(pe3_master, IC)) == unlist(lapply(pe3, IC)))
