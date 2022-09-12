@@ -15,6 +15,7 @@ sim_two_stage <- function(n=1e4,
 
   # baseline
   B <- rnorm(n = n)
+  BB <- sample(c("group1", "group2", "group3"), n, replace = TRUE)
 
   # stage 1
   L_1 <- rnorm(n = n)
@@ -37,6 +38,7 @@ sim_two_stage <- function(n=1e4,
 
   data <- data.table(
     B = B,
+    BB = BB,
     L_1 = L_1,
     C_1 = C_1,
     A_1 = A_1,
