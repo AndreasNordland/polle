@@ -47,6 +47,7 @@
 #' d <- sim_two_stage(2e3, seed=1, par=par0)
 #' pd <- policy_data(d,
 #'                   action = c("A_1", "A_2"),
+#'                   baseline = c("BB"),
 #'                   covariates = list(L = c("L_1", "L_2"),
 #'                                     C = c("C_1", "C_2")),
 #'                   utility = c("U_1", "U_2", "U_3"))
@@ -88,7 +89,7 @@
 #' ### V-restricted Policy Tree Learning
 #'
 #' # specifying the learner:
-#' pl <- policy_learn(type = "ptl", policy_vars = c("C"))
+#' pl <- policy_learn(type = "ptl", policy_vars = c("C", "BB"))
 #'
 #' # evaluating the learned policy:
 #' pe <- policy_eval(policy_data = pd,
@@ -236,6 +237,7 @@ get_policy <- function(object){
 #' d <- sim_two_stage(2e3, seed=1)
 #' pd <- policy_data(d,
 #'                   action = c("A_1", "A_2"),
+#'                   baseline = "BB",
 #'                   covariates = list(L = c("L_1", "L_2"),
 #'                                     C = c("C_1", "C_2")),
 #'                   utility = c("U_1", "U_2", "U_3"))
@@ -270,7 +272,7 @@ get_policy <- function(object){
 #' ### Realistic V-restricted Policy Tree Learning
 #' # specifying the learner:
 #' pl <- policy_learn(type = "ptl",
-#'                    policy_vars = c("C", "L"),
+#'                    policy_vars = c("C", "BB"),
 #'                    alpha = 0.05)
 #'
 #' # applying the learner:
@@ -284,8 +286,9 @@ get_policy <- function(object){
 #'
 #' # applying the policy function to new data:
 #' set.seed(1)
-#' new_H <- data.table(L = rnorm(n = 10),
-#'                     C = rnorm(n = 10))
+#' new_H <- data.table(C = rnorm(n = 10),
+#'                     L = rnorm(n = 10),
+#'                     BB = "group1")
 #' d2 <- pf2(H = new_H, g_H = new_H)
 #' d2
 #'

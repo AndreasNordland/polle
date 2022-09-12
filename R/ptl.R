@@ -95,6 +95,7 @@ ptl <- function(policy_data,
   g_cols <- paste("g_", action_set, sep = "")
   q_cols <- paste("Q_", action_set, sep = "")
   ptl_objects <- list()
+  ptl_designs <- list()
   q_functions <- list()
   q_functions_cf <- list()
   for (k in K:1){
@@ -154,14 +155,19 @@ ptl <- function(policy_data,
       vars <- policy_vars
     H <- get_H(policy_history_k, vars = vars)
 
+    # design matrix for policy_tree:
+    design_k <- get_design(formula = ~., data = H)
+    X <- design_k$x
+    design_k$x <- NULL
+    ptl_designs[[k]] <- design_k
     if (hybrid == FALSE){
-      ptl_k <- policytree::policy_tree(X = H, Gamma = Gamma, depth = depth, split.step = split.step, min.node.size = min.node.size)
+      ptl_k <- policytree::policy_tree(X = X, Gamma = Gamma, depth = depth, split.step = split.step, min.node.size = min.node.size)
     } else if (hybrid == TRUE){
-      ptl_k <- policytree::hybrid_policy_tree(X = H, Gamma = Gamma, depth = depth, split.step = split.step, min.node.size = min.node.size, search.depth = search.depth)
+      ptl_k <- policytree::hybrid_policy_tree(X = X, Gamma = Gamma, depth = depth, split.step = split.step, min.node.size = min.node.size, search.depth = search.depth)
     }
 
     ptl_objects[[k]] <- ptl_k
-    dd <- policytree:::predict.policy_tree(ptl_k, H)
+    dd <- policytree:::predict.policy_tree(ptl_k, X)
     d <- action_set[dd]
 
     if (alpha != 0){
@@ -199,6 +205,7 @@ ptl <- function(policy_data,
 
   out <- list(
     ptl_objects = ptl_objects,
+    ptl_designs = ptl_designs,
     policy_full_history = policy_full_history,
     policy_vars = policy_vars,
     g_functions = g_functions,
@@ -221,13 +228,14 @@ ptl <- function(policy_data,
 #' @export
 get_policy.PTL <- function(object){
 
-action_set <- object$action_set
-K <- object$K
-policy_full_history <- object$policy_full_history
-ptl_objects <- object$ptl_objects
+action_set <- getElement(object, "action_set")
+K <- getElement(object, "K")
+policy_full_history <- getElement(object, "policy_full_history")
+ptl_objects <- getElement(object, "ptl_objects")
+ptl_designs <- getElement(object, "ptl_designs")
 policy_vars <- getElement(object, "policy_vars")
-g_functions = object$g_functions
-alpha <- object$alpha
+g_functions <- getElement(object, "g_functions")
+alpha <- getElement(object, "alpha")
 
 policy <- function(policy_data){
   if (get_K(policy_data) != K)
@@ -245,7 +253,12 @@ policy <- function(policy_data){
       vars <- policy_vars
 
     H <- get_H(policy_history_k, vars = vars)
-    dd <- predict(ptl_objects[[k]], newdata = H)
+
+    des <- ptl_designs[[k]]
+    mf <- with(des, model.frame(terms, data=H, xlev = x_levels, drop.unused.levels=FALSE))
+    newdata <- model.matrix(mf, data=H, xlev = des$x_levels)
+
+    dd <- predict(ptl_objects[[k]], newdata = newdata)
     d <- action_set[dd]
 
     pa <- get_id_stage(policy_history_k)
@@ -280,8 +293,8 @@ return(policy)
 
 #' @export
 get_policy_functions.PTL <- function(object, stage){
-  action_set <- object$action_set
-  K <- object$K
+  action_set <- getElement(object, "action_set")
+  K <- getElement(object, "K")
 
   if(!((stage >= 0) & (stage <= K)))
     stop("stage must be smaller than or equal to K.")
@@ -296,16 +309,15 @@ get_policy_functions.PTL <- function(object, stage){
     }
   }
 
-  ptl_object <- object$ptl_objects[[stage]]
-
-  policy_full_history <- object$policy_full_history
-
-  if(policy_full_history)
-    policy_vars <- object$policy_vars[[stage]]
-  else
-    policy_vars <- object$policy_vars
-
-  alpha <- object$alpha
+  ptl_object <- getElement(object, "ptl_objects")[[stage]]
+  ptl_design <- getElement(object, "ptl_designs")[[stage]]
+  policy_full_history <- getElement(object, "policy_full_history")
+  if(policy_full_history){
+    policy_vars <- getElement(object, "policy_vars")[[stage]]
+  } else{
+    policy_vars <- getElement(object, "policy_vars")
+  }
+  alpha <- getElement(object, "alpha")
 
   if (alpha == 0){
     stage_policy <- function(H, ...){
@@ -316,8 +328,9 @@ get_policy_functions.PTL <- function(object, stage){
         stop(mes)
       }
       H <- H[, ..policy_vars]
-
-      dd <- predict(ptl_object, newdata = H)
+      mf <- with(ptl_design, model.frame(terms, data = H, xlev = x_levels, drop.unused.levels=FALSE))
+      newdata <- model.matrix(mf, data = H, xlev = ptl_design$x_levels)
+      dd <- predict(ptl_object, newdata = newdata)
       d <- action_set[dd]
       return(d)
     }
@@ -331,8 +344,9 @@ get_policy_functions.PTL <- function(object, stage){
         stop(mes)
       }
       H <- H[, ..policy_vars]
-
-      dd <- predict(ptl_object, newdata = H)
+      mf <- with(ptl_design, model.frame(terms, data = H, xlev = x_levels, drop.unused.levels=FALSE))
+      newdata <- model.matrix(mf, data = H, xlev = ptl_design$x_levels)
+      dd <- predict(ptl_object, newdata = newdata)
       d <- action_set[dd]
 
       # evaluating the g-function:

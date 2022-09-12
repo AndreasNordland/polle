@@ -95,6 +95,7 @@ par0 <- c(gamma = 0.5, beta = 1)
 d <- sim_two_stage(2e3, seed=1, par=par0)
 pd <- policy_data(d,
                   action = c("A_1", "A_2"),
+                  baseline = c("BB"),
                   covariates = list(L = c("L_1", "L_2"),
                                     C = c("C_1", "C_2")),
                   utility = c("U_1", "U_2", "U_3"))
@@ -136,7 +137,7 @@ head(get_policy(pe$policy_object)(pd)); rm(pl, pe)
 ### V-restricted Policy Tree Learning
 
 # specifying the learner:
-pl <- policy_learn(type = "ptl", policy_vars = c("C"))
+pl <- policy_learn(type = "ptl", policy_vars = c("C", "BB"))
 
 # evaluating the learned policy:
 pe <- policy_eval(policy_data = pd,
