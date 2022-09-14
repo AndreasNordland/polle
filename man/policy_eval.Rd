@@ -59,6 +59,30 @@ policy_eval(
 
 \item{future_args}{Arguments passed to \code{\link[future.apply:future_apply]{future.apply::future_apply()}}.}
 }
+\value{
+\code{policy_eval()} returns an object of class "policy_eval".
+The object is a list containing the following elements:
+\item{\code{value_estimate}}{Numeric. The estimated value of the policy.}
+\item{\code{type}}{Character string. The type of evaluation ("dr", "ipw", "or").}
+\item{\code{IC}}{Numeric vector. Estimated influence curve associated with the value estimate.}
+\item{\code{value_estimate_ipw}}{(only if \code{type = "dr"}) Numeric.
+The estimated value of the policy based on inverse probability weighting.}
+\item{\code{value_estimate_or}}{(only if \code{type = "dr"}) Numeric.
+The estimated value of the policy based on outcome regression.}
+\item{\code{id}}{Character vector. The IDs of the observations.}
+\item{\code{policy_actions}}{\link{data.table} with keys id and stage. Actions
+associated with the policy for every observation and stage.}
+\item{\code{policy_object}}{(only if \code{policy = NULL} and \code{M = 1})
+The policy object returned by \code{policy_learn}, see \link{policy_learn}.}
+\item{\code{g_functions}}{(only if \code{M = 1}) The
+fitted g-functions.}
+\item{\code{q_functions}}{(only if \code{M = 1}) The
+fitted Q-functions.}
+\item{\code{cross_fits}}{(only if \code{M > 1}) List containing the
+"policy_eval" object for every (validation) fold.}
+\item{\code{folds}}{(only if \code{M > 1}) The (validation) folds used
+for cross-fitting.}
+}
 \description{
 \code{policy_eval} is used to estimate the value of a given fixed policy or a data adaptive policy (e.g. a policy learned from the data).
 }

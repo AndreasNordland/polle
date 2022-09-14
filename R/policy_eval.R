@@ -15,6 +15,28 @@
 #' @param M Number of folds for cross-fitting.
 #' @param type Type of evaluation (dr/doubly robust, ipw/inverse propensity weighting, or/outcome regression).
 #' @param future_args Arguments passed to [future.apply::future_apply()].
+#' @returns \code{policy_eval()} returns an object of class "policy_eval".
+#' The object is a list containing the following elements:
+#' \item{\code{value_estimate}}{Numeric. The estimated value of the policy.}
+#' \item{\code{type}}{Character string. The type of evaluation ("dr", "ipw", "or").}
+#' \item{\code{IC}}{Numeric vector. Estimated influence curve associated with the value estimate.}
+#' \item{\code{value_estimate_ipw}}{(only if \code{type = "dr"}) Numeric.
+#' The estimated value of the policy based on inverse probability weighting.}
+#' \item{\code{value_estimate_or}}{(only if \code{type = "dr"}) Numeric.
+#' The estimated value of the policy based on outcome regression.}
+#' \item{\code{id}}{Character vector. The IDs of the observations.}
+#' \item{\code{policy_actions}}{[data.table] with keys id and stage. Actions
+#' associated with the policy for every observation and stage.}
+#' \item{\code{policy_object}}{(only if \code{policy = NULL} and \code{M = 1})
+#' The policy object returned by \code{policy_learn}, see [policy_learn].}
+#' \item{\code{g_functions}}{(only if \code{M = 1}) The
+#' fitted g-functions.}
+#' \item{\code{q_functions}}{(only if \code{M = 1}) The
+#' fitted Q-functions.}
+#' \item{\code{cross_fits}}{(only if \code{M > 1}) List containing the
+#' "policy_eval" object for every (validation) fold.}
+#' \item{\code{folds}}{(only if \code{M > 1}) The (validation) folds used
+#' for cross-fitting.}
 #' @export
 #' @examples
 #' library("polle")
@@ -118,9 +140,11 @@ policy_eval_type <- function(type,
                         g_models = g_models, g_functions = g_functions, g_full_history = g_full_history,
                         q_models = q_models, q_functions = q_functions, q_full_history = q_full_history)
 
-  # getting the fitted policy:
-  if (is.null(policy))
+  # getting the fitted policy and associated actions:
+  if (is.null(policy)){
     policy <- get_policy(getElement(fits, "policy_object"))
+  }
+  policy_actions <- policy(valid_policy_data)
 
   # calculating the doubly robust score and value estimate:
   value_object <- value(type = type,
@@ -128,17 +152,17 @@ policy_eval_type <- function(type,
                         policy = policy,
                         g_functions = getElement(fits, "g_functions"),
                         q_functions = getElement(fits, "q_functions"))
-
   out <- list(
     value_estimate = getElement(value_object, "value_estimate"),
     type = type,
     IC = getElement(value_object, "IC"),
     value_estimate_ipw = getElement(value_object, "value_estimate_ipw"),
     value_estimate_or = getElement(value_object, "value_estimate_or"),
-    g_functions = getElement(fits, "g_functions"),
-    q_functions = getElement(fits, "q_functions"),
     id = get_id(valid_policy_data),
-    policy_object = getElement(fits, "policy_object")
+    policy_actions = policy_actions,
+    policy_object = getElement(fits, "policy_object"),
+    g_functions = getElement(fits, "g_functions"),
+    q_functions = getElement(fits, "q_functions")
   )
   out <- Filter(Negate(is.null), out)
 
@@ -190,6 +214,11 @@ policy_eval_cross <- function(args,
     value_estimate_or <- sum((n / sum(n)) * value_estimate_or)
   }
 
+  # collecting the policy actions
+  policy_actions <- lapply(cross_fits, function(x) getElement(x, "policy_actions"))
+  policy_actions <- rbindlist(policy_actions)
+  setkey(policy_actions, "id", "stage")
+
   # sorting via the IDs:
   IC <- IC[order(id)]
   id <- id[order(id)]
@@ -200,6 +229,7 @@ policy_eval_cross <- function(args,
               value_estimate_ipw = value_estimate_ipw,
               value_estimate_or = value_estimate_or,
               id = id,
+              policy_actions = policy_actions,
               cross_fits = cross_fits,
               folds = folds
   )
