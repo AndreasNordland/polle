@@ -12,7 +12,7 @@ policy_learn(
   alpha = 0,
   L = 1,
   save_cross_fit_models = FALSE,
-  future_args = NULL,
+  future_args = list(future.seed = TRUE),
   qv_models = NULL,
   qv_full_history = FALSE,
   policy_vars = NULL,
