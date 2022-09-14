@@ -5,7 +5,7 @@ print.policy_data <- function(x, digits = 2, ...){
   n <- get_n(x)
 
   cat(
-    paste("Object of class policy_data with n = ", n, " observations and maximum K = ", K, " stages.", sep = "")
+    paste("Policy data with n = ", n, " observations and maximum K = ", K, " stages.", sep = "")
   )
   cat("\n")
 
