@@ -144,7 +144,7 @@ pd3 <- policy_data(data = d3$stage_data,
                    utility = "U")
 pd3
 head(get_history(pd3, stage = 3)$H, 5) # state/Markov type history and action, (H_k,A_k).
-head(get_history(pd3, stage = 2, full_history = T)$H, 5) # Full history and action, (H_k,A_k).
+head(get_history(pd3, stage = 2, full_history = TRUE)$H, 5) # Full history and action, (H_k,A_k).
 }
 \seealso{
 \code{\link[=policy_eval]{policy_eval()}}, \code{\link[=policy_learn]{policy_learn()}}, \code{\link[=get_history]{get_history()}}, \code{\link[=get_actions]{get_actions()}}, \code{\link[=utility]{utility()}}.

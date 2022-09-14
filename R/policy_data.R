@@ -232,7 +232,7 @@ new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
 #'                    utility = "U")
 #' pd3
 #' head(get_history(pd3, stage = 3)$H, 5) # state/Markov type history and action, (H_k,A_k).
-#' head(get_history(pd3, stage = 2, full_history = T)$H, 5) # Full history and action, (H_k,A_k).
+#' head(get_history(pd3, stage = 2, full_history = TRUE)$H, 5) # Full history and action, (H_k,A_k).
 #' @export
 policy_data <- function(data, baseline_data,
                         type="wide",
