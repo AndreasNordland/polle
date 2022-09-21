@@ -30,9 +30,9 @@
 #' \item{\code{policy_object}}{(only if \code{policy = NULL} and \code{M = 1})
 #' The policy object returned by \code{policy_learn}, see [policy_learn].}
 #' \item{\code{g_functions}}{(only if \code{M = 1}) The
-#' fitted g-functions.}
+#' fitted g-functions. Object of class "nuisance_functions".}
 #' \item{\code{q_functions}}{(only if \code{M = 1}) The
-#' fitted Q-functions.}
+#' fitted Q-functions. Object of class "nuisance_functions".}
 #' \item{\code{cross_fits}}{(only if \code{M > 1}) List containing the
 #' "policy_eval" object for every (validation) fold.}
 #' \item{\code{folds}}{(only if \code{M > 1}) The (validation) folds used

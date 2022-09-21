@@ -73,7 +73,7 @@ covariates (\eqn{B}).}
 \item{\code{colnames}}{List containing the state covariate names, baseline
 covariate names, and the deterministic reward variable
 names.}
-\item{\code{action_set}}{Character vector describing the action set, i.e.,
+\item{\code{action_set}}{Sorted character vector describing the action set, i.e.,
 the possible actions at each stage.}
 \item{\code{dim}}{List containing the number of observations (n) and the
 number of stages (K).}

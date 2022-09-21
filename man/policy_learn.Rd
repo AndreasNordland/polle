@@ -5,6 +5,7 @@
 \alias{print.policy_object}
 \alias{print.policy_learner}
 \alias{get_policy}
+\alias{get_policy.policy_eval}
 \title{Create Policy Learner Object:}
 \usage{
 policy_learn(
@@ -29,6 +30,8 @@ policy_learn(
 \method{print}{policy_learner}(x)
 
 get_policy(object)
+
+\method{get_policy}{policy_eval}(object)
 }
 \arguments{
 \item{type}{Type of policy learner method:
@@ -80,7 +83,21 @@ look ahead when splitting.}
 }
 \value{
 Function of inherited class \code{"policy_learner"}.
-Evaluating the function returns an object of class \code{"policy_object"}.
+Evaluating the function on a \link{policy_data} object returns an object of
+class \code{"policy_object"}. A policy object is a list containing all or
+some of the following elements:
+\item{\code{q_functions}}{Fitted Q-functions. Object of class "nuisance_functions".}
+\item{\code{g_functions}}{Fitted g-functions. Object of class "nuisance_functions".}
+\item{\code{action_set}}{Sorted character vector describing the action set, i.e.,
+the possible actions at each stage.}
+\item{\code{alpha}}{Numeric. Probability threshold to determine realistic actions.}
+\item{\code{K}}{Integer. Maximal number of stages.}
+\item{\code{qv_functions}}{(only if \code{type = "rqvl"}) Fitted V-restricted
+Q-functions. Contains a fitted model for each stage and action.}
+\item{\code{ptl_objects}}{(only if \code{type = "ptl"}) Fitted V-restricted
+policy trees. Contains a \link{policy_tree} for each stage.}
+\item{\code{ptl_designs}}{(only if \code{type = "ptl"}) Specification of the
+V-restricted design matrix for each stage}
 }
 \description{
 \code{policy_learn} is used to specify a policy learning method (Q-learning,
