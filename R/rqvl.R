@@ -259,6 +259,7 @@ rqvl <- function(policy_data,
   return(out)
 }
 
+#' @rdname get_policy_functions
 #' @export
 get_policy_functions.RQVL <- function(object, stage){
   action_set <- object$action_set

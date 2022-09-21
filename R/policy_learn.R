@@ -37,7 +37,21 @@
 #' @param search.depth (only used if \code{type = "ptl"} and \code{hybrid = TRUE}) Depth to
 #' look ahead when splitting.
 #' @returns Function of inherited class \code{"policy_learner"}.
-#' Evaluating the function returns an object of class \code{"policy_object"}.
+#' Evaluating the function on a [policy_data] object returns an object of
+#' class \code{"policy_object"}. A policy object is a list containing all or
+#' some of the following elements:
+#' \item{\code{q_functions}}{Fitted Q-functions. Object of class "nuisance_functions".}
+#' \item{\code{g_functions}}{Fitted g-functions. Object of class "nuisance_functions".}
+#' \item{\code{action_set}}{Sorted character vector describing the action set, i.e.,
+#'                          the possible actions at each stage.}
+#' \item{\code{alpha}}{Numeric. Probability threshold to determine realistic actions.}
+#' \item{\code{K}}{Integer. Maximal number of stages.}
+#' \item{\code{qv_functions}}{(only if \code{type = "rqvl"}) Fitted V-restricted
+#' Q-functions. Contains a fitted model for each stage and action.}
+#' \item{\code{ptl_objects}}{(only if \code{type = "ptl"}) Fitted V-restricted
+#' policy trees. Contains a [policy_tree] for each stage.}
+#' \item{\code{ptl_designs}}{(only if \code{type = "ptl"}) Specification of the
+#' V-restricted design matrix for each stage}
 #' @seealso [policy_def()], [get_policy_functions()].
 #' @examples
 #' library("polle")
@@ -217,11 +231,22 @@ print.policy_learner <- function(x) {
 
 }
 
-
 #' @rdname policy_learn
 #' @export
 get_policy <- function(object){
   UseMethod("get_policy")
+}
+
+#' @rdname policy_learn
+#' @export
+get_policy.policy_eval <- function(object){
+  po <- getElement(object, "policy_object")
+  if (is.null(po)){
+    mes <- "Learned policy is not available."
+    stop(mes)
+  }
+  pf <- get_policy(po)
+  return(pf)
 }
 
 #' Get Policy Functions
@@ -230,7 +255,8 @@ get_policy <- function(object){
 #' the given stage. \code{get_policy_functions()} is useful when implementing
 #' the learned policy.
 #'
-#' @param object Object of class "policy_object", see [policy_learn].
+#' @param object Object of class "policy_object" or "policy_eval",
+#' see [policy_learn] and [policy_eval].
 #' @param stage Integer. Stage number.
 #' @returns Functions with arguments:
 #' \item{\code{H}}{[data.table] containing the variables needed to evaluate the policy (and g-function).}
@@ -274,7 +300,8 @@ get_policy <- function(object){
 #' d2 <- pf2(H = new_H)
 #' d2
 #'
-#' # comparing get_policy_functions() and get_policy():
+#' # comparing get_policy_functions() and get_policy() when
+#' # used on an object of class "policy_object":
 #' new_H <- get_history(pd, stage = 2, full_history = TRUE)$H
 #' new_H$L <- new_H$L_2
 #' new_H$C <- new_H$C_2
@@ -282,7 +309,7 @@ get_policy <- function(object){
 #'  pf2(H = new_H),
 #'  get_policy(po)(pd)[stage == 2]$d
 #' )
-#' rm(pl, po, d2)
+#' rm(pl, po, d2, pf2, new_H, L_2)
 #'
 #' ### Realistic V-restricted Policy Tree Learning
 #' # specifying the learner:
@@ -292,13 +319,14 @@ get_policy <- function(object){
 #'                    policy_full_history = TRUE,
 #'                    alpha = 0.05)
 #'
-#' # applying the learner:
-#' po <- pl(policy_data = pd,
-#'          q_models = q_glm(),
-#'          g_models = g_glm())
+#' # evaluating the learner:
+#' pe <- policy_eval(policy_data = pd,
+#'                   policy_learn = pl,
+#'                   q_models = q_glm(),
+#'                   g_models = g_glm())
 #'
 #' #' # getting the policy function at stage 2:
-#' pf2 <- get_policy_functions(po, stage = 2)
+#' pf2 <- get_policy_functions(pe, stage = 2)
 #' args(pf2)
 #'
 #' # applying the policy function to new data:
@@ -311,15 +339,30 @@ get_policy <- function(object){
 #' d2 <- pf2(H = new_H)
 #' d2
 #'
-#' # comparing get_policy_functions() and get_policy():
+#' # comparing get_policy_functions() and get_policy() when
+#' # used on an object of class "policy_eval":
 #' new_H <- get_history(pd, stage = 2, full_history = TRUE)$H
 #' new_H$L <- new_H$L_2
 #' new_H$C <- new_H$C_2
 #' all.equal(
 #'  pf2(H = new_H),
-#'  get_policy(po)(pd)[stage == 2]$d
+#'  get_policy(pe)(pd)[stage == 2]$d
 #' )
 #' @export
 get_policy_functions <- function(object, stage){
   UseMethod("get_policy_functions")
 }
+
+#' @rdname get_policy_functions
+#' @export
+get_policy_functions.policy_eval <- function(object, stage){
+  po <- getElement(object, "policy_object")
+  if (is.null(po)){
+    mes <- "Learned policy is not available."
+    stop(mes)
+  }
+  pf <- get_policy_functions(po, stage = stage)
+  return(pf)
+}
+
+

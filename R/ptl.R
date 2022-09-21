@@ -149,11 +149,15 @@ ptl <- function(policy_data,
 
     # getting the policy history
     policy_history_k <- get_history(policy_data, stage = k, full_history = policy_full_history)
-    if (policy_full_history == TRUE)
+    if (policy_full_history == TRUE){
       vars <- policy_vars[[k]]
-    else
+    } else{
       vars <- policy_vars
+    }
     H <- get_H(policy_history_k, vars = vars)
+    if (is.null(policy_vars)){
+      policy_vars <- names(H)
+    }
 
     # design matrix for policy_tree:
     design_k <- get_design(formula = ~., data = H)
@@ -189,6 +193,7 @@ ptl <- function(policy_data,
 
   }
 
+  # setting outputs:
   if (length(q_functions) > 0){
     class(q_functions) <- "nuisance_functions"
     attr(q_functions, "full_history") <- q_full_history
@@ -199,9 +204,7 @@ ptl <- function(policy_data,
   if (length(q_functions_cf) == 0){
     q_functions_cf <- NULL
   }
-
   names(ptl_objects) <- paste("stage_", 1:K, sep = "")
-
 
   out <- list(
     ptl_objects = ptl_objects,
@@ -247,11 +250,11 @@ policy <- function(policy_data){
     # getting the policy history:
     policy_history_k <- get_history(policy_data, stage = k, full_history = policy_full_history)
 
-    if (policy_full_history == TRUE)
+    if (policy_full_history == TRUE){
       vars <- policy_vars[[k]]
-    else
+    } else{
       vars <- policy_vars
-
+    }
     H <- get_H(policy_history_k, vars = vars)
 
     des <- ptl_designs[[k]]
@@ -291,6 +294,7 @@ policy <- function(policy_data){
 return(policy)
 }
 
+#' @rdname get_policy_functions
 #' @export
 get_policy_functions.PTL <- function(object, stage){
   action_set <- getElement(object, "action_set")
