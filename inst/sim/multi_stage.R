@@ -1,11 +1,11 @@
 library(data.table)
 
-a_obs <- function(t, x, beta, ...){
+a <- function(t, x, beta, ...){
   prob <- lava::expit(beta[1] + (beta[2] * t) + (beta[3] * x))
   rbinom(n = 1, size = 1, prob = prob)
 }
 
-sim_multi_stage_obs <- function(a = a_obs,
+sim_multi_stage_obs <- function(a = a,
                                 tau = 10,
                                 lambda = c(0, -0.4, 0.3),
                                 alpha = c(0, 0.5, 0.1, -0.5, 0.4),
