@@ -23,16 +23,17 @@
 #' list of character vectors/strings. Variable names used to construct a
 #' V-restricted policy tree. The names must be a subset of the history variable
 #' names, see [get_history_names()].
-#' @param depth (only used if \code{type = "ptl"}) The depth of the fitted policy
-#' tree, see [policy_tree()].
-#' @param split.step (only used if \code{type = "ptl"}) The number of possible splits
-#' to consider when performing policy tree search, see [policy_tree()].
-#' @param min.node.size (only used if \code{type = "ptl"}) An integer indicating the
-#' smallest terminal node size permitted, see [policy_tree()].
+#' @param depth (only used if \code{type = "ptl"}) Numeric or numeric vector.
+#' The depth of the fitted policy tree for each stage, see [policy_tree()].
+#' @param split.step (only used if \code{type = "ptl"}) Numeric or numeric vector.
+#' The number of possible splits to consider when performing policy tree search
+#' at each stage, see [policy_tree()].
+#' @param min.node.size (only used if \code{type = "ptl"}) Numeric or numeric vector.
+#' The smallest terminal node size permitted at each stage, see [policy_tree()].
 #' @param hybrid (only used if \code{type = "ptl"}) If \code{TRUE}, [hybrid_policy_tree()] is
 #' used to fit a policy tree.
-#' @param search.depth (only used if \code{type = "ptl"} and \code{hybrid = TRUE}) Depth to
-#' look ahead when splitting.
+#' @param search.depth (only used if \code{type = "ptl"} and \code{hybrid = TRUE})
+#' Numeric or numeric vector. Depth to look ahead when splitting at each stage.
 #' @returns Function of inherited class \code{"policy_learner"}.
 #' Evaluating the function on a [policy_data] object returns an object of
 #' class \code{"policy_object"}. A policy object is a list containing all or
@@ -103,6 +104,7 @@
 #' pl <- policy_learn(type = "ptl",
 #'                    policy_vars = list(c("C_1", "BB"),
 #'                                       c("L_1", "BB")),
+#'                    depth = c(2,1),
 #'                    full_history = TRUE)
 #'
 #' # evaluating the learned policy:

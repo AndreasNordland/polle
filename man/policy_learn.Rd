@@ -61,20 +61,21 @@ list of character vectors/strings. Variable names used to construct a
 V-restricted policy tree. The names must be a subset of the history variable
 names, see \code{\link[=get_history_names]{get_history_names()}}.}
 
-\item{depth}{(only used if \code{type = "ptl"}) The depth of the fitted policy
-tree, see \code{\link[=policy_tree]{policy_tree()}}.}
+\item{depth}{(only used if \code{type = "ptl"}) Numeric or numeric vector.
+The depth of the fitted policy tree for each stage, see \code{\link[=policy_tree]{policy_tree()}}.}
 
-\item{split.step}{(only used if \code{type = "ptl"}) The number of possible splits
-to consider when performing policy tree search, see \code{\link[=policy_tree]{policy_tree()}}.}
+\item{split.step}{(only used if \code{type = "ptl"}) Numeric or numeric vector.
+The number of possible splits to consider when performing policy tree search
+at each stage, see \code{\link[=policy_tree]{policy_tree()}}.}
 
-\item{min.node.size}{(only used if \code{type = "ptl"}) An integer indicating the
-smallest terminal node size permitted, see \code{\link[=policy_tree]{policy_tree()}}.}
+\item{min.node.size}{(only used if \code{type = "ptl"}) Numeric or numeric vector.
+The smallest terminal node size permitted at each stage, see \code{\link[=policy_tree]{policy_tree()}}.}
 
 \item{hybrid}{(only used if \code{type = "ptl"}) If \code{TRUE}, \code{\link[=hybrid_policy_tree]{hybrid_policy_tree()}} is
 used to fit a policy tree.}
 
-\item{search.depth}{(only used if \code{type = "ptl"} and \code{hybrid = TRUE}) Depth to
-look ahead when splitting.}
+\item{search.depth}{(only used if \code{type = "ptl"} and \code{hybrid = TRUE})
+Numeric or numeric vector. Depth to look ahead when splitting at each stage.}
 }
 \value{
 Function of inherited class \code{"policy_learner"}.

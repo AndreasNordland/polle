@@ -24,9 +24,54 @@ ptl <- function(policy_data,
     if (length(q_models) != K)
       stop("q_models must either be a list of length K or a single Q-model.")
   }
+
   if (full_history == TRUE){
     if ((!is.list(policy_vars)) | (length(policy_vars) != K))
       stop("policy_vars must be a list of length K, when full_history = TRUE.")
+  }
+
+  if (is.list(depth)){
+    depth <- unlist(depth)
+  }
+  if (length(depth) == 1){
+    depth <- rep(depth, K)
+  } else{
+    if (length(depth) != K | !all(depth%%1==0)){
+      stop("depth must be an integer vector of length K.")
+    }
+  }
+
+  if (is.list(split.step)){
+    split.step <- unlist(split.step)
+  }
+  if (length(split.step) == 1){
+    split.step <- rep(split.step, K)
+  } else{
+    if (length(split.step) != K | !all(split.step%%1==0)){
+      stop("split.step must be an integer vector of length K.")
+    }
+  }
+
+  if (is.list(min.node.size)){
+    min.node.size <- unlist(min.node.size)
+  }
+  if (length(min.node.size) == 1){
+    min.node.size <- rep(min.node.size, K)
+  } else{
+    if (length(min.node.size) != K | !all(min.node.size%%1==0)){
+      stop("min.node.size must be an integer vector of length K.")
+    }
+  }
+
+  if (is.list(search.depth)){
+    search.depth <- unlist(search.depth)
+  }
+  if (length(search.depth) == 1){
+    search.depth <- rep(search.depth, K)
+  } else{
+    if (length(search.depth) != K | !all(search.depth%%1==0)){
+      stop("search.depth must be an integer vector of length K.")
+    }
   }
 
   # getting the observed actions:
@@ -164,10 +209,26 @@ ptl <- function(policy_data,
     X <- design_k$x
     design_k$x <- NULL
     ptl_designs[[k]] <- design_k
+
+    # tuning parameters for policy_tree:
+    depth_k <- depth[[k]]
+    split.step_k <- split.step[[k]]
+    min.node.size_k <- min.node.size[[k]]
+    search.depth_k <- search.depth[[k]]
+
     if (hybrid == FALSE){
-      ptl_k <- policytree::policy_tree(X = X, Gamma = Gamma, depth = depth, split.step = split.step, min.node.size = min.node.size)
+      ptl_k <- policytree::policy_tree(X = X,
+                                       Gamma = Gamma,
+                                       depth = depth_k,
+                                       split.step = split.step_k,
+                                       min.node.size = min.node.size_k)
     } else if (hybrid == TRUE){
-      ptl_k <- policytree::hybrid_policy_tree(X = X, Gamma = Gamma, depth = depth, split.step = split.step, min.node.size = min.node.size, search.depth = search.depth)
+      ptl_k <- policytree::hybrid_policy_tree(X = X,
+                                              Gamma = Gamma,
+                                              depth = depth_k,
+                                              split.step = split.step_k,
+                                              min.node.size = min.node.size_k,
+                                              search.depth = search.depth_k)
     }
 
     ptl_objects[[k]] <- ptl_k
