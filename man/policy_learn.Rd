@@ -153,6 +153,7 @@ head(get_policy(pe$policy_object)(pd)); rm(pl, pe)
 pl <- policy_learn(type = "ptl",
                    policy_vars = list(c("C_1", "BB"),
                                       c("L_1", "BB")),
+                   depth = c(2,1),
                    full_history = TRUE)
 
 # evaluating the learned policy:
