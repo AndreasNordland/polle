@@ -108,7 +108,7 @@ rqvl <- function(policy_data,
     }
     g_values <- getElement(g_cf, "values")
     # fitting the non-cross-fitted g-functions
-    # for determining future realistic actions:
+    # for determining new realistic actions:
     if (alpha > 0){
       if (is.null(g_functions)){
         g_functions <- fit_g_functions(policy_data,
