@@ -1,7 +1,7 @@
 ptl <- function(policy_data,
                 g_models, g_functions, g_full_history,
                 q_models, q_full_history,
-                policy_vars, policy_full_history,
+                policy_vars, full_history,
                 L, save_cross_fit_models, future_args,
                 alpha,
                 depth, split.step, min.node.size, hybrid, search.depth,
@@ -24,9 +24,9 @@ ptl <- function(policy_data,
     if (length(q_models) != K)
       stop("q_models must either be a list of length K or a single Q-model.")
   }
-  if (policy_full_history == TRUE){
+  if (full_history == TRUE){
     if ((!is.list(policy_vars)) | (length(policy_vars) != K))
-      stop("policy_vars must be a list of length K, when policy_full_history = TRUE.")
+      stop("policy_vars must be a list of length K, when full_history = TRUE.")
   }
 
   # getting the observed actions:
@@ -148,8 +148,8 @@ ptl <- function(policy_data,
     Gamma <- Gamma_1 + Gamma_2 + Gamma_3
 
     # getting the policy history
-    policy_history_k <- get_history(policy_data, stage = k, full_history = policy_full_history)
-    if (policy_full_history == TRUE){
+    policy_history_k <- get_history(policy_data, stage = k, full_history = full_history)
+    if (full_history == TRUE){
       vars <- policy_vars[[k]]
     } else{
       vars <- policy_vars
@@ -209,7 +209,7 @@ ptl <- function(policy_data,
   out <- list(
     ptl_objects = ptl_objects,
     ptl_designs = ptl_designs,
-    policy_full_history = policy_full_history,
+    full_history = full_history,
     policy_vars = policy_vars,
     g_functions = g_functions,
     g_functions_cf = g_functions_cf,
@@ -233,7 +233,7 @@ get_policy.PTL <- function(object){
 
 action_set <- getElement(object, "action_set")
 K <- getElement(object, "K")
-policy_full_history <- getElement(object, "policy_full_history")
+full_history <- getElement(object, "full_history")
 ptl_objects <- getElement(object, "ptl_objects")
 ptl_designs <- getElement(object, "ptl_designs")
 policy_vars <- getElement(object, "policy_vars")
@@ -248,9 +248,9 @@ policy <- function(policy_data){
   policy_actions <- list()
   for (k in K:1){
     # getting the policy history:
-    policy_history_k <- get_history(policy_data, stage = k, full_history = policy_full_history)
+    policy_history_k <- get_history(policy_data, stage = k, full_history = full_history)
 
-    if (policy_full_history == TRUE){
+    if (full_history == TRUE){
       vars <- policy_vars[[k]]
     } else{
       vars <- policy_vars
@@ -315,8 +315,8 @@ get_policy_functions.PTL <- function(object, stage){
 
   ptl_object <- getElement(object, "ptl_objects")[[stage]]
   ptl_design <- getElement(object, "ptl_designs")[[stage]]
-  policy_full_history <- getElement(object, "policy_full_history")
-  if(policy_full_history){
+  full_history <- getElement(object, "full_history")
+  if(full_history){
     policy_vars <- getElement(object, "policy_vars")[[stage]]
   } else{
     policy_vars <- getElement(object, "policy_vars")

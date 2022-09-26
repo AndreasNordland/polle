@@ -460,7 +460,7 @@ rm(tmp, tmp2, two_stage_policy_data)
 #   policy_data = two_stage_policy_data,
 #   g_models = g0,
 #   g_full_history = FALSE,
-#   policy_full_history = TRUE,
+#   full_history = TRUE,
 #   # policy_vars = c("C", "L")
 #   policy_vars = list(c("C_1", "L_1"), c("C_2", "L_2")) # note that DTRlearn2 has a bug, ncol(H)>1 must be TRUE.
 # )
@@ -512,7 +512,7 @@ rm(tmp, tmp2, two_stage_policy_data)
 #   q_models = qbias,
 #   g_full_history = FALSE,
 #   q_full_history = FALSE,
-#   policy_full_history = FALSE,
+#   full_history = FALSE,
 #   M = 2,
 #   # policy_vars = list(c("C_1"), c("C_2", "L_2"))
 #   policy_vars = c("L")
@@ -588,7 +588,7 @@ tmprqvl <- rqvl(
   g_full_history = FALSE,
   q_full_history = FALSE,
   qv_models = list(new_q_glm(formula = ~L+C), new_q_glm(formula = ~L+C)),
-  qv_full_history = FALSE,
+  full_history = FALSE,
   M = 3
 )
 tmprqvl$value_estimate

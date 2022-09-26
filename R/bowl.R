@@ -1,7 +1,7 @@
 bowl <- function(policy_data,
                  alpha = 0,
                  g_models = NULL, g_functions = NULL, g_full_history = FALSE,
-                 policy_full_history = FALSE, policy_vars = NULL,
+                 full_history = FALSE, policy_vars = NULL,
                  res.lasso=TRUE, loss='hinge', kernel='linear',
                  augment=FALSE, c=2^(-2:2), sigma=c(0.03,0.05,0.07), s=2.^(-2:2), m=4,
                  ...){
@@ -17,8 +17,8 @@ bowl <- function(policy_data,
   n <- get_n(policy_data)
   action_set <- get_action_set(policy_data)
 
-  if (policy_full_history == TRUE){
-    if ((!is.list(policy_vars)) | (length(policy_vars) != K)) stop("policy_vars must be a list of length K, when policy_full_history = TRUE")
+  if (full_history == TRUE){
+    if ((!is.list(policy_vars)) | (length(policy_vars) != K)) stop("policy_vars must be a list of length K, when full_history = TRUE")
   }
 
   if (!(length(action_set) == 2)) stop("bowl only works for binary actions.")
@@ -56,14 +56,14 @@ bowl <- function(policy_data,
   owl_objects <- list()
   for (k in K:1){
     # getting the policy history for stage k
-    policy_history_k <- get_history(policy_data, stage = k, full_history = policy_full_history)
+    policy_history_k <- get_history(policy_data, stage = k, full_history = full_history)
 
     # getting the IDs and ID-Indices at the kth stage:
     id_k <- get_id(policy_history_k)
     idx_k <- (id %in% id_k)
 
     # constructing the inputs for owl:
-    if (policy_full_history == TRUE)
+    if (full_history == TRUE)
       vars <- policy_vars[[k]]
     else
       vars <- policy_vars
@@ -111,7 +111,7 @@ bowl <- function(policy_data,
     owl_objects = owl_objects,
     X_scales = X_scales,
     g_functions = g_functions,
-    policy_full_history = policy_full_history,
+    full_history = full_history,
     policy_vars = policy_vars,
     alpha = alpha,
     action_set = action_set,
@@ -126,7 +126,7 @@ get_policy.BOWL <- function(object){
   owl_objects <- object$owl_objects
   X_scales <- object$X_scales
   g_functions = object$g_functions
-  policy_full_history <- object$policy_full_history
+  full_history <- object$full_history
   policy_vars <- getElement(object, "policy_vars")
   alpha <- object$alpha
   action_set <- object$action_set
@@ -139,9 +139,9 @@ get_policy.BOWL <- function(object){
     policy_actions <- list()
     for (k in K:1){
       # getting the policy history:
-      policy_history_k <- get_history(policy_data, stage = k, full_history = policy_full_history)
+      policy_history_k <- get_history(policy_data, stage = k, full_history = full_history)
 
-      if (policy_full_history == TRUE)
+      if (full_history == TRUE)
         vars <- policy_vars[[k]]
       else
         vars <- policy_vars

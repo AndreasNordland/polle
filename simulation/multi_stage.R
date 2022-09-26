@@ -232,7 +232,7 @@ always_treat_policy <- policy_def(
 #   multi_stage_policy_data,
 #   g_models = new_g_glm(),
 #   q_models = q_linear,
-#   policy_full_history = FALSE,
+#   full_history = FALSE,
 #   depth = 2
 # )
 #

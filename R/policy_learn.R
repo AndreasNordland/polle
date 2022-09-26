@@ -16,16 +16,13 @@
 #' @param future_args Arguments passed to [future.apply::future_apply()].
 #' @param qv_models (only used if \code{type = "rqvl"}) V-restricted Q-models created
 #' by [q_glm()], [q_rf()], [q_sl()] or similar functions.
-#' @param qv_full_history (only used if \code{type = "rqvl"}) If \code{TRUE}, the full
-#' history is used to fit each QV-model. If FALSE, the single stage/
-#' "Markov type" history is used to fit each QV-model.
+#' @param full_history If \code{TRUE}, the full
+#' history is used to fit each QV-model/policy tree. If FALSE, the single stage/
+#' "Markov type" history is used to fit each QV-model/policy tree.
 #' @param policy_vars (only used if \code{type = "ptl"}) Character vector/string or
 #' list of character vectors/strings. Variable names used to construct a
 #' V-restricted policy tree. The names must be a subset of the history variable
 #' names, see [get_history_names()].
-#' @param policy_full_history (only used if \code{type = "ptl"}) If \code{TRUE}, the full
-#' history is parsed to policy_tree. If FALSE, the single stage/"Markov type"
-#' history is parsed to policy_tree.
 #' @param depth (only used if \code{type = "ptl"}) The depth of the fitted policy
 #' tree, see [policy_tree()].
 #' @param split.step (only used if \code{type = "ptl"}) The number of possible splits
@@ -106,7 +103,7 @@
 #' pl <- policy_learn(type = "ptl",
 #'                    policy_vars = list(c("C_1", "BB"),
 #'                                       c("L_1", "BB")),
-#'                    policy_full_history = TRUE)
+#'                    full_history = TRUE)
 #'
 #' # evaluating the learned policy:
 #' set.seed(1)
@@ -122,10 +119,9 @@ policy_learn <- function(type = "rql",
                          L = 1,
                          save_cross_fit_models = FALSE,
                          future_args = list(future.seed = TRUE),
+                         full_history = FALSE,
                          qv_models = NULL,
-                         qv_full_history = FALSE,
                          policy_vars = NULL,
-                         policy_full_history = FALSE,
                          depth = 2,
                          split.step = 1,
                          min.node.size = 1,
@@ -276,7 +272,7 @@ get_policy.policy_eval <- function(object){
 #' ### Realistic V-restricted (Doubly Robust) Q-learning
 #' # specifying the learner:
 #' pl <- policy_learn(type = "rqvl",
-#'                    qv_full_history = TRUE,
+#'                    full_history = TRUE,
 #'                    qv_models = list(q_glm(formula = ~ C_1),
 #'                                     q_glm(formula = ~ L_2)),
 #'                    alpha = 0.05)
@@ -316,7 +312,7 @@ get_policy.policy_eval <- function(object){
 #' pl <- policy_learn(type = "ptl",
 #'                    policy_vars = list(c("C_1", "BB"),
 #'                                       c("L_1", "BB")),
-#'                    policy_full_history = TRUE,
+#'                    full_history = TRUE,
 #'                    alpha = 0.05)
 #'
 #' # evaluating the learner:

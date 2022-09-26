@@ -14,10 +14,9 @@ policy_learn(
   L = 1,
   save_cross_fit_models = FALSE,
   future_args = list(future.seed = TRUE),
+  full_history = FALSE,
   qv_models = NULL,
-  qv_full_history = FALSE,
   policy_vars = NULL,
-  policy_full_history = FALSE,
   depth = 2,
   split.step = 1,
   min.node.size = 1,
@@ -50,21 +49,17 @@ cross-fitting.}
 
 \item{future_args}{Arguments passed to \code{\link[future.apply:future_apply]{future.apply::future_apply()}}.}
 
+\item{full_history}{If \code{TRUE}, the full
+history is used to fit each QV-model/policy tree. If FALSE, the single stage/
+"Markov type" history is used to fit each QV-model/policy tree.}
+
 \item{qv_models}{(only used if \code{type = "rqvl"}) V-restricted Q-models created
 by \code{\link[=q_glm]{q_glm()}}, \code{\link[=q_rf]{q_rf()}}, \code{\link[=q_sl]{q_sl()}} or similar functions.}
-
-\item{qv_full_history}{(only used if \code{type = "rqvl"}) If \code{TRUE}, the full
-history is used to fit each QV-model. If FALSE, the single stage/
-"Markov type" history is used to fit each QV-model.}
 
 \item{policy_vars}{(only used if \code{type = "ptl"}) Character vector/string or
 list of character vectors/strings. Variable names used to construct a
 V-restricted policy tree. The names must be a subset of the history variable
 names, see \code{\link[=get_history_names]{get_history_names()}}.}
-
-\item{policy_full_history}{(only used if \code{type = "ptl"}) If \code{TRUE}, the full
-history is parsed to policy_tree. If FALSE, the single stage/"Markov type"
-history is parsed to policy_tree.}
 
 \item{depth}{(only used if \code{type = "ptl"}) The depth of the fitted policy
 tree, see \code{\link[=policy_tree]{policy_tree()}}.}
@@ -157,7 +152,7 @@ head(get_policy(pe$policy_object)(pd)); rm(pl, pe)
 pl <- policy_learn(type = "ptl",
                    policy_vars = list(c("C_1", "BB"),
                                       c("L_1", "BB")),
-                   policy_full_history = TRUE)
+                   full_history = TRUE)
 
 # evaluating the learned policy:
 set.seed(1)

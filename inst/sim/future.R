@@ -84,7 +84,7 @@ ptl_eval <- policy_eval(
     type = "ptl",
     alpha = 0.05,
     policy_vars = c("Z", "B", "L"),
-    policy_full_history = FALSE,
+    full_history = FALSE,
     depth = 3,
     split.step = 1,
     L = NULL,

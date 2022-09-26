@@ -583,7 +583,7 @@ mean(cov_res)
 #   single_stage_policy_data,
 #   g_models = g0,
 #   g_full_history = FALSE,
-#   policy_full_history = FALSE
+#   full_history = FALSE
 # )
 # single_stage_owl_policy <- get_policy(single_stage_owl)
 #
@@ -616,7 +616,7 @@ mean(cov_res)
 #   q_models = q0,
 #   g_full_history = FALSE,
 #   q_full_history = FALSE,
-#   policy_full_history = FALSE
+#   full_history = FALSE
 # )
 #
 # policy_tree_policy <- get_policy(single_stage_policy_tree)

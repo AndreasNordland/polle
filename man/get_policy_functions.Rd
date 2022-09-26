@@ -46,7 +46,7 @@ pd
 ### Realistic V-restricted (Doubly Robust) Q-learning
 # specifying the learner:
 pl <- policy_learn(type = "rqvl",
-                   qv_full_history = TRUE,
+                   full_history = TRUE,
                    qv_models = list(q_glm(formula = ~ C_1),
                                     q_glm(formula = ~ L_2)),
                    alpha = 0.05)
@@ -86,7 +86,7 @@ rm(pl, po, d2, pf2, new_H, L_2)
 pl <- policy_learn(type = "ptl",
                    policy_vars = list(c("C_1", "BB"),
                                       c("L_1", "BB")),
-                   policy_full_history = TRUE,
+                   full_history = TRUE,
                    alpha = 0.05)
 
 # evaluating the learner:
