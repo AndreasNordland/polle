@@ -1,14 +1,11 @@
-#' @export
-evaluate <- function(object, ...)
-  UseMethod("evaluate")
 
-#' Evaluate g- and Q-functions
+#' Predict g-functions and Q-functions
 #'
-#' \code{evaluate} returns the fitted values of g-functions and
+#' \code{predict} returns the fitted values of g-functions and
 #' Q-functions when applied to a (new) policy data object.
 #' @param object Object of class "nuisance_functions". Either \code{g_functions}
 #' or \code{q_functions} as returned by [policy_eval()] or [policy_learn()].
-#' @param policy_data Policy data object created by [policy_data()].
+#' @param new_policy_data Policy data object created by [policy_data()].
 #' @examples
 #' library("polle")
 #' ### Single stage:
@@ -27,9 +24,18 @@ evaluate <- function(object, ...)
 #' pe1
 #' #
 #' pe1$g_functions
-#' # evaluating the fitted g-function:
-#' head(evaluate(pe1$g_functions, pd1))
+#' # getting the fitted g-function:
+#' head(predict(pe1$g_functions, pd1))
+#' # getting the fitted Q-function:
+#' head(predict(pe1$q_functions, pd1))
 #' @export
+predict.nuisance_functions <- function(object, new_policy_data){
+  evaluate(object, new_policy_data)
+}
+
+evaluate <- function(object, ...)
+  UseMethod("evaluate")
+
 evaluate.nuisance_functions <- function(object, policy_data){
   K <- get_K(policy_data)
   action_set <- get_action_set(policy_data)
