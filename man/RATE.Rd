@@ -14,8 +14,7 @@ RATE(
   pr.treatment,
   treatment.level,
   SL.args.response = list(family = gaussian(), SL.library = c("SL.mean", "SL.glm")),
-  SL.args.post.treatment = list(family = binomial(), SL.library = c("SL.mean",
-    "SL.glm")),
+  SL.args.post.treatment = list(family = binomial(), SL.library = c("SL.mean", "SL.glm")),
   preprocess = NULL,
   efficient = TRUE,
   ...
