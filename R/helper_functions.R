@@ -39,7 +39,7 @@ ipw_weight <- function(D, G){
     out <- apply(D / G, 1, prod, na.rm = TRUE)
   }
 
-  if(!any(is.na(out))){
+  if(any(is.na(out))){
     mes <- "The policy dictates actions with fitted probability 0. Unable to calculate inverse probability weights."
     stop(mes)
   }
