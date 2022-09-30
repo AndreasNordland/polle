@@ -108,5 +108,4 @@ ptl_eval <- policy_eval(
     future.globals=c(q_model_learner_names, strip_names)
   )
 )
-
 ptl_eval
