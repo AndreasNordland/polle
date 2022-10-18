@@ -56,7 +56,7 @@ fit_g_function <- function(history, g_model){
 }
 
 #' @export
-print.g_function <- function(x){
+print.g_function <- function(x, ...){
   y <- x$g_model
   y$action_set <- NULL
   attr(y,"class") <- NULL
@@ -230,6 +230,42 @@ fit_g_functions_cf <- function(folds,
   )
   return(out)
 }
+
+#' @title Get g-functions
+#'
+#' @description \code{get_g_functions()} returns a list of (fitted) g-functions
+#' associated with each stage.
+#' @param object Object of class [policy_eval] or [policy_object].
+#' @returns List of class [nuisance_functions].
+#' @seealso [predict.nuisance_functions]
+#' @examples
+#' ### Two stages:
+#' source(system.file("sim", "two_stage.R", package="polle"))
+#' d2 <- sim_two_stage(5e2, seed=1)
+#' pd2 <- policy_data(d2,
+#'                   action = c("A_1", "A_2"),
+#'                   baseline = c("B"),
+#'                   covariates = list(L = c("L_1", "L_2"),
+#'                                     C = c("C_1", "C_2")),
+#'                   utility = c("U_1", "U_2", "U_3"))
+#' pd2
+#'
+#' # evaluating the static policy a=1 using inverse propensity weighting
+#' # based on a GLM model at each stage
+#' pe2 <- policy_eval(type = "ipw",
+#'                    policy_data = pd2,
+#'                    policy = policy_def(static_policy(1), reuse = TRUE),
+#'                    g_models = list(g_glm(), g_glm()))
+#' pe2
+#'
+#' # getting the g-functions
+#' g_functions <- get_g_functions(pe2)
+#'
+#' # getting the fitted g-function values
+#' head(predict(g_functions, pd2))
+#' @export
+get_g_functions <- function(object)
+  UseMethod("get_g_functions")
 
 
 

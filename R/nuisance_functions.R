@@ -1,11 +1,13 @@
 
 #' Predict g-functions and Q-functions
 #'
-#' \code{predict} returns the fitted values of g-functions and
+#' \code{predict()} returns the fitted values of the g-functions and
 #' Q-functions when applied to a (new) policy data object.
 #' @param object Object of class "nuisance_functions". Either \code{g_functions}
 #' or \code{q_functions} as returned by [policy_eval()] or [policy_learn()].
 #' @param new_policy_data Policy data object created by [policy_data()].
+#' @returns [data.table] with keys \code{id} and \code{stage} and variables \code{g_a} or \code{Q_a} for
+#' each action a in the actions set.
 #' @examples
 #' library("polle")
 #' ### Single stage:
@@ -15,21 +17,22 @@
 #' pd1
 #' # defining a static policy:
 #' pl1 <- policy_def(static_policy(1))
+#'
 #' # doubly robust evaluation of the policy:
 #' pe1 <- policy_eval(policy_data = pd1,
 #'             policy = pl1,
 #'             g_models = g_glm(),
 #'             q_models = q_glm())
-#' # summarising the estimated value of the policy:
+#' # summarizing the estimated value of the policy:
 #' pe1
-#' #
-#' pe1$g_functions
-#' # getting the fitted g-function:
-#' head(predict(pe1$g_functions, pd1))
-#' # getting the fitted Q-function:
-#' head(predict(pe1$q_functions, pd1))
+#'
+#' # getting the fitted g-function values:
+#' head(predict(get_g_functions(pe1), pd1))
+#'
+#' # getting the fitted Q-function values:
+#' head(predict(get_q_functions(pe1), pd1))
 #' @export
-predict.nuisance_functions <- function(object, new_policy_data){
+predict.nuisance_functions <- function(object, new_policy_data, ...){
   evaluate(object, new_policy_data)
 }
 

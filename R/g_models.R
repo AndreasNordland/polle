@@ -39,12 +39,12 @@ get_design <- function(formula, data, intercept=FALSE) {
 }
 
 
-# g-model documentation -----------------------------------------------------------
+# g_model documentation -----------------------------------------------------------
 
-#' Define a propensity model/g-model object constructor
+#' @title g_model class object
 #'
-#' Use \code{g_glm}, \code{g_glmnet}, \code{g_rf}, and \code{g_sl} to define
-#' a propensity model/g-model object constructor.
+#' @description  Use \code{g_glm()}, \code{g_glmnet()}, \code{g_rf()}, and \code{g_sl()} to construct
+#' an action probability model/g-model object.
 #' The constructors are used as input for [policy_eval()] and [policy_learn()].
 #'
 #' @param formula An object of class [formula] specifying the design matrix for
@@ -69,15 +69,17 @@ get_design <- function(formula, data, intercept=FALSE) {
 #' @param ... Additional arguments passed to [glm()], [glmnet::glmnet],
 #' [ranger::ranger] or [SuperLearner::SuperLearner].
 #' @details
-#' \code{g_glm} is a constructor for a generalized linear model. Specifically,
-#' it is a wrapper of [glm()].\cr
-#' \code{g_glmnet} is a constructor for a generalized linear model via
-#' penalized maximum likelihood. It is a wrapper of [glmnet::glmnet()].\cr
-#' \code{g_rf} is a constructor for a random forest model. It is a wrapper of
-#' [ranger::ranger()]. When multiple hyper-parameters are given, the
-#'  model with the lowest cross-validation error is selected.
-#' @returns g-model object constructor function with arguments 'A'
+#' \code{g_glm()} is a wrapper of [glm()] (generalized linear model).\cr
+#' \code{g_glmnet()} is a wrapper of [glmnet::glmnet()] (generalized linear model via
+#' penalized maximum likelihood).\cr
+#' \code{g_rf()} is a wrapper of [ranger::ranger()] (random forest).
+#' When multiple hyper-parameters are given, the
+#' model with the lowest cross-validation error is selected.\cr
+#' \code{g_sl()} is a wrapper of [SuperLearner::SuperLearner] (ensemble model).
+#' @returns g-model object: function with arguments 'A'
 #' (action vector), 'H' (history matrix) and 'action_set'.
+#' @seealso [get_history_names()], [get_g_functions()].
+#' @docType class
 #' @name g_model
 #' @examples
 #' library("polle")
@@ -90,15 +92,16 @@ get_design <- function(formula, data, intercept=FALSE) {
 #' # defining a g-model:
 #' get_history_names(pd)
 #' g_model <- g_glm(formula = ~Z)
+#' g_model
 #'
 #' # evaluating the static policy a=1 using inverse
 #' # propensity weighting based on the given g-model:
 #' pe <- policy_eval(type = "ipw",
-#'             policy_data = pd,
-#'             policy = policy_def(static_policy(1)),
-#'             g_model = g_model)
+#'                   policy_data = pd,
+#'                   policy = policy_def(static_policy(1)),
+#'                   g_models = g_model)
 #' pe
-#' pe$g_functions
+#' get_g_functions(pe)
 #'
 #' ### Two stages:
 #' source(system.file("sim", "two_stage.R", package="polle"))
@@ -114,11 +117,11 @@ get_design <- function(formula, data, intercept=FALSE) {
 #' # evaluating the static policy a=1 using inverse propensity weighting
 #' # based on a state glm model across all stages:
 #' pe2 <- policy_eval(type = "ipw",
-#'             policy_data = pd2,
-#'             policy = policy_def(static_policy(1), reuse = TRUE),
-#'             g_model = g_glm(formula = ~ B + C))
+#'                    policy_data = pd2,
+#'                    policy = policy_def(static_policy(1), reuse = TRUE),
+#'                    g_models = g_glm(formula = ~ B + C))
 #' pe2
-#' pe2$g_functions
+#' get_g_functions(pe2)
 #'
 #' # available full history variable names at each stage:
 #' get_history_names(pd2, stage = 1)
@@ -129,11 +132,11 @@ get_design <- function(formula, data, intercept=FALSE) {
 #' pe2 <- policy_eval(type = "ipw",
 #'             policy_data = pd2,
 #'             policy = policy_def(static_policy(1), reuse = TRUE),
-#'             g_model = list(g_glm(~ L_1 + B),
+#'             g_models = list(g_glm(~ L_1 + B),
 #'                            g_glm(~ A_1 + L_2 + B)),
 #'             g_full_history = TRUE)
 #' pe2
-#' pe2$g_functions
+#' get_g_functions(pe2)
 NULL
 
 # glm interface --------------------------------------
@@ -154,10 +157,11 @@ g_glm <- function(formula = ~.,
     glm_model <- do.call(what = "glm", args = args_glm)
     glm_model$call <- NULL
 
-    m <- list(glm_model = glm_model, action_set = action_set)
-    class(m) <- c("g_glm", "g_model")
+    m <- list(glm_model = glm_model)
+    class(m) <- c("g_glm")
     return(m)
   }
+  class(g_glm) <- c("g_model", "function")
   return(g_glm)
 }
 predict.g_glm <- function(object, new_H){
@@ -197,9 +201,10 @@ g_glmnet <- function(formula = ~.,
                         xlevels = x_levels,
                         terms = terms,
                         action_set = action_set))
-    class(m) <- c("g_glmnet", "g_model")
+    class(m) <- c("g_glmnet")
     return(m)
   }
+  class(g_glmnet) <- c("g_model", "function")
   return(g_glmnet)
 }
 
@@ -213,13 +218,13 @@ predict.g_glmnet <- function(object, new_H) {
   return(probs)
 }
 
+# ranger (Random Forest) interface ----------------------------------------
+
 perf_ranger_prob <- function(fit, data,  ...) {
   score_class(predict(fit, data=as.matrix(data[,-1,drop=FALSE]),
                       num.threads=1)$predictions,
               data[,1], ...)
 }
-
-# ranger (Random Forest) interface ----------------------------------------
 
 #' @rdname g_model
 #' @export
@@ -267,9 +272,10 @@ g_rf <- function(formula = ~.,
                         xlevels = x_levels,
                         terms = terms,
                         action_set = action_set))
-    class(m) <- c("g_rf", "g_model")
+    class(m) <- c("g_rf")
     return(m)
   }
+  class(g_rf) <- c("g_model", "function")
   return(g_rf)
 }
 
@@ -307,9 +313,10 @@ g_sl <- function(formula = ~ .,
                         xlevels = x_levels,
                         terms = terms,
                         action_set = action_set))
-    class(m) <- c("g_sl", "g_model")
+    class(m) <- c("g_sl")
     return(m)
   }
+  class(g_sl) <- c("g_model", "function")
   return(g_sl)
 }
 
@@ -358,9 +365,10 @@ g_sl3 <- function(formula = ~ ., learner, folds=5, ...) {
                         xlevels = x_levels,
                         terms = terms,
                         action_set = action_set))
-    class(m) <- c("g_sl3", "g_model")
+    class(m) <- c("g_sl3")
     return(m)
   }
+  class(g_sl3) <- c("g_model", "function")
   return(g_sl3)
 }
 

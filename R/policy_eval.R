@@ -6,11 +6,23 @@
 #' @param policy_data Policy data object created by [policy_data()].
 #' @param policy Policy object created by [policy_def()].
 #' @param policy_learn Policy learner object created by [policy_learn()].
-#' @param g_models Propensity models/g-models created by [g_glm()], [g_rf()], [g_sl()] or similar functions. Only used for evaluation if \code{g_functions} is NULL.
-#' @param q_models Outcome regression models/Q-models created by [q_glm()], [q_rf()], [q_sl()] or similar functions. Only used for evaluation if \code{q_functions} is NULL.
-#' @param g_functions Fitted g-model objects, see [fit_g_functions()]. Preferably, use \code{g_models}.
-#' @param q_functions Fitted Q-model objects, see [fit_Q_functions()]. Only valid if the Q-functions are fitted using the same policy. Preferably, use \code{q_models}.
-#' @param g_full_history If TRUE, the full history is used to fit each g-model. If FALSE, the state/Markov type history is used to fit each g-model.
+#' @param g_models List of action probability models/g-models for each stage
+#' created by [g_glm()], [g_rf()], [g_sl()] or similar functions.
+#' Only used for evaluation if \code{g_functions} is \code{NULL}.
+#' If a single model is provided and \code{g_full_history} is \code{FALSE},
+#' a single g-model is fitted across all stages. If \code{g_full_history} is
+#' \code{TRUE} the model is reused at every stage.
+#' @param q_models Outcome regression models/Q-models created by
+#' [q_glm()], [q_rf()], [q_sl()] or similar functions.
+#' Only used for evaluation if \code{q_functions} is \code{NULL}.
+#' If a single model is provided, the model is reused at every stage.
+#' @param g_functions Fitted g-model objects, see [fit_g_functions()].
+#' Preferably, use \code{g_models}.
+#' @param q_functions Fitted Q-model objects, see [fit_Q_functions()].
+#' Only valid if the Q-functions are fitted using the same policy.
+#' Preferably, use \code{q_models}.
+#' @param g_full_history If TRUE, the full history is used to fit each g-model.
+#' If FALSE, the state/Markov type history is used to fit each g-model.
 #' @param q_full_history Similar to g_full_history.
 #' @param M Number of folds for cross-fitting.
 #' @param type Type of evaluation (dr/doubly robust, ipw/inverse propensity weighting, or/outcome regression).
@@ -37,6 +49,7 @@
 #' "policy_eval" object for every (validation) fold.}
 #' \item{\code{folds}}{(only if \code{M > 1}) The (validation) folds used
 #' for cross-fitting.}
+#' @seealso [lava::IC], [lava::estimate.default].
 #' @export
 #' @examples
 #' library("polle")
@@ -45,15 +58,40 @@
 #' d1 <- sim_single_stage(5e2, seed=1)
 #' pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
 #' pd1
+#'
 #' # defining a static policy:
 #' pl1 <- policy_def(static_policy(1))
+#'
 #' # evaluating the policy:
 #' pe1 <- policy_eval(policy_data = pd1,
-#'             policy = pl1,
-#'             g_models = g_glm(),
-#'             q_models = q_glm())
-#' # summarising the estimated value of the policy:
+#'                    policy = pl1,
+#'                    g_models = g_glm(),
+#'                    q_models = q_glm())
+#'
+#' # summarizing the estimated value of the policy:
+#' # (equivalent to summary(pe1)):
 #' pe1
+#' coef(pe1) # value coefficient
+#' sqrt(vcov(pe1)) # value standard error
+#'
+#' # getting the g-function and Q-function values:
+#' head(predict(get_g_functions(pe1), pd1))
+#' head(predict(get_q_functions(pe1), pd1))
+#'
+#' # getting the fitted influence curve (IC) for the value:
+#' head(IC(pe1))
+#'
+#' # evaluating the policy using random forest nuisance models:
+#' set.seed(1)
+#' pe1_rf <- policy_eval(policy_data = pd1,
+#'                    policy = pl1,
+#'                    g_models = g_rf(),
+#'                    q_models = q_rf())
+#'
+#' # merging the two estimates (equivalent to pe1 + pe1_rf):
+#' (est1 <- merge(pe1, pe1_rf))
+#' coef(est1)
+#' head(IC(est1))
 #'
 #' ### Two stages:
 #' source(system.file("sim", "two_stage.R", package="polle"))
@@ -64,20 +102,25 @@
 #'                                     C = c("C_1", "C_2")),
 #'                   utility = c("U_1", "U_2", "U_3"))
 #' pd2
+#'
 #' # defining a policy learner based on cross-fitted doubly robust Q-learning:
 #' pl2 <- policy_learn(type = "rqvl",
 #'                    qv_models = list(q_glm(~C_1), q_glm(~C_1+C_2)),
 #'                    full_history = TRUE,
 #'                    L = 2) # number of folds for cross-fitting
+#'
+#' # evaluating the policy learner using 2-fold cross fitting:
 #' pe2 <- policy_eval(type = "dr",
 #'                    policy_data = pd2,
 #'                    policy_learn = pl2,
 #'                    q_models = q_glm(),
 #'                    g_models = g_glm(),
-#'                    M = 2) # number of folds for cross-evaluation
+#'                    M = 2) # number of folds for cross-fitting
+#' # summarizing the estimated value of the policy:
 #' pe2
-#' # getting the influence curve for the value:
-#' head(IC(pe2))
+#'
+#' # getting the cross-fitted policy actions:
+#' head(get_policy_actions(pe2))
 policy_eval <- function(policy_data,
                         policy = NULL, policy_learn = NULL,
                         g_functions=NULL, g_models=g_glm(), g_full_history = FALSE,
@@ -183,10 +226,10 @@ policy_eval_cross <- function(args,
   names(folds) <- paste("fold_", 1:M, sep = "")
 
   cross_args <- append(list(X = folds,
-                             FUN = policy_eval_fold,
-                             policy_data = policy_data,
-                             args = args),
-                        future_args)
+                            FUN = policy_eval_fold,
+                            policy_data = policy_data,
+                            args = args),
+                       future_args)
 
   # cross fitting the policy evaluation using the folds:
   cross_fits <- do.call(what = future.apply::future_lapply, cross_args)
@@ -273,7 +316,6 @@ coef.policy_eval <- function(object, ...) {
   return(object$value_estimate)
 }
 
-
 #' @rdname policy_eval
 #' @export
 IC.policy_eval <- function(x, ...) {
@@ -284,9 +326,12 @@ IC.policy_eval <- function(x, ...) {
 #' @rdname policy_eval
 #' @export
 vcov.policy_eval <- function(object, ...) {
-  return(crossprod(IC(object)))
+  ic <- IC(object)
+  n <- nrow(ic)
+  return(crossprod(ic)/(n*n))
 }
 
+#' @rdname policy_eval
 #' @export
 print.policy_eval <- function(x, ...) {
   print(summary(x, ...))
@@ -310,24 +355,52 @@ estimate.policy_eval <- function(x, ..., labels=x$name) {
       labels <- paste0("value", seq(p))
     }
   }
-  return(lava::estimate(NULL, coef=coef(x), IC=IC(x), labels=labels, ...))
+  est <- lava::estimate(NULL, coef=coef(x), IC=IC(x), labels=labels, ...)
+  return(est)
 }
 
+#' @rdname policy_eval
 #' @export
-"merge.policy_eval" <- function(x, y, ..., paired=TRUE) {
+"merge.policy_eval" <- function(x, y, ..., paired = TRUE) {
   dots <- list(...)
-  idx <- names(dots)%in%formalArgs(lava::estimate.default)[-1]
+  idx <- names(dots) %in% formalArgs(lava::estimate.default)[-1]
   est_args <- list()
   if (length(idx)>0) {
     est_args <- dots[which(idx)]
     dots <- dots[-which(idx)]
   }
-  m <- lapply(c(list(x, y),dots), function(p)
+  m <- lapply(c(list(x, y), dots), function(p)
     do.call(estimate, c(list(p),est_args)))
-  do.call("merge", c(m, list(paired=paired)))
+  m <- do.call("merge", c(m, list(paired=paired)))
+  return(m)
 }
 
+#' @rdname policy_eval
 #' @export
 "+.policy_eval" <- function(x,...) {
   merge(x, ...)
 }
+
+#' @rdname policy_eval
+#' @export
+get_g_functions.policy_eval <- function(object){
+  getElement(object, "g_functions")
+}
+
+#' @rdname policy_eval
+#' @export
+get_q_functions.policy_eval <- function(object){
+  getElement(object, "q_functions")
+}
+
+#' @export
+get_policy_actions <- function(object)
+  UseMethod("get_policy_actions")
+#' @rdname policy_eval
+#' @export
+get_policy_actions.policy_eval <- function(object){
+  getElement(object, "policy_actions")
+}
+
+
+

@@ -1,4 +1,4 @@
-#' Create Policy Learner Object:
+#' Create Policy Learner
 #'
 #' \code{policy_learn} is used to specify a policy learning method (Q-learning,
 #' V-restricted (doubly robust) Q-learning and V-restricted policy tree
@@ -36,7 +36,7 @@
 #' Numeric or numeric vector. Depth to look ahead when splitting at each stage.
 #' @returns Function of inherited class \code{"policy_learner"}.
 #' Evaluating the function on a [policy_data] object returns an object of
-#' class \code{"policy_object"}. A policy object is a list containing all or
+#' class [policy_object]. A policy object is a list containing all or
 #' some of the following elements:
 #' \item{\code{q_functions}}{Fitted Q-functions. Object of class "nuisance_functions".}
 #' \item{\code{g_functions}}{Fitted g-functions. Object of class "nuisance_functions".}
@@ -73,7 +73,10 @@
 #' # the policy learner can be used directly:
 #' po <- pl(pd, q_models = q_glm())
 #' po
+#' # getting the policy actions:
 #' head(get_policy(po)(pd))
+#' # getting the associated Q-function values:
+#' head(predict(get_q_functions(po), pd))
 #'
 #' # or the policy learner can be evaluated:
 #' pe <- policy_eval(policy_data = pd,
@@ -197,8 +200,12 @@ policy_learn <- function(type = "rql",
 }
 
 #' @rdname policy_learn
+#' @name policy_object
+NULL
+
+#' @rdname policy_learn
 #' @export
-print.policy_object <- function(x){
+print.policy_object <- function(x, ...){
   cat("Policy object with list elements:")
   cat("\n")
   cp <- paste(names(x), collapse = ", ")
@@ -210,7 +217,7 @@ print.policy_object <- function(x){
 
 #' @rdname policy_learn
 #' @export
-print.policy_learner <- function(x) {
+print.policy_learner <- function(x, ...) {
 
   cat("Policy learner with arguments:")
 
@@ -361,6 +368,18 @@ get_policy_functions.policy_eval <- function(object, stage){
   }
   pf <- get_policy_functions(po, stage = stage)
   return(pf)
+}
+
+#' @rdname policy_learn
+#' @export
+get_g_functions.policy_object <- function(object){
+  getElement(object, "g_functions")
+}
+
+#' @rdname policy_learn
+#' @export
+get_q_functions.policy_object <- function(object){
+  getElement(object, "q_functions")
 }
 
 
