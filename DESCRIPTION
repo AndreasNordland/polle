@@ -14,9 +14,11 @@ LazyData: true
 Imports:
     data.table,
     future.apply,
-    withr,
     lava,
+    methods,
     policytree,
+    survival,
+    withr
 Suggests:
     DTRlearn2,
     SuperLearner,
