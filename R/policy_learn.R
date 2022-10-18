@@ -172,7 +172,7 @@ policy_learn <- function(type = "rql",
       do.call(what = "rqvl", rqvl_args)
     }
   } else if (type %in% c("ptl", "policytree", "policy_tree")){
-    if (!require("policytree")) {
+    if (!requireNamespace("policytree")) {
       stop("The policytree package is required to perform value searching using trees.")
     }
     pl <- function(policy_data,

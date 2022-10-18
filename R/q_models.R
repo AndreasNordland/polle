@@ -219,7 +219,7 @@ q_rf <- function(formula = ~ .,
     data <- data.frame(V_res, des$x)
     res <- NULL; best <- 1
     if (length(ml)>1) {
-      res <- tryCatch(lava::cv(ml, data=data, perf=perf_ranger,
+      res <- tryCatch(targeted::cv(ml, data=data, perf=perf_ranger,
                                K=cv_args$K, rep=cv_args$rep),
                       error=function(...) NULL)
       best <- if (is.null(res)) 1 else which.min(summary(res))

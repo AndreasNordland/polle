@@ -180,7 +180,7 @@ g_glmnet <- function(formula = ~.,
                      family = "binomial",
                      alpha = 1,
                      s = "lambda.min", ...) {
-  if (!requireNamespace("glmnet")) stop("Package 'ranger' required")
+  if (!requireNamespace("glmnet")) stop("Package 'glmnet' required")
   force(formula)
   dotdotdot <- list(...)
   g_glmnet <- function(A, H, action_set) {
@@ -255,7 +255,7 @@ g_rf <- function(formula = ~.,
     data <- data.frame(A, des$x)
     res <- NULL; best <- 1
     if (length(ml)>1) {
-      res <- tryCatch(lava::cv(ml, data=data, perf=perf_ranger_prob,
+      res <- tryCatch(targeted::cv(ml, data=data, perf=perf_ranger_prob,
                                K=cv_args$K, rep=cv_args$rep),
                       error=function(...) NULL)
       best <- if (is.null(res)) 1 else which.min(summary(res))

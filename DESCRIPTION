@@ -16,6 +16,9 @@ Imports:
     future.apply,
     lava,
     methods,
+    mets,
+    lava,
+    targeted,
     policytree,
     survival,
     withr

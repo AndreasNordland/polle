@@ -5,7 +5,7 @@
 ##' @importFrom lava IC estimate
 ##' @importFrom stats predict gaussian binomial glm as.formula nls model.frame
 ##'   model.matrix reformulate predict.glm terms update .getXlevels addmargins
-##'   coef delete.response complete.cases
+##'   coef delete.response complete.cases model.response
 ##' @importFrom methods formalArgs
 ##' @importFrom utils tail capture.output
 ##' @importFrom survival survfit
