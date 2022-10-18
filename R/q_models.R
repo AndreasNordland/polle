@@ -1,18 +1,10 @@
-#' @export
-print.q_model <- function(object, ...) {
-  if (!is.null(object$fit$family))
-    print(object$fit$family)
-  object$fit$call <- ""
-  print(object$fit)
-}
-
 
 # Q-model documentation ---------------------------------------------------
 
-#' Define an outcome regression model/Q-model object constructor
+#' @title q_model class object
 #'
-#' Use \code{q_glm}, \code{q_glmnet}, \code{q_rf}, and \code{q_sl} to define
-#' an outcome regression model/Q-model object constructor.
+#' @description  Use \code{q_glm()}, \code{q_glmnet()}, \code{q_rf()}, and \code{q_sl()} to construct
+#' an outcome regression model/Q-model object.
 #' The constructors are used as input for [policy_eval()] and [policy_learn()].
 #'
 #' @param formula An object of class [formula] specifying the design matrix for
@@ -39,23 +31,24 @@ print.q_model <- function(object, ...) {
 #' @param ... Additional arguments passed to [glm()], [glmnet::glmnet],
 #' [ranger::ranger] or [SuperLearner::SuperLearner].
 #' @details
-#' \code{q_glm} is a constructor for a generalized linear model. Specifically,
-#' it is a wrapper of [glm()].\cr
-#' \code{q_glmnet} is a constructor for a generalized linear model via
-#' penalized maximum likelihood. It is a wrapper of [glmnet::glmnet()].\cr
-#' \code{q_rf} is a constructor for a random forest model. It is a wrapper of
-#' [ranger::ranger()]. When multiple hyper-parameters are given, the
-#'  model with the lowest cross-validation error is selected.
-#' @returns Q-model object constructor function with arguments 'AH'
+#' \code{q_glm()} is a wrapper of [glm()] (generalized linear model).\cr
+#' \code{q_glmnet()} is a wrapper of [glmnet::glmnet()] (generalized linear model via
+#' penalized maximum likelihood).\cr
+#' \code{q_rf()} is a wrapper of [ranger::ranger()] (random forest).
+#' When multiple hyper-parameters are given, the
+#' model with the lowest cross-validation error is selected.\cr
+#' \code{q_sl()} is a wrapper of [SuperLearner::SuperLearner] (ensemble model).
+#' @returns q_model object: function with arguments 'AH'
 #' (combined action and history matrix) and 'V_res' (residual value/expected
 #' utility).
+#' @docType class
 #' @name q_model
+#' @seealso [get_history_names()], [get_q_functions()].
 #' @examples
 #' library("polle")
 #' ### Single stage case
 #' source(system.file("sim", "single_stage.R", package="polle"))
-#' par0 <- c(k = .1,  d = .5, a = 1, b = -2.5, c = 3, s = 1)
-#' d <- sim_single_stage(5e2, seed=1, par=par0); rm(par0)
+#' d <- sim_single_stage(5e2, seed=1)
 #' pd <- policy_data(d, action="A", covariates=list("Z", "B", "L"), utility="U")
 #' pd
 #'
@@ -69,7 +62,9 @@ print.q_model <- function(object, ...) {
 #'             policy = policy_def(static_policy(1)),
 #'             q_model = q_glm(formula = ~A*.))
 #' pe
-#' pe$q_functions
+#'
+#' # getting the fitted Q-function values
+#' predict(get_q_functions(pe), pd)
 #'
 #' ### Two stages:
 #' source(system.file("sim", "two_stage.R", package="polle"))
@@ -95,7 +90,9 @@ print.q_model <- function(object, ...) {
 #'                            q_glm(~ A * (L_1 + L_2))),
 #'             q_full_history = TRUE)
 #' pe2
-#' pe2$q_functions
+#'
+#' # getting the fitted Q-function values
+#' predict(get_q_functions(pe2), pd2)
 NULL
 
 # glm interface --------------------------------------
@@ -129,22 +126,18 @@ q_glm <- function(formula = ~ A * .,
     glm_model <- do.call(what = "glm", args = args_glm)
     glm_model$call <- NULL
 
-    m <- list(
-      fit = glm_model
-    )
+    m <- list(glm_model = glm_model)
 
-    class(m) <- c("q_glm", "q_model")
+    class(m) <- c("q_glm")
     return(m)
   }
-
+  class(q_glm) <- c("q_model")
   return(q_glm)
 }
 
 predict.q_glm <- function(object, new_AH){
-  newdata <- new_AH
-
-  pred <- predict(object$fit, newdata = newdata, type = "response")
-
+  glm_model <- getElement(object, "glm_model")
+  pred <- predict(object$glm_model, newdata = new_AH, type = "response")
   return(pred)
 }
 
@@ -175,9 +168,10 @@ q_glmnet <- function(formula = ~ A * .,
                      formula = formula,
                      terms = terms,
                      xlevels = x_levels))
-    class(m) <- c("q_glmnet", "q_model")
+    class(m) <- c("q_glmnet")
     return(m)
   }
+  class(q_glmnet) <- c("q_model")
   return(q_glmnet)
 }
 
@@ -212,7 +206,7 @@ q_rf <- function(formula = ~ .,
   rf_args <- function(p) {
     list(num.threads=1, num.trees=p$num.trees, mtry=p$mtry)
   }
-  ml <- future_lapply(hyper_par, function(p)
+  ml <- lapply(hyper_par, function(p)
     function(data) {
       rf_args <- append(rf_args(p), list(y=data[, 1],
                                          x=as.matrix(data[, -1, drop=FALSE])))
@@ -240,9 +234,10 @@ q_rf <- function(formula = ~ .,
                           num.trees=num.trees[best],
                           xlevels = x_levels,
                           terms = terms))
-    class(res) <- c("q_rf", "q_model")
+    class(res) <- c("q_rf")
     return(res)
   }
+  class(q_rf) <- c("q_model")
   return(q_rf)
 }
 
@@ -279,9 +274,10 @@ q_sl <- function(formula = ~ A*., SL.library=c("SL.mean", "SL.glm"), ...){
     m <- with(des, list(fit = SL_model,
                         xlevels = x_levels,
                         terms = terms))
-    class(m) <- c("q_sl", "q_model")
+    class(m) <- c("q_sl")
     return(m)
   }
+  class(q_sl) <- c("q_model")
   return(q_sl)
 }
 

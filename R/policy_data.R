@@ -122,9 +122,9 @@ new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
   return(object)
 }
 
-#' Create Policy Data Object
+#' @title Create Policy Data Object
 #'
-#' \code{policy_data} creates a policy data object which
+#' @description  \code{policy_data} creates a policy data object which
 #' is used as input to [policy_eval()] and [policy_learn()] for policy
 #' evaluation and data adaptive policy learning.
 #'

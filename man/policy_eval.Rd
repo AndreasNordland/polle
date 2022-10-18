@@ -5,8 +5,14 @@
 \alias{coef.policy_eval}
 \alias{IC.policy_eval}
 \alias{vcov.policy_eval}
+\alias{print.policy_eval}
 \alias{summary.policy_eval}
 \alias{estimate.policy_eval}
+\alias{merge.policy_eval}
+\alias{+.policy_eval}
+\alias{get_g_functions.policy_eval}
+\alias{get_q_functions.policy_eval}
+\alias{get_policy_actions.policy_eval}
 \title{Policy Evaluation}
 \usage{
 policy_eval(
@@ -30,9 +36,21 @@ policy_eval(
 
 \method{vcov}{policy_eval}(object, ...)
 
+\method{print}{policy_eval}(x, ...)
+
 \method{summary}{policy_eval}(object, ...)
 
 \method{estimate}{policy_eval}(x, ..., labels = x$name)
+
+\method{merge}{policy_eval}(x, y, ..., paired = TRUE)
+
+\method{+}{policy_eval}(x, ...)
+
+\method{get_g_functions}{policy_eval}(object)
+
+\method{get_q_functions}{policy_eval}(object)
+
+\method{get_policy_actions}{policy_eval}(object)
 }
 \arguments{
 \item{policy_data}{Policy data object created by \code{\link[=policy_data]{policy_data()}}.}
@@ -41,15 +59,27 @@ policy_eval(
 
 \item{policy_learn}{Policy learner object created by \code{\link[=policy_learn]{policy_learn()}}.}
 
-\item{g_functions}{Fitted g-model objects, see \code{\link[=fit_g_functions]{fit_g_functions()}}. Preferably, use \code{g_models}.}
+\item{g_functions}{Fitted g-model objects, see \code{\link[=fit_g_functions]{fit_g_functions()}}.
+Preferably, use \code{g_models}.}
 
-\item{g_models}{Propensity models/g-models created by \code{\link[=g_glm]{g_glm()}}, \code{\link[=g_rf]{g_rf()}}, \code{\link[=g_sl]{g_sl()}} or similar functions. Only used for evaluation if \code{g_functions} is NULL.}
+\item{g_models}{List of action probability models/g-models for each stage
+created by \code{\link[=g_glm]{g_glm()}}, \code{\link[=g_rf]{g_rf()}}, \code{\link[=g_sl]{g_sl()}} or similar functions.
+Only used for evaluation if \code{g_functions} is \code{NULL}.
+If a single model is provided and \code{g_full_history} is \code{FALSE},
+a single g-model is fitted across all stages. If \code{g_full_history} is
+\code{TRUE} the model is reused at every stage.}
 
-\item{g_full_history}{If TRUE, the full history is used to fit each g-model. If FALSE, the state/Markov type history is used to fit each g-model.}
+\item{g_full_history}{If TRUE, the full history is used to fit each g-model.
+If FALSE, the state/Markov type history is used to fit each g-model.}
 
-\item{q_functions}{Fitted Q-model objects, see \code{\link[=fit_Q_functions]{fit_Q_functions()}}. Only valid if the Q-functions are fitted using the same policy. Preferably, use \code{q_models}.}
+\item{q_functions}{Fitted Q-model objects, see \code{\link[=fit_Q_functions]{fit_Q_functions()}}.
+Only valid if the Q-functions are fitted using the same policy.
+Preferably, use \code{q_models}.}
 
-\item{q_models}{Outcome regression models/Q-models created by \code{\link[=q_glm]{q_glm()}}, \code{\link[=q_rf]{q_rf()}}, \code{\link[=q_sl]{q_sl()}} or similar functions. Only used for evaluation if \code{q_functions} is NULL.}
+\item{q_models}{Outcome regression models/Q-models created by
+\code{\link[=q_glm]{q_glm()}}, \code{\link[=q_rf]{q_rf()}}, \code{\link[=q_sl]{q_sl()}} or similar functions.
+Only used for evaluation if \code{q_functions} is \code{NULL}.
+If a single model is provided, the model is reused at every stage.}
 
 \item{q_full_history}{Similar to g_full_history.}
 
@@ -93,15 +123,40 @@ source(system.file("sim", "single_stage.R", package="polle"))
 d1 <- sim_single_stage(5e2, seed=1)
 pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
 pd1
+
 # defining a static policy:
 pl1 <- policy_def(static_policy(1))
+
 # evaluating the policy:
 pe1 <- policy_eval(policy_data = pd1,
-            policy = pl1,
-            g_models = g_glm(),
-            q_models = q_glm())
-# summarising the estimated value of the policy:
+                   policy = pl1,
+                   g_models = g_glm(),
+                   q_models = q_glm())
+
+# summarizing the estimated value of the policy:
+# (equivalent to summary(pe1)):
 pe1
+coef(pe1) # value coefficient
+sqrt(vcov(pe1)) # value standard error
+
+# getting the g-function and Q-function values:
+head(predict(get_g_functions(pe1), pd1))
+head(predict(get_q_functions(pe1), pd1))
+
+# getting the fitted influence curve (IC) for the value:
+head(IC(pe1))
+
+# evaluating the policy using random forest nuisance models:
+set.seed(1)
+pe1_rf <- policy_eval(policy_data = pd1,
+                   policy = pl1,
+                   g_models = g_rf(),
+                   q_models = q_rf())
+
+# merging the two estimates (equivalent to pe1 + pe1_rf):
+(est1 <- merge(pe1, pe1_rf))
+coef(est1)
+head(IC(est1))
 
 ### Two stages:
 source(system.file("sim", "two_stage.R", package="polle"))
@@ -112,18 +167,26 @@ pd2 <- policy_data(d2,
                                     C = c("C_1", "C_2")),
                   utility = c("U_1", "U_2", "U_3"))
 pd2
+
 # defining a policy learner based on cross-fitted doubly robust Q-learning:
 pl2 <- policy_learn(type = "rqvl",
                    qv_models = list(q_glm(~C_1), q_glm(~C_1+C_2)),
                    full_history = TRUE,
                    L = 2) # number of folds for cross-fitting
+
+# evaluating the policy learner using 2-fold cross fitting:
 pe2 <- policy_eval(type = "dr",
                    policy_data = pd2,
                    policy_learn = pl2,
                    q_models = q_glm(),
                    g_models = g_glm(),
-                   M = 2) # number of folds for cross-evaluation
+                   M = 2) # number of folds for cross-fitting
+# summarizing the estimated value of the policy:
 pe2
-# getting the influence curve for the value:
-head(IC(pe2))
+
+# getting the cross-fitted policy actions:
+head(get_policy_actions(pe2))
+}
+\seealso{
+\link[lava:IC]{lava::IC}, \link[lava:estimate.default]{lava::estimate.default}.
 }

@@ -4,7 +4,7 @@
 \alias{subset.policy_data}
 \title{Subset Policy Data on ID}
 \usage{
-\method{subset}{policy_data}(x, id)
+\method{subset}{policy_data}(x, id, ...)
 }
 \arguments{
 \item{id}{character vectors of IDs.}

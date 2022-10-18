@@ -2,11 +2,14 @@
 % Please edit documentation in R/policy_learn.R
 \name{policy_learn}
 \alias{policy_learn}
+\alias{policy_object}
 \alias{print.policy_object}
 \alias{print.policy_learner}
 \alias{get_policy}
 \alias{get_policy.policy_eval}
-\title{Create Policy Learner Object:}
+\alias{get_g_functions.policy_object}
+\alias{get_q_functions.policy_object}
+\title{Create Policy Learner}
 \usage{
 policy_learn(
   type = "rql",
@@ -24,13 +27,17 @@ policy_learn(
   search.depth = 2
 )
 
-\method{print}{policy_object}(x)
+\method{print}{policy_object}(x, ...)
 
-\method{print}{policy_learner}(x)
+\method{print}{policy_learner}(x, ...)
 
 get_policy(object)
 
 \method{get_policy}{policy_eval}(object)
+
+\method{get_g_functions}{policy_object}(object)
+
+\method{get_q_functions}{policy_object}(object)
 }
 \arguments{
 \item{type}{Type of policy learner method:
@@ -80,7 +87,7 @@ Numeric or numeric vector. Depth to look ahead when splitting at each stage.}
 \value{
 Function of inherited class \code{"policy_learner"}.
 Evaluating the function on a \link{policy_data} object returns an object of
-class \code{"policy_object"}. A policy object is a list containing all or
+class \link{policy_object}. A policy object is a list containing all or
 some of the following elements:
 \item{\code{q_functions}}{Fitted Q-functions. Object of class "nuisance_functions".}
 \item{\code{g_functions}}{Fitted g-functions. Object of class "nuisance_functions".}
@@ -122,7 +129,10 @@ pl
 # the policy learner can be used directly:
 po <- pl(pd, q_models = q_glm())
 po
+# getting the policy actions:
 head(get_policy(po)(pd))
+# getting the associated Q-function values:
+head(predict(get_q_functions(po), pd))
 
 # or the policy learner can be evaluated:
 pe <- policy_eval(policy_data = pd,

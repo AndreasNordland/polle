@@ -1,7 +1,6 @@
 
 # check_data --------------------------------------------------------------
 
-
 test_that("check_data fails if not given a data.table with unique variables.", {
   data <- c("A", "B")
   expect_error(check_data(data), "'data' must be a data.table.")
@@ -279,7 +278,7 @@ test_that("policy_data formats long data correctly for a single stage case.", {
     "'action' is invalid."
   )
 
-  # setting new namesÆ
+  # setting new names:
   ld_copy <- copy(ld)
   setnames(ld_copy, "id", "ID")
   setnames(ld_copy, "stage", "k")

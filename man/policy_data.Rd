@@ -3,6 +3,8 @@
 \name{policy_data}
 \alias{policy_data}
 \alias{print.policy_data}
+\alias{get_history.policy_data}
+\alias{get_history_names.policy_data}
 \title{Create Policy Data Object}
 \usage{
 policy_data(
@@ -21,6 +23,10 @@ policy_data(
 )
 
 \method{print}{policy_data}(x, digits = 2, ...)
+
+\method{get_history}{policy_data}(object, stage = NULL, full_history = FALSE)
+
+\method{get_history_names}{policy_data}(object, stage = NULL)
 }
 \arguments{
 \item{data}{\link{data.frame} or \link{data.table}; see Examples.}
