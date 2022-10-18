@@ -185,7 +185,7 @@ partial.policy_data <- function(object, K){
 #' pdsub
 #' get_id(pdsub)[1:10]
 #' @export
-subset.policy_data <- function(x, id){
+subset.policy_data <- function(x, id, ...){
   if (!all(id %in% get_id(x))) stop("Invalid subset of IDs.")
   id_ <- id; rm(id)
 
@@ -200,7 +200,8 @@ subset.policy_data <- function(x, id){
 
 #' Get the full history for a given stage
 #'
-#' @param x Object of class [policy_data()].
+#' @noRd
+#' @param object Object of class [policy_data()].
 #' @param stage stage number.
 #' @return Object of class "history".
 full_history <- function(object, stage){
@@ -264,6 +265,7 @@ full_history <- function(object, stage){
 
 #' Get the state/Markov-type history for a given stage
 #'
+#' @noRd
 #' @param object object of class [policy_data()].
 #' @param stage stage number.
 #' @return Object of class "history".
@@ -321,6 +323,7 @@ stage_state_history <- function(object, stage){
 
 #' Get the state/Markov-type history for all stages
 #'
+#' @noRd
 #' @param object object of class [policy_data()].
 #' @return Object of class "history".
 state_history <- function(object){
@@ -357,9 +360,9 @@ state_history <- function(object){
   return(history)
 }
 
-#' @export
-get_history <- function(object, stage = NULL, full_history = FALSE)
-  UseMethod("get_history")
+#' @name history
+#' @rdname get_history
+NULL
 
 #' Get History Object
 #'
@@ -380,8 +383,7 @@ get_history <- function(object, stage = NULL, full_history = FALSE)
 #'  \item{} \eqn{X_k} is a vector of state covariates summarizing the state at stage k.
 #'  \item{} \eqn{A_k} is the categorical action at stage k.
 #' }
-#' @method get_history policy_data
-#' @returns Object of class "history". The object is a list
+#' @returns Object of class [history]. The object is a list
 #' containing the following elements:
 #' \item{\code{H}}{[data.table] with keys id and stage and with variables
 #'                 \{\eqn{B}, \eqn{X_k}\} (state history) or
@@ -404,6 +406,7 @@ get_history <- function(object, stage = NULL, full_history = FALSE)
 #' # constructing policy_data object:
 #' pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
 #' pd1
+#'
 #' # In the single stage case, set stage = NULL
 #' h1 <- get_history(pd1)
 #' head(h1$H)
@@ -457,6 +460,11 @@ get_history <- function(object, stage = NULL, full_history = FALSE)
 #' nrow(h3$H) # number of observations with two stages.
 #' get_n(pd3) # number of observations in total.
 #' @export
+get_history <- function(object, stage = NULL, full_history = FALSE)
+  UseMethod("get_history")
+
+#' @rdname policy_data
+#' @export
 get_history.policy_data <- function(object, stage = NULL, full_history = FALSE){
   if (full_history == TRUE){
     if (is.null(stage)) stop("Please provide a stage number.")
@@ -471,16 +479,12 @@ get_history.policy_data <- function(object, stage = NULL, full_history = FALSE){
   return(his)
 }
 
-#' @export
-get_history_names <- function(object, stage)
-  UseMethod("get_history_names")
-
 #' Get history variable names
 #'
 #' [get_history_names()] returns the state covariate names of the history data
 #' table for a given stage. The function is useful when specifying
-#' the design matrix for [g_model()] and [q_model()].
-#' @param policy_data Policy data object created by [policy_data()].
+#' the design matrix for [g_model] and [q_model] objects.
+#' @param object Policy data object created by [policy_data()].
 #' @param stage Stage number. If NULL, the state/Markov-type history variable
 #' names are returned.
 #' @return Character vector.
@@ -502,6 +506,11 @@ get_history_names <- function(object, stage)
 #' get_history_names(pd3)
 #' # full history variable names (H_k) at stage 2:
 #' get_history_names(pd3, stage = 2)
+#' @export
+get_history_names <- function(object, stage)
+  UseMethod("get_history_names")
+
+#' @rdname policy_data
 #' @export
 get_history_names.policy_data <- function(object, stage = NULL){
   if (is.null(stage)){
