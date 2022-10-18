@@ -16,6 +16,7 @@
 ##' @param ... Additional arguments to lower level functions
 ##' @return estimate object
 ##' @author Andreas Nordland, Klaus K. Holst
+##' @noRd
 RATE <- function(response, post.treatment, treatment,
                  data, family = gaussian(), M = 5,
                  pr.treatment, treatment.level,
@@ -167,6 +168,7 @@ RATE <- function(response, post.treatment, treatment,
 ##' @param ... Additional arguments to lower level data pre-processing functions.
 ##' @return estimate object
 ##' @author Andreas Nordland, Klaus K. Holst
+##' @noRd
 RATE.surv <- function(response, post.treatment, treatment, censoring,
                       tau,
                       data,

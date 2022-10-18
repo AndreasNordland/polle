@@ -120,7 +120,7 @@ policy_def <- function(policy_functions, full_history = FALSE, reuse = FALSE){
 }
 
 #' @export
-print.policy <- function(x) {
+print.policy <- function(x, ...) {
 
   cat("Policy with arguments")
 
