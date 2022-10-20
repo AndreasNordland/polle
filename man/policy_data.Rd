@@ -3,8 +3,6 @@
 \name{policy_data}
 \alias{policy_data}
 \alias{print.policy_data}
-\alias{get_history.policy_data}
-\alias{get_history_names.policy_data}
 \title{Create Policy Data Object}
 \usage{
 policy_data(
@@ -23,10 +21,6 @@ policy_data(
 )
 
 \method{print}{policy_data}(x, digits = 2, ...)
-
-\method{get_history}{policy_data}(object, stage = NULL, full_history = FALSE)
-
-\method{get_history_names}{policy_data}(object, stage = NULL)
 }
 \arguments{
 \item{data}{\link{data.frame} or \link{data.table}; see Examples.}
@@ -66,6 +60,10 @@ The name of each element must be on the form "U_Aa" where "a" corresponds to an 
 \item{event}{Event indicator name.}
 
 \item{verbose}{Logical. If TRUE, formatting comments are printed to the console.}
+
+\item{x}{Object to be printed.}
+
+\item{digtis}{Minimum number of digits to be printed.}
 }
 \value{
 \code{policy_data()} returns an object of class "policy_data".
@@ -85,7 +83,7 @@ the possible actions at each stage.}
 number of stages (K).}
 }
 \description{
-\code{policy_data} creates a policy data object which
+\code{policy_data()} creates a policy data object which
 is used as input to \code{\link[=policy_eval]{policy_eval()}} and \code{\link[=policy_learn]{policy_learn()}} for policy
 evaluation and data adaptive policy learning.
 }
@@ -102,6 +100,22 @@ for a possibly stochastic number of stages K.
 The utility is given by the sum of the rewards, i.e.,
 \eqn{U = \sum_{k = 1}^{K+1} U_k}.
 }
+\section{S3 generics}{
+
+The following S3 generic functions are available for an object of
+class \code{policy_data}:
+\itemize{
+\item{\code{\link[=partial.policy_data]{partial.policy_data()}}}{ Trim the maximum number
+of stages in a \code{policy_data} object.}
+\item{\code{\link[=subset.policy_data]{subset.policy_data()}}}{ Subset a a \code{policy_data} object on ID.}
+\item{\code{\link[=get_history.policy_data]{get_history.policy_data()}}}{ Summarize the history and action at
+a given stage.}
+\item{\code{\link[=get_history_names.policy_data]{get_history_names.policy_data()}}}{ Get history variable names.}
+\item{\code{\link[=get_actions.policy_data]{get_actions.policy_data()}}}{ Get the action at every stage.}
+\item{\code{\link[=utility.policy_data]{utility.policy_data()}}}{Get the utility.}
+}
+}
+
 \examples{
 library("polle")
 ### Single stage: Wide data
@@ -114,7 +128,7 @@ pd1 <- policy_data(d1,
                    covariates=c("Z", "B", "L"),
                    utility="U")
 pd1
-# associated methods:
+# associated S3 methods:
 methods(class = "policy_data")
 head(get_actions(pd1), 5)
 head(utility(pd1), 5)
@@ -153,5 +167,5 @@ head(get_history(pd3, stage = 3)$H, 5) # state/Markov type history and action, (
 head(get_history(pd3, stage = 2, full_history = TRUE)$H, 5) # Full history and action, (H_k,A_k).
 }
 \seealso{
-\code{\link[=policy_eval]{policy_eval()}}, \code{\link[=policy_learn]{policy_learn()}}, \code{\link[=get_history]{get_history()}}, \code{\link[=get_actions]{get_actions()}}, \code{\link[=utility]{utility()}}.
+\code{\link[=policy_eval]{policy_eval()}}, \code{\link[=policy_learn]{policy_learn()}}, \code{\link[=copy_policy_data]{copy_policy_data()}}
 }

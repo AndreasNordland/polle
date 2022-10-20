@@ -10,9 +10,6 @@
 \alias{estimate.policy_eval}
 \alias{merge.policy_eval}
 \alias{+.policy_eval}
-\alias{get_g_functions.policy_eval}
-\alias{get_q_functions.policy_eval}
-\alias{get_policy_actions.policy_eval}
 \title{Policy Evaluation}
 \usage{
 policy_eval(
@@ -45,12 +42,6 @@ policy_eval(
 \method{merge}{policy_eval}(x, y, ..., paired = TRUE)
 
 \method{+}{policy_eval}(x, ...)
-
-\method{get_g_functions}{policy_eval}(object)
-
-\method{get_q_functions}{policy_eval}(object)
-
-\method{get_policy_actions}{policy_eval}(object)
 }
 \arguments{
 \item{policy_data}{Policy data object created by \code{\link[=policy_data]{policy_data()}}.}
@@ -88,6 +79,15 @@ If a single model is provided, the model is reused at every stage.}
 \item{M}{Number of folds for cross-fitting.}
 
 \item{future_args}{Arguments passed to \code{\link[future.apply:future_apply]{future.apply::future_apply()}}.}
+
+\item{object, x, y}{Objects of class "policy_eval".}
+
+\item{...}{Additional arguments.}
+
+\item{labels}{Name(s) of the estimate(s).}
+
+\item{paired}{\code{TRUE} indicates that the estimates are based on
+the same data sample.}
 }
 \value{
 \code{policy_eval()} returns an object of class "policy_eval".
@@ -114,8 +114,22 @@ fitted Q-functions. Object of class "nuisance_functions".}
 for cross-fitting.}
 }
 \description{
-\code{policy_eval} is used to estimate the value of a given fixed policy or a data adaptive policy (e.g. a policy learned from the data).
+\code{policy_eval()} is used to estimate the value of a given fixed policy or a data adaptive policy (e.g. a policy learned from the data).
 }
+\section{S3 generics}{
+
+The following S3 generic functions are available for an object of
+class \code{policy_data}:
+\itemize{
+\item{\code{\link[=get_g_functions]{get_g_functions()}}}{ Extract the fitted g-functions.}
+\item{\code{\link[=get_q_functions]{get_q_functions()}}}{ Extract the fitted Q-functions.}
+\item{\code{\link[=get_policy]{get_policy()}}}{ Extract the fitted policy object.}
+\item{\code{\link[=get_policy_functions]{get_policy_functions()}}}{ Extract the fitted policy function for
+a given stage.}
+\item{\code{\link[=get_policy_actions]{get_policy_actions()}}}{ Extract the (fitted) policy actions.}
+}
+}
+
 \examples{
 library("polle")
 ### Single stage:

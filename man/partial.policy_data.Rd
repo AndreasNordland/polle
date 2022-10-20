@@ -9,14 +9,14 @@
 \arguments{
 \item{object}{Object of class \link{policy_data}.}
 
-\item{K}{Maximal number of stages.}
+\item{K}{Maximum number of stages.}
 }
 \value{
 Object of class \link{policy_data}.
 }
 \description{
 \code{partial} creates a partial policy data object by trimming
-the maximal number of stages in the policy data object to a fixed
+the maximum number of stages in the policy data object to a fixed
 given number.
 }
 \examples{

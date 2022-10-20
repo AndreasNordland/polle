@@ -2,10 +2,10 @@
 % Please edit documentation in R/policy_data_functions.R
 \name{history}
 \alias{history}
-\alias{get_history}
+\alias{get_history.policy_data}
 \title{Get History Object}
 \usage{
-get_history(object, stage = NULL, full_history = FALSE)
+\method{get_history}{policy_data}(object, stage = NULL, full_history = FALSE)
 }
 \arguments{
 \item{object}{Object of class \link{policy_data}.}
@@ -34,7 +34,7 @@ stage, i.e., \eqn{\sum_{j=1}^k U_j}. U_Aa is the deterministic
 reward of action a.}
 }
 \description{
-\code{get_history} summarises the history and action at a given stage from a
+\code{get_history} summarizes the history and action at a given stage from a
 \link{policy_data} object.
 }
 \details{

@@ -124,7 +124,7 @@ new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
 
 #' @title Create Policy Data Object
 #'
-#' @description  \code{policy_data} creates a policy data object which
+#' @description  \code{policy_data()} creates a policy data object which
 #' is used as input to [policy_eval()] and [policy_learn()] for policy
 #' evaluation and data adaptive policy learning.
 #'
@@ -154,6 +154,8 @@ new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
 #' @param stage Stage number variable name.
 #' @param event Event indicator name.
 #' @param verbose Logical. If TRUE, formatting comments are printed to the console.
+#' @param digtis Minimum number of digits to be printed.
+#' @param x Object to be printed.
 #' @details
 #' Each observation has the sequential form
 #' \deqn{O= {B, U_1, X_1, A_1, ..., U_K, X_K, A_K, U_{K+1}},}
@@ -182,8 +184,21 @@ new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
 #'                          the possible actions at each stage.}
 #' \item{\code{dim}}{List containing the number of observations (n) and the
 #'                   number of stages (K).}
+#' @section S3 generics:
+#' The following S3 generic functions are available for an object of
+#' class \code{policy_data}:
+#' \itemize{
+#' \item{[partial.policy_data()]}{ Trim the maximum number
+#'                              of stages in a \code{policy_data} object.}
+#' \item{[subset.policy_data()]}{ Subset a a \code{policy_data} object on ID.}
+#' \item{[get_history.policy_data()]}{ Summarize the history and action at
+#'                                    a given stage.}
+#' \item{[get_history_names.policy_data()]}{ Get history variable names.}
+#' \item{[get_actions.policy_data()]}{ Get the action at every stage.}
+#' \item{[utility.policy_data()]}{Get the utility.}
+#' }
 #' @seealso
-#' [policy_eval()], [policy_learn()], [get_history()], [get_actions()], [utility()].
+#' [policy_eval()], [policy_learn()], [copy_policy_data()]
 #' @examples
 #' library("polle")
 #' ### Single stage: Wide data
@@ -196,7 +211,7 @@ new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
 #'                    covariates=c("Z", "B", "L"),
 #'                    utility="U")
 #' pd1
-#' # associated methods:
+#' # associated S3 methods:
 #' methods(class = "policy_data")
 #' head(get_actions(pd1), 5)
 #' head(utility(pd1), 5)

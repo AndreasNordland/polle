@@ -48,10 +48,12 @@ get_design <- function(formula, data, intercept=FALSE) {
 #' The constructors are used as input for [policy_eval()] and [policy_learn()].
 #'
 #' @param formula An object of class [formula] specifying the design matrix for
-#' the propensity model/g-model. Use [get_history_names()] to se the available
+#' the propensity model/g-model. Use [get_history_names.policy_data()] to se the available
 #' variable names.
 #' @param family A description of the error distribution and link function to
 #' be used in the model.
+#' @param model (Only used by \code{g_glm}) If \code{FALSE} model frame will
+#' not be saved.
 #' @param alpha (Only used by \code{g_glmnet}) The elasticnet mixing parameter
 #' between 0 and 1. alpha equal to 1 is the lasso penalty, and alpha equal
 #' to 0 the ridge penalty.

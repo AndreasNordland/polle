@@ -36,6 +36,9 @@ variable names.}
 \item{family}{A description of the error distribution and link function to
 be used in the model.}
 
+\item{model}{(Only used by \code{g_glm}) If \code{FALSE} model frame will
+not be saved.}
+
 \item{...}{Additional arguments passed to \code{\link[=glm]{glm()}}, \link[glmnet:glmnet]{glmnet::glmnet},
 \link[ranger:ranger]{ranger::ranger} or \link[SuperLearner:SuperLearner]{SuperLearner::SuperLearner}.}
 
