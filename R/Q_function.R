@@ -22,9 +22,12 @@ fit_Q_function <- function(history, Q, q_model){
   # getting the historic rewards
   U <- getElement(history, "U")
   # calculating the residual (fitted) values
-  U_A <- apply(action_matrix(a = A, action_set = action_set) * U[, deterministic_rewards, with = FALSE], MARGIN = 1, sum)
-  U[, V_res := Q - U_bar - U_A]
-  V_res <- U$V_res
+  U_A <- apply(
+    action_matrix(a = A, action_set = action_set) * U[, deterministic_rewards, with = FALSE],
+    MARGIN = 1,
+    sum
+  )
+  V_res <- unlist(Q - U[, "U_bar"] - U_A)
 
   # fitting the (residual) Q-model
   q_model <- q_model(V_res = V_res, AH = AH)
