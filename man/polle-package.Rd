@@ -6,7 +6,7 @@
 \alias{polle}
 \title{Policy Learning}
 \description{
-Framework evaluating and learning realistic policies based on
+Framework for evaluating and learning realistic policies based on
 doubly robust loss functions.
 }
 \author{

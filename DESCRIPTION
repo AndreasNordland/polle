@@ -1,35 +1,31 @@
 Package: polle
 Title: Policy Learning
-Version: 0.0.0.9000
-Authors@R: 
+Version: 1.0
+Authors@R:
     person(given = "First",
            family = "Last",
            role = c("aut", "cre"),
            email = "first.last@example.com",
            comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
+Description: Framework for evaluating and learning realistic policies based on doubly robust loss functions.
 License: Apache License (>= 2)
 Encoding: UTF-8
-LazyData: true
+LazyData: TRUE
 Imports:
     data.table,
     future.apply,
     lava,
     methods,
-    mets,
-    targeted,
     policytree (>= 1.2.0),
+    SuperLearner,
     survival,
-    targeted,
-    withr
+    targeted
 Suggests:
     DTRlearn2,
-    SuperLearner,
     glmnet,
     mgcv,
     knitr,
     ranger,
-    bookdown,
     rmarkdown,
     testthat (>= 3.0)
 Enhances:
