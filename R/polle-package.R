@@ -9,12 +9,12 @@
 ##' @importFrom methods formalArgs
 ##' @importFrom utils tail capture.output
 ##' @importFrom survival survfit
-##' @import data.table
+##' @import data.table SuperLearner
 ##' @aliases polle-package polle
 ##' @docType package
 ##' @keywords package
 ##' @author Andreas Nordland (Maintainer) <andreas.nordland@@gmail.com>, Klaus Holst.
-##' @description Framework evaluating and learning realistic policies based on
+##' @description Framework for evaluating and learning realistic policies based on
 ##' doubly robust loss functions.
 NULL
 

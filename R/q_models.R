@@ -260,7 +260,6 @@ predict.q_rf <- function(object, new_AH, ...) {
 q_sl <- function(formula = ~ A*., SL.library=c("SL.mean", "SL.glm"), ...){
   if (!requireNamespace("SuperLearner"))
     stop("Package 'SuperLearner' required.")
-  suppressPackageStartupMessages(require(SuperLearner))
   dotdotdot <- list(...)
   force(SL.library)
   q_sl <- function(AH, V_res) {

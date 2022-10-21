@@ -299,7 +299,6 @@ g_sl <- function(formula = ~ .,
                  ...) {
   if (!requireNamespace("SuperLearner"))
     stop("Package 'SuperLearner' required.")
-  suppressPackageStartupMessages(require(SuperLearner))
   force(formula)
   force(SL.library)
   dotdotdot <- list(...)
@@ -340,7 +339,6 @@ predict.g_sl <- function(object, new_H, ...) {
 g_sl3 <- function(formula = ~ ., learner, folds=5, ...) {
   if (!requireNamespace("sl3"))
     stop("Package 'sl3' required.")
-  suppressPackageStartupMessages(require(sl3))
   force(formula)
   dotdotdot <- list(...)
   if (missing(learner)) {
