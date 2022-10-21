@@ -32,11 +32,15 @@ q_sl(formula = ~A * ., SL.library = c("SL.mean", "SL.glm"), ...)
 \arguments{
 \item{formula}{An object of class \link{formula} specifying the design matrix for
 the outcome regression model/Q-model at the given stage. The action at the
-given stage is always denoted 'A', see examples. Use \code{\link[=get_history_names]{get_history_names()}}
-to see the additional variable names.}
+given stage is always denoted 'A', see examples. Use
+\code{\link[=get_history_names.policy_data]{get_history_names.policy_data()}} to see the additional
+available variable names.}
 
 \item{family}{A description of the error distribution and link function to
 be used in the model.}
+
+\item{model}{(Only used by \code{q_glm}) If \code{FALSE} model frame will
+not be saved.}
 
 \item{...}{Additional arguments passed to \code{\link[=glm]{glm()}}, \link[glmnet:glmnet]{glmnet::glmnet},
 \link[ranger:ranger]{ranger::ranger} or \link[SuperLearner:SuperLearner]{SuperLearner::SuperLearner}.}

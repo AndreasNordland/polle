@@ -63,7 +63,9 @@ The name of each element must be on the form "U_Aa" where "a" corresponds to an 
 
 \item{x}{Object to be printed.}
 
-\item{digtis}{Minimum number of digits to be printed.}
+\item{digits}{Minimum number of digits to be printed.}
+
+\item{...}{Additional arguments passed to print.}
 }
 \value{
 \code{policy_data()} returns an object of class "policy_data".

@@ -73,6 +73,8 @@ used to fit a policy tree.}
 Numeric or numeric vector. Depth to look ahead when splitting at each stage.}
 
 \item{x}{Object of class "policy_object" or "policy_learn".}
+
+\item{...}{Additional arguments passed to print.}
 }
 \value{
 Function of inherited class \code{"policy_learn"}.
