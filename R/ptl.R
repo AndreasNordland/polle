@@ -232,7 +232,7 @@ ptl <- function(policy_data,
     }
 
     ptl_objects[[k]] <- ptl_k
-    dd <- policytree:::predict.policy_tree(ptl_k, X)
+    dd <- predict(ptl_k, X)
     d <- action_set[dd]
 
     if (alpha != 0){
