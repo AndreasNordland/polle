@@ -22,6 +22,7 @@ fit_Q_function <- function(history, Q, q_model){
   # getting the historic rewards
   U <- getElement(history, "U")
   # calculating the residual (fitted) values
+  ..deterministic_rewards <- NULL
   U_A <- apply(action_matrix(a = A, action_set = action_set) * U[, ..deterministic_rewards], MARGIN = 1, sum)
   U[, V_res := Q - U_bar - U_A]
   V_res <- U$V_res
@@ -58,8 +59,12 @@ evaluate.Q_function <- function(object, new_history){
   U <- new_history$U
 
   # getting the residual predictions
-  residual_q_predictions <- sapply(action_set, function(a) predict(q_model, new_AH = cbind(A = a, new_H)))
+  residual_q_predictions <- sapply(
+    action_set,
+    function(a) predict(q_model, new_AH = cbind(A = a, new_H))
+  )
   # adding the historic utilities and deterministic rewards
+  ..deterministic_rewards <- NULL
   q_values <- U$U_bar + U[, ..deterministic_rewards] + residual_q_predictions
   names(q_values) <- paste("Q", action_set, sep = "_")
 
@@ -71,7 +76,7 @@ evaluate.Q_function <- function(object, new_history){
 
   # including the IDs and stage number
   q_values <- data.table(id_stage, q_values)
-  setkey(q_values, id, stage)
+  setkeyv(q_values, c("id", "stage"))
 
   return(q_values)
 }

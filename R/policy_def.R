@@ -299,6 +299,7 @@ dynamic_policy <- function(fun){
     if (is.logical(action))
       action <- action * 1
     action <- as.character(action)
+    d <- NULL
     pol[, d := action]
     return(pol)
   }

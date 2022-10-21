@@ -32,7 +32,7 @@ evaluate.QV_function <- function(object, new_history){
   )
 
   qv_values <- data.table(id_stage, qv_values)
-  setkey(qv_values, id, stage)
+  setkeyv(qv_values, c("id", "stage"))
 
   return(qv_values)
 }
