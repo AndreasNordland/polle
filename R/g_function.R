@@ -86,7 +86,7 @@ evaluate.g_function <- function(object, new_history){
 
   # including the id's
   g_values <- data.table(id_stage, g_values)
-  setkey(g_values, id, stage)
+  setkeyv(g_values, c("id", "stage"))
 
   return(g_values)
 }
