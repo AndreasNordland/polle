@@ -1,17 +1,16 @@
 Package: polle
 Title: Policy Learning
 Version: 0.1
-Authors@R: c(
-        person(given = "Andreas",
-               family = "Nordland",
-               role = c("aut", "cre"),
-               email = "andreasnordland@gmail.com"),
-        person(given = "Klaus",
-               family = "Holst",
-               role = c("aut"),
-               email = "klaus@holst.it"),
-               comment = c(ORCID="0000-0002-1364-6789")
-        )
+Authors@R: c(person(given = "Andreas",
+                    family = "Nordland",
+                    role = c("aut", "cre"),
+                    email = "andreasnordland@gmail.com"),
+             person(given = "Klaus",
+                    family = "Holst",
+                    role = c("aut"),
+                    email = "klaus@holst.it",
+                    comment = c(ORCID="0000-0002-1364-6789"))
+             )
 Description: Framework for evaluating and learning realistic policies based on doubly robust loss functions.
 License: Apache License (>= 2)
 Encoding: UTF-8
