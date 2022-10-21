@@ -50,7 +50,7 @@ policy_eval(
 
 \item{policy_learn}{Policy learner object created by \code{\link[=policy_learn]{policy_learn()}}.}
 
-\item{g_functions}{Fitted g-model objects, see \code{\link[=fit_g_functions]{fit_g_functions()}}.
+\item{g_functions}{Fitted g-model objects, see \link{nuisance_functions}.
 Preferably, use \code{g_models}.}
 
 \item{g_models}{List of action probability models/g-models for each stage
@@ -63,7 +63,7 @@ a single g-model is fitted across all stages. If \code{g_full_history} is
 \item{g_full_history}{If TRUE, the full history is used to fit each g-model.
 If FALSE, the state/Markov type history is used to fit each g-model.}
 
-\item{q_functions}{Fitted Q-model objects, see \code{\link[=fit_Q_functions]{fit_Q_functions()}}.
+\item{q_functions}{Fitted Q-model objects, see \link{nuisance_functions}.
 Only valid if the Q-functions are fitted using the same policy.
 Preferably, use \code{q_models}.}
 

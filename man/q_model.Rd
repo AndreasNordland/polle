@@ -132,5 +132,5 @@ pe2
 predict(get_q_functions(pe2), pd2)
 }
 \seealso{
-\code{\link[=get_history_names]{get_history_names()}}, \code{\link[=get_q_functions]{get_q_functions()}}.
+\code{\link[=get_history_names.policy_data]{get_history_names.policy_data()}}, \code{\link[=get_q_functions]{get_q_functions()}}.
 }

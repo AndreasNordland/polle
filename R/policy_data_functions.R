@@ -485,7 +485,7 @@ get_history_names <- function(object, stage)
 
 #' Get history variable names
 #'
-#' [get_history_names()] returns the state covariate names of the history data
+#' \code{get_history_names()} returns the state covariate names of the history data
 #' table for a given stage. The function is useful when specifying
 #' the design matrix for [g_model] and [q_model] objects.
 #' @param object Policy data object created by [policy_data()].

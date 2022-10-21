@@ -1,4 +1,3 @@
-#' @export
 rql<- function(policy_data, alpha,
                g_models, g_functions, g_full_history,
                q_models, q_full_history,
@@ -130,6 +129,6 @@ get_policy.RQL <- function(object){
 
     return(policy_actions)
   }
-
+  class(policy) <- c("policy", "function")
   return(policy)
 }

@@ -154,8 +154,9 @@ new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
 #' @param stage Stage number variable name.
 #' @param event Event indicator name.
 #' @param verbose Logical. If TRUE, formatting comments are printed to the console.
-#' @param digtis Minimum number of digits to be printed.
+#' @param digits Minimum number of digits to be printed.
 #' @param x Object to be printed.
+#' @param ... Additional arguments passed to print.
 #' @details
 #' Each observation has the sequential form
 #' \deqn{O= {B, U_1, X_1, A_1, ..., U_K, X_K, A_K, U_{K+1}},}

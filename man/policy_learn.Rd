@@ -182,6 +182,8 @@ pe <- policy_eval(policy_data = pd,
 pe
 po <- get_policy_object(pe)
 po$ptl_objects
+head(get_policy(po)(pd))
+
 }
 \seealso{
 \code{\link[=policy_eval]{policy_eval()}}

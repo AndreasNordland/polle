@@ -16,9 +16,9 @@
 #' [q_glm()], [q_rf()], [q_sl()] or similar functions.
 #' Only used for evaluation if \code{q_functions} is \code{NULL}.
 #' If a single model is provided, the model is reused at every stage.
-#' @param g_functions Fitted g-model objects, see [fit_g_functions()].
+#' @param g_functions Fitted g-model objects, see [nuisance_functions].
 #' Preferably, use \code{g_models}.
-#' @param q_functions Fitted Q-model objects, see [fit_Q_functions()].
+#' @param q_functions Fitted Q-model objects, see [nuisance_functions].
 #' Only valid if the Q-functions are fitted using the same policy.
 #' Preferably, use \code{q_models}.
 #' @param g_full_history If TRUE, the full history is used to fit each g-model.

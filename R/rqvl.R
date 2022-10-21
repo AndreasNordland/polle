@@ -361,6 +361,6 @@ get_policy.RQVL <- function(object){
 
     return(policy_actions)
   }
-
+  class(policy) <- c("policy", "function")
   return(policy)
 }

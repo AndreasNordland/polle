@@ -43,7 +43,7 @@
 #' utility).
 #' @docType class
 #' @name q_model
-#' @seealso [get_history_names()], [get_q_functions()].
+#' @seealso [get_history_names.policy_data()], [get_q_functions()].
 #' @examples
 #' library("polle")
 #' ### Single stage case

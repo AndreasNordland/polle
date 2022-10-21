@@ -178,6 +178,6 @@ get_policy.BOWL <- function(object){
 
     return(policy_actions)
   }
-
+  class(policy) <- c("policy", "function")
   return(policy)
 }
