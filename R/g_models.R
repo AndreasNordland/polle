@@ -80,7 +80,7 @@ get_design <- function(formula, data, intercept=FALSE) {
 #' \code{g_sl()} is a wrapper of [SuperLearner::SuperLearner] (ensemble model).
 #' @returns g-model object: function with arguments 'A'
 #' (action vector), 'H' (history matrix) and 'action_set'.
-#' @seealso [get_history_names()], [get_g_functions()].
+#' @seealso [get_history_names.policy_data()], [get_g_functions()].
 #' @docType class
 #' @name g_model
 #' @examples
@@ -337,7 +337,6 @@ predict.g_sl <- function(object, new_H, ...) {
 ## sl3 (SuperLearner) interface
 ################################################################################
 
-##' @export
 g_sl3 <- function(formula = ~ ., learner, folds=5, ...) {
   if (!requireNamespace("sl3"))
     stop("Package 'sl3' required.")
@@ -374,7 +373,6 @@ g_sl3 <- function(formula = ~ ., learner, folds=5, ...) {
   return(g_sl3)
 }
 
-#' @export
 predict.g_sl3 <- function(object, new_H, ...) {
   mf <- with(object, model.frame(terms, data=new_H, xlev = xlevels,
                                  drop.unused.levels=FALSE))

@@ -11,6 +11,8 @@
 or \code{q_functions} as returned by \code{\link[=policy_eval]{policy_eval()}} or \code{\link[=policy_learn]{policy_learn()}}.}
 
 \item{new_policy_data}{Policy data object created by \code{\link[=policy_data]{policy_data()}}.}
+
+\item{...}{Additional arguments passed to lower level functions.}
 }
 \value{
 \link{data.table} with keys \code{id} and \code{stage} and variables \code{g_a} or \code{Q_a} for

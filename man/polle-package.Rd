@@ -5,4 +5,11 @@
 \alias{polle-package}
 \alias{polle}
 \title{Policy Learning}
+\description{
+Framework evaluating and learning realistic policies based on
+doubly robust loss functions.
+}
+\author{
+Andreas Nordland (Maintainer) \href{mailto:andreas.nordland@gmail.com}{andreas.nordland@gmail.com}, Klaus Holst.
+}
 \keyword{package}

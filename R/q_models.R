@@ -9,10 +9,13 @@
 #'
 #' @param formula An object of class [formula] specifying the design matrix for
 #' the outcome regression model/Q-model at the given stage. The action at the
-#' given stage is always denoted 'A', see examples. Use [get_history_names()]
-#' to see the additional variable names.
+#' given stage is always denoted 'A', see examples. Use
+#' [get_history_names.policy_data()] to see the additional
+#' available variable names.
 #' @param family A description of the error distribution and link function to
 #' be used in the model.
+#' @param model (Only used by \code{q_glm}) If \code{FALSE} model frame will
+#' not be saved.
 #' @param alpha (Only used by \code{q_glmnet}) The elasticnet mixing parameter
 #' between 0 and 1. alpha equal to 1 is the lasso penalty, and alpha equal
 #' to 0 the ridge penalty.
@@ -43,7 +46,7 @@
 #' utility).
 #' @docType class
 #' @name q_model
-#' @seealso [get_history_names()], [get_q_functions()].
+#' @seealso [get_history_names.policy_data()], [get_q_functions()].
 #' @examples
 #' library("polle")
 #' ### Single stage case

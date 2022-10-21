@@ -35,6 +35,7 @@
 #' @param search.depth (only used if \code{type = "ptl"} and \code{hybrid = TRUE})
 #' Numeric or numeric vector. Depth to look ahead when splitting at each stage.
 #' @param x Object of class "policy_object" or "policy_learn".
+#' @param ... Additional arguments passed to print.
 #' @returns Function of inherited class \code{"policy_learn"}.
 #' Evaluating the function on a [policy_data] object returns an object of
 #' class [policy_object]. A policy object is a list containing all or
@@ -134,6 +135,8 @@
 #' pe
 #' po <- get_policy_object(pe)
 #' po$ptl_objects
+#' head(get_policy(po)(pd))
+#'
 #' @export
 policy_learn <- function(type = "rql",
                          alpha = 0,

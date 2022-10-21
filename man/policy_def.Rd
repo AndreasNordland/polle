@@ -81,5 +81,5 @@ head(p2_dynamic(pd2))
 
 }
 \seealso{
-\code{\link[=get_history_names]{get_history_names()}}, \code{\link[=get_history]{get_history()}}.
+\code{\link[=get_history_names.policy_data]{get_history_names.policy_data()}}, \code{\link[=get_history.policy_data]{get_history.policy_data()}}.
 }

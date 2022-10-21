@@ -6,7 +6,8 @@ bowl <- function(policy_data,
                  augment=FALSE, c=2^(-2:2), sigma=c(0.03,0.05,0.07), s=2.^(-2:2), m=4,
                  ...){
 
-  if ((is.null(g_models) & is.null(g_functions))) stop("Provide either g-models or g-functions.")
+  if ((is.null(g_models) & is.null(g_functions)))
+    stop("Provide either g-models or g-functions.")
 
   if (!is.null(g_functions)){
     if(!(class(g_functions)[[1]] == "nuisance_functions"))
@@ -18,7 +19,8 @@ bowl <- function(policy_data,
   action_set <- get_action_set(policy_data)
 
   if (full_history == TRUE){
-    if ((!is.list(policy_vars)) | (length(policy_vars) != K)) stop("policy_vars must be a list of length K, when full_history = TRUE")
+    if ((!is.list(policy_vars)) | (length(policy_vars) != K))
+      stop("policy_vars must be a list of length K, when full_history = TRUE")
   }
 
   if (!(length(action_set) == 2)) stop("bowl only works for binary actions.")
@@ -49,7 +51,10 @@ bowl <- function(policy_data,
   II[, K+1] <- TRUE
 
   # (n X K) matrix with entries g_k(A_k, H_k):
-  G <- as.matrix(dcast(g_A_values, id ~ stage, value.var = "P")[, -c("id"), with = FALSE])
+  stage <- NULL
+  G <- as.matrix(
+    dcast(g_A_values, id ~ stage, value.var = "P")[, -c("id"), with = FALSE]
+  )
 
   g_cols <- paste("g_", action_set, sep = "")
   X_scales <- list()
@@ -178,6 +183,6 @@ get_policy.BOWL <- function(object){
 
     return(policy_actions)
   }
-
+  class(policy) <- c("policy", "function")
   return(policy)
 }

@@ -292,67 +292,67 @@ ptl <- function(policy_data,
 #' @export
 get_policy.PTL <- function(object){
 
-action_set <- getElement(object, "action_set")
-K <- getElement(object, "K")
-full_history <- getElement(object, "full_history")
-ptl_objects <- getElement(object, "ptl_objects")
-ptl_designs <- getElement(object, "ptl_designs")
-policy_vars <- getElement(object, "policy_vars")
-g_functions <- getElement(object, "g_functions")
-alpha <- getElement(object, "alpha")
+  action_set <- getElement(object, "action_set")
+  K <- getElement(object, "K")
+  full_history <- getElement(object, "full_history")
+  ptl_objects <- getElement(object, "ptl_objects")
+  ptl_designs <- getElement(object, "ptl_designs")
+  policy_vars <- getElement(object, "policy_vars")
+  g_functions <- getElement(object, "g_functions")
+  alpha <- getElement(object, "alpha")
 
-policy <- function(policy_data){
-  if (get_K(policy_data) != K)
-    stop("The policy do not have the same number of stages as the policy data object.")
+  policy <- function(policy_data){
+    if (get_K(policy_data) != K)
+      stop("The policy do not have the same number of stages as the policy data object.")
 
-  # getting the actions recommended by the ptl objects:
-  policy_actions <- list()
-  for (k in K:1){
-    # getting the policy history:
-    policy_history_k <- get_history(policy_data, stage = k, full_history = full_history)
+    # getting the actions recommended by the ptl objects:
+    policy_actions <- list()
+    for (k in K:1){
+      # getting the policy history:
+      policy_history_k <- get_history(policy_data, stage = k, full_history = full_history)
 
-    if (full_history == TRUE){
-      vars <- policy_vars[[k]]
-    } else{
-      vars <- policy_vars
+      if (full_history == TRUE){
+        vars <- policy_vars[[k]]
+      } else{
+        vars <- policy_vars
+      }
+      H <- get_H(policy_history_k, vars = vars)
+
+      des <- ptl_designs[[k]]
+      mf <- with(des, model.frame(terms, data=H, xlev = x_levels, drop.unused.levels=FALSE))
+      newdata <- model.matrix(mf, data=H, xlev = des$x_levels)
+
+      dd <- predict(ptl_objects[[k]], newdata = newdata)
+      d <- action_set[dd]
+
+      pa <- get_id_stage(policy_history_k)
+      pa[, d:= d]
+      policy_actions[[k]] <- pa
+      rm(pa, d, dd)
     }
-    H <- get_H(policy_history_k, vars = vars)
+    policy_actions <- rbindlist(policy_actions)
+    setkey(policy_actions, id, stage)
 
-    des <- ptl_designs[[k]]
-    mf <- with(des, model.frame(terms, data=H, xlev = x_levels, drop.unused.levels=FALSE))
-    newdata <- model.matrix(mf, data=H, xlev = des$x_levels)
+    # excluding unrealistic recommendations:
+    if (alpha != 0){
+      g_cols <- paste("g_", action_set, sep = "")
+      # evaluating the g-functions:
+      g_values <- evaluate(g_functions, policy_data = policy_data)
 
-    dd <- predict(ptl_objects[[k]], newdata = newdata)
-    d <- action_set[dd]
+      d_ <- policy_actions$d
+      d_[(g_values[, g_cols[1], with = FALSE] < alpha)] <- action_set[2]
+      d_[(g_values[, g_cols[2], with = FALSE] < alpha)] <- action_set[1]
+    } else{
+      d_ <- policy_actions$d
+    }
 
-    pa <- get_id_stage(policy_history_k)
-    pa[, d:= d]
-    policy_actions[[k]] <- pa
-    rm(pa, d, dd)
+    # inserting the modified actions:
+    policy_actions[, d:= d_]
+
+    return(policy_actions)
   }
-  policy_actions <- rbindlist(policy_actions)
-  setkey(policy_actions, id, stage)
-
-  # excluding unrealistic recommendations:
-  if (alpha != 0){
-    g_cols <- paste("g_", action_set, sep = "")
-    # evaluating the g-functions:
-    g_values <- evaluate(g_functions, policy_data = policy_data)
-
-    d_ <- policy_actions$d
-    d_[(g_values[, g_cols[1], with = FALSE] < alpha)] <- action_set[2]
-    d_[(g_values[, g_cols[2], with = FALSE] < alpha)] <- action_set[1]
-  } else{
-    d_ <- policy_actions$d
-  }
-
-  # inserting the modified actions:
-  policy_actions[, d:= d_]
-
-  return(policy_actions)
-}
-
-return(policy)
+  class(policy) <- c("policy", "function")
+  return(policy)
 }
 
 #' @rdname get_policy_functions

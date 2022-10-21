@@ -1,4 +1,3 @@
-##' @export
 SL.glm.formula <- function(Y, X, newX, obsWeights, family, id, formula=Y~., ...) {
   formula <- update(formula, Y~.)
   environment(formula) <- environment()
@@ -10,13 +9,11 @@ SL.glm.formula <- function(Y, X, newX, obsWeights, family, id, formula=Y~., ...)
   return(out)
 }
 
-##' @export
 predict.SL.glm.formula <- function(object, newdata, family, X = NULL, Y = NULL,...) {
 	pred <- predict(object=object$fit, newdata=newdata, type="response")
 	return(pred)
 }
 
-##' @export
 SL.nls <- function(Y, X, newX, obsWeights, family, id, formula, start,  ...) {
   formula <- as.formula(paste0("Y~", tail(as.character(formula), 1)))
   environment(formula) <- environment()
@@ -28,7 +25,6 @@ SL.nls <- function(Y, X, newX, obsWeights, family, id, formula, start,  ...) {
   return(out)
 }
 
-##' @export
 predict.SL.nls <- function(object, newdata, family,
                            X = NULL, Y = NULL, ...) {
 	pred <- predict(object=object$fit, newdata=newdata)

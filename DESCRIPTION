@@ -17,7 +17,8 @@ Imports:
     lava,
     methods,
     mets,
-    policytree,
+    targeted,
+    policytree (>= 1.2.0),
     survival,
     targeted,
     withr

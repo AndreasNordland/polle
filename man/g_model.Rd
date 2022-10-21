@@ -30,7 +30,7 @@ g_sl(
 }
 \arguments{
 \item{formula}{An object of class \link{formula} specifying the design matrix for
-the propensity model/g-model. Use \code{\link[=get_history_names]{get_history_names()}} to se the available
+the propensity model/g-model. Use \code{\link[=get_history_names.policy_data]{get_history_names.policy_data()}} to se the available
 variable names.}
 
 \item{family}{A description of the error distribution and link function to
@@ -138,5 +138,5 @@ pe2
 get_g_functions(pe2)
 }
 \seealso{
-\code{\link[=get_history_names]{get_history_names()}}, \code{\link[=get_g_functions]{get_g_functions()}}.
+\code{\link[=get_history_names.policy_data]{get_history_names.policy_data()}}, \code{\link[=get_g_functions]{get_g_functions()}}.
 }

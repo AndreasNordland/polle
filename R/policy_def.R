@@ -1,3 +1,57 @@
+#' @title Policy-class
+#' @name policy
+#'
+#' @description  A function of inherited class "policy" takes a policy
+#' data object as input and returns the policy actions for every observation
+#' for every (observed) stage.
+#' @section S3 generics:
+#' The following S3 generic functions are available for an object of class
+#' \code{policy}:
+#' \itemize{
+#'   \item{\code{print}}{Baisc print function}
+#' }
+#' @details A policy can either be defined directly by the user using
+#' [policy_def] or a policy can be fitted using [policy_learn]
+#' (or [policy_eval]). [policy_learn] returns a [policy_object] from which
+#' the policy can be extracted using [get_policy].
+#' @returns [data.table] with keys \code{id} and \code{stage} and
+#' action variable \code{d}.
+#' @examples
+#' ### Two stages:
+#' source(system.file("sim", "two_stage.R", package="polle"))
+#' d <- sim_two_stage(5e2, seed=1)
+#' pd <- policy_data(d,
+#'                   action = c("A_1", "A_2"),
+#'                   covariates = list(L = c("L_1", "L_2"),
+#'                                     C = c("C_1", "C_2")),
+#'                   utility = c("U_1", "U_2", "U_3"))
+#'
+#' # defining a dynamic policy:
+#' p <- policy_def(
+#'   dynamic_policy(function(L) (L > 0) * 1),
+#'   reuse = TRUE
+#' )
+#' p
+#' head(p(pd), 5)
+#'
+#' # V-restricted (Doubly Robust) Q-learning:
+#' # specifying the learner:
+#' pl <- policy_learn(type = "rqvl",
+#'                    qv_models = q_glm(formula = ~ C))
+#'
+#' # fitting the policy (object):
+#' po <- pl(policy_data = pd,
+#'          q_models = q_glm(),
+#'          g_models = g_glm())
+#'
+#' p <- get_policy(po)
+#' p
+#'
+#' head(p(pd))
+#'
+#' @docType class
+NULL
+
 #' Define Policy
 #'
 #' \code{policy_def} returns a function of inherited class [policy].
@@ -11,7 +65,7 @@
 #' @returns Function of inherited class \code{"policy"}. The function takes a
 #' [policy_data] object as input and returns a [data.table]
 #' with keys \code{id} and \code{stage} and action variable \code{d}.
-#' @seealso [get_history_names()], [get_history()].
+#' @seealso [get_history_names.policy_data()], [get_history.policy_data()].
 #' @examples
 #' library("polle")
 #' ### Single stage"
@@ -132,7 +186,7 @@ policy_def <- function(policy_functions, full_history = FALSE, reuse = FALSE){
 #' @export
 print.policy <- function(x, ...) {
 
-  cat("Policy with arguments")
+  cat("Policy with argument(s)")
 
   cp <- args(x)
   cp <- capture.output(print.function(cp))
@@ -149,7 +203,34 @@ print.policy <- function(x, ...) {
 
 }
 
-##' @export
+
+#' @title Define Static Policy
+#'
+#' @description \code{static_policy} defines a static policy with a given
+#' action.
+#' @param action Character string. The static action to be applied.
+#' @param name Name of the policy.
+#' @returns function with arguments \code{history}. Specifically,
+#' \code{history} is a history object, see [history]. When evaluated, the
+#' function returns a [data.table] with keys \code{id} and \code{stage} and
+#' action variable \code{d}.
+#' @examples
+#' ### Two stages:
+#' source(system.file("sim", "two_stage.R", package="polle"))
+#' d <- sim_two_stage(5e2, seed=1)
+#' pd <- policy_data(d,
+#'                   action = c("A_1", "A_2"),
+#'                   covariates = list(L = c("L_1", "L_2"),
+#'                                     C = c("C_1", "C_2")),
+#'                   utility = c("U_1", "U_2", "U_3"))
+#' pd
+#'
+#' # getting a history object for stage 2:
+#' his <- get_history(pd, stage = 2)
+#'
+#' # applying the static policy at the given stage:
+#' head(static_policy(action = 1)(his))
+#' @export
 static_policy <- function(action, name=paste0("a=",action)) {
   action <- as.character(action)
   if (length(action) != 1)
@@ -163,7 +244,47 @@ static_policy <- function(action, name=paste0("a=",action)) {
   return(structure(f, name=name))
 }
 
-##' @export
+#' @title Define Dynamic Policy
+#'
+#' @description \code{dynamic_policy} defines a dynamic policy given by a
+#' user-specifed function.
+#' @param fun Function with arguments associated with variables a given history
+#' object, see example. The function must return a vector of character strings.
+#' @returns function with arguments \code{history}. Specifically,
+#' \code{history} is a history object, see [history]. When evaluated, the
+#' function returns a [data.table] with keys \code{id} and \code{stage} and
+#' action variable \code{d}.
+#' @examples
+#' ### Two stages:
+#' source(system.file("sim", "two_stage.R", package="polle"))
+#' d <- sim_two_stage(5e2, seed=1)
+#' pd <- policy_data(d,
+#'                   action = c("A_1", "A_2"),
+#'                   covariates = list(L = c("L_1", "L_2"),
+#'                                     C = c("C_1", "C_2")),
+#'                   utility = c("U_1", "U_2", "U_3"))
+#' pd
+#'
+#' # getting the state/Markov-type history object for stage 2:
+#' his <- get_history(pd, stage = 2)
+#'
+#' # avaible variable names:
+#' get_history_names(pd)
+#' colnames(his$H)
+#'
+#' # applying the dynamic policy at stage 2:
+#' head(dynamic_policy(fun = function(C) C>1)(his))
+#'
+#' # getting the full history object for stage 2:
+#' his <- get_history(pd, stage = 2, full_history = TRUE)
+#'
+#' # avaible variable names:
+#' get_history_names(pd, stage = 2)
+#' colnames(his$H)
+#'
+#' # applying the dynamic policy at stage 2:
+#' head(dynamic_policy(fun = function(C_1, C_2) (C_1>1) & (C_2>1))(his))
+#' @export
 dynamic_policy <- function(fun){
   if (!any(class(fun) == "function"))
     stop("the fun argument in dynamic_policy must be a function.")
@@ -178,6 +299,7 @@ dynamic_policy <- function(fun){
     if (is.logical(action))
       action <- action * 1
     action <- as.character(action)
+    d <- NULL
     pol[, d := action]
     return(pol)
   }

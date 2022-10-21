@@ -7,9 +7,11 @@
 \method{subset}{policy_data}(x, id, ...)
 }
 \arguments{
+\item{x}{Object of class \link{policy_data}.}
+
 \item{id}{character vectors of IDs.}
 
-\item{object}{Object of class \link{policy_data}.}
+\item{...}{Additional parameters passed to lower level functions.}
 }
 \value{
 Object of class \link{policy_data}.
