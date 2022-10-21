@@ -2,14 +2,11 @@
 % Please edit documentation in R/policy_learn.R, R/ptl.R, R/rqvl.R
 \name{get_policy_functions}
 \alias{get_policy_functions}
-\alias{get_policy_functions.policy_eval}
 \alias{get_policy_functions.PTL}
 \alias{get_policy_functions.RQVL}
 \title{Get Policy Functions}
 \usage{
 get_policy_functions(object, stage)
-
-\method{get_policy_functions}{policy_eval}(object, stage)
 
 \method{get_policy_functions}{PTL}(object, stage)
 

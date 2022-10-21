@@ -4,11 +4,7 @@
 \alias{policy_learn}
 \alias{policy_object}
 \alias{print.policy_object}
-\alias{print.policy_learner}
-\alias{get_policy}
-\alias{get_policy.policy_eval}
-\alias{get_g_functions.policy_object}
-\alias{get_q_functions.policy_object}
+\alias{print.policy_learn}
 \title{Create Policy Learner}
 \usage{
 policy_learn(
@@ -29,15 +25,7 @@ policy_learn(
 
 \method{print}{policy_object}(x, ...)
 
-\method{print}{policy_learner}(x, ...)
-
-get_policy(object)
-
-\method{get_policy}{policy_eval}(object)
-
-\method{get_g_functions}{policy_object}(object)
-
-\method{get_q_functions}{policy_object}(object)
+\method{print}{policy_learn}(x, ...)
 }
 \arguments{
 \item{type}{Type of policy learner method:
@@ -66,7 +54,7 @@ by \code{\link[=q_glm]{q_glm()}}, \code{\link[=q_rf]{q_rf()}}, \code{\link[=q_sl
 \item{policy_vars}{(only used if \code{type = "ptl"}) Character vector/string or
 list of character vectors/strings. Variable names used to construct a
 V-restricted policy tree. The names must be a subset of the history variable
-names, see \code{\link[=get_history_names]{get_history_names()}}.}
+names, see \code{\link[=get_history_names.policy_data]{get_history_names.policy_data()}}.}
 
 \item{depth}{(only used if \code{type = "ptl"}) Numeric or numeric vector.
 The depth of the fitted policy tree for each stage, see \code{\link[=policy_tree]{policy_tree()}}.}
@@ -83,9 +71,11 @@ used to fit a policy tree.}
 
 \item{search.depth}{(only used if \code{type = "ptl"} and \code{hybrid = TRUE})
 Numeric or numeric vector. Depth to look ahead when splitting at each stage.}
+
+\item{x}{Object of class "policy_object" or "policy_learn".}
 }
 \value{
-Function of inherited class \code{"policy_learner"}.
+Function of inherited class \code{"policy_learn"}.
 Evaluating the function on a \link{policy_data} object returns an object of
 class \link{policy_object}. A policy object is a list containing all or
 some of the following elements:
@@ -103,10 +93,24 @@ policy trees. Contains a \link{policy_tree} for each stage.}
 V-restricted design matrix for each stage}
 }
 \description{
-\code{policy_learn} is used to specify a policy learning method (Q-learning,
+\code{policy_learn()} is used to specify a policy learning method (Q-learning,
 V-restricted (doubly robust) Q-learning and V-restricted policy tree
 learning). Evaluating the policy learner returns a policy object.
 }
+\section{S3 generics}{
+
+The following S3 generic functions are available for an object of
+class "policy_object":
+\itemize{
+\item{\code{\link[=get_g_functions]{get_g_functions()}}}{ Extract the fitted g-functions.}
+\item{\code{\link[=get_q_functions]{get_q_functions()}}}{ Extract the fitted Q-functions.}
+\item{\code{\link[=get_policy]{get_policy()}}}{ Extract the fitted policy object.}
+\item{\code{\link[=get_policy_functions]{get_policy_functions()}}}{ Extract the fitted policy function for
+a given stage.}
+\item{\code{\link[=get_policy_actions]{get_policy_actions()}}}{ Extract the (fitted) policy actions.}
+}
+}
+
 \examples{
 library("polle")
 ### Two stages:
@@ -129,17 +133,20 @@ pl
 # the policy learner can be used directly:
 po <- pl(pd, q_models = q_glm())
 po
+
 # getting the policy actions:
 head(get_policy(po)(pd))
+
 # getting the associated Q-function values:
 head(predict(get_q_functions(po), pd))
 
-# or the policy learner can be evaluated:
+# or the policy learner can be evaluated directly:
 pe <- policy_eval(policy_data = pd,
-            policy_learn = pl,
-            q_models = q_glm())
+                  policy_learn = pl,
+                  q_models = q_glm())
 pe
-pe$policy_object; rm(pl, po, pe)
+get_policy_object(pe)
+head(get_policy(pe)(pd))
 
 ### V-restricted (Doubly Robust) Q-learning
 
@@ -149,13 +156,13 @@ pl <- policy_learn(type = "rqvl",
 
 # evaluating the learned policy
 pe <- policy_eval(policy_data = pd,
-            policy_learn = pl,
-            q_models = q_glm(),
-            g_models = g_glm())
+                  policy_learn = pl,
+                  q_models = q_glm(),
+                  g_models = g_glm())
 pe
-pe$policy_object
-pe$policy_object$qv_functions$stage_1
-head(get_policy(pe$policy_object)(pd)); rm(pl, pe)
+po <- get_policy_object(pe)
+po$qv_functions$stage_1
+head(get_policy(pe)(pd))
 
 ### V-restricted Policy Tree Learning
 
@@ -173,8 +180,9 @@ pe <- policy_eval(policy_data = pd,
                   q_models = q_glm(),
                   g_models = g_glm())
 pe
-pe$policy_object$ptl_objects
+po <- get_policy_object(pe)
+po$ptl_objects
 }
 \seealso{
-\code{\link[=policy_def]{policy_def()}}, \code{\link[=get_policy_functions]{get_policy_functions()}}.
+\code{\link[=policy_eval]{policy_eval()}}
 }

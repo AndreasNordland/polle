@@ -1,6 +1,6 @@
 #' Create Policy Learner
 #'
-#' \code{policy_learn} is used to specify a policy learning method (Q-learning,
+#' \code{policy_learn()} is used to specify a policy learning method (Q-learning,
 #' V-restricted (doubly robust) Q-learning and V-restricted policy tree
 #' learning). Evaluating the policy learner returns a policy object.
 #' @param type Type of policy learner method:
@@ -22,7 +22,7 @@
 #' @param policy_vars (only used if \code{type = "ptl"}) Character vector/string or
 #' list of character vectors/strings. Variable names used to construct a
 #' V-restricted policy tree. The names must be a subset of the history variable
-#' names, see [get_history_names()].
+#' names, see [get_history_names.policy_data()].
 #' @param depth (only used if \code{type = "ptl"}) Numeric or numeric vector.
 #' The depth of the fitted policy tree for each stage, see [policy_tree()].
 #' @param split.step (only used if \code{type = "ptl"}) Numeric or numeric vector.
@@ -34,7 +34,8 @@
 #' used to fit a policy tree.
 #' @param search.depth (only used if \code{type = "ptl"} and \code{hybrid = TRUE})
 #' Numeric or numeric vector. Depth to look ahead when splitting at each stage.
-#' @returns Function of inherited class \code{"policy_learner"}.
+#' @param x Object of class "policy_object" or "policy_learn".
+#' @returns Function of inherited class \code{"policy_learn"}.
 #' Evaluating the function on a [policy_data] object returns an object of
 #' class [policy_object]. A policy object is a list containing all or
 #' some of the following elements:
@@ -50,7 +51,18 @@
 #' policy trees. Contains a [policy_tree] for each stage.}
 #' \item{\code{ptl_designs}}{(only if \code{type = "ptl"}) Specification of the
 #' V-restricted design matrix for each stage}
-#' @seealso [policy_def()], [get_policy_functions()].
+#' @section S3 generics:
+#' The following S3 generic functions are available for an object of
+#' class "policy_object":
+#' \itemize{
+#' \item{[get_g_functions()]}{ Extract the fitted g-functions.}
+#' \item{[get_q_functions()]}{ Extract the fitted Q-functions.}
+#' \item{[get_policy()]}{ Extract the fitted policy object.}
+#' \item{[get_policy_functions()]}{ Extract the fitted policy function for
+#'                                 a given stage.}
+#' \item{[get_policy_actions()]}{ Extract the (fitted) policy actions.}
+#' }
+#' @seealso [policy_eval()]
 #' @examples
 #' library("polle")
 #' ### Two stages:
@@ -73,17 +85,20 @@
 #' # the policy learner can be used directly:
 #' po <- pl(pd, q_models = q_glm())
 #' po
+#'
 #' # getting the policy actions:
 #' head(get_policy(po)(pd))
+#'
 #' # getting the associated Q-function values:
 #' head(predict(get_q_functions(po), pd))
 #'
-#' # or the policy learner can be evaluated:
+#' # or the policy learner can be evaluated directly:
 #' pe <- policy_eval(policy_data = pd,
-#'             policy_learn = pl,
-#'             q_models = q_glm())
+#'                   policy_learn = pl,
+#'                   q_models = q_glm())
 #' pe
-#' pe$policy_object; rm(pl, po, pe)
+#' get_policy_object(pe)
+#' head(get_policy(pe)(pd))
 #'
 #' ### V-restricted (Doubly Robust) Q-learning
 #'
@@ -93,13 +108,13 @@
 #'
 #' # evaluating the learned policy
 #' pe <- policy_eval(policy_data = pd,
-#'             policy_learn = pl,
-#'             q_models = q_glm(),
-#'             g_models = g_glm())
+#'                   policy_learn = pl,
+#'                   q_models = q_glm(),
+#'                   g_models = g_glm())
 #' pe
-#' pe$policy_object
-#' pe$policy_object$qv_functions$stage_1
-#' head(get_policy(pe$policy_object)(pd)); rm(pl, pe)
+#' po <- get_policy_object(pe)
+#' po$qv_functions$stage_1
+#' head(get_policy(pe)(pd))
 #'
 #' ### V-restricted Policy Tree Learning
 #'
@@ -117,7 +132,8 @@
 #'                   q_models = q_glm(),
 #'                   g_models = g_glm())
 #' pe
-#' pe$policy_object$ptl_objects
+#' po <- get_policy_object(pe)
+#' po$ptl_objects
 #' @export
 policy_learn <- function(type = "rql",
                          alpha = 0,
@@ -192,7 +208,7 @@ policy_learn <- function(type = "rql",
   } else{
     stop("Unknown type of policy learner. Use 'rql', 'rqvl' or 'ptl'")
   }
-  class(pl) <- c("policy_learner", "function")
+  class(pl) <- c("policy_learn", "function")
   attr(pl, "type") <- type
   attr(pl, "pl_args") <- pl_args
 
@@ -217,7 +233,7 @@ print.policy_object <- function(x, ...){
 
 #' @rdname policy_learn
 #' @export
-print.policy_learner <- function(x, ...) {
+print.policy_learn <- function(x, ...) {
 
   cat("Policy learner with arguments:")
 
@@ -236,22 +252,94 @@ print.policy_learner <- function(x, ...) {
 
 }
 
-#' @rdname policy_learn
+#' @export
+get_policy_object <- function(object)
+  UseMethod("get_policy_object")
+
+#' @title Get Policy Object
+#'
+#' @description Extract the fitted policy object.
+#' @param object Object of class [policy_eval].
+#' @returns Object of class [policy_object].
+#' @examples
+#' library("polle")
+#' ### Single stage:
+#' source(system.file("sim", "single_stage.R", package="polle"))
+#' d1 <- sim_single_stage(5e2, seed=1)
+#' pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
+#' pd1
+#'
+#'
+#' # evaluating the policy:
+#' pe1 <- policy_eval(policy_data = pd1,
+#'                    policy_learn = policy_learn(type = "rqvl",
+#'                                                qv_models = q_glm(~.)),
+#'                    g_models = g_glm(),
+#'                    q_models = q_glm())
+#'
+#' # extracting the policy object:
+#' get_policy_object(pe1)
+#' @export
+get_policy_object.policy_eval <- function(object){
+  po <- getElement(object, "policy_object")
+  return(po)
+}
+
+#' @title Get Policy
+#'
+#' @description \code{get_policy} extracts the policy from a policy object
+#' or a policy evaluation object The policy is a function which take a
+#' policy data object as input and returns the policy actions.
+#' @param object Object of class [policy_object] or [policy_eval].
+#' @returns function of class [policy].
+#' @examples
+#' library("polle")
+#' ### Two stages:
+#' source(system.file("sim", "two_stage.R", package="polle"))
+#' par0 <- c(gamma = 0.5, beta = 1)
+#' d <- sim_two_stage(2e3, seed=1, par=par0)
+#' pd <- policy_data(d,
+#'                   action = c("A_1", "A_2"),
+#'                   baseline = c("BB"),
+#'                   covariates = list(L = c("L_1", "L_2"),
+#'                                     C = c("C_1", "C_2")),
+#'                   utility = c("U_1", "U_2", "U_3"))
+#' pd
+#'
+#' ### V-restricted (Doubly Robust) Q-learning
+#'
+#' # specifying the learner:
+#' pl <- policy_learn(type = "rqvl",
+#'                    qv_models = q_glm(formula = ~ C))
+#'
+#' # fitting the policy (object):
+#' po <- pl(policy_data = pd,
+#'          q_models = q_glm(),
+#'          g_models = g_glm())
+#'
+#' # getting and applying the policy:
+#' head(get_policy(po)(pd))
+#'
+#' # the policy learner can also be evaluated directly:
+#' pe <- policy_eval(policy_data = pd,
+#'                   policy_learn = pl,
+#'                   q_models = q_glm(),
+#'                   g_models = g_glm())
+#'
+#' # getting and applying the policy again:
+#' head(get_policy(pe)(pd))
 #' @export
 get_policy <- function(object){
   UseMethod("get_policy")
 }
 
-#' @rdname policy_learn
 #' @export
 get_policy.policy_eval <- function(object){
-  po <- getElement(object, "policy_object")
-  if (is.null(po)){
-    mes <- "Learned policy is not available."
-    stop(mes)
-  }
-  pf <- get_policy(po)
-  return(pf)
+  po <- get_policy_object(object)
+  if (is.null(po))
+    return(NULL)
+  p <- get_policy(po)
+  return(p)
 }
 
 #' Get Policy Functions
@@ -358,25 +446,11 @@ get_policy_functions <- function(object, stage){
   UseMethod("get_policy_functions")
 }
 
-#' @rdname get_policy_functions
-#' @export
-get_policy_functions.policy_eval <- function(object, stage){
-  po <- getElement(object, "policy_object")
-  if (is.null(po)){
-    mes <- "Learned policy is not available."
-    stop(mes)
-  }
-  pf <- get_policy_functions(po, stage = stage)
-  return(pf)
-}
-
-#' @rdname policy_learn
 #' @export
 get_g_functions.policy_object <- function(object){
   getElement(object, "g_functions")
 }
 
-#' @rdname policy_learn
 #' @export
 get_q_functions.policy_object <- function(object){
   getElement(object, "q_functions")

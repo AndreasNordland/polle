@@ -118,13 +118,14 @@ partial_stage_data <- function(stage_data, K, deterministic_rewards){
 partial <- function(object, K)
   UseMethod("partial")
 
+
 #' Trim Number of Stages
 #'
 #' \code{partial} creates a partial policy data object by trimming
-#'  the maximal number of stages in the policy data object to a fixed
+#'  the maximum number of stages in the policy data object to a fixed
 #'  given number.
 #' @param object Object of class [policy_data].
-#' @param K Maximal number of stages.
+#' @param K Maximum number of stages.
 #' @return Object of class [policy_data].
 #' @examples
 #' library("polle")
@@ -144,7 +145,7 @@ partial <- function(object, K)
 #' # Creating a partial policy data object with 3 stages
 #' pd3 <- partial(pd, K = 3)
 #' pd3
-#'@export
+#' @export
 partial.policy_data <- function(object, K){
   # copy object to avoid reference issues in data.table
   object <- copy_policy_data(object)
@@ -361,12 +362,16 @@ state_history <- function(object){
 }
 
 #' @name history
-#' @rdname get_history
+#' @rdname get_history.policy_data
 NULL
+
+#' @export
+get_history <- function(object, stage = NULL, full_history = FALSE)
+  UseMethod("get_history")
 
 #' Get History Object
 #'
-#' \code{get_history} summarises the history and action at a given stage from a
+#' \code{get_history} summarizes the history and action at a given stage from a
 #' [policy_data] object.
 #' @param object Object of class [policy_data].
 #' @param stage Stage number. If NULL, the state/Markov-type history across
@@ -460,11 +465,6 @@ NULL
 #' nrow(h3$H) # number of observations with two stages.
 #' get_n(pd3) # number of observations in total.
 #' @export
-get_history <- function(object, stage = NULL, full_history = FALSE)
-  UseMethod("get_history")
-
-#' @rdname policy_data
-#' @export
 get_history.policy_data <- function(object, stage = NULL, full_history = FALSE){
   if (full_history == TRUE){
     if (is.null(stage)) stop("Please provide a stage number.")
@@ -478,6 +478,10 @@ get_history.policy_data <- function(object, stage = NULL, full_history = FALSE){
   }
   return(his)
 }
+
+#' @export
+get_history_names <- function(object, stage)
+  UseMethod("get_history_names")
 
 #' Get history variable names
 #'
@@ -506,11 +510,6 @@ get_history.policy_data <- function(object, stage = NULL, full_history = FALSE){
 #' get_history_names(pd3)
 #' # full history variable names (H_k) at stage 2:
 #' get_history_names(pd3, stage = 2)
-#' @export
-get_history_names <- function(object, stage)
-  UseMethod("get_history_names")
-
-#' @rdname policy_data
 #' @export
 get_history_names.policy_data <- function(object, stage = NULL){
   if (is.null(stage)){

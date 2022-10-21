@@ -2,7 +2,7 @@
 
 #' Policy Evaluation
 #'
-#' \code{policy_eval} is used to estimate the value of a given fixed policy or a data adaptive policy (e.g. a policy learned from the data).
+#' \code{policy_eval()} is used to estimate the value of a given fixed policy or a data adaptive policy (e.g. a policy learned from the data).
 #' @param policy_data Policy data object created by [policy_data()].
 #' @param policy Policy object created by [policy_def()].
 #' @param policy_learn Policy learner object created by [policy_learn()].
@@ -27,6 +27,11 @@
 #' @param M Number of folds for cross-fitting.
 #' @param type Type of evaluation (dr/doubly robust, ipw/inverse propensity weighting, or/outcome regression).
 #' @param future_args Arguments passed to [future.apply::future_apply()].
+#' @param object,x,y Objects of class "policy_eval".
+#' @param labels Name(s) of the estimate(s).
+#' @param paired \code{TRUE} indicates that the estimates are based on
+#' the same data sample.
+#' @param ... Additional arguments.
 #' @returns \code{policy_eval()} returns an object of class "policy_eval".
 #' The object is a list containing the following elements:
 #' \item{\code{value_estimate}}{Numeric. The estimated value of the policy.}
@@ -49,6 +54,17 @@
 #' "policy_eval" object for every (validation) fold.}
 #' \item{\code{folds}}{(only if \code{M > 1}) The (validation) folds used
 #' for cross-fitting.}
+#' @section S3 generics:
+#' The following S3 generic functions are available for an object of
+#' class \code{policy_data}:
+#' \itemize{
+#' \item{[get_g_functions()]}{ Extract the fitted g-functions.}
+#' \item{[get_q_functions()]}{ Extract the fitted Q-functions.}
+#' \item{[get_policy()]}{ Extract the fitted policy object.}
+#' \item{[get_policy_functions()]}{ Extract the fitted policy function for
+#'                                 a given stage.}
+#' \item{[get_policy_actions()]}{ Extract the (fitted) policy actions.}
+#' }
 #' @seealso [lava::IC], [lava::estimate.default].
 #' @export
 #' @examples
@@ -381,26 +397,80 @@ estimate.policy_eval <- function(x, ..., labels=x$name) {
   merge(x, ...)
 }
 
-#' @rdname policy_eval
 #' @export
 get_g_functions.policy_eval <- function(object){
   getElement(object, "g_functions")
 }
 
-#' @rdname policy_eval
 #' @export
 get_q_functions.policy_eval <- function(object){
   getElement(object, "q_functions")
 }
 
 #' @export
+get_policy.policy_eval <- function(object){
+  po <- getElement(object, "policy_object")
+  if (is.null(po)){
+    mes <- "Learned policy is not available."
+    stop(mes)
+  }
+  pf <- get_policy(po)
+  return(pf)
+}
+
+#' @title Get Policy Actions
+#'
+#' @description \code{get_policy_actions()} extract the actions dictated by the
+#' (learned and possibly cross-fitted) policy a every stage.
+#' @param object Object of class [policy_eval].
+#' @returns [data.table] with keys \code{id} and \code{stage} and action variable
+#' \code{d}.
+#' @examples
+#' ### Two stages:
+#' source(system.file("sim", "two_stage.R", package="polle"))
+#' d2 <- sim_two_stage(5e2, seed=1)
+#' pd2 <- policy_data(d2,
+#'                   action = c("A_1", "A_2"),
+#'                   covariates = list(L = c("L_1", "L_2"),
+#'                                     C = c("C_1", "C_2")),
+#'                   utility = c("U_1", "U_2", "U_3"))
+#' pd2
+#'
+#' # defining a policy learner based on cross-fitted doubly robust Q-learning:
+#' pl2 <- policy_learn(type = "rqvl",
+#'                    qv_models = list(q_glm(~C_1), q_glm(~C_1+C_2)),
+#'                    full_history = TRUE,
+#'                    L = 2) # number of folds for cross-fitting
+#'
+#' # evaluating the policy learner using 2-fold cross fitting:
+#' pe2 <- policy_eval(type = "dr",
+#'                    policy_data = pd2,
+#'                    policy_learn = pl2,
+#'                    q_models = q_glm(),
+#'                    g_models = g_glm(),
+#'                    M = 2) # number of folds for cross-fitting
+#'
+#' # Getting the cross-fitted actions dictated by the fitted policy:
+#' head(get_policy_actions(pe2))
+#'
+#' @export
 get_policy_actions <- function(object)
   UseMethod("get_policy_actions")
-#' @rdname policy_eval
+
 #' @export
 get_policy_actions.policy_eval <- function(object){
   getElement(object, "policy_actions")
 }
 
+#' @export
+get_policy_functions.policy_eval <- function(object, stage){
+  po <- getElement(object, "policy_object")
+  if (is.null(po)){
+    mes <- "Learned policy is not available."
+    stop(mes)
+  }
+  pf <- get_policy_functions(po, stage = stage)
+  return(pf)
+}
 
 
