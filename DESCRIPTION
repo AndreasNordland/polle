@@ -17,10 +17,9 @@ Imports:
     lava,
     methods,
     mets,
-    lava,
-    targeted,
     policytree,
     survival,
+    targeted,
     withr
 Suggests:
     DTRlearn2,
