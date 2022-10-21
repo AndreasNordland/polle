@@ -219,8 +219,8 @@ pe3 <- list(
                    M = 2)
 )
 
-# saveRDS(pe3, file = "tests/policy_eval_test_pe3.Rds")
-pe3_master <- readRDS(file = "tests/policy_eval_test_pe3.Rds")
+# saveRDS(pe3, file = "inst/examples/policy_eval_test_pe3.Rds")
+pe3_master <- readRDS(file = "inst/examples/policy_eval_test_pe3.Rds")
 
 all(unlist(lapply(pe3_master, coef)) == unlist(lapply(pe3, coef)))
 all(unlist(lapply(pe3_master, IC)) == unlist(lapply(pe3, IC)))
