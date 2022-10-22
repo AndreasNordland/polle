@@ -91,7 +91,50 @@ pe2 <- list(
                    g_models = g_glm())
 )
 
-# pe2_master <- readRDS(file = "inst/examples/policy_learn_test_pe2.Rds")
+# saveRDS(pe2, file = "inst/examples/policy_learn_test_pe2.Rds")
+pe2_master <- readRDS(file = "inst/examples/policy_learn_test_pe2.Rds")
 
 all(unlist(lapply(pe2_master, coef)) == unlist(lapply(pe2, coef)))
 all(unlist(lapply(pe2_master, IC)) == unlist(lapply(pe2, IC)))
+
+### PTL comparison
+
+# folds
+all.equal(pe2_master$pl$policy_object$folds,
+          pe2$pl$policy_object$folds)
+
+### QV comparison
+qv_master <- pe2_master$qv
+qv <- pe2 <- pe2$qv
+
+# g-function
+coef(qv_master$g_functions$all_stages$g_model$glm_model) ==
+coef(qv$g_functions$all_stages$g_model$glm_model)
+
+# Q-functions
+coef(qv_master$q_functions$stage_1$q_model$fit) ==
+coef(qv$q_functions$stage_1$q_model$glm_model)
+
+coef(qv_master$q_functions$stage_2$q_model$fit) ==
+coef(qv$q_functions$stage_2$q_model$glm_model)
+
+# QV-function NOT IDENTICAL
+coef(qv_master$policy_object$qv_functions$stage_2$qv_model$Q_0$fit)
+coef(qv$policy_object$qv_functions$stage_2$qv_model$Q_0$glm_model)
+
+# folds NOT IDENTICAL
+qv_master$policy_object$folds$`1` ==
+qv$policy_object$folds$`1`
+
+qv_master$policy_object$folds$`2` ==
+qv$policy_object$folds$`2`
+
+set.seed(1)
+pe3 <- list(
+  qv = policy_eval(policy_data = pd2,
+                   policy_learn = qv2,
+                   q_models = q_glm(),
+                   g_models = g_glm())
+)
+# saveRDS(pe3, file = "inst/examples/policy_learn_test_pe2.Rds")
+
