@@ -1,6 +1,6 @@
-# Single stage ------------------------------------------------------------
-
 library("polle")
+
+# Single stage ------------------------------------------------------------
 source(system.file("sim", "single_stage.R", package="polle"))
 d1 <- sim_single_stage(1e3, seed=1)
 pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
@@ -49,92 +49,155 @@ pe1 <- list(
 # Two stage ---------------------------------------------------------------
 
 rm(list = ls())
+one_run <- function(fun, policy_data){
+  set.seed(1)
+  pe <- policy_eval(policy_data = policy_data,
+                    policy_learn = fun,
+                    q_models = q_glm(),
+                    g_models = g_glm())
+  return(pe)
+}
+
 source(system.file("sim", "two_stage.R", package="polle"))
-d2 <- sim_two_stage(2e3, seed=1)
-pd2 <- policy_data(d2,
+d <- sim_two_stage(2e3, seed=1)
+pd <- policy_data(d,
                   action = c("A_1", "A_2"),
                   baseline = c("BB"),
                   covariates = list(L = c("L_1", "L_2"),
                                     C = c("C_1", "C_2")),
                   utility = c("U_1", "U_2", "U_3"))
 
-# V-restricted Policy Tree Learning
-pl2 <- policy_learn(type = "ptl",
-                    policy_vars = c("L"),
-                    L = 2,
-                    alpha = 0.05)
-
-# V-restricted (Doubly Robust) Q-learning
-qv2 <- policy_learn(type = "rqvl",
+### V-restricted (Doubly Robust) Q-learning
+qv1 <- policy_learn(type = "rqvl",
                     qv_models = q_glm(formula = ~ L + BB),
                     L = 2,
                     alpha = 0.05)
+qv2 <- policy_learn(type = "rqvl",
+                    qv_models = q_glm(formula = ~ L + BB),
+                    L = 1,
+                    alpha = 0.05)
+qv3 <- policy_learn(type = "rqvl",
+                    qv_models = q_glm(formula = ~ L + BB),
+                    L = 2,
+                    alpha = 0)
+
+pe2_qv <- lapply(
+  list(qv1 = qv1, qv2 = qv2, qv3 = qv3),
+  one_run,
+  policy_data = pd
+)
+
+# saveRDS(pe2_qv, file = "inst/examples/policy_learn_test_pe2_qv.Rds")
+# pe2_qv_master <- readRDS(file = "inst/examples/policy_learn_test_pe2_qv.Rds")
+
+# all(unlist(lapply(pe2_qv_master, coef)) == unlist(lapply(pe2_qv, coef)))
+# all(unlist(lapply(pe2_qv_master, IC)) == unlist(lapply(pe2_qv, IC)))
+
+
+### V-restricted Policy Tree Learning
+ptl1 <- policy_learn(type = "ptl",
+                     policy_vars = c("L"),
+                     L = 2,
+                     alpha = 0.05)
+
+ptl2 <- policy_learn(type = "ptl",
+                     policy_vars = c("L", "C"),
+                     L = 2,
+                     alpha = 0.05)
+
+ptl3 <- policy_learn(type = "ptl",
+                     policy_vars = c("L", "C"),
+                     L = 2,
+                     alpha = 0,
+                     depth = 2)
+
+ptl4 <- policy_learn(type = "ptl",
+                     policy_vars = c("L", "C"),
+                     L = 2,
+                     alpha = 0,
+                     hybrid = TRUE,
+                     depth = 3)
+
+pe2_ptl <- lapply(
+  list(ptl1 = ptl1, ptl2 = ptl2, ptl3 = ptl3, ptl4 = ptl4),
+  one_run,
+  policy_data = pd
+)
+
+
+# saveRDS(pe2_ptl, file = "inst/examples/policy_learn_test_pe2_ptl.Rds")
+# pe2_ptl_master <- readRDS(file = "inst/examples/policy_learn_test_pe2_ptl.Rds")
+
+# all(unlist(lapply(pe2_ptl_master, coef)) == unlist(lapply(pe2_ptl, coef)))
+# all(unlist(lapply(pe2_ptl_master, IC)) == unlist(lapply(pe2_ptl, IC)))
+
+
 
 # Q-learning
-ql <- policy_learn(type = "rql",
+ql1 <- policy_learn(type = "rql",
                    L = 2,
                    alpha = 0.05)
 
-set.seed(1)
-pe2 <- list(
-  pl = policy_eval(policy_data = pd2,
-                   policy_learn = pl2,
-                   q_models = q_glm(),
-                   g_models = g_glm()),
-  qv = policy_eval(policy_data = pd2,
-                   policy_learn = qv2,
-                   q_models = q_glm(),
-                   g_models = g_glm()),
-  ql = policy_eval(policy_data = pd2,
-                   policy_learn = ql,
-                   q_models = q_glm(),
-                   g_models = g_glm())
+pe2_ql <- lapply(
+  list(ql1 = ql1),
+  one_run,
+  policy_data = pd
 )
 
-# saveRDS(pe2, file = "inst/examples/policy_learn_test_pe2.Rds")
-pe2_master <- readRDS(file = "inst/examples/policy_learn_test_pe2.Rds")
+# saveRDS(pe2_ql, file = "inst/examples/policy_learn_test_pe2_ql.Rds")
+# pe2_ql_master <- readRDS(file = "inst/examples/policy_learn_test_pe2_ql.Rds")
 
-all(unlist(lapply(pe2_master, coef)) == unlist(lapply(pe2, coef)))
-all(unlist(lapply(pe2_master, IC)) == unlist(lapply(pe2, IC)))
+# all(unlist(lapply(pe2_ql_master, coef)) == unlist(lapply(pe2_ql, coef)))
+# all(unlist(lapply(pe2_ql_master, IC)) == unlist(lapply(pe2_ql, IC)))
+
+
 
 ### PTL comparison
 
 # folds
-all.equal(pe2_master$pl$policy_object$folds,
-          pe2$pl$policy_object$folds)
-
-### QV comparison
-qv_master <- pe2_master$qv
-qv <- pe2 <- pe2$qv
-
-# g-function
-coef(qv_master$g_functions$all_stages$g_model$glm_model) ==
-coef(qv$g_functions$all_stages$g_model$glm_model)
-
-# Q-functions
-coef(qv_master$q_functions$stage_1$q_model$fit) ==
-coef(qv$q_functions$stage_1$q_model$glm_model)
-
-coef(qv_master$q_functions$stage_2$q_model$fit) ==
-coef(qv$q_functions$stage_2$q_model$glm_model)
-
-# QV-function NOT IDENTICAL
-coef(qv_master$policy_object$qv_functions$stage_2$qv_model$Q_0$fit)
-coef(qv$policy_object$qv_functions$stage_2$qv_model$Q_0$glm_model)
-
-# folds NOT IDENTICAL
-qv_master$policy_object$folds$`1` ==
-qv$policy_object$folds$`1`
-
-qv_master$policy_object$folds$`2` ==
-qv$policy_object$folds$`2`
-
-set.seed(1)
-pe3 <- list(
-  qv = policy_eval(policy_data = pd2,
-                   policy_learn = qv2,
-                   q_models = q_glm(),
-                   g_models = g_glm())
-)
-# saveRDS(pe3, file = "inst/examples/policy_learn_test_pe2.Rds")
+# all.equal(pe2_master$pl$policy_object$folds,
+#           pe2$pl$policy_object$folds)
+#
+# ### QV comparison
+# qv_master <- pe2_master$qv
+# qv <- pe2 <- pe2$qv
+#
+# # g-function
+# coef(qv_master$g_functions$all_stages$g_model$glm_model) ==
+# coef(qv$g_functions$all_stages$g_model$glm_model)
+#
+# # Q-functions
+# coef(qv_master$q_functions$stage_1$q_model$fit) ==
+# coef(qv$q_functions$stage_1$q_model$glm_model)
+#
+# coef(qv_master$q_functions$stage_2$q_model$fit) ==
+# coef(qv$q_functions$stage_2$q_model$glm_model)
+#
+# # QV-function NOT IDENTICAL
+# coef(qv_master$policy_object$qv_functions$stage_2$qv_model$Q_0$fit)
+# coef(qv$policy_object$qv_functions$stage_2$qv_model$Q_0$glm_model)
+#
+# # folds NOT IDENTICAL
+# qv_master$policy_object$folds$`1` ==
+# qv$policy_object$folds$`1`
+#
+# qv_master$policy_object$folds$`2` ==
+# qv$policy_object$folds$`2`
+#
+# set.seed(1)
+# pe3 <- list(
+#   qv = policy_eval(policy_data = pd2,
+#                    policy_learn = qv2,
+#                    q_models = q_glm(),
+#                    g_models = g_glm())
+# )
+# # saveRDS(pe3, file = "inst/examples/policy_learn_test_pe2.Rds")
+# pe3_master <- readRDS(file = "inst/examples/policy_learn_test_pe3.Rds")
+#
+# all.equal(
+#   pe3$qv$policy_object$folds,
+#   pe3_master$qv$policy_object$folds
+# )
+#
+# (pe3$qv$value_estimate == pe3_master$qv$value_estimate)
 
