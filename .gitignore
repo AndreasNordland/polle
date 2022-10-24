@@ -7,4 +7,4 @@
 tests/*.Rdata
 tests/*.Rds
 inst/examples/*Rds
-inst/examples/
+examples/
