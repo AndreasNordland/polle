@@ -14,11 +14,11 @@ Authors@R: c(person(given = "Andreas",
 Description: Framework for evaluating and learning realistic policies based on doubly robust loss functions.
 License: Apache License (>= 2)
 Encoding: UTF-8
-LazyData: TRUE
+LazyData: true
 Imports:
     data.table,
     future.apply,
-    lava,
+    lava (>= 1.7.0),
     methods,
     policytree (>= 1.2.0),
     SuperLearner,
