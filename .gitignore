@@ -7,3 +7,4 @@
 tests/*.Rdata
 tests/*.Rds
 inst/examples/*Rds
+
