@@ -48,6 +48,8 @@ pe1 <- list(
 
 # Two stage ---------------------------------------------------------------
 
+library("polle")
+library("lava")
 rm(list = ls())
 one_run <- function(fun, policy_data){
   set.seed(1)
@@ -125,7 +127,6 @@ pe2_ptl <- lapply(
   policy_data = pd
 )
 
-
 # saveRDS(pe2_ptl, file = "inst/examples/policy_learn_test_pe2_ptl.Rds")
 pe2_ptl_master <- readRDS(file = "inst/examples/policy_learn_test_pe2_ptl.Rds")
 
@@ -134,7 +135,16 @@ stopifnot(
   all(unlist(lapply(pe2_ptl_master, IC)) == unlist(lapply(pe2_ptl, IC)))
 )
 
-# Q-learning
+### V-restricted Policy Tree Learning Vol.2
+
+ptl5 <- policy_learn(type = "ptl",
+                     policy_vars = c("L", "BB"), # BB is categorical
+                     L = 2,
+                     alpha = 0.05)
+
+one_run(ptl5, policy_data = pd)
+
+### Q-learning
 ql1 <- policy_learn(type = "rql",
                    L = 2,
                    alpha = 0.05)
