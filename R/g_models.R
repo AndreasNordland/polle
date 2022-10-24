@@ -48,7 +48,7 @@ get_design <- function(formula, data, intercept=FALSE) {
 #' The constructors are used as input for [policy_eval()] and [policy_learn()].
 #'
 #' @param formula An object of class [formula] specifying the design matrix for
-#' the propensity model/g-model. Use [get_history_names.policy_data()] to se the available
+#' the propensity model/g-model. Use [get_history_names()] to se the available
 #' variable names.
 #' @param family A description of the error distribution and link function to
 #' be used in the model.
@@ -80,7 +80,7 @@ get_design <- function(formula, data, intercept=FALSE) {
 #' \code{g_sl()} is a wrapper of [SuperLearner::SuperLearner] (ensemble model).
 #' @returns g-model object: function with arguments 'A'
 #' (action vector), 'H' (history matrix) and 'action_set'.
-#' @seealso [get_history_names.policy_data()], [get_g_functions()].
+#' @seealso [get_history_names()], [get_g_functions()].
 #' @docType class
 #' @name g_model
 #' @examples

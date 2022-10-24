@@ -22,7 +22,7 @@
 #' @param policy_vars (only used if \code{type = "ptl"}) Character vector/string or
 #' list of character vectors/strings. Variable names used to construct a
 #' V-restricted policy tree. The names must be a subset of the history variable
-#' names, see [get_history_names.policy_data()].
+#' names, see [get_history_names()].
 #' @param depth (only used if \code{type = "ptl"}) Numeric or numeric vector.
 #' The depth of the fitted policy tree for each stage, see [policy_tree()].
 #' @param split.step (only used if \code{type = "ptl"}) Numeric or numeric vector.
@@ -254,10 +254,6 @@ print.policy_learn <- function(x, ...) {
 
 }
 
-#' @export
-get_policy_object <- function(object)
-  UseMethod("get_policy_object")
-
 #' @title Get Policy Object
 #'
 #' @description Extract the fitted policy object.
@@ -281,6 +277,10 @@ get_policy_object <- function(object)
 #'
 #' # extracting the policy object:
 #' get_policy_object(pe1)
+#' @export
+get_policy_object <- function(object)
+  UseMethod("get_policy_object")
+
 #' @export
 get_policy_object.policy_eval <- function(object){
   po <- getElement(object, "policy_object")

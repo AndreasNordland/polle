@@ -65,7 +65,7 @@ NULL
 #' @returns Function of inherited class \code{"policy"}. The function takes a
 #' [policy_data] object as input and returns a [data.table]
 #' with keys \code{id} and \code{stage} and action variable \code{d}.
-#' @seealso [get_history_names.policy_data()], [get_history.policy_data()].
+#' @seealso [get_history_names()], [get_history()].
 #' @examples
 #' library("polle")
 #' ### Single stage"

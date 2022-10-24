@@ -114,11 +114,6 @@ partial_stage_data <- function(stage_data, K, deterministic_rewards){
   return(stage_data)
 }
 
-#' @export
-partial <- function(object, K)
-  UseMethod("partial")
-
-
 #' Trim Number of Stages
 #'
 #' \code{partial} creates a partial policy data object by trimming
@@ -145,6 +140,10 @@ partial <- function(object, K)
 #' # Creating a partial policy data object with 3 stages
 #' pd3 <- partial(pd, K = 3)
 #' pd3
+#' @export
+partial <- function(object, K)
+  UseMethod("partial")
+
 #' @export
 partial.policy_data <- function(object, K){
   # copy object to avoid reference issues in data.table
@@ -363,12 +362,8 @@ state_history <- function(object){
 }
 
 #' @name history
-#' @rdname get_history.policy_data
+#' @rdname get_history
 NULL
-
-#' @export
-get_history <- function(object, stage = NULL, full_history = FALSE)
-  UseMethod("get_history")
 
 #' Get History Object
 #'
@@ -466,6 +461,10 @@ get_history <- function(object, stage = NULL, full_history = FALSE)
 #' nrow(h3$H) # number of observations with two stages.
 #' get_n(pd3) # number of observations in total.
 #' @export
+get_history <- function(object, stage = NULL, full_history = FALSE)
+  UseMethod("get_history")
+
+#' @export
 get_history.policy_data <- function(object, stage = NULL, full_history = FALSE){
   if (full_history == TRUE){
     if (is.null(stage)) stop("Please provide a stage number.")
@@ -479,10 +478,6 @@ get_history.policy_data <- function(object, stage = NULL, full_history = FALSE){
   }
   return(his)
 }
-
-#' @export
-get_history_names <- function(object, stage)
-  UseMethod("get_history_names")
 
 #' Get history variable names
 #'
@@ -512,6 +507,10 @@ get_history_names <- function(object, stage)
 #' # full history variable names (H_k) at stage 2:
 #' get_history_names(pd3, stage = 2)
 #' @export
+get_history_names <- function(object, stage)
+  UseMethod("get_history_names")
+
+#' @export
 get_history_names.policy_data <- function(object, stage = NULL){
   if (is.null(stage)){
     history <- get_history(object, full_history = FALSE)
@@ -524,10 +523,6 @@ get_history_names.policy_data <- function(object, stage = NULL){
   return(history_names)
 }
 
-
-#'@export
-get_utility <- function(object)
-  UseMethod("get_utility")
 
 #' Get the Utility
 #'
@@ -551,6 +546,10 @@ get_utility <- function(object)
 #'
 #' # getting the utility:
 #' head(get_utility(pd2))
+#'@export
+get_utility <- function(object)
+  UseMethod("get_utility")
+
 #' @export
 get_utility.policy_data <- function(object){
   stage_data <- object$stage_data
@@ -559,10 +558,6 @@ get_utility.policy_data <- function(object){
 
   return(U)
 }
-
-#' @export
-get_actions <- function(object)
-  UseMethod("get_actions")
 
 #' Get Actions
 #'
@@ -586,14 +581,14 @@ get_actions <- function(object)
 #' # getting the actions:
 #' head(get_actions(pd2))
 #' @export
+get_actions <- function(object)
+  UseMethod("get_actions")
+
+#' @export
 get_actions.policy_data <- function(object){
   actions <- object$stage_data[event == 0, c("id", "stage", "A"), with = FALSE]
   return(actions)
 }
-
-#' @export
-get_id <- function(object)
-  UseMethod("get_id")
 
 #' Get IDs
 #'
@@ -616,14 +611,14 @@ get_id <- function(object)
 #' # getting the IDs:
 #' head(get_id(pd2))
 #' @export
+get_id <- function(object)
+  UseMethod("get_id")
+
+#' @export
 get_id.policy_data <- function(object){
   id <- unique(object$stage_data$id)
   return(id)
 }
-
-#' @export
-get_id_stage <- function(object)
-  UseMethod("get_id_stage")
 
 #' Get IDs and Stages
 #'
@@ -646,6 +641,10 @@ get_id_stage <- function(object)
 #' # getting the IDs and stages:
 #' head(get_id_stage(pd2))
 #' @export
+get_id_stage <- function(object)
+  UseMethod("get_id_stage")
+
+#' @export
 get_id_stage.policy_data <- function(object){
   stage_data <- object$stage_data
 
@@ -655,11 +654,6 @@ get_id_stage.policy_data <- function(object){
 
   return(id_stage)
 }
-
-#' @export
-get_K <- function(object)
-  UseMethod("get_K")
-
 
 #' Get Maximal Stages
 #'
@@ -682,14 +676,14 @@ get_K <- function(object)
 #' # getting the maximal number of stages:
 #' get_K(pd)
 #' @export
+get_K <- function(object)
+  UseMethod("get_K")
+
+#' @export
 get_K.policy_data <- function(object){
   K <- object$dim$K
   return(K)
 }
-
-#' @export
-get_n <- function(object)
-  UseMethod("get_n")
 
 #' Get Number of Observations
 #'
@@ -713,15 +707,14 @@ get_n <- function(object)
 #' # getting the number of observations:
 #' get_n(pd2)
 #' @export
+get_n <- function(object)
+  UseMethod("get_n")
+
+#' @export
 get_n.policy_data <- function(object){
   n <- object$dim$n
   return(n)
 }
-
-#' @export
-get_action_set <- function(object)
-  UseMethod("get_action_set")
-
 
 #' Get Action Set
 #'
@@ -744,6 +737,10 @@ get_action_set <- function(object)
 #'
 #' # getting the actions set:
 #' get_action_set(pd2)
+#' @export
+get_action_set <- function(object)
+  UseMethod("get_action_set")
+
 #' @export
 get_action_set.policy_data <- function(object){
   action_set <- object$action_set

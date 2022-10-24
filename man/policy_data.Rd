@@ -107,14 +107,14 @@ The utility is given by the sum of the rewards, i.e.,
 The following S3 generic functions are available for an object of
 class \code{policy_data}:
 \itemize{
-\item{\code{\link[=partial.policy_data]{partial.policy_data()}}}{ Trim the maximum number
+\item{\code{\link[=partial]{partial()}}}{ Trim the maximum number
 of stages in a \code{policy_data} object.}
 \item{\code{\link[=subset.policy_data]{subset.policy_data()}}}{ Subset a a \code{policy_data} object on ID.}
-\item{\code{\link[=get_history.policy_data]{get_history.policy_data()}}}{ Summarize the history and action at
+\item{\code{\link[=get_history]{get_history()}}}{ Summarize the history and action at
 a given stage.}
-\item{\code{\link[=get_history_names.policy_data]{get_history_names.policy_data()}}}{ Get history variable names.}
-\item{\code{\link[=get_actions.policy_data]{get_actions.policy_data()}}}{ Get the action at every stage.}
-\item{\code{\link[=utility.policy_data]{utility.policy_data()}}}{Get the utility.}
+\item{\code{\link[=get_history_names]{get_history_names()}}}{ Get history variable names.}
+\item{\code{\link[=get_actions]{get_actions()}}}{ Get the action at every stage.}
+\item{\code{\link[=get_utility]{get_utility()}}}{Get the utility.}
 }
 }
 

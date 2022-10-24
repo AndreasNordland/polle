@@ -10,7 +10,7 @@ new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
     setcolorder(stage_data, c("id", "stage", "event", "A"))
 
     # setting and checking keys:
-    setkey(stage_data, id, stage)
+    setkeyv(stage_data, c("id", "stage"))
     if (any(is.na(stage_data$id))) stop("id has missing values.")
     if (any(is.na(stage_data$stage))) stop("stage has missing values.")
     if (anyDuplicated(stage_data, by = key(stage_data)) > 0) stop("The combination of id & stage must be unique.")
@@ -189,14 +189,14 @@ new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
 #' The following S3 generic functions are available for an object of
 #' class \code{policy_data}:
 #' \itemize{
-#' \item{[partial.policy_data()]}{ Trim the maximum number
+#' \item{[partial()]}{ Trim the maximum number
 #'                              of stages in a \code{policy_data} object.}
 #' \item{[subset.policy_data()]}{ Subset a a \code{policy_data} object on ID.}
-#' \item{[get_history.policy_data()]}{ Summarize the history and action at
+#' \item{[get_history()]}{ Summarize the history and action at
 #'                                    a given stage.}
-#' \item{[get_history_names.policy_data()]}{ Get history variable names.}
-#' \item{[get_actions.policy_data()]}{ Get the action at every stage.}
-#' \item{[utility.policy_data()]}{Get the utility.}
+#' \item{[get_history_names()]}{ Get history variable names.}
+#' \item{[get_actions()]}{ Get the action at every stage.}
+#' \item{[get_utility()]}{Get the utility.}
 #' }
 #' @seealso
 #' [policy_eval()], [policy_learn()], [copy_policy_data()]
@@ -478,7 +478,7 @@ melt_wide_data <- function(wide_data, id, action, covariates, baseline, utility,
   stage_data <- stage_data[!(is.na(A) & is.na(U)),]
   stage_data[is.na(A), event := 1]
   # setting keys:
-  setkey(stage_data, id, stage)
+  setkeyv(stage_data, c("id", "stage"))
 
   ### getting baseline data:
   if (!is.null(baseline)){

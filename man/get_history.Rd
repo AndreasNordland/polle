@@ -2,10 +2,10 @@
 % Please edit documentation in R/policy_data_functions.R
 \name{history}
 \alias{history}
-\alias{get_history.policy_data}
+\alias{get_history}
 \title{Get History Object}
 \usage{
-\method{get_history}{policy_data}(object, stage = NULL, full_history = FALSE)
+get_history(object, stage = NULL, full_history = FALSE)
 }
 \arguments{
 \item{object}{Object of class \link{policy_data}.}
