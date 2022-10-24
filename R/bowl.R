@@ -32,7 +32,7 @@ bowl <- function(policy_data,
   id <- get_id(policy_data)
 
   # getting the observed (complete) utilities:
-  utility <- utility(policy_data)
+  utility <- get_utility(policy_data)
 
   # fitting the g-functions:
   if (is.null(g_functions)){

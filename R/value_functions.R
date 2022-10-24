@@ -51,7 +51,7 @@ dr_value <- function(policy_data,
   g_d_values <- get_a_values(a = policy_actions$d, action_set = action_set, values = g_values)
   G <- as.matrix(dcast(g_d_values, id ~ stage, value.var = "P")[, -c("id"), with = FALSE])
   # (n) vector with entries U_i:
-  U <- utility(policy_data)$U
+  U <- get_utility(policy_data)$U
   # (n X K+1) matrix with entries Q_k(H_{k,i}, d_k(H_{k,i})), Q_{K+1} = U:
   q_d_values <- get_a_values(a = policy_actions$d, action_set = action_set, values = q_values)
   Q <- as.matrix(dcast(q_d_values, id ~ stage, value.var = "P")[, -c("id"), with = FALSE])
@@ -145,7 +145,7 @@ ipw_value <- function(policy_data,
   ### calculating the score:
 
   # (n) vector with entries U_i:
-  U <- utility(policy_data)$U
+  U <- get_utility(policy_data)$U
 
   # (n X K) matrix with entries I(d_k(H_k) = A_k):
   IIA <- as.matrix(dcast(actions, id ~ stage, value.var = "A")[, -c("id"), with = FALSE])

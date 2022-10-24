@@ -29,7 +29,7 @@ print.policy_data <- function(x, digits = 2, ...){
     paste("State covariates: ", sc, sep = "")
   )
   cat("\n")
-  mean_utility <- mean(utility(x)$U)
+  mean_utility <- mean(get_utility(x)$U)
   mean_utility <- round(mean_utility, digits = digits)
 
   cat(
@@ -526,12 +526,12 @@ get_history_names.policy_data <- function(object, stage = NULL){
 
 
 #'@export
-utility <- function(object)
-  UseMethod("utility")
+get_utility <- function(object)
+  UseMethod("get_utility")
 
 #' Get the Utility
 #'
-#' \code{utility} returns the utility, i.e., the sum of the rewards,
+#' \code{get_utility()} returns the utility, i.e., the sum of the rewards,
 #' for every observation in the policy data object.
 #'
 #' @param object Object of class [policy_data].
@@ -550,9 +550,9 @@ utility <- function(object)
 #' pd2
 #'
 #' # getting the utility:
-#' head(utility(pd2))
+#' head(get_utility(pd2))
 #' @export
-utility.policy_data <- function(object){
+get_utility.policy_data <- function(object){
   stage_data <- object$stage_data
 
   U <- stage_data[, .(U = sum(U)), id]

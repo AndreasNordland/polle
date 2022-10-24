@@ -202,7 +202,7 @@ fit_Q_functions <- function(policy_data,
   id <- get_id(policy_data)
 
   # getting the observed (complete) utility:
-  utility <- utility(policy_data)
+  utility <- get_utility(policy_data)
 
   # (n) vector with entries U_i:
   U <- utility$U

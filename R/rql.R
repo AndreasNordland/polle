@@ -21,7 +21,7 @@ rql<- function(policy_data, alpha,
   id <- get_id(policy_data)
 
   # getting the observed (complete) utilities:
-  utility <- utility(policy_data)
+  utility <- get_utility(policy_data)
 
   # (n) vector with entries U_i:
   U <- utility$U

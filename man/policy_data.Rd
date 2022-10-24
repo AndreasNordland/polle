@@ -133,7 +133,7 @@ pd1
 # associated S3 methods:
 methods(class = "policy_data")
 head(get_actions(pd1), 5)
-head(utility(pd1), 5)
+head(get_utility(pd1), 5)
 head(get_history(pd1)$H, 5)
 
 ### Two stage: Wide data

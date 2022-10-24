@@ -81,7 +81,7 @@ ptl <- function(policy_data,
   id <- get_id(policy_data)
 
   # getting the observed (complete) utilities:
-  utility <- utility(policy_data)
+  utility <- get_utility(policy_data)
 
   # constructing the folds for cross-fitting
   if (L > 1){
