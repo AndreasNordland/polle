@@ -128,17 +128,17 @@ bowl <- function(policy_data,
 }
 
 get_policy.BOWL <- function(object){
-  owl_objects <- object$owl_objects
-  X_scales <- object$X_scales
-  g_functions = object$g_functions
-  full_history <- object$full_history
+  owl_objects <- getElement(object, "owl_objects")
+  X_scales <- getElement(object, "X_scales")
+  g_functions <- getElement(object, "g_functions")
+  full_history <- getElement(object, "full_history")
   policy_vars <- getElement(object, "policy_vars")
-  alpha <- object$alpha
-  action_set <- object$action_set
-  K <- object$K
+  alpha <- getElement(object, "alpha")
+  action_set <- getElement(object, "action_set")
+  K <- getElement(object, "K")
 
   policy <- function(policy_data){
-    if (policy_data$dim$K != K) stop("The policy do not have the same number of stages as the policy data object.")
+    if (get_K(policy_data) != K) stop("The policy do not have the same number of stages as the policy data object.")
 
     # getting the actions recommended by the OWL objects:
     policy_actions <- list()
@@ -158,12 +158,12 @@ get_policy.BOWL <- function(object){
       d[dd == 1] <- action_set[2]
 
       pa <- get_id_stage(policy_history_k)
-      pa[, d:= d]
+      pa[, d := d]
       policy_actions[[k]] <- pa
       rm(pa, d, dd)
     }
     policy_actions <- rbindlist(policy_actions)
-    setkey(policy_actions, id, stage)
+    setkeyv(policy_actions, c("id", "stage"))
 
     # excluding unrealistic recommendations:
     if (alpha != 0){

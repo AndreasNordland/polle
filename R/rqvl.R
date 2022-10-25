@@ -324,11 +324,12 @@ get_policy_functions.RQVL <- function(object, stage){
 
 #' @export
 get_policy.RQVL <- function(object){
-  g_functions <- object$g_functions
-  qv_functions <- object$qv_functions
-  action_set <- object$action_set
-  K <- object$K
-  alpha <- object$alpha
+  g_functions <- get_g_functions(object)
+  qv_functions <- getElement(object, "qv_functions")
+
+  action_set <- getElement(object, "action_set")
+  K <- getElement(object, "K")
+  alpha <- getElement(object, "alpha")
 
   g_cols <- paste("g_", action_set, sep = "")
   q_cols <- paste("Q_", action_set, sep = "")
@@ -343,15 +344,27 @@ get_policy.RQVL <- function(object){
       # evaluating the g-functions:
       g_values <- evaluate(g_functions, policy_data = policy_data)
       # calculating the realistic actions:
-      realistic_actions <- t(apply(g_values[,..g_cols], MARGIN = 1, function(x) x >= alpha))
+      realistic_actions <- t(apply(
+        g_values[ , g_cols, with = FALSE],
+        MARGIN = 1,
+        function(x) x >= alpha
+      ))
       realistic_actions[which(realistic_actions == FALSE)] <- NA
 
       # getting the action with the maximal realistic Q-function value:
-      dd <- apply(qv_values[,..q_cols] * realistic_actions, MARGIN = 1, which.max)
+      dd <- apply(
+        qv_values[ , q_cols, with = FALSE] * realistic_actions,
+        MARGIN = 1,
+        which.max
+      )
       d <- action_set[dd]
     } else{
       # getting the action with the maximal Q-function value:
-      dd <- apply(qv_values[,..q_cols], MARGIN = 1, which.max)
+      dd <- apply(
+        qv_values[ , q_cols, with = FALSE],
+        MARGIN = 1,
+        which.max
+      )
       d <- action_set[dd]
     }
 

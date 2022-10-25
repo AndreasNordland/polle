@@ -21,8 +21,8 @@ get_H <- function(history, vars = NULL){
   } else
     vars <- H_names
 
-  # H <- H[, names(H) %in% vars , with = FALSE] # keeps the original ordering of columns
-  H <- H[, ..vars] # vars dictates the ordering of the selected columns
+  # vars dictates the ordering of the selected columns
+  H <- H[, vars, with = FALSE]
 
   return(H)
 }
@@ -48,10 +48,24 @@ get_A <- function(history){
 #' @param history Object of class "history".
 #' @return Character vector.
 #' @noRd
+#' @examples
+#' library("polle")
+#' ### Single stage: Wide data
+#' source(system.file("sim", "single_stage.R", package="polle"))
+#' d1 <- sim_single_stage(5e2, seed=1)
+#' head(d1, 5)
+#' # constructing policy_data object:
+#' pd1 <- policy_data(d1,
+#'                    action="A",
+#'                    covariates=c("Z", "B", "L"),
+#'                    utility="U")
+#' pd1
+#'
+#' polle:::get_id.history(get_history(pd1))
 get_id.history <- function(object){
   H <- getElement(object, "H")
   stopifnot(!is.null(H))
-  id <- H$id
+  id <- H[, "id"]
   stopifnot(!is.null(id))
   return(id)
 }
@@ -65,7 +79,7 @@ get_id_stage.history <- function(object){
   H <- getElement(object, "H")
   stopifnot(!is.null(H))
   id_stage <- c("id", "stage")
-  id_stage <- H[, ..id_stage]
+  id_stage <- H[, id_stage, with = FALSE]
 
   return(id_stage)
 }

@@ -206,24 +206,27 @@ subset.policy_data <- function(x, id, ...){
 #' @param stage stage number.
 #' @return Object of class "history".
 full_history <- function(object, stage){
-
-  if (stage > object$dim$K)
+  K <- get_K(object)
+  if (stage > K)
     stop("The stage number must be lower or equal to maximal number of stages observed.")
 
-  stage_data <- object$stage_data
-  state_names <- object$colnames$state_names
-  baseline_data <- object$baseline_data
-  baseline_names <- object$colnames$baseline_names
-  action_set <- object$action_set
-  deterministic_rewards <- object$colnames$deterministic_rewards
+  object_colnames <- getElement(object, "colnames")
+  stage_data <- getElement(object, "stage_data")
+  state_names <- getElement(object_colnames, "state_names")
+  baseline_data <- getElement(object, "baseline_data")
+  baseline_names <- getElement(object_colnames, "baseline_names")
+  action_set <- get_action_set(object)
+  deterministic_rewards <- getElement(object_colnames, "deterministic_rewards")
   stage_ <- stage; rm(stage)
 
   # getting stage specific history names:
   AH_names <- c("id", "stage", "A", state_names)
   # filtering rows which have an action (event = 0):
+  event <- NULL
   AH <- stage_data[event == 0, ]
   # filtering rows up till the given stage number:
-  AH <- AH[stage <= stage_, ..AH_names]
+  stage <- NULL
+  AH <- AH[stage <= stage_, AH_names, with = FALSE]
   # filtering observations with an action at the given stage:
   AH <- AH[, if(any(stage == stage_)) .SD, id]
   # transforming the data from long to wide format:
@@ -235,20 +238,21 @@ full_history <- function(object, stage){
     AH[baseline_data, (baseline_names) := mget(paste0('i.', baseline_names))]
   }
   # setting key and column order
-  setkey(AH, id, stage)
+  setkeyv(AH, c("id", "stage"))
   setcolorder(AH, neworder = c("id", "stage"))
 
   # separating the action at the given stage
   action_name <- paste("A", stage_, sep = "_")
   A_names <- c("id", "stage", action_name)
-  A <- AH[ , ..A_names]
+  A <- AH[ , A_names, with = FALSE]
   H <- AH[, c(action_name) := NULL]
 
   # getting the accumulated utility and deterministic utility contributions
+  U_bar <- id <- NULL
   U <- stage_data[stage <= stage_][, U_bar := sum(U), id]
   U <- U[event == 0][stage == stage_,]
   U_names <- c("id", "stage", "U_bar", deterministic_rewards)
-  U <- U[, ..U_names]
+  U <- U[ , U_names, with = FALSE]
 
   history <- list(
     H = H,
@@ -359,6 +363,14 @@ state_history <- function(object){
   class(history) <- "history"
 
   return(history)
+}
+
+get_stage_data <- function(object)
+  UseMethod("get_stage_data")
+
+get_stage_data.policy_data <- function(object){
+  out <- getElement(object, "stage_data")
+  return(out)
 }
 
 #' @name history
@@ -552,10 +564,9 @@ get_utility <- function(object)
 
 #' @export
 get_utility.policy_data <- function(object){
-  stage_data <- object$stage_data
-
-  U <- stage_data[, .(U = sum(U)), id]
-
+  stage_data <- get_stage_data(object)
+  id <- U <- NULL
+  U <- stage_data[, list(U = sum(U)), id]
   return(U)
 }
 
@@ -586,7 +597,9 @@ get_actions <- function(object)
 
 #' @export
 get_actions.policy_data <- function(object){
-  actions <- object$stage_data[event == 0, c("id", "stage", "A"), with = FALSE]
+  stage_data <- get_stage_data(object)
+  event <- NULL
+  actions <- stage_data[event == 0, c("id", "stage", "A"), with = FALSE]
   return(actions)
 }
 
@@ -646,11 +659,10 @@ get_id_stage <- function(object)
 
 #' @export
 get_id_stage.policy_data <- function(object){
-  stage_data <- object$stage_data
-
+  stage_data <- get_stage_data(object)
   id_stage_names <- c("id", "stage")
-
-  id_stage <- stage_data[event == 0, ][, ..id_stage_names]
+  event <- NULL
+  id_stage <- stage_data[event == 0, ][, id_stage_names, with = FALSE]
 
   return(id_stage)
 }

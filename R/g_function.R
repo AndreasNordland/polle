@@ -27,17 +27,17 @@
 #' g_function
 #' @noRd
 fit_g_function <- function(history, g_model){
-  action_set <- history$action_set
+  action_set <- getElement(history, "action_set")
 
   # getting the action (A) and the model matrix (H):
   A <- get_A(history)
   H <- get_H(history)
+  stage <- unique(get_id_stage(history)[, "stage"])
 
   # checking that all actions in the actions set occur:
   if (!all(action_set == sort(unique(A)))){
     mes <- "Not all actions occur at stage"
-    k <- object[["stage"]]
-    mes <- paste(mes, k)
+    mes <- paste(mes, paste(stage, collapse = ", "))
     mes <- paste(mes, ". Unable to fit g-function.", sep = "")
     stop(mes)
   }

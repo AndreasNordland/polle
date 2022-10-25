@@ -326,12 +326,12 @@ get_policy.PTL <- function(object){
       d <- action_set[dd]
 
       pa <- get_id_stage(policy_history_k)
-      pa[, d:= d]
+      pa[, d := d]
       policy_actions[[k]] <- pa
       rm(pa, d, dd)
     }
     policy_actions <- rbindlist(policy_actions)
-    setkey(policy_actions, id, stage)
+    setkeyv(policy_actions, c("id", "stage"))
 
     # excluding unrealistic recommendations:
     if (alpha != 0){
@@ -391,7 +391,7 @@ get_policy_functions.PTL <- function(object, stage){
       mes <- paste(mes, paste(policy_vars, collapse = ", "), ".", sep = "")
       stop(mes)
     }
-    newdata <- H[, ..policy_vars]
+    newdata <- H[, policy_vars, with = FALSE]
     mf <- with(ptl_design, model.frame(terms, data = newdata, xlev = x_levels, drop.unused.levels=FALSE))
     newdata <- model.matrix(mf, data = newdata, xlev = ptl_design$x_levels)
     dd <- predict(ptl_object, newdata = newdata)

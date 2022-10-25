@@ -226,6 +226,7 @@ fit_Q_functions <- function(policy_data,
     idx_k <- q_step_k$idx_k
 
     # getting the Q-function values under the policy
+    stage <- NULL
     d_k <- policy_actions[stage == k, ]$d
     q_d_values_k <- get_a_values(a = d_k, action_set = action_set, values = q_values_k)$P
 
