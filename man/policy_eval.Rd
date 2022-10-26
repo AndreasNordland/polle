@@ -135,14 +135,14 @@ where \eqn{d_k} for \eqn{k\in \{1, ..., K\}} maps \eqn{\{B, X_1, A_1, ..., A_{k-
 action set.
 
 Recursively define the Q-models (\code{q_models}):
-\deqn{Q^d_K(h_K, a_K) = \mathbb{E}[U|H_K = h_K, A_K = a_K]}
-\deqn{Q^d_k(h_k, a_k) = \mathbb{E}[Q_{k+1}(H_{k+1}, d_{k+1}(B,X_1, A_1,...,X_{k+1}))|H_k = h_k, A_k = a_k].}
+\deqn{Q^d_K(h_K, a_K) = E[U|H_K = h_K, A_K = a_K]}
+\deqn{Q^d_k(h_k, a_k) = E[Q_{k+1}(H_{k+1}, d_{k+1}(B,X_1, A_1,...,X_{k+1}))|H_k = h_k, A_k = a_k].}
 If \code{q_full_history = TRUE},
 \eqn{H_k = \{B, X_1, A_1, ..., A_{k-1}, X_k\}}, and if
 \code{q_full_history = FALSE}, \eqn{H_k = \{B, X_k\}}.
 
 The g-models (\code{g_models}) are defined as
-\deqn{g_k(h_k, a_k) = \mathbb{P}(A_k = a_k|H_k = h_k).}
+\deqn{g_k(h_k, a_k) = P(A_k = a_k|H_k = h_k).}
 If \code{g_full_history = TRUE},
 \eqn{H_k = \{B, X_1, A_1, ..., A_{k-1}, X_k\}}, and if
 \code{g_full_history = FALSE}, \eqn{H_k = \{B, X_k\}}.
@@ -151,19 +151,19 @@ single model, it is assumed that \eqn{g_1(h_1, a_1) = ... = g_K(h_K, a_K)}.
 
 If \code{type = "or"} \code{policy_eval} returns the empirical estimates of
 the value (\code{value_estimate}) and score (\code{IC}):
-\deqn{\mathbb{E}[Q^d_1(H_1, d_1(...))]}
-\deqn{Q^d_1(H_1, d_1(...)) - \mathbb{E}[Q^d_1(H_1, d_1(...))]}
+\deqn{E[Q^d_1(H_1, d_1(...))]}
+\deqn{Q^d_1(H_1, d_1(...)) - E[Q^d_1(H_1, d_1(...))]}
 for an appropriate input \eqn{...} to the policy.
 
 If \code{type = "ipw"} \code{policy_eval} returns the empirical estimates of
 the value (\code{value_estimate}) and score (\code{IC}):
-\deqn{\mathbb{E}[(\prod_{k=1}^K I\{A_k = d_k(...)\} g_k(H_k, A_k)^{-1}) U].}
-\deqn{(\prod_{k=1}^K I\{A_k = d_k(...)\} g_k(H_k, A_k)^{-1}) U - \mathbb{E}[(\prod_{k=1}^K I\{A_k = d_k(...)\} g_k(H_k, A_k)^{-1}) U].}
+\deqn{E[(\prod_{k=1}^K I\{A_k = d_k(...)\} g_k(H_k, A_k)^{-1}) U].}
+\deqn{(\prod_{k=1}^K I\{A_k = d_k(...)\} g_k(H_k, A_k)^{-1}) U - E[(\prod_{k=1}^K I\{A_k = d_k(...)\} g_k(H_k, A_k)^{-1}) U].}
 
 If \code{type = "dr"} \code{policy_eval} returns the empirical estimates of
 the value (\code{value_estimate}) and influence curve (\code{IC}):
-\deqn{\mathbb{E}[Z^d_1],}
-\deqn{Z^d_1 - \mathbb{E}[Z^d_1],}
+\deqn{E[Z^d_1],}
+\deqn{Z^d_1 - E[Z^d_1],}
 where
 \deqn{
 Z^d_1 = Q^d_1(H_1 , d_1(...)) + \sum_{r = 1}^K \prod_{j = 1}^{r}
