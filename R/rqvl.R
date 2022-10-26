@@ -1,6 +1,19 @@
 fit_QV_function <- function(history, Z, qv_model){
   H <- get_H(history)
 
+  # checking qv_model formula:
+  formula <- get("formula", environment(qv_model))
+  tt <- terms(formula, data = H)
+  formula <- reformulate(attr(tt, "term.labels"), response = NULL)
+  tt <- terms(formula, data = H)
+  variables <- as.character(attr(tt, "variables"))[-1]
+
+  if(!all(variables %in% colnames(H))){
+    mes <- deparse(formula)
+    mes <- paste("The QV-model formula", mes, "is invalid.")
+    stop(mes)
+  }
+
   # fitting the QV-model
   qv_model <- apply(
     Z,
@@ -170,11 +183,13 @@ rqvl <- function(policy_data,
     }
 
     # getting the action matrix for stage k:
+    stage <- NULL
     A_k <- actions[stage == k, ]$A
     IA_k <- action_matrix(A_k, action_set)
+    rm(stage)
 
     # calculating the Z-matrix
-    Z_1 <- Q_k <- as.matrix(q_values_k[, ..q_cols, with = FALSE])
+    Z_1 <- Q_k <- as.matrix(q_values_k[, q_cols, with = FALSE])
     Z_2 <- (IA_k / G[idx_k, k]) * (Q[idx_k, k+1] - Q_k)
     Z_3 <- 0
     if (k != K){
@@ -193,7 +208,6 @@ rqvl <- function(policy_data,
     } else{
       qv_model_k <- qv_models
     }
-    # qv_formula_k <- get("formula", environment(qv_model_k))
     qv_function_k <- fit_QV_function(qv_history_k, Z = Z, qv_model = qv_model_k)
     qv_functions[[k]] <- qv_function_k
     # getting the QV-function values:
@@ -204,13 +218,13 @@ rqvl <- function(policy_data,
       g_values_k <- g_values[stage == k, ]
 
       # calculating the realistic actions:
-      realistic_actions <- t(apply(g_values_k[,..g_cols], MARGIN = 1, function(x) x >= alpha))
+      realistic_actions <- t(apply(g_values_k[, g_cols, with = FALSE], MARGIN = 1, function(x) x >= alpha))
       realistic_actions[which(realistic_actions == FALSE)] <- NA
 
       # getting the action with the maximal realistic QV-function value:
-      dd <- apply(qv_values_k[,..q_cols] * realistic_actions, MARGIN = 1, which.max)
+      dd <- apply(qv_values_k[, q_cols, with = FALSE] * realistic_actions, MARGIN = 1, which.max)
     } else {
-      dd <- apply(qv_values_k[,..q_cols], MARGIN = 1, which.max)
+      dd <- apply(qv_values_k[, q_cols, with = FALSE], MARGIN = 1, which.max)
     }
 
     d <- action_set[dd]
@@ -238,16 +252,12 @@ rqvl <- function(policy_data,
   attr(qv_functions, "full_history") <- full_history
   names(qv_functions) <- paste("stage_", 1:K, sep = "")
 
-  # Zd <- apply(action_matrix(d, action_set) * Z, 1, sum)
-
   out <- list(
     qv_functions = qv_functions,
     q_functions = q_functions,
     q_functions_cf = q_functions_cf,
     g_functions = g_functions,
     g_functions_cf = g_functions_cf,
-    # g_values = g_values,
-    # D = D,
     action_set = action_set,
     alpha = alpha,
     K = K,

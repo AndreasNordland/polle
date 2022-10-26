@@ -486,7 +486,8 @@ melt_wide_data <- function(wide_data,
   }
 
   ### melting stage data:
-  measure <- append(list(A = action), covariates)
+  stage <- A <- U <- event <- NULL
+  measure <- append(list("A" = action), covariates)
   measure <- append(measure, list("U" = utility))
   if (!is.null(deterministic_rewards)){
     measure <- append(measure, deterministic_rewards)
@@ -497,17 +498,16 @@ melt_wide_data <- function(wide_data,
   # converts to long data:
   stage_data <- melt(stage_data, id.vars = id, measure.vars = measure, variable.name = "stage")
   setnames(stage_data, id, "id")
-  stage <- NULL
+
   stage_data[ , stage := as.numeric(as.character(stage))]
-  A <- NULL
   stage_data[ , A := as.character(A)]
   # setting the event variable:
-  event <- NULL
   stage_data[!is.na(A), event := 0]
-  stage_data <- stage_data[!(is.na(A) & is.na(U)),]
+  stage_data <- stage_data[!(is.na(A) & is.na(U)), ]
   stage_data[is.na(A), event := 1]
   # setting keys:
   setkeyv(stage_data, c("id", "stage"))
+  rm(stage, A, U, event)
 
   ### getting baseline data:
   if (!is.null(baseline)){

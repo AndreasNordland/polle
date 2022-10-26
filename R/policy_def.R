@@ -162,15 +162,14 @@ policy_def <- function(policy_functions, full_history = FALSE, reuse = FALSE){
       stage_histories <- lapply(1:K, function(k) get_history(policy_data, stage = k, full_history = full_history))
       policy_actions <- mapply(function(sp, sh) sp(sh), policy_functions, stage_histories, SIMPLIFY = FALSE)
       policy_actions <- rbindlist(policy_actions)
-      setkey(policy_actions, id, stage)
+      setkeyv(policy_actions, c("id", "stage"))
     } else{
       history <- state_history(policy_data)
       policy_actions <- policy_functions(history)
     }
-
     stopifnot(
       any("d" %in% colnames(policy_actions)),
-      all(policy_actions$d %in% action_set),
+      all(unlist(policy_actions[, "d"]) %in% action_set),
       all(key(policy_actions) == c("id", "stage"))
     )
 
@@ -237,6 +236,7 @@ static_policy <- function(action, name=paste0("a=",action)) {
     stop("the action argument in static_policy must be a single character or string.")
 
   f <- function(history) {
+    d <- NULL
     pol <- get_id_stage(history)
     pol[, d := action]
     return(pol)

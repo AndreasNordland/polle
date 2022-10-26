@@ -33,7 +33,7 @@ q_sl(formula = ~A * ., SL.library = c("SL.mean", "SL.glm"), ...)
 \item{formula}{An object of class \link{formula} specifying the design matrix for
 the outcome regression model/Q-model at the given stage. The action at the
 given stage is always denoted 'A', see examples. Use
-\code{\link[=get_history_names.policy_data]{get_history_names.policy_data()}} to see the additional
+\code{\link[=get_history_names]{get_history_names()}} to see the additional
 available variable names.}
 
 \item{family}{A description of the error distribution and link function to
@@ -136,5 +136,5 @@ pe2
 predict(get_q_functions(pe2), pd2)
 }
 \seealso{
-\code{\link[=get_history_names.policy_data]{get_history_names.policy_data()}}, \code{\link[=get_q_functions]{get_q_functions()}}.
+\code{\link[=get_history_names]{get_history_names()}}, \code{\link[=get_q_functions]{get_q_functions()}}.
 }

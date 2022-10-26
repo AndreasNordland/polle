@@ -54,7 +54,7 @@ by \code{\link[=q_glm]{q_glm()}}, \code{\link[=q_rf]{q_rf()}}, \code{\link[=q_sl
 \item{policy_vars}{(only used if \code{type = "ptl"}) Character vector/string or
 list of character vectors/strings. Variable names used to construct a
 V-restricted policy tree. The names must be a subset of the history variable
-names, see \code{\link[=get_history_names.policy_data]{get_history_names.policy_data()}}.}
+names, see \code{\link[=get_history_names]{get_history_names()}}.}
 
 \item{depth}{(only used if \code{type = "ptl"}) Numeric or numeric vector.
 The depth of the fitted policy tree for each stage, see \code{\link[=policy_tree]{policy_tree()}}.}
@@ -98,6 +98,10 @@ V-restricted design matrix for each stage}
 \code{policy_learn()} is used to specify a policy learning method (Q-learning,
 V-restricted (doubly robust) Q-learning and V-restricted policy tree
 learning). Evaluating the policy learner returns a policy object.
+}
+\details{
+For references on V-restricted Q-learning (\code{type = "rqvl"}), see \doi{10.1515/ijb-2015-0052}.
+For references on policy tree learning (\code{type = "ptl"}), see \doi{10.48550/arXiv.1810.04778}.
 }
 \section{S3 generics}{
 

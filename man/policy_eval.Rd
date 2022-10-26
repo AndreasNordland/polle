@@ -116,6 +116,63 @@ for cross-fitting.}
 \description{
 \code{policy_eval()} is used to estimate the value of a given fixed policy or a data adaptive policy (e.g. a policy learned from the data).
 }
+\details{
+Each observation has the sequential form
+\deqn{O= {B, U_1, X_1, A_1, ..., U_K, X_K, A_K, U_{K+1}},}
+for a possibly stochastic number of stages K.
+\itemize{
+\item{} \eqn{B} is a vector of baseline covariates.
+\item{} \eqn{U_k} is the reward at stage k (not influenced by the action \eqn{A_k}).
+\item{} \eqn{X_k} is a vector of state covariates summarizing the state at stage k.
+\item{} \eqn{A_k} is the categorical action within the action set \eqn{\mathcal{A}} at stage k.
+}
+The utility is given by the sum of the rewards, i.e.,
+\eqn{U = \sum_{k = 1}^{K+1} U_k}.
+
+A policy is a set of functions
+\deqn{d = \{d_1, ..., d_K\},}
+where \eqn{d_k} for \eqn{k\in \{1, ..., K\}} maps \eqn{\{B, X_1, A_1, ..., A_{k-1}, X_k\}} into the
+action set.
+
+Recursively define the Q-models (\code{q_models}):
+\deqn{Q^d_K(h_K, a_K) = \mathbb{E}[U|H_K = h_K, A_K = a_K]}
+\deqn{Q^d_k(h_k, a_k) = \mathbb{E}[Q_{k+1}(H_{k+1}, d_{k+1}(B,X_1, A_1,...,X_{k+1}))|H_k = h_k, A_k = a_k].}
+If \code{q_full_history = TRUE},
+\eqn{H_k = \{B, X_1, A_1, ..., A_{k-1}, X_k\}}, and if
+\code{q_full_history = FALSE}, \eqn{H_k = \{B, X_k\}}.
+
+The g-models (\code{g_models}) are defined as
+\deqn{g_k(h_k, a_k) = \mathbb{P}(A_k = a_k|H_k = h_k).}
+If \code{g_full_history = TRUE},
+\eqn{H_k = \{B, X_1, A_1, ..., A_{k-1}, X_k\}}, and if
+\code{g_full_history = FALSE}, \eqn{H_k = \{B, X_k\}}.
+Furthermore, if \code{g_full_history = FALSE} and \code{g_models} is a
+single model, it is assumed that \eqn{g_1(h_1, a_1) = ... = g_K(h_K, a_K)}.
+
+If \code{type = "or"} \code{policy_eval} returns the empirical estimates of
+the value (\code{value_estimate}) and score (\code{IC}):
+\deqn{\mathbb{E}[Q^d_1(H_1, d_1(...))]}
+\deqn{Q^d_1(H_1, d_1(...)) - \mathbb{E}[Q^d_1(H_1, d_1(...))]}
+for an appropriate input \eqn{...} to the policy.
+
+If \code{type = "ipw"} \code{policy_eval} returns the empirical estimates of
+the value (\code{value_estimate}) and score (\code{IC}):
+\deqn{\mathbb{E}[(\prod_{k=1}^K I\{A_k = d_k(...)\} g_k(H_k, A_k)^{-1}) U].}
+\deqn{(\prod_{k=1}^K I\{A_k = d_k(...)\} g_k(H_k, A_k)^{-1}) U - \mathbb{E}[(\prod_{k=1}^K I\{A_k = d_k(...)\} g_k(H_k, A_k)^{-1}) U].}
+
+If \code{type = "dr"} \code{policy_eval} returns the empirical estimates of
+the value (\code{value_estimate}) and influence curve (\code{IC}):
+\deqn{\mathbb{E}[Z^d_1],}
+\deqn{Z^d_1 - \mathbb{E}[Z^d_1],}
+where
+\deqn{
+Z^d_1 = Q^d_1(H_1 , d_1(...)) + \sum_{r = 1}^K \prod_{j = 1}^{r}
+\frac{I\{A_j = d_j(...)\}}{g_{j}(H_j, A_j)}
+\{Q_{r+1}^d(H_{r+1} , d_{r+1}(...)) - Q_{r}^d(H_r , d_r(...))\}.
+}
+
+For references, see \doi{10.1515/jci-2013-0022}, \doi{10.1201/9780429192692}.
+}
 \section{S3 generics}{
 
 The following S3 generic functions are available for an object of

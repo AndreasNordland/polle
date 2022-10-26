@@ -11,7 +11,7 @@ Authors@R: c(person(given = "Andreas",
                     email = "klaus@holst.it",
                     comment = c(ORCID="0000-0002-1364-6789"))
              )
-Description: Framework for evaluating and learning realistic policies based on doubly robust loss functions.
+Description: Framework for evaluating and learning realistic policies based on doubly robust loss functions. Policy learning methods include Q-learning <doi:10.1201/9780429192692>, (doubly robust) V-restricted Q-learning <doi:10.1515/ijb-2015-0052> and (doubly robust) sequential policy tree learning <doi:10.48550/arXiv.1810.04778>.
 License: Apache License (>= 2)
 Encoding: UTF-8
 LazyData: true
@@ -32,8 +32,6 @@ Suggests:
     ranger,
     rmarkdown,
     testthat (>= 3.0)
-Enhances:
-    sl3 (>= 1.4.1)
 Depends:
     R (>= 4.0)
 Roxygen: list(markdown = TRUE)

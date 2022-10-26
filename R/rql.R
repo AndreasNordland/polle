@@ -58,16 +58,18 @@ rql<- function(policy_data, alpha,
 
     if (alpha != 0){
       # getting the g-function values for each action:
+      stage <- NULL
       g_values_k <- g_values[stage == k, ]
+      rm(stage)
 
       # calculating the realistic actions:
-      realistic_actions <- t(apply(g_values_k[,..g_cols], MARGIN = 1, function(x) x >= alpha))
+      realistic_actions <- t(apply(g_values_k[, g_cols, with = FALSE], MARGIN = 1, function(x) x >= alpha))
       realistic_actions[which(realistic_actions == FALSE)] <- NA
 
       # getting the maximal realistic Q-function values:
-      q_max_realistic_k <- apply(q_values_k[,..q_cols] * realistic_actions, MARGIN = 1, max, na.rm = TRUE)
+      q_max_realistic_k <- apply(q_values_k[, q_cols, with = FALSE] * realistic_actions, MARGIN = 1, max, na.rm = TRUE)
     } else {
-      q_max_realistic_k <- apply(q_values_k[,..q_cols], MARGIN = 1, max, na.rm = TRUE)
+      q_max_realistic_k <- apply(q_values_k[, q_cols, with = FALSE], MARGIN = 1, max, na.rm = TRUE)
     }
 
     # inserting the maximal Q-function values in Q:

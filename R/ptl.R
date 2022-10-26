@@ -177,11 +177,13 @@ ptl <- function(policy_data,
     }
 
     # getting the action matrix for stage k:
-    A_k <- actions[stage == k, ]$A
+    stage <- NULL
+    A_k <- unlist(actions[stage == k, "A"])
     IA_k <- action_matrix(A_k, action_set)
+    rm(stage)
 
     # calculating Gamma (Z-matrix), see ?policytree::policy_tree
-    Gamma_1 <- Q_k <- as.matrix(q_values_k[, ..q_cols, with = FALSE])
+    Gamma_1 <- Q_k <- as.matrix(q_values_k[, q_cols, with = FALSE])
     Gamma_2 <- (IA_k / G[idx_k, k]) * (Q[idx_k, k+1] - Q_k)
     Gamma_3 <- 0
     if (k != K){

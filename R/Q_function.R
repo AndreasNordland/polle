@@ -87,9 +87,11 @@ q_step <- function(policy_data, k, full_history, Q, q_models){
   if (is.null(q_models))
     stop("Please provide q_models.")
 
+  stage <- NULL
   id <- get_id(policy_data)
   id_k <- get_id_stage(policy_data)[stage == k]$id
   idx_k <- (id %in% id_k)
+  rm(stage)
 
   if (class(q_models)[[1]] == "list"){
     q_model <- q_models[[k]]
@@ -113,11 +115,12 @@ q_step <- function(policy_data, k, full_history, Q, q_models){
 }
 
 q_step_cf <- function(folds, policy_data, k, full_history, Q, q_models, future_args){
+  stage <- NULL
   id <- get_id(policy_data)
   id_k <- get_id_stage(policy_data)[stage == k]$id
   idx_k <- (id %in% id_k)
-  K <- policy_data$dim$K
-
+  rm(stage)
+  K <- get_K(policy_data)
   future_args <- append(future_args, list(X = folds,
                                           FUN = function(f){
                                             train_id <- id[-f]

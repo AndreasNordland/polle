@@ -1,3 +1,14 @@
+check_q_formula <- function(formula, data){
+  tt <- terms(formula, data = data)
+  formula <- reformulate(attr(tt, "term.labels"), response = NULL)
+  tt <- terms(formula, data = data)
+  variables <- as.character(attr(tt, "variables"))[-1]
+  if(!all(variables %in% colnames(data))){
+    mes <- deparse(formula)
+    mes <- paste("The Q-model formula", mes, "is invalid.")
+    stop(mes)
+  }
+}
 
 # Q-model documentation ---------------------------------------------------
 
@@ -111,7 +122,7 @@ q_glm <- function(formula = ~ A * .,
 
   q_glm <- function(AH, V_res) {
     data <- AH
-
+    check_q_formula(formula = formula, data = data)
     tt <- terms(formula, data = data)
     if (length(attr(tt, "term.labels")) == 0)
       formula <- V_res ~ 1
@@ -159,6 +170,7 @@ q_glmnet <- function(formula = ~ A * .,
   dotdotdot <- list(...)
 
   q_glmnet <- function(AH, V_res) {
+    check_q_formula(formula = formula, data = AH)
     des <- get_design(formula, data=AH)
     y <- V_res
     args_glmnet <- c(list(y = y, x = des$x,
@@ -218,6 +230,7 @@ q_rf <- function(formula = ~ .,
     })
 
   q_rf <- function(AH, V_res) {
+    check_q_formula(formula = formula, data = AH)
     des <- get_design(formula, data=AH)
     data <- data.frame(V_res, des$x)
     res <- NULL; best <- 1
@@ -263,6 +276,7 @@ q_sl <- function(formula = ~ A*., SL.library=c("SL.mean", "SL.glm"), ...){
   dotdotdot <- list(...)
   force(SL.library)
   q_sl <- function(AH, V_res) {
+    check_q_formula(formula = formula, data = AH)
     des <- get_design(formula, data=AH)
     if (missing(V_res) || is.null(V_res))
       V_res <- get_response(formula, data=AH)

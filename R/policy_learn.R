@@ -63,6 +63,9 @@
 #'                                 a given stage.}
 #' \item{[get_policy_actions()]}{ Extract the (fitted) policy actions.}
 #' }
+#' @details
+#' For references on V-restricted Q-learning (\code{type = "rqvl"}), see \doi{10.1515/ijb-2015-0052}.
+#' For references on policy tree learning (\code{type = "ptl"}), see \doi{10.48550/arXiv.1810.04778}.
 #' @seealso [policy_eval()]
 #' @examples
 #' library("polle")

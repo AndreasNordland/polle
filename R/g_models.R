@@ -1,3 +1,15 @@
+check_g_formula <- function(formula, data){
+  tt <- terms(formula, data = data)
+  formula <- reformulate(attr(tt, "term.labels"), response = NULL)
+  tt <- terms(formula, data = data)
+  variables <- as.character(attr(tt, "variables"))[-1]
+  if(!all(variables %in% colnames(data))){
+    mes <- deparse(formula)
+    mes <- paste("The g-model formula", mes, "is invalid.")
+    stop(mes)
+  }
+}
+
 update_g_formula <- function(formula, A, H) {
   action_set <- sort(unique(A))
   if (length(action_set) != 2)
@@ -7,10 +19,12 @@ update_g_formula <- function(formula, A, H) {
   AA[A == action_set[2]] <- 1
   AA <- as.numeric(AA)
   tt <- terms(formula, data = H)
+
   if (length(attr(tt, "term.labels")) == 0)
     formula <- AA ~ 1
   else
     formula <- reformulate(attr(tt, "term.labels"), response = "AA")
+
   environment(formula)$AA <- AA
   attr(formula, "action_set") <- action_set
   attr(formula, "response") <- "AA"
@@ -152,6 +166,7 @@ g_glm <- function(formula = ~.,
   dotdotdot <- list(...)
   force(formula)
   g_glm <- function(A, H, action_set){
+    check_g_formula(formula = formula, data = H)
     formula <- update_g_formula(formula, A, H)
     args_glm <- append(list(formula = formula, data = H,
                             family = family, model = model), dotdotdot)
@@ -185,7 +200,8 @@ g_glmnet <- function(formula = ~.,
   if (!requireNamespace("glmnet")) stop("Package 'glmnet' required")
   force(formula)
   dotdotdot <- list(...)
-  g_glmnet <- function(A, H, action_set) {
+  g_glmnet <- function(A, H, action_set){
+    check_g_formula(formula = formula, data = H)
     formula <- update_g_formula(formula, A, H)
     ##action_set <- attr(formula, "action_set")
     y <- get_response(formula, data=H)
@@ -251,8 +267,8 @@ g_rf <- function(formula = ~.,
     })
 
   g_rf <- function(A, H, action_set) {
-    ##action_set <- sort(unique(A))
-    A <- factor(A, levels=action_set)
+    A <- factor(A, levels = action_set)
+    check_g_formula(formula = formula, data = H)
     des <- get_design(formula, data=H)
     data <- data.frame(A, des$x)
     res <- NULL; best <- 1
@@ -304,6 +320,7 @@ g_sl <- function(formula = ~ .,
   dotdotdot <- list(...)
   g_sl <- function(A, H, action_set) {
     A <- as.numeric(factor(A, levels=action_set))-1
+    check_g_formula(formula = formula, data = H)
     des <- get_design(formula, data=H)
     X <- data.frame(des$x)
     colnames(X) <- gsub("[^[:alnum:]]", "_", colnames(X))
@@ -336,46 +353,47 @@ predict.g_sl <- function(object, new_H, ...) {
 ## sl3 (SuperLearner) interface
 ################################################################################
 
-g_sl3 <- function(formula = ~ ., learner, folds=5, ...) {
-  if (!requireNamespace("sl3"))
-    stop("Package 'sl3' required.")
-  force(formula)
-  dotdotdot <- list(...)
-  if (missing(learner)) {
-    lrn_enet <- sl3::make_learner(sl3::Lrnr_glmnet, alpha=0.5, outcome_type="binomial")
-    lrn_rf <- sl3::make_learner(sl3::Lrnr_ranger, num.trees = 500, outcome_type="binomial")
-    lrn_mean <- sl3::make_learner(sl3::Lrnr_mean, outcome_type="binomial")
-    lrn_stack <- sl3::Stack$new(lrn_enet, lrn_rf, lrn_mean)
-    learner <- sl3::make_learner(sl3::Lrnr_sl, learners = lrn_stack, outcome_type="binomial")
-  }
-  g_sl3 <- function(A, H, action_set) {
-    A <- factor(A, levels=action_set)
-    des <- get_design(formula, data=H)
-    X <- data.frame(des$x)
-    colnames(X) <- gsub("[^[:alnum:]]", "_", colnames(X))
-    tsk <- sl3::make_sl3_Task(data=cbind(A, X),
-                              outcome_type="categorical",
-                              outcome="A",
-                              outcome_levels=action_set,
-                              covariates=names(X),
-                              folds=folds)
-    fit <- learner$train(tsk)
-    m <- with(des, list(fit = fit,
-                        xlevels = x_levels,
-                        terms = terms,
-                        action_set = action_set))
-    class(m) <- c("g_sl3")
-    return(m)
-  }
-  class(g_sl3) <- c("g_model", "function")
-  return(g_sl3)
-}
-
-predict.g_sl3 <- function(object, new_H, ...) {
-  mf <- with(object, model.frame(terms, data=new_H, xlev = xlevels,
-                                 drop.unused.levels=FALSE))
-  newx <- as.data.frame(model.matrix(mf, data=new_H, xlev = object$xlevels))
-  tsk <- sl3::make_sl3_Task(data=newx, covariates=names(newx))
-  pr <- object$fit$predict(tsk)
-  return(pr)
-}
+# g_sl3 <- function(formula = ~ ., learner, folds=5, ...) {
+#   if (!requireNamespace("sl3"))
+#     stop("Package 'sl3' required.")
+#   force(formula)
+#   dotdotdot <- list(...)
+#   if (missing(learner)) {
+#     lrn_enet <- sl3::make_learner(sl3::Lrnr_glmnet, alpha=0.5, outcome_type="binomial")
+#     lrn_rf <- sl3::make_learner(sl3::Lrnr_ranger, num.trees = 500, outcome_type="binomial")
+#     lrn_mean <- sl3::make_learner(sl3::Lrnr_mean, outcome_type="binomial")
+#     lrn_stack <- sl3::Stack$new(lrn_enet, lrn_rf, lrn_mean)
+#     learner <- sl3::make_learner(sl3::Lrnr_sl, learners = lrn_stack, outcome_type="binomial")
+#   }
+#   g_sl3 <- function(A, H, action_set) {
+#     A <- factor(A, levels=action_set)
+#     check_g_formula(formula = formula, data = H)
+#     des <- get_design(formula, data=H)
+#     X <- data.frame(des$x)
+#     colnames(X) <- gsub("[^[:alnum:]]", "_", colnames(X))
+#     tsk <- sl3::make_sl3_Task(data=cbind(A, X),
+#                               outcome_type="categorical",
+#                               outcome="A",
+#                               outcome_levels=action_set,
+#                               covariates=names(X),
+#                               folds=folds)
+#     fit <- learner$train(tsk)
+#     m <- with(des, list(fit = fit,
+#                         xlevels = x_levels,
+#                         terms = terms,
+#                         action_set = action_set))
+#     class(m) <- c("g_sl3")
+#     return(m)
+#   }
+#   class(g_sl3) <- c("g_model", "function")
+#   return(g_sl3)
+# }
+#
+# predict.g_sl3 <- function(object, new_H, ...) {
+#   mf <- with(object, model.frame(terms, data=new_H, xlev = xlevels,
+#                                  drop.unused.levels=FALSE))
+#   newx <- as.data.frame(model.matrix(mf, data=new_H, xlev = object$xlevels))
+#   tsk <- sl3::make_sl3_Task(data=newx, covariates=names(newx))
+#   pr <- object$fit$predict(tsk)
+#   return(pr)
+# }

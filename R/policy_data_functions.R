@@ -10,9 +10,11 @@ print.policy_data <- function(x, digits = 2, ...){
   cat("\n")
 
   action_set <- get_action_set(x)
+  stage_data <- getElement(x, "stage_data")
+  event <- NULL
 
   cat("\n")
-  st <- x$stage_data[event == 0,][, c("stage", "A"), with = FALSE]
+  st <- stage_data[event == 0,][, c("stage", "A"), with = FALSE]
   colnames(st) <- c("stage", "action")
   stable <- addmargins(table(st), 2, FUN = list(n = sum))
 
@@ -87,20 +89,22 @@ partial_stage_data <- function(stage_data, K, deterministic_rewards){
   required_names <- c("id", "stage", "event", "A", "U")
 
   # filtering stage_data rows up till stage K:
+  stage <- NULL
   stage_data_K <- stage_data[stage <= K, ]
 
   # filtering stage_data rows for stages above K and the required columns:
-  stage_data_res <- stage_data[stage > K, ..required_names]
+  stage_data_res <- stage_data[stage > K, required_names, with = FALSE]
 
   # summarizing stage_data_res as a single row:
+  event <- U <- NULL
   stage_data_res_sum <- stage_data_res[
     ,
-    .(
+    list(
       stage = min(stage), # min(stage) is K + 1
       event = max(event), # max(event) is the event at stage K*, which is either 1 or 2
       U = sum(U) # sum(U) is the sum of the utility contributions from stage K+1 to K*
     ),
-    id
+    by = "id"
   ]
   if (!is.null(deterministic_rewards))
     stage_data_res_sum[, (deterministic_rewards) := NA]
@@ -108,8 +112,8 @@ partial_stage_data <- function(stage_data, K, deterministic_rewards){
   stage_data <- rbindlist(list(stage_data_K, stage_data_res_sum), fill = TRUE, use.names = TRUE)
 
   # setting keys and index
-  setkey(stage_data, id, stage)
-  setindex(stage_data, event)
+  setkeyv(stage_data, c("id", "stage"))
+  setindexv(stage_data, "event")
 
   return(stage_data)
 }
@@ -290,9 +294,11 @@ stage_state_history <- function(object, stage){
   # getting the state names:
   AH_names <- c("id", "stage", "A", state_names)
   # filtering rows which have an action (event = 0):
+  event <- NULL
   AH <- stage_data[event == 0, ]
+  rm(event)
   # filtering observations with an action at the given stage:
-  AH <- AH[stage == stage_, ..AH_names]
+  AH <- AH[stage == stage_, AH_names, with = FALSE]
   # merging the state history and the the baseline data:
   if(length(baseline_names) > 0){
     AH[baseline_data, (baseline_names) := mget(paste0('i.', baseline_names))]
@@ -301,14 +307,15 @@ stage_state_history <- function(object, stage){
   ### constructing H and A:
   # separating the action at the given stage
   A_names <- c("id", "stage", "A")
-  A <- AH[ , ..A_names]
+  A <- AH[,  A_names, with = FALSE]
   H <- AH[, c("A") := NULL]
 
   # getting the accumulated utility and deterministic utility contributions
-  U <- stage_data[stage <= stage_][, U_bar := sum(U), id]
+  U <- U_bar <- NULL
+  U <- stage_data[stage <= stage_][, U_bar := sum(U), by = "id"]
   U <- U[event == 0][stage == stage_,]
   U_names <- c("id", "stage", "U_bar", deterministic_rewards)
-  U <- U[, ..U_names]
+  U <- U[, U_names, with = FALSE]
 
   id_names <- c("id", "stage")
 
@@ -341,8 +348,10 @@ state_history <- function(object){
   # getting stage specific history names:
   AH_names <- c("id", "stage", "A", state_names)
   # filtering rows which have an action (event = 0):
+  event <- NULL
   AH <- stage_data[event == 0, ]
-  AH <- AH[, ..AH_names]
+  AH <- AH[, AH_names, with = FALSE]
+  rm(event)
   # merging the stage specific histories and the the baseline data by reference:
   if(length(baseline_names) > 0){
     AH[baseline_data, (baseline_names) := mget(paste0('i.', baseline_names))]
@@ -351,7 +360,7 @@ state_history <- function(object){
   ### constructing H and A:
   # separating the action at the given stage
   A_names <- c("id", "stage", "A")
-  A <- AH[ , ..A_names]
+  A <- AH[ , A_names, with = FALSE]
   H <- AH[, c("A") := NULL]
 
   history <- list(
