@@ -101,7 +101,7 @@ get_design <- function(formula, data, intercept=FALSE) {
 #' library("polle")
 #' ### Single stage:
 #' source(system.file("sim", "single_stage.R", package="polle"))
-#' d <- sim_single_stage(5e2, seed=1)
+#' d <- sim_single_stage(2e2, seed=1)
 #' pd <- policy_data(d, action="A", covariates=list("Z", "B", "L"), utility="U")
 #' pd
 #'
@@ -121,7 +121,7 @@ get_design <- function(formula, data, intercept=FALSE) {
 #'
 #' ### Two stages:
 #' source(system.file("sim", "two_stage.R", package="polle"))
-#' d2 <- sim_two_stage(5e2, seed=1)
+#' d2 <- sim_two_stage(2e2, seed=1)
 #' pd2 <- policy_data(d2,
 #'                   action = c("A_1", "A_2"),
 #'                   baseline = c("B"),
@@ -146,11 +146,11 @@ get_design <- function(formula, data, intercept=FALSE) {
 #' # evaluating the static policy a=1 using inverse propensity weighting
 #' # based on a full history glm model for each stage:
 #' pe2 <- policy_eval(type = "ipw",
-#'             policy_data = pd2,
-#'             policy = policy_def(static_policy(1), reuse = TRUE),
-#'             g_models = list(g_glm(~ L_1 + B),
-#'                            g_glm(~ A_1 + L_2 + B)),
-#'             g_full_history = TRUE)
+#'                    policy_data = pd2,
+#'                    policy = policy_def(static_policy(1), reuse = TRUE),
+#'                    g_models = list(g_glm(~ L_1 + B),
+#'                                    g_glm(~ A_1 + L_2 + B)),
+#'                    g_full_history = TRUE)
 #' pe2
 #' get_g_functions(pe2)
 NULL

@@ -71,7 +71,7 @@
 #' library("polle")
 #' ### Two stages:
 #' source(system.file("sim", "two_stage.R", package="polle"))
-#' d <- sim_two_stage(2e3, seed=1)
+#' d <- sim_two_stage(5e2, seed=1)
 #' pd <- policy_data(d,
 #'                   action = c("A_1", "A_2"),
 #'                   baseline = c("BB"),
@@ -301,8 +301,7 @@ get_policy_object.policy_eval <- function(object){
 #' library("polle")
 #' ### Two stages:
 #' source(system.file("sim", "two_stage.R", package="polle"))
-#' par0 <- c(gamma = 0.5, beta = 1)
-#' d <- sim_two_stage(2e3, seed=1, par=par0)
+#' d <- sim_two_stage(5e2, seed=1)
 #' pd <- policy_data(d,
 #'                   action = c("A_1", "A_2"),
 #'                   baseline = c("BB"),
@@ -362,7 +361,7 @@ get_policy.policy_eval <- function(object){
 #' library("polle")
 #' ### Two stages:
 #' source(system.file("sim", "two_stage.R", package="polle"))
-#' d <- sim_two_stage(2e3, seed=1)
+#' d <- sim_two_stage(5e2, seed=1)
 #' pd <- policy_data(d,
 #'                   action = c("A_1", "A_2"),
 #'                   baseline = "BB",
@@ -404,7 +403,7 @@ get_policy.policy_eval <- function(object){
 #' new_H$L <- new_H$L_2
 #' new_H$C <- new_H$C_2
 #' all.equal(
-#'  pf2(H = new_H),
+#'  unname(pf2(H = new_H)),
 #'  get_policy(po)(pd)[stage == 2]$d
 #' )
 #' rm(pl, po, d2, pf2, new_H, L_2)
@@ -423,7 +422,7 @@ get_policy.policy_eval <- function(object){
 #'                   q_models = q_glm(),
 #'                   g_models = g_glm())
 #'
-#' #' # getting the policy function at stage 2:
+#' # getting the policy function at stage 2:
 #' pf2 <- get_policy_functions(pe, stage = 2)
 #' args(pf2)
 #'
@@ -443,7 +442,7 @@ get_policy.policy_eval <- function(object){
 #' new_H$L <- new_H$L_2
 #' new_H$C <- new_H$C_2
 #' all.equal(
-#'  pf2(H = new_H),
+#'  unname(pf2(H = new_H)),
 #'  get_policy(pe)(pd)[stage == 2]$d
 #' )
 #' @export
