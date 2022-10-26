@@ -21,8 +21,7 @@ policy data object as input and returns the policy actions.
 library("polle")
 ### Two stages:
 source(system.file("sim", "two_stage.R", package="polle"))
-par0 <- c(gamma = 0.5, beta = 1)
-d <- sim_two_stage(2e3, seed=1, par=par0)
+d <- sim_two_stage(5e2, seed=1)
 pd <- policy_data(d,
                   action = c("A_1", "A_2"),
                   baseline = c("BB"),

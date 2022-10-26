@@ -80,7 +80,6 @@ rm(pl, po, d2, pf2, new_H, L_2)
 
 ### Realistic V-restricted Policy Tree Learning
 # specifying the learner:
-\donttest{  #Reduce ex. timings
 pl <- policy_learn(type = "ptl",
                    policy_vars = list(c("C_1", "BB"),
                                       c("L_1", "BB")),
@@ -116,5 +115,4 @@ all.equal(
  unname(pf2(H = new_H)),
  get_policy(pe)(pd)[stage == 2]$d
 )
-}
 }
