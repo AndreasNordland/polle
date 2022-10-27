@@ -38,6 +38,7 @@ pe2
 
 # getting the g-functions
 g_functions <- get_g_functions(pe2)
+g_functions
 
 # getting the fitted g-function values
 head(predict(g_functions, pd2))

@@ -91,7 +91,6 @@ pd
 # defining a g-model:
 get_history_names(pd)
 g_model <- g_glm(formula = ~Z)
-g_model
 
 # evaluating the static policy a=1 using inverse
 # propensity weighting based on the given g-model:
@@ -99,7 +98,7 @@ pe <- policy_eval(type = "ipw",
                   policy_data = pd,
                   policy = policy_def(static_policy(1)),
                   g_models = g_model)
-pe
+# inspecting the fitted g-models:
 get_g_functions(pe)
 
 ### Two stages:
@@ -119,7 +118,7 @@ pe2 <- policy_eval(type = "ipw",
                    policy_data = pd2,
                    policy = policy_def(static_policy(1), reuse = TRUE),
                    g_models = g_glm(formula = ~ B + C))
-pe2
+# inspecting the fitted g-models:
 get_g_functions(pe2)
 
 # available full history variable names at each stage:
@@ -134,7 +133,7 @@ pe2 <- policy_eval(type = "ipw",
                    g_models = list(g_glm(~ L_1 + B),
                                    g_glm(~ A_1 + L_2 + B)),
                    g_full_history = TRUE)
-pe2
+# inspecting the fitted g-models:
 get_g_functions(pe2)
 }
 \seealso{
