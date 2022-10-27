@@ -130,34 +130,13 @@ pd <- policy_data(d,
                   utility = c("U_1", "U_2", "U_3"))
 pd
 
-### Q-learning
-# specifying the learner:
-pl <- policy_learn(type = "rql")
-pl
-
-# the policy learner can be used directly:
-po <- pl(pd, q_models = q_glm())
-po
-
-# getting the policy actions:
-head(get_policy(po)(pd))
-
-# getting the associated Q-function values:
-head(predict(get_q_functions(po), pd))
-
-# or the policy learner can be evaluated directly:
-pe <- policy_eval(policy_data = pd,
-                  policy_learn = pl,
-                  q_models = q_glm())
-pe
-get_policy_object(pe)
-head(get_policy(pe)(pd))
-
 ### V-restricted (Doubly Robust) Q-learning
 
 # specifying the learner:
 pl <- policy_learn(type = "rqvl",
-                   qv_models = q_glm(formula = ~ C))
+                   qv_models = list(q_glm(formula = ~ C_1 + BB),
+                                    q_glm(formula = ~ L_1 + BB)),
+                   full_history = TRUE)
 
 # evaluating the learned policy
 pe <- policy_eval(policy_data = pd,
@@ -165,30 +144,11 @@ pe <- policy_eval(policy_data = pd,
                   q_models = q_glm(),
                   g_models = g_glm())
 pe
+# getting the policy object:
 po <- get_policy_object(pe)
+# inspecting the fitted QV-model for each action strata at stage 1:
 po$qv_functions$stage_1
 head(get_policy(pe)(pd))
-
-### V-restricted Policy Tree Learning
-
-# specifying the learner:
-pl <- policy_learn(type = "ptl",
-                   policy_vars = list(c("C_1", "BB"),
-                                      c("L_1", "BB")),
-                   depth = c(2,1),
-                   full_history = TRUE)
-
-# evaluating the learned policy:
-set.seed(1)
-pe <- policy_eval(policy_data = pd,
-                  policy_learn = pl,
-                  q_models = q_glm(),
-                  g_models = g_glm())
-pe
-po <- get_policy_object(pe)
-po$ptl_objects
-head(get_policy(po)(pd))
-
 }
 \seealso{
 \code{\link[=policy_eval]{policy_eval()}}

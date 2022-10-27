@@ -80,34 +80,13 @@
 #'                   utility = c("U_1", "U_2", "U_3"))
 #' pd
 #'
-#' ### Q-learning
-#' # specifying the learner:
-#' pl <- policy_learn(type = "rql")
-#' pl
-#'
-#' # the policy learner can be used directly:
-#' po <- pl(pd, q_models = q_glm())
-#' po
-#'
-#' # getting the policy actions:
-#' head(get_policy(po)(pd))
-#'
-#' # getting the associated Q-function values:
-#' head(predict(get_q_functions(po), pd))
-#'
-#' # or the policy learner can be evaluated directly:
-#' pe <- policy_eval(policy_data = pd,
-#'                   policy_learn = pl,
-#'                   q_models = q_glm())
-#' pe
-#' get_policy_object(pe)
-#' head(get_policy(pe)(pd))
-#'
 #' ### V-restricted (Doubly Robust) Q-learning
 #'
 #' # specifying the learner:
 #' pl <- policy_learn(type = "rqvl",
-#'                    qv_models = q_glm(formula = ~ C))
+#'                    qv_models = list(q_glm(formula = ~ C_1 + BB),
+#'                                     q_glm(formula = ~ L_1 + BB)),
+#'                    full_history = TRUE)
 #'
 #' # evaluating the learned policy
 #' pe <- policy_eval(policy_data = pd,
@@ -115,30 +94,11 @@
 #'                   q_models = q_glm(),
 #'                   g_models = g_glm())
 #' pe
+#' # getting the policy object:
 #' po <- get_policy_object(pe)
+#' # inspecting the fitted QV-model for each action strata at stage 1:
 #' po$qv_functions$stage_1
 #' head(get_policy(pe)(pd))
-#'
-#' ### V-restricted Policy Tree Learning
-#'
-#' # specifying the learner:
-#' pl <- policy_learn(type = "ptl",
-#'                    policy_vars = list(c("C_1", "BB"),
-#'                                       c("L_1", "BB")),
-#'                    depth = c(2,1),
-#'                    full_history = TRUE)
-#'
-#' # evaluating the learned policy:
-#' set.seed(1)
-#' pe <- policy_eval(policy_data = pd,
-#'                   policy_learn = pl,
-#'                   q_models = q_glm(),
-#'                   g_models = g_glm())
-#' pe
-#' po <- get_policy_object(pe)
-#' po$ptl_objects
-#' head(get_policy(po)(pd))
-#'
 #' @export
 policy_learn <- function(type = "rql",
                          alpha = 0,
@@ -370,44 +330,6 @@ get_policy.policy_eval <- function(object){
 #'                   utility = c("U_1", "U_2", "U_3"))
 #' pd
 #'
-#' ### Realistic V-restricted (Doubly Robust) Q-learning
-#' # specifying the learner:
-#' pl <- policy_learn(type = "rqvl",
-#'                    full_history = TRUE,
-#'                    qv_models = list(q_glm(formula = ~ C_1),
-#'                                     q_glm(formula = ~ L_2)),
-#'                    alpha = 0.05)
-#' # applying the learner:
-#' po <- pl(policy_data = pd,
-#'          q_models = q_glm(),
-#'          g_models = g_glm())
-#' po
-#'
-#' # getting the policy function at stage 2:
-#' pf2 <- get_policy_functions(po, stage = 2)
-#' args(pf2)
-#'
-#' # applying the policy function to new data:
-#' set.seed(1)
-#' L_2 <- rnorm(n = 10)
-#' new_H <- data.table(BB = "group1",
-#'                     C = rnorm(n = 10),
-#'                     L = L_2,
-#'                     L_2 = L_2)
-#' d2 <- pf2(H = new_H)
-#' d2
-#'
-#' # comparing get_policy_functions() and get_policy() when
-#' # used on an object of class "policy_object":
-#' new_H <- get_history(pd, stage = 2, full_history = TRUE)$H
-#' new_H$L <- new_H$L_2
-#' new_H$C <- new_H$C_2
-#' all.equal(
-#'  unname(pf2(H = new_H)),
-#'  get_policy(po)(pd)[stage == 2]$d
-#' )
-#' rm(pl, po, d2, pf2, new_H, L_2)
-#'
 #' ### Realistic V-restricted Policy Tree Learning
 #' # specifying the learner:
 #' pl <- policy_learn(type = "ptl",
@@ -434,17 +356,7 @@ get_policy.policy_eval <- function(object){
 #'                     L_1 = L_1,
 #'                     BB = "group1")
 #' d2 <- pf2(H = new_H)
-#' d2
-#'
-#' # comparing get_policy_functions() and get_policy() when
-#' # used on an object of class "policy_eval":
-#' new_H <- get_history(pd, stage = 2, full_history = TRUE)$H
-#' new_H$L <- new_H$L_2
-#' new_H$C <- new_H$C_2
-#' all.equal(
-#'  unname(pf2(H = new_H)),
-#'  get_policy(pe)(pd)[stage == 2]$d
-#' )
+#' head(d2)
 #' @export
 get_policy_functions <- function(object, stage){
   UseMethod("get_policy_functions")

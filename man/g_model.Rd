@@ -82,25 +82,6 @@ model with the lowest cross-validation error is selected.\cr
 }
 \examples{
 library("polle")
-### Single stage:
-source(system.file("sim", "single_stage.R", package="polle"))
-d <- sim_single_stage(2e2, seed=1)
-pd <- policy_data(d, action="A", covariates=list("Z", "B", "L"), utility="U")
-pd
-
-# defining a g-model:
-get_history_names(pd)
-g_model <- g_glm(formula = ~Z)
-
-# evaluating the static policy a=1 using inverse
-# propensity weighting based on the given g-model:
-pe <- policy_eval(type = "ipw",
-                  policy_data = pd,
-                  policy = policy_def(static_policy(1)),
-                  g_models = g_model)
-# inspecting the fitted g-models:
-get_g_functions(pe)
-
 ### Two stages:
 source(system.file("sim", "two_stage.R", package="polle"))
 d2 <- sim_two_stage(2e2, seed=1)
@@ -112,21 +93,26 @@ pd2 <- policy_data(d2,
                   utility = c("U_1", "U_2", "U_3"))
 pd2
 
+# available state history variable names:
+get_history_names(pd2)
+# defining a g-model:
+g_model <- g_glm(formula = ~B+C)
+
 # evaluating the static policy a=1 using inverse propensity weighting
 # based on a state glm model across all stages:
 pe2 <- policy_eval(type = "ipw",
                    policy_data = pd2,
                    policy = policy_def(static_policy(1), reuse = TRUE),
-                   g_models = g_glm(formula = ~ B + C))
-# inspecting the fitted g-models:
+                   g_models = g_model)
+# inspecting the fitted g-model:
 get_g_functions(pe2)
 
 # available full history variable names at each stage:
 get_history_names(pd2, stage = 1)
 get_history_names(pd2, stage = 2)
 
-# evaluating the static policy a=1 using inverse propensity weighting
-# based on a full history glm model for each stage:
+# evaluating the same policy based on a full history
+# glm model for each stage:
 pe2 <- policy_eval(type = "ipw",
                    policy_data = pd2,
                    policy = policy_def(static_policy(1), reuse = TRUE),
