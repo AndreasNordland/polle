@@ -45,3 +45,30 @@ test_that("input to policy_learn with type rqvl handles incorrect arguments",{
   expect_error(policy_eval(policy_data = pd,
                            policy_learn = qv))
 })
+
+
+# Multiple stages ---------------------------------------------------------
+
+source(system.file("sim", "multi_stage.R", package="polle"))
+d <- sim_multi_stage(5e2, seed = 1)
+# constructing policy_data object:
+pd <- policy_data(data = d$stage_data,
+                  baseline_data = d$baseline_data,
+                  type = "long",
+                  id = "id",
+                  stage = "stage",
+                  event = "event",
+                  action = "A",
+                  utility = "U")
+
+pd <- partial(pd, 3)
+
+
+# BOWL ---------------------------------------------------------------------
+
+test_that("input to policy_learn with type bowl handles incorrect input",{
+  pl <- policy_learn(type = "bowl")
+
+  expect_error(policy_eval(policy_data = pd,
+                           policy_learn = pl), "bowl is only implemented for a fixed number of stages.")
+})

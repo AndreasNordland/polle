@@ -128,7 +128,7 @@ ptl <- function(policy_data,
   U <- utility$U
   # (n X K) matrix with entries I(d_k(H_k) = A_k):
   II <- matrix(nrow = n, ncol = K)
-  # (n X K) matrix with entries g_k(d_k(H_k), H_k)
+  # (n X K) matrix with entries g_k(A_k, H_k)
   g_A_values <- get_a_values(a = actions$A, action_set = action_set, g_values)
   G <- as.matrix(dcast(g_A_values, id ~ stage, value.var = "P")[, -c("id"), with = FALSE])
   # (n X K+1) matrix with entries Q_k(H_{k,i}, d_k(H_{k,i})), Q_{K+1} = U:

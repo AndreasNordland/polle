@@ -579,6 +579,12 @@ get_utility.policy_data <- function(object){
   return(U)
 }
 
+get_rewards <- function(object){
+  stage_data <- get_stage_data(object)
+  R <- stage_data[, c("id", "stage", "U"), with = FALSE]
+  return(R)
+}
+
 #' Get Actions
 #'
 #' \code{get_actions} returns the actions at every stage for every observation

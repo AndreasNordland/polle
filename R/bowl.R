@@ -1,29 +1,34 @@
 bowl <- function(policy_data,
-                 alpha = 0,
-                 g_models = NULL, g_functions = NULL, g_full_history = FALSE,
-                 full_history = FALSE, policy_vars = NULL,
-                 res.lasso=TRUE, loss='hinge', kernel='linear',
-                 augment=FALSE, c=2^(-2:2), sigma=c(0.03,0.05,0.07), s=2.^(-2:2), m=4,
+                 alpha,
+                 g_models, g_functions, g_full_history,
+                 policy_vars, full_history,
+                 L, save_cross_fit_models, future_args,
+                 reuse_scales,
+                 res.lasso, loss, kernel,
+                 augment, c, sigma, s, m,
                  ...){
 
   if ((is.null(g_models) & is.null(g_functions)))
     stop("Provide either g-models or g-functions.")
 
-  if (!is.null(g_functions)){
-    if(!(class(g_functions)[[1]] == "nuisance_functions"))
-      stop("g-functions must be of class 'nuisance_functions'.")
-  }
-
   K <- get_K(policy_data)
   n <- get_n(policy_data)
   action_set <- get_action_set(policy_data)
+  id_stage <- get_id_stage(policy_data)
+
+  if(!(length(unlist(unique(id_stage[,.N, by = "id"][, "N"]))) == 1))
+    stop("bowl is only implemented for a fixed number of stages.")
+
+  if (!(length(action_set) == 2))
+    stop("bowl only works for binary actions.")
+
+  if (alpha != 0)
+    stop("alpha must be 0 when type = 'bowl'")
 
   if (full_history == TRUE){
     if ((!is.list(policy_vars)) | (length(policy_vars) != K))
-      stop("policy_vars must be a list of length K, when full_history = TRUE")
+      stop("policy_vars must be a list of length K, when full_history = TRUE.")
   }
-
-  if (!(length(action_set) == 2)) stop("bowl only works for binary actions.")
 
   # getting the observed actions:
   actions <- get_actions(policy_data)
@@ -32,93 +37,133 @@ bowl <- function(policy_data,
   id <- get_id(policy_data)
 
   # getting the observed (complete) utilities:
-  utility <- get_utility(policy_data)
+  # utility <- get_utility(policy_data)
 
-  # fitting the g-functions:
-  if (is.null(g_functions)){
-    g_functions <- fit_g_functions(policy_data,
-                                   g_models = g_models,
-                                   full_history = g_full_history)
+  # getting the rewards
+  rewards <- get_rewards(policy_data)
+
+  # constructing the folds for cross-fitting
+  if (L > 1){
+    folds <- split(sample(1:n, n), rep(1:L, length.out = n))
+  } else{
+    folds <- NULL
   }
-  g_values <- evaluate(g_functions, policy_data)
-  g_A_values <- get_a_values(a = actions$A, action_set = action_set, g_values)
 
-  # (n) vector with entries U_i:
-  U <- utility$U
-
-  # (n X K+1) matrix with entries I(d_k(H_k) = A_k) for k <= K:
-  II <- matrix(nrow = n, ncol = K+1)
-  II[, K+1] <- TRUE
-
-  # (n X K) matrix with entries g_k(A_k, H_k):
-  stage <- NULL
-  G <- as.matrix(
-    dcast(g_A_values, id ~ stage, value.var = "P")[, -c("id"), with = FALSE]
-  )
-
-  g_cols <- paste("g_", action_set, sep = "")
-  X_scales <- list()
-  owl_objects <- list()
-  for (k in K:1){
-    # getting the policy history for stage k
-    policy_history_k <- get_history(policy_data, stage = k, full_history = full_history)
-
-    # getting the IDs and ID-Indices at the kth stage:
-    id_k <- get_id(policy_history_k)
-    idx_k <- (id %in% id_k)
-
-    # constructing the inputs for owl:
-    if (full_history == TRUE)
-      vars <- policy_vars[[k]]
-    else
-      vars <- policy_vars
-    X <- get_H(policy_history_k, vars = vars)
-    X <- scale(X)
-
-    X_scales[[k]] <- attributes(X)[3:4]
-
-    AA <- A <- get_A(policy_history_k)
-    AA[A == action_set[1]] <- -1
-    AA[A == action_set[2]] <- 1
-    AA <- as.numeric(AA)
-
-    RR <- merge(policy_history_k$U, utility, all.x = TRUE)
-    RR <- (RR$U - RR$U_bar)
-    RR <- RR * colprod(II[idx_k, (k+1):(K+1)])
-
-    pi <- colprod(G[idx_k , k:K])
-
-    if ((ncol(X) == 1))
-      stop("DTRlearn2 has a bug. H must be a matrix with ncol(H) > 1.")
-    owl_objects[[k]] <- DTRlearn2::owl(H = X, AA = AA, RR = RR, pi = pi, K = 1,
-                                       n = nrow(X), res.lasso=res.lasso,
-                                       loss=loss, kernel=kernel,
-                                       augment=augment, c=c, sigma=sigma, s=s, m=m)
-
-    dd <- owl_objects[[k]]$stage$treatment
-
-    if (alpha != 0){
-      # getting the g-function values for each action:
-      g_values_k <- g_values[stage == k, ]
-
-      # modifying the policy to only recommend realistic actions
-      dd[(g_values_k[, g_cols[1], with = FALSE] < alpha)] <- action_set[2]
-      dd[(g_values_k[, g_cols[2], with = FALSE] < alpha)] <- action_set[1]
+  g_functions_cf <- NULL
+  if (is.null(folds)){
+    if (is.null(g_functions)){
+      # fitting the g-functions:
+      g_functions <- fit_g_functions(policy_data, g_models, full_history = g_full_history)
+    }
+    g_values <- evaluate(g_functions, policy_data)
+  } else{
+    # cross-fitting the g-functions:
+    g_cf <- fit_g_functions_cf(
+      policy_data = policy_data,
+      g_models = g_models,
+      full_history = g_full_history,
+      folds = folds,
+      future_args = future_args
+    )
+    if (save_cross_fit_models == TRUE){
+      g_functions_cf <- getElement(g_cf, "functions")
     }
 
-    II[idx_k, k] <- (AA == dd)
-
+    g_values <- getElement(g_cf, "values")
+    # fitting the non-cross-fitted g-functions
+    # for determining future realistic actions:
+    if (alpha > 0){
+      if (is.null(g_functions)){
+        g_functions <- fit_g_functions(policy_data,
+                                       g_models = g_models,
+                                       full_history = g_full_history)
+      }
+    } else{
+      g_functions <- NULL
+    }
   }
 
-  names(owl_objects) <- paste("stage_", 1:K, sep = "")
+  # (n X K) matrix with entries U_{i,k+1}:
+  stage <- NULL
+  R <- as.matrix(dcast(rewards[stage != 1],
+                       id~stage,
+                       value.var = "U")[, -c("id"), with = FALSE])
+  rm(stage)
+
+  # (n X K) matrix with entries g_k(A_k, H_k)
+  g_A_values <- get_a_values(a = actions$A, action_set = action_set, g_values)
+  G <- as.matrix(dcast(g_A_values, id ~ stage, value.var = "P")[, -c("id"), with = FALSE])
+
+  g_cols <- paste("g_", action_set, sep = "")
+  X_designs <- list()
+  X_scales <- list()
+  X <- list()
+  AA <- list()
+  RR <- list()
+  pi <- list()
+  for (k in K:1){
+    # getting the policy history
+    policy_history_k <- get_history(policy_data, stage = k, full_history = full_history)
+    if (full_history == TRUE){
+      vars <- policy_vars[[k]]
+    } else{
+      vars <- policy_vars
+    }
+    H <- get_H(policy_history_k, vars = vars)
+    if (is.null(policy_vars)){
+      policy_vars <- names(H)
+    }
+
+    ### constructing the inputs for owl:
+    # getting the design of the history (X) for owl:
+    design_k <- get_design(formula = ~., data = H)
+    x <- design_k$x
+    if ((ncol(x) == 1))
+      stop("DTRlearn2 has a bug. H must be a matrix with ncol(H) > 1.")
+    design_k$x <- NULL
+    X_designs[[k]] <- design_k
+    # scaling the history
+    x <- scale(x)
+    X[[k]] <- x
+    X_scales[[k]] <- attributes(x)[c("scaled:center", "scaled:scale")]
+
+    # formatting the actions as {-1, 1}:
+    aa <- A <- get_A(policy_history_k)
+    aa[A == action_set[1]] <- -1
+    aa[A == action_set[2]] <- 1
+    aa <- as.numeric(aa)
+    AA[[k]] <- aa
+
+    # setting the rewards:
+    RR[[k]] <- R[,k]
+
+    # setting the action probabilities:
+    pi[[k]] <- G[,k]
+  }
+
+  owl_object <- DTRlearn2::owl(H = X,
+                               AA = AA,
+                               RR = RR,
+                               pi = pi,
+                               K = K,
+                               n = n,
+                               res.lasso=res.lasso,
+                               loss=loss,
+                               kernel=kernel,
+                               augment=augment,
+                               c=c,
+                               sigma=sigma,
+                               s=s,
+                               m=m)
 
   out <- list(
-    owl_objects = owl_objects,
+    owl_object = owl_object,
+    reuse_scales = reuse_scales,
     X_scales = X_scales,
+    X_designs = X_designs,
     g_functions = g_functions,
     full_history = full_history,
     policy_vars = policy_vars,
-    alpha = alpha,
     action_set = action_set,
     K = K
   )
@@ -128,58 +173,65 @@ bowl <- function(policy_data,
 }
 
 get_policy.BOWL <- function(object){
-  owl_objects <- getElement(object, "owl_objects")
+  owl_object <- getElement(object, "owl_object")
+  reuse_scales <- getElement(object, "reuse_scales")
   X_scales <- getElement(object, "X_scales")
+  X_designs <- getElement(object, "X_designs")
   g_functions <- getElement(object, "g_functions")
   full_history <- getElement(object, "full_history")
   policy_vars <- getElement(object, "policy_vars")
-  alpha <- getElement(object, "alpha")
   action_set <- getElement(object, "action_set")
   K <- getElement(object, "K")
 
   policy <- function(policy_data){
-    if (get_K(policy_data) != K) stop("The policy do not have the same number of stages as the policy data object.")
+    if (get_K(policy_data) != K)
+      stop("The policy do not have the same number of stages as the policy data object.")
 
-    # getting the actions recommended by the OWL objects:
-    policy_actions <- list()
+    id_stage <- get_id_stage(policy_data)
+    if(!(length(unlist(unique(id_stage[,.N, by = "id"][, "N"]))) == 1))
+      stop("bowl is only implemented for a fixed number of stages.")
+
+    X <- list()
     for (k in K:1){
       # getting the policy history:
       policy_history_k <- get_history(policy_data, stage = k, full_history = full_history)
 
-      if (full_history == TRUE)
+      if (full_history == TRUE){
         vars <- policy_vars[[k]]
-      else
+      } else{
         vars <- policy_vars
-      X <- get_H(policy_history_k, vars = vars)
-      X <- scale(X, center = X_scales[[k]]$`scaled:center`, scale = X_scales[[k]]$`scaled:scale`)
+      }
+      H <- get_H(policy_history_k, vars = vars)
 
-      dd <- d <- predict(owl_objects[[k]], H = X, K = 1)$treatment[[1]]
-      d[dd == -1] <- action_set[1]
-      d[dd == 1] <- action_set[2]
+      design <- X_designs[[k]]
+      x <- model.frame(design$terms,
+                       data=H,
+                       xlev = design$x_levels,
+                       drop.unused.levels=FALSE)
+      x <- model.matrix(x, data=H, xlev = design$x_levels)
 
-      pa <- get_id_stage(policy_history_k)
-      pa[, d := d]
-      policy_actions[[k]] <- pa
-      rm(pa, d, dd)
+      if (reuse_scales == TRUE){
+        x <- scale(x,
+                   center = X_scales[[k]]$`scaled:center`,
+                   scale = X_scales[[k]]$`scaled:scale`)
+      } else{
+        x <- scale(x)
+      }
+
+      X[[k]] <- x
     }
-    policy_actions <- rbindlist(policy_actions)
+
+    pred <- predict(owl_object, H = X, K = K)
+    policy_actions <- get_id_stage(policy_data)
+    stage <- NULL
+    for (k in K:1){
+      dd <- d_ <- pred$treatment[[k]]
+      d_[dd == -1] <- action_set[1]
+      d_[dd == 1] <- action_set[2]
+      policy_actions[stage == k, d := d_]
+    }
+    rm(stage)
     setkeyv(policy_actions, c("id", "stage"))
-
-    # excluding unrealistic recommendations:
-    if (alpha != 0){
-      g_cols <- paste("g_", action_set, sep = "")
-      # evaluating the g-functions:
-      g_values <- evaluate(g_functions, policy_data = policy_data)
-
-      d_ <- policy_actions$d
-      d_[(g_values[, g_cols[1], with = FALSE] < alpha)] <- action_set[2]
-      d_[(g_values[, g_cols[2], with = FALSE] < alpha)] <- action_set[1]
-    } else{
-      d_ <- policy_actions$d
-    }
-
-    # inserting the modified actions:
-    policy_actions[, d:= d_]
 
     return(policy_actions)
   }

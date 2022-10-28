@@ -34,6 +34,24 @@
 #' used to fit a policy tree.
 #' @param search.depth (only used if \code{type = "ptl"} and \code{hybrid = TRUE})
 #' Numeric or numeric vector. Depth to look ahead when splitting at each stage.
+#' @param reuse_scales If \code{TRUE}, the scales of the history matrix will be
+#' saved and reused when applied to (new) test data.
+#' @param res.lasso (only used if \code{type = "bowl"}) If \code{TRUE} a lasso
+#' penalty is applied.
+#' @param loss (only used if \code{type = "bowl"}) Loss function, see
+#' [DTRlearn2::owl].
+#' @param kernel (only used if \code{type = "bowl"}) Type of kernel used by the
+#' support vector machine.
+#' @param augment (only used if \code{type = "bowl"}) If \code{TRUE} the
+#' outcomes are augmented at each stage.
+#' @param c (only used if \code{type = "bowl"}) Regularization parameter,
+#' see [DTRlearn2::owl].
+#' @param sigma (only used if \code{type = "bowl"}) Tuning parameter,
+#' see [DTRlearn2::owl].
+#' @param s (only used if \code{type = "bowl"}) Slope parameter,
+#' see [DTRlearn2::owl].
+#' @param m (only used if \code{type = "bowl"}) Number of folds for
+#' cross-validation of tuning parameters.
 #' @param x Object of class "policy_object" or "policy_learn".
 #' @param ... Additional arguments passed to print.
 #' @returns Function of inherited class \code{"policy_learn"}.
@@ -112,7 +130,16 @@ policy_learn <- function(type = "rql",
                          split.step = 1,
                          min.node.size = 1,
                          hybrid = FALSE,
-                         search.depth = 2){
+                         search.depth = 2,
+                         reuse_scales = TRUE,
+                         res.lasso = TRUE,
+                         loss = 'hinge',
+                         kernel = 'linear',
+                         augment = FALSE,
+                         c = 2^(-2:2),
+                         sigma = c(0.03,0.05,0.07),
+                         s = 2.^(-2:2),
+                         m = 4){
   type <- tolower(type)
 
   fm <- formals()
@@ -169,6 +196,24 @@ policy_learn <- function(type = "rql",
       ptl_args <- append(pl_args, eval_args)
 
       do.call(what = "ptl", ptl_args)
+    }
+  } else if (type %in% c("bowl", "owl")){
+    if (!requireNamespace("DTRlearn2")) {
+      stop("The DTRlearn2 package is required to perform value searching using outcome-weighted learning.")
+    }
+    pl <- function(policy_data,
+                   g_models = NULL, g_functions = NULL, g_full_history = FALSE,
+                   q_models, q_full_history = FALSE, verbose = FALSE){
+
+      fm <- formals()
+      cl <- match.call()
+      for (i in setdiff(names(fm), names(cl)))
+        cl[i] <- list(fm[[i]])
+
+      eval_args <- as.list(cl)[-1]
+      ptl_args <- append(pl_args, eval_args)
+
+      do.call(what = "bowl", ptl_args)
     }
   } else{
     stop("Unknown type of policy learner. Use 'rql', 'rqvl' or 'ptl'")
