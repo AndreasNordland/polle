@@ -440,8 +440,9 @@ melt_wide_data <- function(wide_data,
     }
   }
 
-  ### checking if 'data' contains all variable names:
+  ### checking if 'data' contains all non-NA variable names:
   tmp <- unlist(c(id, action, covariates, baseline, utility, deterministic_rewards))
+  tmp <- tmp[!is.na(tmp)]
   if (!all(tmp %in% names(wide_data))){
     mes <- tmp[!(tmp %in% names(wide_data))]
     mes <- paste(mes, collapse = "\", \"")
@@ -450,8 +451,9 @@ melt_wide_data <- function(wide_data,
   }
   rm(tmp)
 
-  ### checking for duplicates
+  ### checking for non-NA duplicates
   tmp <- unlist(c(id, action, covariates, baseline, utility, deterministic_rewards))
+  tmp <- tmp[!is.na(tmp)]
   if (anyDuplicated(tmp)>0){
     mes <- tmp[anyDuplicated(tmp)]
     mes <- paste(mes, collapse = "\", \"")
@@ -494,6 +496,7 @@ melt_wide_data <- function(wide_data,
   }
   # selecting subset:
   sel <- unlist(c(id, action, covariates, utility, deterministic_rewards))
+  sel <- sel[!is.na(sel)]
   stage_data <- subset(wide_data, select = sel)
   # converts to long data:
   stage_data <- melt(stage_data, id.vars = id, measure.vars = measure, variable.name = "stage")

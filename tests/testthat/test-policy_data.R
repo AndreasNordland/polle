@@ -14,8 +14,46 @@ test_that("check_data fails if not given a data.table with unique variables.", {
 
 # policy_data wide data ---------------------------------------------------
 
-
 ## two stage ---------------------------------------------------------------
+
+test_that("policy_data handles varying sets of/missing covariates in a given stage",{
+  n <- 20
+  set.seed(1)
+  library("polle")
+  library("data.table")
+  d <- data.table(id = 1:n,
+                  X_1 = rnorm(n),
+                  Z_1 = rnorm(n),
+                  A_1 = rbinom(n = n, size = 1, prob = .5),
+                  X_2 = rnorm(n),
+                  Z_2 = rnorm(n),
+                  Y_2 = rnorm(n),
+                  A_2 = rbinom(n = n, size = 1, prob = .5),
+                  U = rnorm(n))
+
+  tmp <- melt(d, id = "id",
+              measure.vars = list(X = c("X_1", "X_2"),
+                                  Y = c(NA, "Y_2")))
+  expect_equal(
+    tmp$Y,
+    c(rep(NA, n),d$Y_2)
+  )
+  rm(tmp)
+
+  pd <- policy_data(data = d,
+                    id = "id",
+                    action = c("A_1", "A_2"),
+                    covariates = list(X = c("X_1", "X_2"),
+                                      Y = c(NA, "Y_2")),
+                    utility = "U")
+
+  tmp <- polle:::get_stage_data.policy_data(pd)
+  expect_equal(
+    polle:::get_stage_data.policy_data(pd)$Y,
+    unlist(lapply(d$Y_2, function(x) c(NA, x, NA)))
+  )
+  rm(tmp)
+})
 
 test_that("policy_data melts wide data correctly in a two stage case.", {
   wide_data <- data.table(
