@@ -21,7 +21,7 @@ policy_learn(
   min.node.size = 1,
   hybrid = FALSE,
   search.depth = 2,
-  save_scales = TRUE,
+  reuse_scales = TRUE,
   res.lasso = TRUE,
   loss = "hinge",
   kernel = "linear",
@@ -81,7 +81,7 @@ used to fit a policy tree.}
 \item{search.depth}{(only used if \code{type = "ptl"} and \code{hybrid = TRUE})
 Numeric or numeric vector. Depth to look ahead when splitting at each stage.}
 
-\item{save_scales}{If \code{TRUE}, the scales of the history matrix will be
+\item{reuse_scales}{If \code{TRUE}, the scales of the history matrix will be
 saved and reused when applied to (new) test data.}
 
 \item{res.lasso}{(only used if \code{type = "bowl"}) If \code{TRUE} a lasso

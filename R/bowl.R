@@ -172,6 +172,7 @@ bowl <- function(policy_data,
   return(out)
 }
 
+#' @export
 get_policy.BOWL <- function(object){
   owl_object <- getElement(object, "owl_object")
   reuse_scales <- getElement(object, "reuse_scales")
