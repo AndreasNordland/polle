@@ -39,7 +39,9 @@ If "long", \code{data} is considered to be on long format; see Examples.}
 \item{covariates}{Stage specific covariate name(s). Character vector or named list of character vectors.
 \itemize{
 \item{} A vector is valid for single stage wide data or long data.
-\item{} A named list is valid for multiple stage wide data. Each element must be a character vector with length K.
+\item{} A named list is valid for multiple stages wide data. Each element
+must be a character vector with length K. Each vector can contain NA
+elements, if a covariate is not available for the given stage(s).
 }}
 
 \item{utility}{Utility/Reward variable name(s). Character string or vector.

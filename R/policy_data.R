@@ -160,7 +160,9 @@ new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
 #' @param covariates Stage specific covariate name(s). Character vector or named list of character vectors.
 #' \itemize{
 #'   \item{} A vector is valid for single stage wide data or long data.
-#'   \item{} A named list is valid for multiple stage wide data. Each element must be a character vector with length K.
+#'   \item{} A named list is valid for multiple stages wide data. Each element
+#'   must be a character vector with length K. Each vector can contain NA
+#'   elements, if a covariate is not available for the given stage(s).
 #' }
 #' @param utility  Utility/Reward variable name(s). Character string or vector.
 #' \itemize{
