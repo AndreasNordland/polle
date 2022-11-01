@@ -200,17 +200,10 @@ policy_eval <- function(policy_data,
                         type = "dr",
                         M=1, future_args = list(future.seed = TRUE)
                         ) {
-  args <- list(
-    policy = policy,
-    policy_learn = policy_learn,
-    g_functions = g_functions,
-    g_models = g_models,
-    g_full_history = g_full_history,
-    q_functions = q_functions,
-    q_models = q_models,
-    q_full_history = q_full_history,
-    type = type
-  )
+  args <- as.list(environment())
+  args[["policy_data"]] <- NULL
+  args[["M"]] <- NULL
+  args[["future_args"]] <- NULL
 
   if (M > 1){
     val <- policy_eval_cross(args = args,
