@@ -113,28 +113,17 @@ policy_learn <- function(type = "rql",
                          min.node.size = 1,
                          hybrid = FALSE,
                          search.depth = 2){
+  pl_args <- as.list(environment())
   type <- tolower(type)
-
-  fm <- formals()
-  cl <- match.call()
-  for (i in setdiff(names(fm), names(cl)))
-    cl[i] <- list(fm[[i]])
-
-  pl_args <- as.list(cl)[-1]
   pl_args[["type"]] <- NULL
 
   if (type %in% c("rql", "ql", "q_learning", "q-learning")) {
     pl <- function(policy_data,
                    g_models = NULL, g_functions = NULL, g_full_history = FALSE,
                    q_models, q_full_history = FALSE, verbose = FALSE){
-      fm <- formals()
-      cl <- match.call()
-      for (i in setdiff(names(fm), names(cl)))
-        cl[i] <- list(fm[[i]])
 
-      eval_args <- as.list(cl)[-1]
+      eval_args <- as.list(environment())
       rql_args <- append(pl_args, eval_args)
-
       do.call(what = "rql", rql_args)
     }
   }
@@ -142,14 +131,9 @@ policy_learn <- function(type = "rql",
     pl <- function(policy_data,
                    g_models = NULL, g_functions = NULL, g_full_history = FALSE,
                    q_models, q_full_history = FALSE, verbose = FALSE){
-      fm <- formals()
-      cl <- match.call()
-      for (i in setdiff(names(fm), names(cl)))
-        cl[i] <- list(fm[[i]])
 
-      eval_args <- as.list(cl)[-1]
+      eval_args <- as.list(environment())
       rqvl_args <- append(pl_args, eval_args)
-
       do.call(what = "rqvl", rqvl_args)
     }
   } else if (type %in% c("ptl", "policytree", "policy_tree")){
@@ -160,14 +144,8 @@ policy_learn <- function(type = "rql",
                    g_models = NULL, g_functions = NULL, g_full_history = FALSE,
                    q_models, q_full_history = FALSE, verbose = FALSE){
 
-      fm <- formals()
-      cl <- match.call()
-      for (i in setdiff(names(fm), names(cl)))
-        cl[i] <- list(fm[[i]])
-
-      eval_args <- as.list(cl)[-1]
+      eval_args <- as.list(environment())
       ptl_args <- append(pl_args, eval_args)
-
       do.call(what = "ptl", ptl_args)
     }
   } else{
