@@ -504,7 +504,7 @@ melt_wide_data <- function(wide_data,
   stage_data <- melt(stage_data, id.vars = id, measure.vars = measure, variable.name = "stage")
   setnames(stage_data, id, "id")
 
-  stage_data[ , stage := as.numeric(as.character(stage))]
+  stage_data[ , stage := as.integer(as.character(stage))]
   stage_data[ , A := as.character(A)]
   # setting the event variable:
   stage_data[!is.na(A), event := 0]
