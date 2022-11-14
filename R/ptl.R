@@ -1,10 +1,10 @@
 ptl <- function(policy_data,
                 g_models, g_functions, g_full_history,
                 q_models, q_full_history,
-                policy_vars, full_history,
+                policy_vars = NULL, full_history,
                 L, save_cross_fit_models, future_args,
                 alpha,
-                depth, split.step, min.node.size, hybrid, search.depth,
+                depth = 2, split.step = 1, min.node.size = 1, hybrid = FALSE, search.depth = 2,
                 ...
                 ){
   if ((is.null(g_models) & is.null(g_functions))) stop("Provide either g-models or g-functions.")

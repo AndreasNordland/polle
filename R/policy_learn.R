@@ -14,46 +14,48 @@
 #' cross-fitting.
 #' @param save_cross_fit_models If \code{TRUE}, the cross-fitted models will be saved.
 #' @param future_args Arguments passed to [future.apply::future_apply()].
+#' @param full_history If \code{TRUE}, the full
+#' history is used to fit each QV-model/policy tree. If FALSE, the single stage/
+#' "Markov type" history is used to fit each QV-model/policy tree.
 #' @param rqvl_args Arguments used if \code{type = "rqvl"}.
 #' \itemize{
 #'   \item{} \code{qv_models}: V-restricted Q-models created by [q_glm()], [q_rf()], [q_sl()] or similar functions.
 #' }
-#' @param full_history If \code{TRUE}, the full
-#' history is used to fit each QV-model/policy tree. If FALSE, the single stage/
-#' "Markov type" history is used to fit each QV-model/policy tree.
-#' @param policy_vars (only used if \code{type = "ptl"}) Character vector/string or
-#' list of character vectors/strings. Variable names used to construct a
-#' V-restricted policy tree. The names must be a subset of the history variable
-#' names, see [get_history_names()].
-#' @param depth (only used if \code{type = "ptl"}) Numeric or numeric vector.
-#' The depth of the fitted policy tree for each stage, see [policy_tree()].
-#' @param split.step (only used if \code{type = "ptl"}) Numeric or numeric vector.
-#' The number of possible splits to consider when performing policy tree search
-#' at each stage, see [policy_tree()].
-#' @param min.node.size (only used if \code{type = "ptl"}) Numeric or numeric vector.
-#' The smallest terminal node size permitted at each stage, see [policy_tree()].
-#' @param hybrid (only used if \code{type = "ptl"}) If \code{TRUE}, [hybrid_policy_tree()] is
-#' used to fit a policy tree.
-#' @param search.depth (only used if \code{type = "ptl"} and \code{hybrid = TRUE})
-#' Numeric or numeric vector. Depth to look ahead when splitting at each stage.
-#' @param reuse_scales If \code{TRUE}, the scales of the history matrix will be
-#' saved and reused when applied to (new) test data.
-#' @param res.lasso (only used if \code{type = "bowl"}) If \code{TRUE} a lasso
-#' penalty is applied.
-#' @param loss (only used if \code{type = "bowl"}) Loss function, see
-#' [DTRlearn2::owl].
-#' @param kernel (only used if \code{type = "bowl"}) Type of kernel used by the
-#' support vector machine.
-#' @param augment (only used if \code{type = "bowl"}) If \code{TRUE} the
-#' outcomes are augmented at each stage.
-#' @param c (only used if \code{type = "bowl"}) Regularization parameter,
-#' see [DTRlearn2::owl].
-#' @param sigma (only used if \code{type = "bowl"}) Tuning parameter,
-#' see [DTRlearn2::owl].
-#' @param s (only used if \code{type = "bowl"}) Slope parameter,
-#' see [DTRlearn2::owl].
-#' @param m (only used if \code{type = "bowl"}) Number of folds for
-#' cross-validation of tuning parameters.
+#' @param ptl_args Arguments used if \code{type = "ptl"}, see [policytree::policy_tree()].
+#' \itemize{
+#'   \item{} \code{policy_vars}: Character vector/string or
+#'   list of character vectors/strings. Variable names used to construct a
+#'   V-restricted policy tree. The names must be a subset of the history variable
+#'   names, see [get_history_names()].
+#'   \item{} \code{depth}: Numeric or numeric vector.
+#'   The depth of the fitted policy tree for each stage.
+#'   \item{} \code{split.step}:  Numeric or numeric vector.
+#'   The number of possible splits to consider when performing policy tree search
+#'   at each stage.
+#'   \item{} \code{min.node.size}: Numeric or numeric vector.
+#'   The smallest terminal node size permitted at each stage.
+#'   \item{} \code{hybrid}: If \code{TRUE}, [policytree::hybrid_policy_tree()] is used to fit a policy tree.
+#'   \item{} \code{search.depth}: (only used if \code{hybrid = TRUE})
+#'   Numeric or numeric vector. Depth to look ahead when splitting at each stage.
+#' }
+#' @param bowl_args Arguments used if \code{type = "bowl"}, see [DTRlearn2::owl()].
+#' \itemize{
+#'   \item{} \code{policy_vars}: Character vector/string or
+#'   list of character vectors/strings. Variable names used to construct a
+#'   V-restricted policy tree. The names must be a subset of the history variable
+#'   names, see [get_history_names()].
+#'   \item{} \code{reuse_scales}: If \code{TRUE}, the scales of the history matrix will be
+#'   saved and reused when applied to (new) test data.
+#'   \item{} \code{res.lasso}: If \code{TRUE} a lasso penalty is applied.
+#'   \item{} \code{loss}: Loss function.
+#'   \item{} \code{kernel}: Type of kernel used by the support vector machine.
+#'   \item{} \code{augment}: If \code{TRUE} the
+#'   outcomes are augmented at each stage.
+#'   \item{} \code{c}: Regularization parameter.
+#'   \item{} \code{sigma}: Tuning parameter.
+#'   \item{} \code{s}: Slope parameter.
+#'   \item{} \code{m}: Number of folds for cross-validation of tuning parameters.
+#' }
 #' @param x Object of class "policy_object" or "policy_learn".
 #' @param ... Additional arguments passed to print.
 #' @returns Function of inherited class \code{"policy_learn"}.
@@ -127,21 +129,23 @@ policy_learn <- function(type = "rql",
                          future_args = list(future.seed = TRUE),
                          full_history = FALSE,
                          rqvl_args = list(qv_models = NULL),
-                         policy_vars = NULL,
-                         depth = 2,
-                         split.step = 1,
-                         min.node.size = 1,
-                         hybrid = FALSE,
-                         search.depth = 2,
-                         reuse_scales = TRUE,
-                         res.lasso = TRUE,
-                         loss = 'hinge',
-                         kernel = 'linear',
-                         augment = FALSE,
-                         c = 2^(-2:2),
-                         sigma = c(0.03,0.05,0.07),
-                         s = 2.^(-2:2),
-                         m = 4){
+                         ptl_args = list(policy_vars = NULL,
+                                         depth = 2,
+                                         split.step = 1,
+                                         min.node.size = 1,
+                                         hybrid = FALSE,
+                                         search.depth = 2),
+                         bowl_args = list(policy_vars = NULL,
+                                          reuse_scales = TRUE,
+                                          res.lasso = TRUE,
+                                          loss = 'hinge',
+                                          kernel = 'linear',
+                                          augment = FALSE,
+                                          c = 2^(-2:2),
+                                          sigma = c(0.03,0.05,0.07),
+                                          s = 2.^(-2:2),
+                                          m = 4)
+){
 
   pl_args <- as.list(environment())
   type <- tolower(type)
@@ -184,8 +188,9 @@ policy_learn <- function(type = "rql",
                    q_models, q_full_history = FALSE, verbose = FALSE){
 
       eval_args <- as.list(environment())
-      ptl_args <- append(pl_args, eval_args)
-      do.call(what = "ptl", ptl_args)
+      args <- append(pl_args2, ptl_args)
+      args <- append(args, eval_args)
+      do.call(what = "ptl", args)
     }
   } else if (type %in% c("bowl", "owl")){
     if (!requireNamespace("DTRlearn2")) {
@@ -196,9 +201,9 @@ policy_learn <- function(type = "rql",
                    q_models, q_full_history = FALSE, verbose = FALSE){
 
       eval_args <- as.list(environment())
-      bowl_args <- append(pl_args, eval_args)
-
-      do.call(what = "bowl", bowl_args)
+      args <- append(pl_args2, bowl_args)
+      args <- append(args, eval_args)
+      do.call(what = "bowl", args)
     }
   } else{
     stop("Unknown type of policy learner. Use 'rql', 'rqvl', 'ptl' or 'bowl'.")
@@ -363,8 +368,8 @@ get_policy.policy_eval <- function(object){
 #' ### Realistic V-restricted Policy Tree Learning
 #' # specifying the learner:
 #' pl <- policy_learn(type = "ptl",
-#'                    policy_vars = list(c("C_1", "BB"),
-#'                                       c("L_1", "BB")),
+#'                    ptl_args = list(policy_vars = list(c("C_1", "BB"),
+#'                                       c("L_1", "BB"))),
 #'                    full_history = TRUE,
 #'                    alpha = 0.05)
 #'

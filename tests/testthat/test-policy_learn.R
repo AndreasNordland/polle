@@ -38,6 +38,55 @@ test_that("the implementation of bowl agrees with direct application of DTRlearn
 # Two stages --------------------------------------------------------------
 
 
+## PTL ---------------------------------------------------------------------
+
+test_that("policy_learn with type ptl works as intended",{
+
+  source(system.file("sim", "two_stage.R", package="polle"))
+  d <- sim_two_stage(5e2, seed=1)
+
+  pd <- policy_data(d,
+                    action = c("A_1", "A_2"),
+                    baseline = c("BB", "B"),
+                    covariates = list(L = c("L_1", "L_2"),
+                                      C = c("C_1", "C_2")),
+                    utility = c("U_1", "U_2", "U_3"))
+
+  pl <- policy_learn(type = "ptl",
+                     alpha = 0,
+                     L = 1)
+
+  expect_error({
+    po <- pl(policy_data = pd,
+             g_models = g_glm(),
+             q_models = q_glm())
+  }, NA)
+
+  expect_s3_class(get_policy(po)(pd),
+                  "data.table")
+
+
+  expect_error({
+    pl <- policy_learn(type = "ptl",
+                       ptl_args = list(policy_vars = c("L", "BB"),
+                                       depth = 3,
+                                       hybrid = TRUE),
+                       alpha = 0,
+                       L = 1)
+  }, NA)
+
+  expect_error({
+    po <- pl(policy_data = pd,
+             g_models = g_glm(),
+             q_models = q_glm())
+  }, NA)
+
+  expect_s3_class(get_policy(po)(pd), "data.table")
+
+
+})
+
+
 ## Q-learning --------------------------------------------------------------
 
 test_that("policy_learn with type rql works as intended",{
@@ -172,7 +221,8 @@ test_that("the implementation of bowl agrees with direct application of DTRlearn
   owl1_d2 <- unname(as.character(unlist((owl1_dd2 + 1)/2)))
 
   pl <- policy_learn(type = "bowl",
-                     policy_vars = c("B", "L", "C"))
+                     bowl_args = list(policy_vars = c("B", "L", "C"),
+                                     reuse_scales = TRUE))
   set.seed(1)
   owl2 <- pl(policy_data = pd,
              g_models = list(g_glm(~B + L + C), g_glm(~B + L + C)))
@@ -195,7 +245,6 @@ test_that("the implementation of bowl agrees with direct application of DTRlearn
   expect_equal(owl1_d2,owl2_d2)
 
 })
-
 
 # Multiple stages ---------------------------------------------------------
 

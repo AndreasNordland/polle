@@ -55,7 +55,7 @@ rqvl <- function(policy_data,
                  alpha,
                  g_models, g_functions, g_full_history,
                  q_models, q_full_history,
-                 qv_models, full_history,
+                 qv_models = NULL, full_history,
                  L, save_cross_fit_models, future_args,
                  ...){
   K <- get_K(policy_data)

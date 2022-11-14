@@ -1,11 +1,12 @@
 bowl <- function(policy_data,
                  alpha,
                  g_models, g_functions, g_full_history,
-                 policy_vars, full_history,
+                 policy_vars = NULL, full_history,
                  L, save_cross_fit_models, future_args,
-                 reuse_scales,
-                 res.lasso, loss, kernel,
-                 augment, c, sigma, s, m,
+                 reuse_scales = TRUE,
+                 res.lasso = TRUE, loss = 'hinge', kernel = 'linear',
+                 augment = FALSE, c = 2^(-2:2), sigma = c(0.03,0.05,0.07),
+                 s = 2.^(-2:2), m = 4,
                  ...){
 
   if ((is.null(g_models) & is.null(g_functions)))
