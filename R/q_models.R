@@ -2,8 +2,8 @@ check_q_formula <- function(formula, data){
   tt <- terms(formula, data = data)
   formula <- reformulate(attr(tt, "term.labels"), response = NULL)
   tt <- terms(formula, data = data)
-  variables <- as.character(attr(tt, "variables"))[-1]
-  if(!all(variables %in% colnames(data))){
+  v <- all.vars(tt)
+  if(!all(v %in% colnames(data))){
     mes <- deparse(formula)
     mes <- paste("The Q-model formula", mes, "is invalid.")
     stop(mes)
