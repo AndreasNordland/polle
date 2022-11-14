@@ -14,7 +14,7 @@ policy_learn(
   save_cross_fit_models = FALSE,
   future_args = list(future.seed = TRUE),
   full_history = FALSE,
-  qv_models = NULL,
+  rqvl_args = list(qv_models = NULL),
   policy_vars = NULL,
   depth = 2,
   split.step = 1,
@@ -57,8 +57,10 @@ cross-fitting.}
 history is used to fit each QV-model/policy tree. If FALSE, the single stage/
 "Markov type" history is used to fit each QV-model/policy tree.}
 
-\item{qv_models}{(only used if \code{type = "rqvl"}) V-restricted Q-models created
-by \code{\link[=q_glm]{q_glm()}}, \code{\link[=q_rf]{q_rf()}}, \code{\link[=q_sl]{q_sl()}} or similar functions.}
+\item{rqvl_args}{Arguments used if \code{type = "rqvl"}.
+\itemize{
+\item{} \code{qv_models}: V-restricted Q-models created by \code{\link[=q_glm]{q_glm()}}, \code{\link[=q_rf]{q_rf()}}, \code{\link[=q_sl]{q_sl()}} or similar functions.
+}}
 
 \item{policy_vars}{(only used if \code{type = "ptl"}) Character vector/string or
 list of character vectors/strings. Variable names used to construct a
@@ -170,8 +172,8 @@ pd
 
 # specifying the learner:
 pl <- policy_learn(type = "rqvl",
-                   qv_models = list(q_glm(formula = ~ C_1 + BB),
-                                    q_glm(formula = ~ L_1 + BB)),
+                   rqvl_args = list(qv_models = list(q_glm(formula = ~ C_1 + BB),
+                                                     q_glm(formula = ~ L_1 + BB))),
                    full_history = TRUE)
 
 # evaluating the learned policy

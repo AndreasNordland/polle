@@ -37,9 +37,53 @@ test_that("the implementation of bowl agrees with direct application of DTRlearn
 
 # Two stages --------------------------------------------------------------
 
+
+## Q-learning --------------------------------------------------------------
+
+test_that("policy_learn with type rql works as intended",{
+
+  source(system.file("sim", "two_stage.R", package="polle"))
+  d <- sim_two_stage(5e2, seed=1)
+
+  pd <- policy_data(d,
+                    action = c("A_1", "A_2"),
+                    baseline = c("BB", "B"),
+                    covariates = list(L = c("L_1", "L_2"),
+                                      C = c("C_1", "C_2")),
+                    utility = c("U_1", "U_2", "U_3"))
+
+  ql <- policy_learn(type = "rql",
+                    alpha = 0,
+                    L = 1)
+
+  expect_error(
+    ql(policy_data = pd, q_models = q_glm()),
+    NA
+  )
+
+  ql <- policy_learn(type = "rql",
+                     alpha = 0.1,
+                     L = 1)
+
+  expect_error(
+    ql(policy_data = pd, q_models = q_glm()),
+    "Please provide g_models."
+  )
+
+  expect_error({
+    po <- ql(policy_data = pd, q_models = q_glm(), g_glm())
+  }, NA)
+
+  expect_error({
+    p <- get_policy(po)
+  }, NA)
+
+  expect_s3_class(p(pd), class = "data.table")
+})
+
 ## QV-learning -------------------------------------------------------------
 
-test_that("input to policy_learn with type rqvl handles incorrect arguments",{
+test_that("policy_learn with type rqvl works as intended",{
   source(system.file("sim", "two_stage.R", package="polle"))
   d <- sim_two_stage(5e2, seed=1)
 
@@ -51,7 +95,7 @@ test_that("input to policy_learn with type rqvl handles incorrect arguments",{
                     utility = c("U_1", "U_2", "U_3"))
 
   qv <- policy_learn(type = "rqvl",
-                     qv_models = q_glm(formula = ~ .))
+                     rqvl_args = list(qv_models = q_glm(formula = ~ .)))
 
   expect_error(
     qv(policy_data = pd, g_models = g_glm(), q_models = q_glm()),
@@ -62,29 +106,29 @@ test_that("input to policy_learn with type rqvl handles incorrect arguments",{
                            policy_learn = qv), NA)
 
   qv <- policy_learn(type = "rqvl",
-                     qv_models = q_glm(formula = Y ~ .))
+                     rqvl_args = list(qv_models = q_glm(formula = Y ~ .)))
   expect_error(policy_eval(policy_data = pd,
                            policy_learn = qv), NA)
 
   qv <- policy_learn(type = "rqvl",
-                     qv_models = q_glm(formula = Y ~ BB))
+                     rqvl_args = list(qv_models = q_glm(formula = Y ~ BB)))
   expect_error(policy_eval(policy_data = pd,
                            policy_learn = qv), NA)
 
   qv <- policy_learn(type = "rqvl",
-                     qv_models = q_glm(formula = ~ X))
+                     rqvl_args = list(qv_models = q_glm(formula = ~ X)))
   expect_error(policy_eval(policy_data = pd,
                            policy_learn = qv), "The QV-model formula ~X is invalid.")
 
   qv <- policy_learn(type = "rqvl",
-                     qv_models = q_glm(formula = Y ~ X))
+                     rqvl_args = list(qv_models = q_glm(formula = Y ~ X)))
   expect_error(policy_eval(policy_data = pd,
                            policy_learn = qv), "The QV-model formula ~X is invalid.")
 
   # q_glm formula default is A * (.), and A is not used when fitting the
   # QV-model.
   qv <- policy_learn(type = "rqvl",
-                     qv_models = q_glm())
+                     rqvl_args = list(qv_models = q_glm()))
   expect_error(policy_eval(policy_data = pd,
                            policy_learn = qv))
 })

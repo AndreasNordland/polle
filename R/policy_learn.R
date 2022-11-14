@@ -14,8 +14,10 @@
 #' cross-fitting.
 #' @param save_cross_fit_models If \code{TRUE}, the cross-fitted models will be saved.
 #' @param future_args Arguments passed to [future.apply::future_apply()].
-#' @param qv_models (only used if \code{type = "rqvl"}) V-restricted Q-models created
-#' by [q_glm()], [q_rf()], [q_sl()] or similar functions.
+#' @param rqvl_args Arguments used if \code{type = "rqvl"}.
+#' \itemize{
+#'   \item{} \code{qv_models}: V-restricted Q-models created by [q_glm()], [q_rf()], [q_sl()] or similar functions.
+#' }
 #' @param full_history If \code{TRUE}, the full
 #' history is used to fit each QV-model/policy tree. If FALSE, the single stage/
 #' "Markov type" history is used to fit each QV-model/policy tree.
@@ -102,8 +104,8 @@
 #'
 #' # specifying the learner:
 #' pl <- policy_learn(type = "rqvl",
-#'                    qv_models = list(q_glm(formula = ~ C_1 + BB),
-#'                                     q_glm(formula = ~ L_1 + BB)),
+#'                    rqvl_args = list(qv_models = list(q_glm(formula = ~ C_1 + BB),
+#'                                                      q_glm(formula = ~ L_1 + BB))),
 #'                    full_history = TRUE)
 #'
 #' # evaluating the learned policy
@@ -124,7 +126,7 @@ policy_learn <- function(type = "rql",
                          save_cross_fit_models = FALSE,
                          future_args = list(future.seed = TRUE),
                          full_history = FALSE,
-                         qv_models = NULL,
+                         rqvl_args = list(qv_models = NULL),
                          policy_vars = NULL,
                          depth = 2,
                          split.step = 1,
@@ -145,14 +147,22 @@ policy_learn <- function(type = "rql",
   type <- tolower(type)
   pl_args[["type"]] <- NULL
 
+  pl_args2 <- list(
+    alpha = alpha,
+    L = L,
+    save_cross_fit_models = save_cross_fit_models,
+    future_args = future_args,
+    full_history = full_history
+  )
+
   if (type %in% c("rql", "ql", "q_learning", "q-learning")) {
     pl <- function(policy_data,
                    g_models = NULL, g_functions = NULL, g_full_history = FALSE,
                    q_models, q_full_history = FALSE, verbose = FALSE){
 
       eval_args <- as.list(environment())
-      rql_args <- append(pl_args, eval_args)
-      do.call(what = "rql", rql_args)
+      args <- append(pl_args2, eval_args)
+      do.call(what = "rql", args)
     }
   }
   else if (type %in% c("rqvl", "qvl", "qv_learning", "qv-learning")) {
@@ -161,8 +171,9 @@ policy_learn <- function(type = "rql",
                    q_models, q_full_history = FALSE, verbose = FALSE){
 
       eval_args <- as.list(environment())
-      rqvl_args <- append(pl_args, eval_args)
-      do.call(what = "rqvl", rqvl_args)
+      args <- append(pl_args2, rqvl_args)
+      args <- append(args, eval_args)
+      do.call(what = "rqvl", args)
     }
   } else if (type %in% c("ptl", "policytree", "policy_tree")){
     if (!requireNamespace("policytree")) {
@@ -253,7 +264,7 @@ print.policy_learn <- function(x, ...) {
 #' # evaluating the policy:
 #' pe1 <- policy_eval(policy_data = pd1,
 #'                    policy_learn = policy_learn(type = "rqvl",
-#'                                                qv_models = q_glm(~.)),
+#'                                                rqvl_args = list(qv_models = q_glm(~.))),
 #'                    g_models = g_glm(),
 #'                    q_models = q_glm())
 #'
@@ -293,7 +304,7 @@ get_policy_object.policy_eval <- function(object){
 #'
 #' # specifying the learner:
 #' pl <- policy_learn(type = "rqvl",
-#'                    qv_models = q_glm(formula = ~ C))
+#'                    rqvl_args = list(qv_models = q_glm(formula = ~ C)))
 #'
 #' # fitting the policy (object):
 #' po <- pl(policy_data = pd,

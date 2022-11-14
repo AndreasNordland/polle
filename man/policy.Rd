@@ -49,7 +49,7 @@ head(p(pd), 5)
 # V-restricted (Doubly Robust) Q-learning:
 # specifying the learner:
 pl <- policy_learn(type = "rqvl",
-                   qv_models = q_glm(formula = ~ C))
+                   rqvl_args = list(qv_models = q_glm(formula = ~ C)))
 
 # fitting the policy (object):
 po <- pl(policy_data = pd,

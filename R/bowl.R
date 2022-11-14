@@ -225,6 +225,7 @@ get_policy.BOWL <- function(object){
     pred <- predict(owl_object, H = X, K = K)
     policy_actions <- get_id_stage(policy_data)
     stage <- NULL
+    d <- NULL
     for (k in K:1){
       dd <- d_ <- pred$treatment[[k]]
       d_[dd == -1] <- action_set[1]

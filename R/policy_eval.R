@@ -177,7 +177,7 @@
 #'
 #' # defining a policy learner based on cross-fitted doubly robust Q-learning:
 #' pl2 <- policy_learn(type = "rqvl",
-#'                    qv_models = list(q_glm(~C_1), q_glm(~C_1+C_2)),
+#'                    rqvl_args = list(qv_models = list(q_glm(~C_1), q_glm(~C_1+C_2))),
 #'                    full_history = TRUE,
 #'                    L = 2) # number of folds for cross-fitting
 #'
@@ -487,7 +487,7 @@ get_policy.policy_eval <- function(object){
 #'
 #' # defining a policy learner based on cross-fitted doubly robust Q-learning:
 #' pl2 <- policy_learn(type = "rqvl",
-#'                    qv_models = list(q_glm(~C_1), q_glm(~C_1+C_2)),
+#'                    rqvl_args = list(qv_models = list(q_glm(~C_1), q_glm(~C_1+C_2))),
 #'                    full_history = TRUE,
 #'                    L = 2) # number of folds for cross-fitting
 #'
