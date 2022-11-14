@@ -184,18 +184,13 @@ policy_learn <- function(type = "rql",
                    g_models = NULL, g_functions = NULL, g_full_history = FALSE,
                    q_models, q_full_history = FALSE, verbose = FALSE){
 
-      fm <- formals()
-      cl <- match.call()
-      for (i in setdiff(names(fm), names(cl)))
-        cl[i] <- list(fm[[i]])
+      eval_args <- as.list(environment())
+      bowl_args <- append(pl_args, eval_args)
 
-      eval_args <- as.list(cl)[-1]
-      ptl_args <- append(pl_args, eval_args)
-
-      do.call(what = "bowl", ptl_args)
+      do.call(what = "bowl", bowl_args)
     }
   } else{
-    stop("Unknown type of policy learner. Use 'rql', 'rqvl' or 'ptl'")
+    stop("Unknown type of policy learner. Use 'rql', 'rqvl', 'ptl' or 'bowl'.")
   }
   class(pl) <- c("policy_learn", "function")
   attr(pl, "type") <- type

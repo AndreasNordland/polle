@@ -30,19 +30,14 @@ test_that("the implementation of bowl agrees with direct application of DTRlearn
   pl <- policy_learn(type = "bowl")
 
   set.seed(1)
-  # tmp <- policy_eval(policy_data = pd1, policy_learn = pl)
   owl2 <- pl(policy_data = pd1, g_models = g_glm())
-  # owl2_d <- unname(unlist(get_policy(owl2)(pd1)[, "d"]))
-  #
-  # expect_equal(owl1_d,owl2_d)
-
-  expect_equal(1,1)
+  owl2_d <- unname(unlist(get_policy(owl2)(pd1)[, "d"]))
+  expect_equal(owl1_d,owl2_d)
 })
 
 # Two stages --------------------------------------------------------------
 
 ## QV-learning -------------------------------------------------------------
-
 
 test_that("input to policy_learn with type rqvl handles incorrect arguments",{
   source(system.file("sim", "two_stage.R", package="polle"))
@@ -98,64 +93,63 @@ test_that("input to policy_learn with type rqvl handles incorrect arguments",{
 ## BOWL --------------------------------------------------------------------
 
 test_that("the implementation of bowl agrees with direct application of DTRlearn2::owl in the two stage case.",{
-  # source(system.file("sim", "two_stage.R", package="polle"))
-  # d <- sim_two_stage(5e2, seed=1)
-  # pd <- policy_data(d,
-  #                   action = c("A_1", "A_2"),
-  #                   baseline = c("BB", "B"),
-  #                   covariates = list(L = c("L_1", "L_2"),
-  #                                     C = c("C_1", "C_2")),
-  #                   utility = c("U_1", "U_2", "U_3"))
-  #
-  # H1 <- d[, c("B", "L_1", "C_1")]
-  # H2 <- d[, c("B", "L_2", "C_2")]
-  # H <- list(H1, H2)
-  # H <- lapply(H, scale)
-  # AA <- list(2*d$A_1-1, 2*d$A_2-1)
-  #
-  # pi1_model <- glm(A_1~B+C_1+L_1, data = d, family = binomial())
-  # pi1 <- predict(pi1_model, type = "response")
-  # pi1 <- pi1 * d$A_1 + (1-pi1) * (1-d$A_1)
-  # pi2_model <- glm(A_2~B+C_2+L_2, data = d, family = binomial())
-  # pi2 <- predict(pi2_model, type = "response")
-  # pi2 <- pi2 * d$A_2 + (1-pi2) * (1-d$A_2)
-  # pi <- list(pi1, pi2)
-  #
-  # RR <- list(d$U_2, d$U_3)
-  #
-  # library("DTRlearn2")
-  # set.seed(1)
-  # owl1 <- owl(H = H, AA = AA, RR = RR, n = nrow(d), K = 2, pi = pi)
-  # owl_pred <- predict(owl1, H = H, K = 2)
-  # owl1_dd1 <- owl_pred$treatment[[1]]
-  # owl1_dd2 <- owl_pred$treatment[[2]]
-  # owl1_d1 <- unname(as.character(unlist((owl1_dd1 + 1)/2)))
-  # owl1_d2 <- unname(as.character(unlist((owl1_dd2 + 1)/2)))
-  #
-  # pl <- policy_learn(type = "bowl",
-  #                    policy_vars = c("B", "L", "C"))
-  # set.seed(1)
-  # owl2 <- pl(policy_data = pd,
-  #            g_models = list(g_glm(~B + L + C), g_glm(~B + L + C)))
-  #
-  # tmp <- get_policy(owl2)(pd)
-  # owl2_d1 <- unname(unlist(tmp[stage == 1, "d", with = FALSE]))
-  # owl2_d2 <- unname(unlist(tmp[stage == 2, "d", with = FALSE]))
-  #
-  # expect_equal(
-  #   unname(owl2$owl_object$pi[[1]]),
-  #   unname(pi[[1]]),
-  #   tolerance = 1e-10
-  # )
-  # expect_equal(
-  #   unname(owl2$owl_object$pi[[2]]),
-  #   unname(pi[[2]]),
-  #   tolerance = 1e-10
-  # )
-  # expect_equal(owl1_d1,owl2_d1)
-  # expect_equal(owl1_d2,owl2_d2)
+  source(system.file("sim", "two_stage.R", package="polle"))
+  d <- sim_two_stage(5e2, seed=1)
+  pd <- policy_data(d,
+                    action = c("A_1", "A_2"),
+                    baseline = c("BB", "B"),
+                    covariates = list(L = c("L_1", "L_2"),
+                                      C = c("C_1", "C_2")),
+                    utility = c("U_1", "U_2", "U_3"))
 
-  expect_equal(1,1)
+  H1 <- d[, c("B", "L_1", "C_1")]
+  H2 <- d[, c("B", "L_2", "C_2")]
+  H <- list(H1, H2)
+  H <- lapply(H, scale)
+  AA <- list(2*d$A_1-1, 2*d$A_2-1)
+
+  pi1_model <- glm(A_1~B+C_1+L_1, data = d, family = binomial())
+  pi1 <- predict(pi1_model, type = "response")
+  pi1 <- pi1 * d$A_1 + (1-pi1) * (1-d$A_1)
+  pi2_model <- glm(A_2~B+C_2+L_2, data = d, family = binomial())
+  pi2 <- predict(pi2_model, type = "response")
+  pi2 <- pi2 * d$A_2 + (1-pi2) * (1-d$A_2)
+  pi <- list(pi1, pi2)
+
+  RR <- list(d$U_2, d$U_3)
+
+  library("DTRlearn2")
+  set.seed(1)
+  owl1 <- owl(H = H, AA = AA, RR = RR, n = nrow(d), K = 2, pi = pi)
+  owl_pred <- predict(owl1, H = H, K = 2)
+  owl1_dd1 <- owl_pred$treatment[[1]]
+  owl1_dd2 <- owl_pred$treatment[[2]]
+  owl1_d1 <- unname(as.character(unlist((owl1_dd1 + 1)/2)))
+  owl1_d2 <- unname(as.character(unlist((owl1_dd2 + 1)/2)))
+
+  pl <- policy_learn(type = "bowl",
+                     policy_vars = c("B", "L", "C"))
+  set.seed(1)
+  owl2 <- pl(policy_data = pd,
+             g_models = list(g_glm(~B + L + C), g_glm(~B + L + C)))
+
+  tmp <- get_policy(owl2)(pd)
+  owl2_d1 <- unname(unlist(tmp[stage == 1, "d", with = FALSE]))
+  owl2_d2 <- unname(unlist(tmp[stage == 2, "d", with = FALSE]))
+
+  expect_equal(
+    unname(owl2$owl_object$pi[[1]]),
+    unname(pi[[1]]),
+    tolerance = 1e-10
+  )
+  expect_equal(
+    unname(owl2$owl_object$pi[[2]]),
+    unname(pi[[2]]),
+    tolerance = 1e-10
+  )
+  expect_equal(owl1_d1,owl2_d1)
+  expect_equal(owl1_d2,owl2_d2)
+
 })
 
 
