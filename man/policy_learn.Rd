@@ -20,7 +20,16 @@ policy_learn(
   split.step = 1,
   min.node.size = 1,
   hybrid = FALSE,
-  search.depth = 2
+  search.depth = 2,
+  reuse_scales = TRUE,
+  res.lasso = TRUE,
+  loss = "hinge",
+  kernel = "linear",
+  augment = FALSE,
+  c = 2^(-2:2),
+  sigma = c(0.03, 0.05, 0.07),
+  s = 2^(-2:2),
+  m = 4
 )
 
 \method{print}{policy_object}(x, ...)
@@ -71,6 +80,33 @@ used to fit a policy tree.}
 
 \item{search.depth}{(only used if \code{type = "ptl"} and \code{hybrid = TRUE})
 Numeric or numeric vector. Depth to look ahead when splitting at each stage.}
+
+\item{reuse_scales}{If \code{TRUE}, the scales of the history matrix will be
+saved and reused when applied to (new) test data.}
+
+\item{res.lasso}{(only used if \code{type = "bowl"}) If \code{TRUE} a lasso
+penalty is applied.}
+
+\item{loss}{(only used if \code{type = "bowl"}) Loss function, see
+\link[DTRlearn2:owl]{DTRlearn2::owl}.}
+
+\item{kernel}{(only used if \code{type = "bowl"}) Type of kernel used by the
+support vector machine.}
+
+\item{augment}{(only used if \code{type = "bowl"}) If \code{TRUE} the
+outcomes are augmented at each stage.}
+
+\item{c}{(only used if \code{type = "bowl"}) Regularization parameter,
+see \link[DTRlearn2:owl]{DTRlearn2::owl}.}
+
+\item{sigma}{(only used if \code{type = "bowl"}) Tuning parameter,
+see \link[DTRlearn2:owl]{DTRlearn2::owl}.}
+
+\item{s}{(only used if \code{type = "bowl"}) Slope parameter,
+see \link[DTRlearn2:owl]{DTRlearn2::owl}.}
+
+\item{m}{(only used if \code{type = "bowl"}) Number of folds for
+cross-validation of tuning parameters.}
 
 \item{x}{Object of class "policy_object" or "policy_learn".}
 
