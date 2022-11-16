@@ -23,7 +23,8 @@ Imports:
     policytree (>= 1.2.0),
     SuperLearner,
     survival,
-    targeted
+    targeted,
+    DynTxRegime
 Suggests:
     DTRlearn2,
     glmnet,

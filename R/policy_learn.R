@@ -8,6 +8,7 @@
 #'   \item{} \code{"rql"}: Realistic Quality/Q-learning.
 #'   \item{} \code{"rqvl"}: Realistic V-restricted (doubly robust) Q-learning.
 #'   \item{} \code{"ptl"}: Policy Tree Learning.
+#'   \item{} \code{"earl"}: Efficient Augmentation and Relaxation Learning.
 #' }
 #' @param alpha Probability threshold for determining realistic actions.
 #' @param L (only used if \code{type = "rqvl"} or \code{type = "ptl"}) Number of folds for
@@ -15,8 +16,8 @@
 #' @param save_cross_fit_models If \code{TRUE}, the cross-fitted models will be saved.
 #' @param future_args Arguments passed to [future.apply::future_apply()].
 #' @param full_history If \code{TRUE}, the full
-#' history is used to fit each QV-model/policy tree. If FALSE, the single stage/
-#' "Markov type" history is used to fit each QV-model/policy tree.
+#' history is used to fit each policy function (e.g. QV-model, policy tree). If FALSE, the single stage/
+#' "Markov type" history is used to fit each policy function.
 #' @param rqvl_args Arguments used if \code{type = "rqvl"}.
 #' \itemize{
 #'   \item{} \code{qv_models}: V-restricted Q-models created by [q_glm()], [q_rf()], [q_sl()] or similar functions.
@@ -55,6 +56,15 @@
 #'   \item{} \code{sigma}: Tuning parameter.
 #'   \item{} \code{s}: Slope parameter.
 #'   \item{} \code{m}: Number of folds for cross-validation of tuning parameters.
+#' }
+#' @param earl_args Arguments used if \code{type = "earl"}, see [DynTxRegime::earl()].
+#' \itemize{
+#'   \item{} \code{moPropen} Propensity model of class "ModelObj", see [modelObj::modelObj].
+#'   \item{} \code{moMain} Main effects outcome model of class "ModelObj".
+#'   \item{} \code{moCont} Contrast outcome model of class "ModelObj".
+#'   \item{} \code{regime} An object of class [formula] specifying the design
+#'   of the policy/regime.
+#'   \item{} ... see [DynTxRegime::earl()] for additional arguments.
 #' }
 #' @param x Object of class "policy_object" or "policy_learn".
 #' @param ... Additional arguments passed to print.
@@ -144,14 +154,22 @@ policy_learn <- function(type = "rql",
                                           c = 2^(-2:2),
                                           sigma = c(0.03,0.05,0.07),
                                           s = 2.^(-2:2),
-                                          m = 4)
+                                          m = 4),
+                         earl_args = list(moPropen = NULL,
+                                                 moMain = NULL,
+                                                 moCont = NULL,
+                                                 regime = NULL,
+                                                 iter = 0L,
+                                                 fSet = NULL,
+                                                 lambdas = 0.5,
+                                                 cvFolds = 0L,
+                                                 surrogate = "hinge",
+                                                 kernel = "linear",
+                                                 kparam = NULL,
+                                                 verbose = 0L)
 ){
 
-  pl_args <- as.list(environment())
-  type <- tolower(type)
-  pl_args[["type"]] <- NULL
-
-  pl_args2 <- list(
+  pl_args <- list(
     alpha = alpha,
     L = L,
     save_cross_fit_models = save_cross_fit_models,
@@ -159,60 +177,49 @@ policy_learn <- function(type = "rql",
     full_history = full_history
   )
 
+  if (length(type) != 1 | !is.character(type))
+    stop("type must be a character string.")
+  type <- tolower(type)
   if (type %in% c("rql", "ql", "q_learning", "q-learning")) {
-    pl <- function(policy_data,
-                   g_models = NULL, g_functions = NULL, g_full_history = FALSE,
-                   q_models, q_full_history = FALSE, verbose = FALSE){
-
-      eval_args <- as.list(environment())
-      args <- append(pl_args2, eval_args)
-      do.call(what = "rql", args)
-    }
-  }
-  else if (type %in% c("rqvl", "qvl", "qv_learning", "qv-learning")) {
-    pl <- function(policy_data,
-                   g_models = NULL, g_functions = NULL, g_full_history = FALSE,
-                   q_models, q_full_history = FALSE, verbose = FALSE){
-
-      eval_args <- as.list(environment())
-      args <- append(pl_args2, rqvl_args)
-      args <- append(args, eval_args)
-      do.call(what = "rqvl", args)
-    }
+    call <- "rql"
+    args <- pl_args
+  } else if (type %in% c("rqvl", "qvl", "qv_learning", "qv-learning")) {
+    call <- "rqvl"
+    args <- append(pl_args, rqvl_args)
   } else if (type %in% c("ptl", "policytree", "policy_tree")){
     if (!requireNamespace("policytree")) {
       stop("The policytree package is required to perform value searching using trees.")
     }
-    pl <- function(policy_data,
-                   g_models = NULL, g_functions = NULL, g_full_history = FALSE,
-                   q_models, q_full_history = FALSE, verbose = FALSE){
-
-      eval_args <- as.list(environment())
-      args <- append(pl_args2, ptl_args)
-      args <- append(args, eval_args)
-      do.call(what = "ptl", args)
-    }
+    call <- "ptl"
+    args <- append(pl_args, ptl_args)
   } else if (type %in% c("bowl", "owl")){
     if (!requireNamespace("DTRlearn2")) {
       stop("The DTRlearn2 package is required to perform value searching using outcome-weighted learning.")
     }
-    pl <- function(policy_data,
-                   g_models = NULL, g_functions = NULL, g_full_history = FALSE,
-                   q_models, q_full_history = FALSE, verbose = FALSE){
-
-      eval_args <- as.list(environment())
-      args <- append(pl_args2, bowl_args)
-      args <- append(args, eval_args)
-      do.call(what = "bowl", args)
-    }
+    call <- "bowl"
+    args <- append(pl_args, bowl_args)
+  } else if (type %in% c("earl")){
+    call <- "dyntxregime_earl"
+    args <- append(pl_args, earl_args)
   } else{
     stop("Unknown type of policy learner. Use 'rql', 'rqvl', 'ptl' or 'bowl'.")
   }
+  pl <- pl(call = call, args = args)
   class(pl) <- c("policy_learn", "function")
   attr(pl, "type") <- type
   attr(pl, "pl_args") <- pl_args
 
   return(pl)
+}
+
+pl <- function(call, args){
+  function(policy_data,
+           g_models = NULL, g_functions = NULL, g_full_history = FALSE,
+           q_models, q_full_history = FALSE){
+    eval_args <- as.list(environment())
+    args <- append(args, eval_args)
+    do.call(what = call, args)
+  }
 }
 
 #' @rdname policy_learn

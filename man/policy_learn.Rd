@@ -19,7 +19,10 @@ policy_learn(
     hybrid = FALSE, search.depth = 2),
   bowl_args = list(policy_vars = NULL, reuse_scales = TRUE, res.lasso = TRUE, loss =
     "hinge", kernel = "linear", augment = FALSE, c = 2^(-2:2), sigma = c(0.03, 0.05,
-    0.07), s = 2^(-2:2), m = 4)
+    0.07), s = 2^(-2:2), m = 4),
+  dyntxregime_args = list(moPropen = NULL, moMain = NULL, moCont = NULL, regime = NULL,
+    iter = 0L, fSet = NULL, lambdas = 0.5, cvFolds = 0L, surrogate = "hinge", kernel =
+    "linear", kparam = NULL, verbose = 0L)
 )
 
 \method{print}{policy_object}(x, ...)
@@ -32,6 +35,7 @@ policy_learn(
 \item{} \code{"rql"}: Realistic Quality/Q-learning.
 \item{} \code{"rqvl"}: Realistic V-restricted (doubly robust) Q-learning.
 \item{} \code{"ptl"}: Policy Tree Learning.
+\item{} \code{"earl"}: Efficient Augmentation and Relaxation Learning.
 }}
 
 \item{alpha}{Probability threshold for determining realistic actions.}
@@ -44,8 +48,8 @@ cross-fitting.}
 \item{future_args}{Arguments passed to \code{\link[future.apply:future_apply]{future.apply::future_apply()}}.}
 
 \item{full_history}{If \code{TRUE}, the full
-history is used to fit each QV-model/policy tree. If FALSE, the single stage/
-"Markov type" history is used to fit each QV-model/policy tree.}
+history is used to fit each policy function (e.g. QV-model, policy tree). If FALSE, the single stage/
+"Markov type" history is used to fit each policy function.}
 
 \item{rqvl_args}{Arguments used if \code{type = "rqvl"}.
 \itemize{
@@ -87,6 +91,16 @@ outcomes are augmented at each stage.
 \item{} \code{sigma}: Tuning parameter.
 \item{} \code{s}: Slope parameter.
 \item{} \code{m}: Number of folds for cross-validation of tuning parameters.
+}}
+
+\item{dyntxregime_args}{Arguments used if \code{type = "earl"}, see \code{\link[DynTxRegime:earl]{DynTxRegime::earl()}}.
+\itemize{
+\item{} \code{moPropen} Propensity model of class "ModelObj", see \link[modelObj:modelObj]{modelObj::modelObj}.
+\item{} \code{moMain} Main effects outcome model of class "ModelObj".
+\item{} \code{moCont} Contrast outcome model of class "ModelObj".
+\item{} \code{regime} An object of class \link{formula} specifying the design
+of the policy/regime.
+\item{} ... see \code{\link[DynTxRegime:earl]{DynTxRegime::earl()}} for additional arguments.
 }}
 
 \item{x}{Object of class "policy_object" or "policy_learn".}
