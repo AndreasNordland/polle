@@ -156,17 +156,27 @@ policy_learn <- function(type = "rql",
                                           s = 2.^(-2:2),
                                           m = 4),
                          earl_args = list(moPropen = NULL,
-                                                 moMain = NULL,
-                                                 moCont = NULL,
-                                                 regime = NULL,
-                                                 iter = 0L,
-                                                 fSet = NULL,
-                                                 lambdas = 0.5,
-                                                 cvFolds = 0L,
-                                                 surrogate = "hinge",
-                                                 kernel = "linear",
-                                                 kparam = NULL,
-                                                 verbose = 0L)
+                                          moMain = NULL,
+                                          moCont = NULL,
+                                          regime = NULL,
+                                          iter = 0L,
+                                          fSet = NULL,
+                                          lambdas = 0.5,
+                                          cvFolds = 0L,
+                                          surrogate = "hinge",
+                                          kernel = "linear",
+                                          kparam = NULL,
+                                          verbose = 0L),
+                         rwl_args = list(moPropen = NULL,
+                                         moMain = NULL,
+                                         regime = NULL,
+                                         fSet = NULL,
+                                         lambdas = 2,
+                                         cvFolds = 0L,
+                                         kernel = "linear",
+                                         kparam = NULL,
+                                         responseType = "continuous",
+                                         verbose = 0L)
 ){
 
   pl_args <- list(
@@ -201,8 +211,11 @@ policy_learn <- function(type = "rql",
   } else if (type %in% c("earl")){
     call <- "dyntxregime_earl"
     args <- append(pl_args, earl_args)
+  } else if (type %in% c("rwl")){
+    call <- "dyntxregime_rwl"
+    args <- append(pl_args, rwl_args)
   } else{
-    stop("Unknown type of policy learner. Use 'rql', 'rqvl', 'ptl' or 'bowl'.")
+    stop("Unknown type of policy learner. Use 'rql', 'rqvl', 'ptl', 'bowl', 'earl' or 'rwl'.")
   }
   pl <- pl(call = call, args = args)
   class(pl) <- c("policy_learn", "function")

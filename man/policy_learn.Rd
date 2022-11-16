@@ -20,9 +20,9 @@ policy_learn(
   bowl_args = list(policy_vars = NULL, reuse_scales = TRUE, res.lasso = TRUE, loss =
     "hinge", kernel = "linear", augment = FALSE, c = 2^(-2:2), sigma = c(0.03, 0.05,
     0.07), s = 2^(-2:2), m = 4),
-  dyntxregime_args = list(moPropen = NULL, moMain = NULL, moCont = NULL, regime = NULL,
-    iter = 0L, fSet = NULL, lambdas = 0.5, cvFolds = 0L, surrogate = "hinge", kernel =
-    "linear", kparam = NULL, verbose = 0L)
+  earl_args = list(moPropen = NULL, moMain = NULL, moCont = NULL, regime = NULL, iter =
+    0L, fSet = NULL, lambdas = 0.5, cvFolds = 0L, surrogate = "hinge", kernel = "linear",
+    kparam = NULL, verbose = 0L)
 )
 
 \method{print}{policy_object}(x, ...)
@@ -93,7 +93,7 @@ outcomes are augmented at each stage.
 \item{} \code{m}: Number of folds for cross-validation of tuning parameters.
 }}
 
-\item{dyntxregime_args}{Arguments used if \code{type = "earl"}, see \code{\link[DynTxRegime:earl]{DynTxRegime::earl()}}.
+\item{earl_args}{Arguments used if \code{type = "earl"}, see \code{\link[DynTxRegime:earl]{DynTxRegime::earl()}}.
 \itemize{
 \item{} \code{moPropen} Propensity model of class "ModelObj", see \link[modelObj:modelObj]{modelObj::modelObj}.
 \item{} \code{moMain} Main effects outcome model of class "ModelObj".

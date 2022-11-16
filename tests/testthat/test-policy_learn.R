@@ -34,7 +34,7 @@ test_that("the polle implementation of earl agrees with direct application of Dy
                            response = d1$U,
                            data = d1,
                            txName = "A",
-                           lambdas = c(0.1, 0.2, 0.5, 0.8, 1),
+                           lambdas = c(0.5, 1, 2),
                            regime = ~B+Z+L,
                            cvFolds = 3,
                            verbose = 0)
@@ -46,7 +46,7 @@ test_that("the polle implementation of earl agrees with direct application of Dy
                                              moCont = moCont1,
                                              regime = ~B+Z+L,
                                              verbose = 0,
-                                             lambdas = c(0.1, 0.2, 0.5, 0.8, 1),
+                                             lambdas = c(0.5, 1, 2),
                                              cvFolds = 3))
   set.seed(1)
   po <- pl(policy_data = pd1)
@@ -94,7 +94,7 @@ test_that("the polle implementation is robust in respect to the action set.",{
                                              moCont = moCont1,
                                              regime = ~B+Z+L,
                                              verbose = 0,
-                                             lambdas = c(0.1, 0.2, 0.5, 0.8, 1),
+                                             lambdas = c(0.5, 1, 2),
                                              cvFolds = 3))
   set.seed(1)
   po1 <- pl(policy_data = pd1)
@@ -111,6 +111,58 @@ test_that("the polle implementation is robust in respect to the action set.",{
     po2$earl_object@analysis@optimal@optimalTx
   )
 
+})
+
+
+## RWL ---------------------------------------------------------------------
+
+test_that("the polle implementation of rwl agrees with direct application of DynTxRegime::rwl in the single stage case.",{
+  library("DynTxRegime")
+
+  source(system.file("sim", "single_stage.R", package="polle"))
+  d1 <- sim_single_stage(2e3, seed=1)
+  pd1 <- policy_data(d1,
+                     action="A",
+                     covariates = list("Z", "B", "L"),
+                     utility="U")
+
+  # direct application:
+  moPropen1 <- buildModelObj(model = ~B+Z+L,
+                             solver.method = 'glm',
+                             solver.args = list('family'='binomial'),
+                             predict.method = 'predict.glm',
+                             predict.args = list(type='response'))
+
+  moMain1 <- buildModelObj(model = ~B+Z+L,
+                           solver.method = 'lm')
+
+  set.seed(1)
+  dir <- DynTxRegime::rwl(moPropen = moPropen1,
+                           moMain = moMain1,
+                           response = d1$U,
+                           data = d1,
+                           txName = "A",
+                           lambdas = c(0.5, 1, 2),
+                           regime = ~B+Z+L,
+                           cvFolds = 3,
+                           verbose = 0)
+
+  # polle application:
+  pl <- policy_learn(type = "rwl",
+                     rwl_args = list(moPropen = moPropen1,
+                                      moMain = moMain1,
+                                      regime = ~B+Z+L,
+                                      verbose = 0,
+                                      lambdas = c(0.5, 1, 2),
+                                      cvFolds = 3))
+  set.seed(1)
+  po <- pl(policy_data = pd1)
+
+  # comparison
+  expect_equal(
+    dir@analysis@optimal@estimatedValue,
+    po$rwl_object@analysis@optimal@estimatedValue
+  )
 })
 
 
