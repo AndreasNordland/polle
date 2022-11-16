@@ -14,13 +14,13 @@ dyntxregime_rwl <- function(policy_data,
                             ...){
   K <- get_K(policy_data)
   if (K != 1)
-    stop("earl is only implemented for single stage problems.")
+    stop("rwl is only implemented for single stage problems.")
   n <- get_n(policy_data)
   action_set <- get_action_set(policy_data)
   id_stage <- get_id_stage(policy_data)
 
   if (!(length(action_set) == 2))
-    stop("earl only works for binary actions.")
+    stop("rwl only works for binary actions.")
 
   if (alpha != 0)
     stop("alpha must be 0 when using rwl")
