@@ -22,7 +22,10 @@ policy_learn(
     0.07), s = 2^(-2:2), m = 4),
   earl_args = list(moPropen = NULL, moMain = NULL, moCont = NULL, regime = NULL, iter =
     0L, fSet = NULL, lambdas = 0.5, cvFolds = 0L, surrogate = "hinge", kernel = "linear",
-    kparam = NULL, verbose = 0L)
+    kparam = NULL, verbose = 0L),
+  rwl_args = list(moPropen = NULL, moMain = NULL, regime = NULL, fSet = NULL, lambdas =
+    2, cvFolds = 0L, kernel = "linear", kparam = NULL, responseType = "continuous",
+    verbose = 0L)
 )
 
 \method{print}{policy_object}(x, ...)
@@ -35,7 +38,9 @@ policy_learn(
 \item{} \code{"rql"}: Realistic Quality/Q-learning.
 \item{} \code{"rqvl"}: Realistic V-restricted (doubly robust) Q-learning.
 \item{} \code{"ptl"}: Policy Tree Learning.
-\item{} \code{"earl"}: Efficient Augmentation and Relaxation Learning.
+\item{} \code{"bowl"}: Backwards Outcome Weighted Learning.
+\item{} \code{"earl"}: Efficient Augmentation and Relaxation Learning (only single stage).
+\item{} \code{"rwl"}: Residual Weighted Learning (only single stage).
 }}
 
 \item{alpha}{Probability threshold for determining realistic actions.}
@@ -103,6 +108,15 @@ of the policy/regime.
 \item{} ... see \code{\link[DynTxRegime:earl]{DynTxRegime::earl()}} for additional arguments.
 }}
 
+\item{rwl_args}{Arguments used if \code{type = "rwl"}, see \code{\link[DynTxRegime:rwl]{DynTxRegime::rwl()}}.
+\itemize{
+\item{} \code{moPropen} Propensity model of class "ModelObj", see \link[modelObj:modelObj]{modelObj::modelObj}.
+\item{} \code{moMain} Main effects outcome model of class "ModelObj".
+\item{} \code{regime} An object of class \link{formula} specifying the design
+of the policy/regime.
+\item{} ... see \code{\link[DynTxRegime:rwl]{DynTxRegime::rwl()}} for additional arguments.
+}}
+
 \item{x}{Object of class "policy_object" or "policy_learn".}
 
 \item{...}{Additional arguments passed to print.}
@@ -127,12 +141,13 @@ V-restricted design matrix for each stage}
 }
 \description{
 \code{policy_learn()} is used to specify a policy learning method (Q-learning,
-V-restricted (doubly robust) Q-learning and V-restricted policy tree
-learning). Evaluating the policy learner returns a policy object.
+V-restricted (doubly robust) Q-learning, V-restricted policy tree
+learning and outcome weighted learning). Evaluating the policy learner returns a policy object.
 }
 \details{
-For references on V-restricted Q-learning (\code{type = "rqvl"}), see \doi{10.1515/ijb-2015-0052}.
-For references on policy tree learning (\code{type = "ptl"}), see \doi{10.48550/arXiv.1810.04778}.
+For references on V-restricted Q-learning (\code{type = "rqvl"}), see \doi{10.1515/ijb-2015-0052}.\cr
+For references on policy tree learning (\code{type = "ptl"}), see \doi{10.48550/arXiv.1810.04778}.\cr
+For references on (augmented) outcome weighted learning, see \doi{10.1002/sim.7844}.
 }
 \section{S3 generics}{
 

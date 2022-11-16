@@ -23,10 +23,10 @@ dyntxregime_rwl <- function(policy_data,
     stop("rwl only works for binary actions.")
 
   if (alpha != 0)
-    stop("alpha must be 0 when using rwl")
+    stop("alpha must be 0 when using rwl.")
 
   if (L != 1)
-    stop("L must be 1 when using rwl (no cross-fitting)")
+    stop("L must be 1 when using rwl (no cross-fitting).")
 
   # getting the observed actions:
   actions <- get_actions(policy_data)

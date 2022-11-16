@@ -1,14 +1,16 @@
 #' Create Policy Learner
 #'
 #' \code{policy_learn()} is used to specify a policy learning method (Q-learning,
-#' V-restricted (doubly robust) Q-learning and V-restricted policy tree
-#' learning). Evaluating the policy learner returns a policy object.
+#' V-restricted (doubly robust) Q-learning, V-restricted policy tree
+#' learning and outcome weighted learning). Evaluating the policy learner returns a policy object.
 #' @param type Type of policy learner method:
 #' \itemize{
 #'   \item{} \code{"rql"}: Realistic Quality/Q-learning.
 #'   \item{} \code{"rqvl"}: Realistic V-restricted (doubly robust) Q-learning.
 #'   \item{} \code{"ptl"}: Policy Tree Learning.
-#'   \item{} \code{"earl"}: Efficient Augmentation and Relaxation Learning.
+#'   \item{} \code{"bowl"}: Backwards Outcome Weighted Learning.
+#'   \item{} \code{"earl"}: Efficient Augmentation and Relaxation Learning (only single stage).
+#'   \item{} \code{"rwl"}: Residual Weighted Learning (only single stage).
 #' }
 #' @param alpha Probability threshold for determining realistic actions.
 #' @param L (only used if \code{type = "rqvl"} or \code{type = "ptl"}) Number of folds for
@@ -66,6 +68,14 @@
 #'   of the policy/regime.
 #'   \item{} ... see [DynTxRegime::earl()] for additional arguments.
 #' }
+#' @param rwl_args Arguments used if \code{type = "rwl"}, see [DynTxRegime::rwl()].
+#' \itemize{
+#'   \item{} \code{moPropen} Propensity model of class "ModelObj", see [modelObj::modelObj].
+#'   \item{} \code{moMain} Main effects outcome model of class "ModelObj".
+#'   \item{} \code{regime} An object of class [formula] specifying the design
+#'   of the policy/regime.
+#'   \item{} ... see [DynTxRegime::rwl()] for additional arguments.
+#' }
 #' @param x Object of class "policy_object" or "policy_learn".
 #' @param ... Additional arguments passed to print.
 #' @returns Function of inherited class \code{"policy_learn"}.
@@ -96,8 +106,9 @@
 #' \item{[get_policy_actions()]}{ Extract the (fitted) policy actions.}
 #' }
 #' @details
-#' For references on V-restricted Q-learning (\code{type = "rqvl"}), see \doi{10.1515/ijb-2015-0052}.
-#' For references on policy tree learning (\code{type = "ptl"}), see \doi{10.48550/arXiv.1810.04778}.
+#' For references on V-restricted Q-learning (\code{type = "rqvl"}), see \doi{10.1515/ijb-2015-0052}.\cr
+#' For references on policy tree learning (\code{type = "ptl"}), see \doi{10.48550/arXiv.1810.04778}.\cr
+#' For references on (augmented) outcome weighted learning, see \doi{10.1002/sim.7844}.
 #' @seealso [policy_eval()]
 #' @examples
 #' library("polle")
