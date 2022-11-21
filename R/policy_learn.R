@@ -8,7 +8,7 @@
 #'   \item{} \code{"rql"}: Realistic Quality/Q-learning.
 #'   \item{} \code{"rqvl"}: Realistic V-restricted (doubly robust) Q-learning.
 #'   \item{} \code{"ptl"}: Policy Tree Learning.
-#'   \item{} \code{"bowl"}: Backwards Outcome Weighted Learning.
+#'   \item{} \code{"owl"}: Outcome Weighted Learning.
 #'   \item{} \code{"earl"}: Efficient Augmentation and Relaxation Learning (only single stage).
 #'   \item{} \code{"rwl"}: Residual Weighted Learning (only single stage).
 #' }
@@ -29,7 +29,7 @@
 #'   \item{} \code{depth}: Integer or integer vector. The depth of the fitted policy
 #' tree for each stage.
 #' }
-#' [control_bowl()]: \cr
+#' [control_owl()]: \cr
 #' \itemize{
 #'   \item{} \code{policy_vars}: As in \code{control_ptl()}.
 #'   \item{} \code{loss}: Loss function. The options are \code{"hinge"}, \code{"ramp"},
@@ -162,17 +162,17 @@ policy_learn <- function(type = "rql",
       stop("The policytree package is required to perform value searching using trees.")
     }
     call <- "ptl"
-  } else if (type %in% c("bowl", "owl")){
+  } else if (type %in% c("owl", "bowl")){
     if (!requireNamespace("DTRlearn2")) {
       stop("The DTRlearn2 package is required to perform value searching using outcome-weighted learning.")
     }
-    call <- "bowl"
+    call <- "dtrlearn2_owl"
   } else if (type %in% c("earl")){
     call <- "dyntxregime_earl"
   } else if (type %in% c("rwl")){
     call <- "dyntxregime_rwl"
   } else{
-    stop("Unknown type of policy learner. Use 'rql', 'rqvl', 'ptl', 'bowl', 'earl' or 'rwl'.")
+    stop("Unknown type of policy learner. Use 'rql', 'rqvl', 'ptl', 'owl', 'earl' or 'rwl'.")
   }
   args <- append(pl_args, control)
   pl <- pl(call = call, args = args)

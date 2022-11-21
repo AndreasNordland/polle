@@ -27,7 +27,7 @@ policy_learn(
 \item{} \code{"rql"}: Realistic Quality/Q-learning.
 \item{} \code{"rqvl"}: Realistic V-restricted (doubly robust) Q-learning.
 \item{} \code{"ptl"}: Policy Tree Learning.
-\item{} \code{"bowl"}: Backwards Outcome Weighted Learning.
+\item{} \code{"owl"}: Outcome Weighted Learning.
 \item{} \code{"earl"}: Efficient Augmentation and Relaxation Learning (only single stage).
 \item{} \code{"rwl"}: Residual Weighted Learning (only single stage).
 }}
@@ -49,7 +49,7 @@ fit a policy tree.
 \item{} \code{depth}: Integer or integer vector. The depth of the fitted policy
 tree for each stage.
 }
-\code{\link[=control_bowl]{control_bowl()}}: \cr
+\code{\link[=control_owl]{control_owl()}}: \cr
 \itemize{
 \item{} \code{policy_vars}: As in \code{control_ptl()}.
 \item{} \code{loss}: Loss function. The options are \code{"hinge"}, \code{"ramp"},

@@ -1,6 +1,6 @@
 #' @title Control arguments for Outcome Weighted Learning
-#' @description \code{control_bowl} sets the default control arguments
-#' for backwards outcome weighted learning, \code{type = "bowl"}.
+#' @description \code{control_owl()} sets the default control arguments
+#' for backwards outcome weighted learning, \code{type = "owl"}.
 #' The arguments are passed directly to [DTRlearn2::owl()] if not
 #' specified otherwise.
 #' @param policy_vars Character vector/string or list of character
@@ -22,21 +22,21 @@
 #' @param m Number of folds for cross-validation of the parameters.
 #' @returns list of (default) control arguments.
 #' @export
-control_bowl <- function(policy_vars = NULL,
-                         reuse_scales = TRUE,
-                         res.lasso = TRUE,
-                         loss = 'hinge',
-                         kernel = 'linear',
-                         augment = FALSE,
-                         c = 2^(-2:2),
-                         sigma = c(0.03,0.05,0.07),
-                         s = 2.^(-2:2),
-                         m = 4){
+control_owl <- function(policy_vars = NULL,
+                        reuse_scales = TRUE,
+                        res.lasso = TRUE,
+                        loss = 'hinge',
+                        kernel = 'linear',
+                        augment = FALSE,
+                        c = 2^(-2:2),
+                        sigma = c(0.03,0.05,0.07),
+                        s = 2.^(-2:2),
+                        m = 4){
   control <- as.list(environment())
   return(control)
 }
 
-bowl <- function(policy_data,
+dtrlearn2_owl <- function(policy_data,
                  alpha,
                  g_models, g_functions, g_full_history,
                  policy_vars, full_history,
@@ -56,13 +56,13 @@ bowl <- function(policy_data,
   id_stage <- get_id_stage(policy_data)
 
   if(!(length(unlist(unique(id_stage[,.N, by = "id"][, "N"]))) == 1))
-    stop("bowl is only implemented for a fixed number of stages.")
+    stop("owl is only implemented for a fixed number of stages.")
 
   if (!(length(action_set) == 2))
-    stop("bowl only works for binary actions.")
+    stop("owl only works for binary actions.")
 
   if (alpha != 0)
-    stop("alpha must be 0 when type = 'bowl'")
+    stop("alpha must be 0 when type = 'owl'")
 
   if (full_history == TRUE){
     if ((!is.list(policy_vars)) | (length(policy_vars) != K))
@@ -206,13 +206,13 @@ bowl <- function(policy_data,
     action_set = action_set,
     K = K
   )
-  class(out) <- "BOWL"
+  class(out) <- "OWL"
 
   return(out)
 }
 
 #' @export
-get_policy.BOWL <- function(object){
+get_policy.OWL <- function(object){
   owl_object <- getElement(object, "owl_object")
   reuse_scales <- getElement(object, "reuse_scales")
   X_scales <- getElement(object, "X_scales")
@@ -229,7 +229,7 @@ get_policy.BOWL <- function(object){
 
     id_stage <- get_id_stage(policy_data)
     if(!(length(unlist(unique(id_stage[,.N, by = "id"][, "N"]))) == 1))
-      stop("bowl is only implemented for a fixed number of stages.")
+      stop("owl is only implemented for a fixed number of stages.")
 
     X <- list()
     for (k in K:1){

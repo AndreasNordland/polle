@@ -187,9 +187,9 @@ test_that("the polle implementation of rwl agrees with direct application of Dyn
 })
 
 
-## BOWL --------------------------------------------------------------------
+## OWL --------------------------------------------------------------------
 
-test_that("the implementation of bowl agrees with direct application of DTRlearn2::owl in the single stage case.",{
+test_that("the implementation of owl agrees with direct application of DTRlearn2::owl in the single stage case.",{
   library("DTRlearn2")
 
   source(system.file("sim", "single_stage.R", package="polle"))
@@ -212,7 +212,7 @@ test_that("the implementation of bowl agrees with direct application of DTRlearn
   owl1_dd <- predict(owl1, H = H, K = 1)$treatment[[1]]
   owl1_d <- unname(as.character(unlist((owl1_dd + 1)/2)))
 
-  pl <- policy_learn(type = "bowl", control = control_bowl())
+  pl <- policy_learn(type = "owl", control = control_owl())
 
   set.seed(1)
   owl2 <- pl(policy_data = pd1, g_models = g_glm())
@@ -377,9 +377,9 @@ test_that("policy_learn with type rqvl works as intended",{
 })
 
 
-## BOWL --------------------------------------------------------------------
+## OWL --------------------------------------------------------------------
 
-test_that("the implementation of bowl agrees with direct application of DTRlearn2::owl in the two stage case.",{
+test_that("the implementation of owl agrees with direct application of DTRlearn2::owl in the two stage case.",{
   source(system.file("sim", "two_stage.R", package="polle"))
   d <- sim_two_stage(200, seed=1)
   pd <- policy_data(d,
@@ -414,8 +414,8 @@ test_that("the implementation of bowl agrees with direct application of DTRlearn
   owl1_d1 <- unname(as.character(unlist((owl1_dd1 + 1)/2)))
   owl1_d2 <- unname(as.character(unlist((owl1_dd2 + 1)/2)))
 
-  pl <- policy_learn(type = "bowl",
-                     control = control_bowl(policy_vars = c("B", "L", "C"),
+  pl <- policy_learn(type = "owl",
+                     control = control_owl(policy_vars = c("B", "L", "C"),
                                             reuse_scales = TRUE))
   set.seed(1)
   owl2 <- pl(policy_data = pd,
@@ -442,9 +442,9 @@ test_that("the implementation of bowl agrees with direct application of DTRlearn
 
 # Multiple stages ---------------------------------------------------------
 
-# BOWL ---------------------------------------------------------------------
+# OWL ---------------------------------------------------------------------
 
-test_that("input to policy_learn with type bowl handles incorrect input.",{
+test_that("input to policy_learn with type owl handles incorrect input.",{
   source(system.file("sim", "multi_stage.R", package="polle"))
   d <- sim_multi_stage(200, seed = 1)
   # constructing policy_data object:
@@ -458,8 +458,8 @@ test_that("input to policy_learn with type bowl handles incorrect input.",{
                     utility = "U")
   pd <- partial(pd, 3)
 
-  pl <- policy_learn(type = "bowl")
+  pl <- policy_learn(type = "owl")
 
   expect_error(policy_eval(policy_data = pd,
-                           policy_learn = pl), "bowl is only implemented for a fixed number of stages.")
+                           policy_learn = pl), "owl is only implemented for a fixed number of stages.")
 })
