@@ -9,23 +9,12 @@
 \usage{
 policy_learn(
   type = "rql",
+  control = list(),
   alpha = 0,
   L = 1,
-  save_cross_fit_models = FALSE,
-  future_args = list(future.seed = TRUE),
   full_history = FALSE,
-  rqvl_args = list(qv_models = NULL),
-  ptl_args = list(policy_vars = NULL, depth = 2, split.step = 1, min.node.size = 1,
-    hybrid = FALSE, search.depth = 2),
-  bowl_args = list(policy_vars = NULL, reuse_scales = TRUE, res.lasso = TRUE, loss =
-    "hinge", kernel = "linear", augment = FALSE, c = 2^(-2:2), sigma = c(0.03, 0.05,
-    0.07), s = 2^(-2:2), m = 4),
-  earl_args = list(moPropen = NULL, moMain = NULL, moCont = NULL, regime = NULL, iter =
-    0L, fSet = NULL, lambdas = 0.5, cvFolds = 0L, surrogate = "hinge", kernel = "linear",
-    kparam = NULL, verbose = 0L),
-  rwl_args = list(moPropen = NULL, moMain = NULL, regime = NULL, fSet = NULL, lambdas =
-    2, cvFolds = 0L, kernel = "linear", kparam = NULL, responseType = "continuous",
-    verbose = 0L)
+  save_cross_fit_models = FALSE,
+  future_args = list(future.seed = TRUE)
 )
 
 \method{print}{policy_object}(x, ...)
@@ -43,79 +32,54 @@ policy_learn(
 \item{} \code{"rwl"}: Residual Weighted Learning (only single stage).
 }}
 
+\item{control}{List of control arguments. Values (and default values) are set using
+\code{control_{type}()}. Key arguments include:\cr
+\code{\link[=control_rqvl]{control_rqvl()}}:\cr
+\itemize{
+\item{} \code{qv_models}: Single element or list of V-restricted Q-models created
+by \code{\link[=q_glm]{q_glm()}}, \code{\link[=q_rf]{q_rf()}}, \code{\link[=q_sl]{q_sl()}} or similar functions.
+}
+\code{\link[=control_ptl]{control_ptl()}}: \cr
+\itemize{
+\item{} \code{policy_vars}: Character vector/string or list of character
+vectors/strings. Variable names used to construct the V-restricted policy tree.
+The names must be a subset of the history names, see get_history_names().
+\item{} \code{hybrid}: If \code{TRUE}, \code{\link[policytree:hybrid_policy_tree]{policytree::hybrid_policy_tree()}} is used to
+fit a policy tree.
+\item{} \code{depth}: Integer or integer vector. The depth of the fitted policy
+tree for each stage.
+}
+\code{\link[=control_bowl]{control_bowl()}}: \cr
+\itemize{
+\item{} \code{policy_vars}: As in \code{control_ptl()}.
+\item{} \code{loss}: Loss function. The options are \code{"hinge"}, \code{"ramp"},
+\code{"logit"}, \code{"logit.lasso"}, \code{"l2"}, \code{"l2.lasso"}.
+\item{} \code{kernel}: Type of kernel used by the support vector machine. The
+options are \code{"linear"}, \code{"rbf"}.
+\item{} \code{augment}:  If \code{TRUE} the outcomes are augmented.
+}
+\code{\link[=control_earl]{control_earl()}}/\code{\link[=control_rwl]{control_rwl()}}: \cr
+\itemize{
+\item{} \code{moPropen}: Propensity model of class "ModelObj", see \link[modelObj:modelObj]{modelObj::modelObj}.
+\item{} \code{moMain}: Main effects outcome model of class "ModelObj".
+\item{} \code{moCont} Contrast outcome model of class "ModelObj".
+\item{} \code{regime}: An object of class \link{formula} specifying the design of the policy.
+\item{} \code{surrogate}: The surrogate 0-1 loss function. The options are
+\code{"logit"}, \code{"exp"}, \code{"hinge"}, \code{"sqhinge"}, \code{"huber"}.
+\item{} \code{kernel}: The options are \code{"linear"}, \code{"poly"}, \code{"radial"}.
+}}
+
 \item{alpha}{Probability threshold for determining realistic actions.}
 
-\item{L}{(only used if \code{type = "rqvl"} or \code{type = "ptl"}) Number of folds for
-cross-fitting.}
-
-\item{save_cross_fit_models}{If \code{TRUE}, the cross-fitted models will be saved.}
-
-\item{future_args}{Arguments passed to \code{\link[future.apply:future_apply]{future.apply::future_apply()}}.}
+\item{L}{Number of folds for cross-fitting nuisance models.}
 
 \item{full_history}{If \code{TRUE}, the full
 history is used to fit each policy function (e.g. QV-model, policy tree). If FALSE, the single stage/
 "Markov type" history is used to fit each policy function.}
 
-\item{rqvl_args}{Arguments used if \code{type = "rqvl"}.
-\itemize{
-\item{} \code{qv_models}: V-restricted Q-models created by \code{\link[=q_glm]{q_glm()}}, \code{\link[=q_rf]{q_rf()}}, \code{\link[=q_sl]{q_sl()}} or similar functions.
-}}
+\item{save_cross_fit_models}{If \code{TRUE}, the cross-fitted models will be saved.}
 
-\item{ptl_args}{Arguments used if \code{type = "ptl"}, see \code{\link[policytree:policy_tree]{policytree::policy_tree()}}.
-\itemize{
-\item{} \code{policy_vars}: Character vector/string or
-list of character vectors/strings. Variable names used to construct a
-V-restricted policy tree. The names must be a subset of the history variable
-names, see \code{\link[=get_history_names]{get_history_names()}}.
-\item{} \code{depth}: Numeric or numeric vector.
-The depth of the fitted policy tree for each stage.
-\item{} \code{split.step}:  Numeric or numeric vector.
-The number of possible splits to consider when performing policy tree search
-at each stage.
-\item{} \code{min.node.size}: Numeric or numeric vector.
-The smallest terminal node size permitted at each stage.
-\item{} \code{hybrid}: If \code{TRUE}, \code{\link[policytree:hybrid_policy_tree]{policytree::hybrid_policy_tree()}} is used to fit a policy tree.
-\item{} \code{search.depth}: (only used if \code{hybrid = TRUE})
-Numeric or numeric vector. Depth to look ahead when splitting at each stage.
-}}
-
-\item{bowl_args}{Arguments used if \code{type = "bowl"}, see \code{\link[DTRlearn2:owl]{DTRlearn2::owl()}}.
-\itemize{
-\item{} \code{policy_vars}: Character vector/string or
-list of character vectors/strings. Variable names used to construct a
-V-restricted policy tree. The names must be a subset of the history variable
-names, see \code{\link[=get_history_names]{get_history_names()}}.
-\item{} \code{reuse_scales}: If \code{TRUE}, the scales of the history matrix will be
-saved and reused when applied to (new) test data.
-\item{} \code{res.lasso}: If \code{TRUE} a lasso penalty is applied.
-\item{} \code{loss}: Loss function.
-\item{} \code{kernel}: Type of kernel used by the support vector machine.
-\item{} \code{augment}: If \code{TRUE} the
-outcomes are augmented at each stage.
-\item{} \code{c}: Regularization parameter.
-\item{} \code{sigma}: Tuning parameter.
-\item{} \code{s}: Slope parameter.
-\item{} \code{m}: Number of folds for cross-validation of tuning parameters.
-}}
-
-\item{earl_args}{Arguments used if \code{type = "earl"}, see \code{\link[DynTxRegime:earl]{DynTxRegime::earl()}}.
-\itemize{
-\item{} \code{moPropen} Propensity model of class "ModelObj", see \link[modelObj:modelObj]{modelObj::modelObj}.
-\item{} \code{moMain} Main effects outcome model of class "ModelObj".
-\item{} \code{moCont} Contrast outcome model of class "ModelObj".
-\item{} \code{regime} An object of class \link{formula} specifying the design
-of the policy/regime.
-\item{} ... see \code{\link[DynTxRegime:earl]{DynTxRegime::earl()}} for additional arguments.
-}}
-
-\item{rwl_args}{Arguments used if \code{type = "rwl"}, see \code{\link[DynTxRegime:rwl]{DynTxRegime::rwl()}}.
-\itemize{
-\item{} \code{moPropen} Propensity model of class "ModelObj", see \link[modelObj:modelObj]{modelObj::modelObj}.
-\item{} \code{moMain} Main effects outcome model of class "ModelObj".
-\item{} \code{regime} An object of class \link{formula} specifying the design
-of the policy/regime.
-\item{} ... see \code{\link[DynTxRegime:rwl]{DynTxRegime::rwl()}} for additional arguments.
-}}
+\item{future_args}{Arguments passed to \code{\link[future.apply:future_apply]{future.apply::future_apply()}}.}
 
 \item{x}{Object of class "policy_object" or "policy_learn".}
 
@@ -143,11 +107,6 @@ V-restricted design matrix for each stage}
 \code{policy_learn()} is used to specify a policy learning method (Q-learning,
 V-restricted (doubly robust) Q-learning, V-restricted policy tree
 learning and outcome weighted learning). Evaluating the policy learner returns a policy object.
-}
-\details{
-For references on V-restricted Q-learning (\code{type = "rqvl"}), see \doi{10.1515/ijb-2015-0052}.\cr
-For references on policy tree learning (\code{type = "ptl"}), see \doi{10.48550/arXiv.1810.04778}.\cr
-For references on (augmented) outcome weighted learning, see \doi{10.1002/sim.7844}.
 }
 \section{S3 generics}{
 
@@ -179,10 +138,12 @@ pd
 ### V-restricted (Doubly Robust) Q-learning
 
 # specifying the learner:
-pl <- policy_learn(type = "rqvl",
-                   rqvl_args = list(qv_models = list(q_glm(formula = ~ C_1 + BB),
-                                                     q_glm(formula = ~ L_1 + BB))),
-                   full_history = TRUE)
+pl <- policy_learn(
+  type = "rqvl",
+  control = control_rqvl(qv_models = list(q_glm(formula = ~ C_1 + BB),
+                                          q_glm(formula = ~ L_1 + BB))),
+  full_history = TRUE
+)
 
 # evaluating the learned policy
 pe <- policy_eval(policy_data = pd,
@@ -195,6 +156,20 @@ po <- get_policy_object(pe)
 # inspecting the fitted QV-model for each action strata at stage 1:
 po$qv_functions$stage_1
 head(get_policy(pe)(pd))
+}
+\references{
+V-restricted Q-learning (\code{type = "rqvl"}): Luedtke, Alexander R., and
+Mark J. van der Laan. "Super-learning of an optimal dynamic treatment rule."
+The international journal of biostatistics 12.1 (2016): 305-332.
+\doi{10.1515/ijb-2015-0052}.\cr
+\cr
+Policy Tree Learning (\code{type = "ptl"}): Zhou, Zhengyuan, Susan Athey,
+and Stefan Wager. "Offline multi-action policy learning: Generalization and
+optimization." Operations Research (2022). \doi{10.1287/opre.2022.2271}.\cr
+\cr
+(Augmented) Outcome Weighted Learning: Liu, Ying, et al. "Augmented
+outcome‐weighted learning for estimating optimal dynamic treatment regimens."
+Statistics in medicine 37.26 (2018): 3776-3788. \doi{10.1002/sim.7844}.
 }
 \seealso{
 \code{\link[=policy_eval]{policy_eval()}}

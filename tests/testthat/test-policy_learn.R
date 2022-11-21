@@ -1,6 +1,7 @@
 
-# Single stage ------------------------------------------------------------
 
+
+# Single stage ------------------------------------------------------------
 
 ## EARL --------------------------------------------------------------------
 
@@ -8,7 +9,7 @@ test_that("the polle implementation of earl agrees with direct application of Dy
   library("DynTxRegime")
 
   source(system.file("sim", "single_stage.R", package="polle"))
-  d1 <- sim_single_stage(2e3, seed=1)
+  d1 <- sim_single_stage(200, seed=1)
   pd1 <- policy_data(d1,
                      action="A",
                      covariates = list("Z", "B", "L"),
@@ -41,13 +42,13 @@ test_that("the polle implementation of earl agrees with direct application of Dy
 
   # polle application:
   pl <- policy_learn(type = "earl",
-                     earl_args = list(moPropen = moPropen1,
-                                             moMain = moMain1,
-                                             moCont = moCont1,
-                                             regime = ~B+Z+L,
-                                             verbose = 0,
-                                             lambdas = c(0.5, 1, 2),
-                                             cvFolds = 3))
+                     control = control_earl(moPropen = moPropen1,
+                                            moMain = moMain1,
+                                            moCont = moCont1,
+                                            regime = ~B+Z+L,
+                                            verbose = 0,
+                                            lambdas = c(0.5, 1, 2),
+                                            cvFolds = 3))
   set.seed(1)
   po <- pl(policy_data = pd1)
 
@@ -60,7 +61,7 @@ test_that("the polle implementation of earl agrees with direct application of Dy
 
 test_that("the polle implementation is robust in respect to the action set.",{
   source(system.file("sim", "single_stage.R", package="polle"))
-  d1 <- sim_single_stage(1e3, seed=1)
+  d1 <- sim_single_stage(200, seed=1)
   d2 <- d1
 
   d2$A[d1$A == 0] <- "B"
@@ -89,7 +90,7 @@ test_that("the polle implementation is robust in respect to the action set.",{
                            solver.method = 'lm')
 
   pl <- policy_learn(type = "earl",
-                     earl_args = list(moPropen = moPropen1,
+                     control = control_earl(moPropen = moPropen1,
                                              moMain = moMain1,
                                              moCont = moCont1,
                                              regime = ~B+Z+L,
@@ -113,6 +114,26 @@ test_that("the polle implementation is robust in respect to the action set.",{
 
 })
 
+test_that("earl handles missing arguments", {
+  library("DynTxRegime")
+
+  source(system.file("sim", "single_stage.R", package="polle"))
+  d1 <- sim_single_stage(200, seed=1)
+  pd1 <- policy_data(d1,
+                     action="A",
+                     covariates = list("Z", "B", "L"),
+                     utility="U")
+
+  pl <- policy_learn(type = "earl",
+                     control = control_earl(regime = ~B+Z+L,
+                                            verbose = 0,
+                                            lambdas = c(0.5, 1, 2),
+                                            cvFolds = 3))
+  set.seed(1)
+  # moPropen is required:
+  expect_error(pl(policy_data = pd1))
+})
+
 
 ## RWL ---------------------------------------------------------------------
 
@@ -120,7 +141,7 @@ test_that("the polle implementation of rwl agrees with direct application of Dyn
   library("DynTxRegime")
 
   source(system.file("sim", "single_stage.R", package="polle"))
-  d1 <- sim_single_stage(2e3, seed=1)
+  d1 <- sim_single_stage(200, seed=1)
   pd1 <- policy_data(d1,
                      action="A",
                      covariates = list("Z", "B", "L"),
@@ -149,12 +170,12 @@ test_that("the polle implementation of rwl agrees with direct application of Dyn
 
   # polle application:
   pl <- policy_learn(type = "rwl",
-                     rwl_args = list(moPropen = moPropen1,
-                                      moMain = moMain1,
-                                      regime = ~B+Z+L,
-                                      verbose = 0,
-                                      lambdas = c(0.5, 1, 2),
-                                      cvFolds = 3))
+                     control = control_rwl(moPropen = moPropen1,
+                                           moMain = moMain1,
+                                           regime = ~B+Z+L,
+                                           verbose = 0,
+                                           lambdas = c(0.5, 1, 2),
+                                           cvFolds = 3))
   set.seed(1)
   po <- pl(policy_data = pd1)
 
@@ -172,7 +193,7 @@ test_that("the implementation of bowl agrees with direct application of DTRlearn
   library("DTRlearn2")
 
   source(system.file("sim", "single_stage.R", package="polle"))
-  d1 <- sim_single_stage(5e2, seed=1)
+  d1 <- sim_single_stage(200, seed=1)
   pd1 <- policy_data(d1,
                      action="A",
                      covariates = list("Z", "B", "L"),
@@ -191,7 +212,7 @@ test_that("the implementation of bowl agrees with direct application of DTRlearn
   owl1_dd <- predict(owl1, H = H, K = 1)$treatment[[1]]
   owl1_d <- unname(as.character(unlist((owl1_dd + 1)/2)))
 
-  pl <- policy_learn(type = "bowl")
+  pl <- policy_learn(type = "bowl", control = control_bowl())
 
   set.seed(1)
   owl2 <- pl(policy_data = pd1, g_models = g_glm())
@@ -207,7 +228,7 @@ test_that("the implementation of bowl agrees with direct application of DTRlearn
 test_that("policy_learn with type ptl works as intended",{
 
   source(system.file("sim", "two_stage.R", package="polle"))
-  d <- sim_two_stage(5e2, seed=1)
+  d <- sim_two_stage(200, seed=1)
 
   pd <- policy_data(d,
                     action = c("A_1", "A_2"),
@@ -217,6 +238,7 @@ test_that("policy_learn with type ptl works as intended",{
                     utility = c("U_1", "U_2", "U_3"))
 
   pl <- policy_learn(type = "ptl",
+                     control = control_ptl(),
                      alpha = 0,
                      L = 1)
 
@@ -232,9 +254,9 @@ test_that("policy_learn with type ptl works as intended",{
 
   expect_error({
     pl <- policy_learn(type = "ptl",
-                       ptl_args = list(policy_vars = c("L", "BB"),
-                                       depth = 3,
-                                       hybrid = TRUE),
+                       control = control_ptl(policy_vars = c("L", "BB"),
+                                             depth = 3,
+                                             hybrid = TRUE),
                        alpha = 0,
                        L = 1)
   }, NA)
@@ -256,7 +278,7 @@ test_that("policy_learn with type ptl works as intended",{
 test_that("policy_learn with type rql works as intended",{
 
   source(system.file("sim", "two_stage.R", package="polle"))
-  d <- sim_two_stage(5e2, seed=1)
+  d <- sim_two_stage(200, seed=1)
 
   pd <- policy_data(d,
                     action = c("A_1", "A_2"),
@@ -298,7 +320,7 @@ test_that("policy_learn with type rql works as intended",{
 
 test_that("policy_learn with type rqvl works as intended",{
   source(system.file("sim", "two_stage.R", package="polle"))
-  d <- sim_two_stage(5e2, seed=1)
+  d <- sim_two_stage(200, seed=1)
 
   pd <- policy_data(d,
                     action = c("A_1", "A_2"),
@@ -307,43 +329,51 @@ test_that("policy_learn with type rqvl works as intended",{
                                       C = c("C_1", "C_2")),
                     utility = c("U_1", "U_2", "U_3"))
 
-  qv <- policy_learn(type = "rqvl",
-                     rqvl_args = list(qv_models = q_glm(formula = ~ .)))
+  qv <- policy_learn(type = "rqvl", control = control_rqvl())
 
   expect_error(
     qv(policy_data = pd, g_models = g_glm(), q_models = q_glm()),
     NA
   )
 
-  expect_error(policy_eval(policy_data = pd,
-                           policy_learn = qv), NA)
+  expect_error(
+    policy_eval(policy_data = pd,policy_learn = qv),
+    NA
+  )
 
   qv <- policy_learn(type = "rqvl",
-                     rqvl_args = list(qv_models = q_glm(formula = Y ~ .)))
-  expect_error(policy_eval(policy_data = pd,
-                           policy_learn = qv), NA)
+                     control = control_rqvl(qv_models = q_glm(formula = Y ~ .)))
+  expect_error(
+    policy_eval(policy_data = pd, policy_learn = qv),
+    NA
+  )
 
   qv <- policy_learn(type = "rqvl",
-                     rqvl_args = list(qv_models = q_glm(formula = Y ~ BB)))
-  expect_error(policy_eval(policy_data = pd,
-                           policy_learn = qv), NA)
+                     control = control_rqvl(qv_models = q_glm(formula = Y ~ BB)))
+  expect_error(
+    policy_eval(policy_data = pd, policy_learn = qv),
+    NA
+  )
 
   qv <- policy_learn(type = "rqvl",
-                     rqvl_args = list(qv_models = q_glm(formula = ~ X)))
-  expect_error(policy_eval(policy_data = pd,
-                           policy_learn = qv), "The QV-model formula ~X is invalid.")
+                     control = control_rqvl(qv_models = q_glm(formula = ~ X)))
+  expect_error(
+    policy_eval(policy_data = pd,policy_learn = qv),
+    "The QV-model formula ~X is invalid."
+  )
 
   qv <- policy_learn(type = "rqvl",
-                     rqvl_args = list(qv_models = q_glm(formula = Y ~ X)))
-  expect_error(policy_eval(policy_data = pd,
-                           policy_learn = qv), "The QV-model formula ~X is invalid.")
+                     control = control_rqvl(qv_models = q_glm(formula = Y ~ X)))
+  expect_error(
+    policy_eval(policy_data = pd,policy_learn = qv),
+    "The QV-model formula ~X is invalid."
+  )
 
   # q_glm formula default is A * (.), and A is not used when fitting the
   # QV-model.
   qv <- policy_learn(type = "rqvl",
-                     rqvl_args = list(qv_models = q_glm()))
-  expect_error(policy_eval(policy_data = pd,
-                           policy_learn = qv))
+                     control = control_rqvl(qv_models = q_glm()))
+  expect_error(policy_eval(policy_data = pd, policy_learn = qv))
 })
 
 
@@ -351,7 +381,7 @@ test_that("policy_learn with type rqvl works as intended",{
 
 test_that("the implementation of bowl agrees with direct application of DTRlearn2::owl in the two stage case.",{
   source(system.file("sim", "two_stage.R", package="polle"))
-  d <- sim_two_stage(5e2, seed=1)
+  d <- sim_two_stage(200, seed=1)
   pd <- policy_data(d,
                     action = c("A_1", "A_2"),
                     baseline = c("BB", "B"),
@@ -385,8 +415,8 @@ test_that("the implementation of bowl agrees with direct application of DTRlearn
   owl1_d2 <- unname(as.character(unlist((owl1_dd2 + 1)/2)))
 
   pl <- policy_learn(type = "bowl",
-                     bowl_args = list(policy_vars = c("B", "L", "C"),
-                                     reuse_scales = TRUE))
+                     control = control_bowl(policy_vars = c("B", "L", "C"),
+                                            reuse_scales = TRUE))
   set.seed(1)
   owl2 <- pl(policy_data = pd,
              g_models = list(g_glm(~B + L + C), g_glm(~B + L + C)))
@@ -416,7 +446,7 @@ test_that("the implementation of bowl agrees with direct application of DTRlearn
 
 test_that("input to policy_learn with type bowl handles incorrect input.",{
   source(system.file("sim", "multi_stage.R", package="polle"))
-  d <- sim_multi_stage(5e2, seed = 1)
+  d <- sim_multi_stage(200, seed = 1)
   # constructing policy_data object:
   pd <- policy_data(data = d$stage_data,
                     baseline_data = d$baseline_data,

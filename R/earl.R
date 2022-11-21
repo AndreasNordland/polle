@@ -1,3 +1,39 @@
+#' @title Control arguments for Efficient Augmentation and Relaxation Learning
+#' @description \code{control_earl} sets the default control arguments
+#' for efficient augmentation and relaxation learning , \code{type = "earl"}.
+#' The arguments are passed directly to [DynTxRegime::earl()] if not
+#' specified otherwise.
+#' @param moPropen Propensity model of class "ModelObj", see [modelObj::modelObj].
+#' @param moMain Main effects outcome model of class "ModelObj".
+#' @param moCont Contrast outcome model of class "ModelObj".
+#' @param regime An object of class [formula] specifying the design of the policy/regime.
+#' @param iter Maximum number of iterations for outcome regression.
+#' @param fSet A function or NULL defining subset structure.
+#' @param lambdas Numeric or numeric vector. Penalty parameter.
+#' @param cvFolds Integer. Number of folds for cross-validation of the parameters.
+#' @param surrogate The surrogate 0-1 loss function. The options are
+#' \code{"logit"}, \code{"exp"}, \code{"hinge"}, \code{"sqhinge"}, \code{"huber"}.
+#' @param kernel The options are \code{"linear"}, \code{"poly"}, \code{"radial"}.
+#' @param kparam Numeric. Kernel parameter
+#' @param verbose Integer.
+#' @returns list of (default) control arguments.
+#' @export
+control_earl <- function(moPropen,
+                         moMain,
+                         moCont,
+                         regime,
+                         iter = 0L,
+                         fSet = NULL,
+                         lambdas = 0.5,
+                         cvFolds = 0L,
+                         surrogate = "hinge",
+                         kernel = "linear",
+                         kparam = NULL,
+                         verbose = 0L){
+  control <- as.list(environment())
+  return(control)
+}
+
 dyntxregime_earl <- function(policy_data,
                              alpha,
                              L,
@@ -5,14 +41,14 @@ dyntxregime_earl <- function(policy_data,
                              moMain,
                              moCont,
                              regime,
-                             iter = 0L,
-                             fSet = NULL,
-                             lambdas = 0.5,
-                             cvFolds = 0L,
-                             surrogate = "hinge",
-                             kernel = "linear",
-                             kparam = NULL,
-                             verbose = 0,
+                             iter,
+                             fSet,
+                             lambdas,
+                             cvFolds,
+                             surrogate,
+                             kernel,
+                             kparam,
+                             verbose,
                              ...){
   K <- get_K(policy_data)
   if (K != 1)
@@ -81,7 +117,7 @@ get_policy.EARL <- function(object){
 
     H <- get_H(get_history(policy_data))
 
-    pred <- optTx(earl_object, H)
+    pred <- DynTxRegime::optTx(earl_object, H)
     policy_actions <- get_id_stage(policy_data)
     d <- NULL
     policy_actions[, d := pred$optimalTx]

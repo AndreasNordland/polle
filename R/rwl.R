@@ -1,16 +1,49 @@
+#' @title Control arguments for Residual Weighted Learning
+#' @description \code{control_rwl} sets the default control arguments
+#' for residual learning , \code{type = "rwl"}.
+#' The arguments are passed directly to [DynTxRegime::rwl()] if not
+#' specified otherwise.
+#' @param moPropen Propensity model of class "ModelObj", see [modelObj::modelObj].
+#' @param moMain Main effects outcome model of class "ModelObj".
+#' @param regime An object of class [formula] specifying the design of the policy/regime.
+#' @param fSet A function or NULL defining subset structure.
+#' @param lambdas Numeric or numeric vector. Penalty parameter.
+#' @param cvFolds Integer. Number of folds for cross-validation of the parameters.
+#' \code{"logit"}, \code{"exp"}, \code{"hinge"}, \code{"sqhinge"}, \code{"huber"}.
+#' @param kernel The options are \code{"linear"}, \code{"poly"}, \code{"radial"}.
+#' @param kparam Numeric. Kernel parameter
+#' @param responseType Character string. Options are \code{"continuous"},
+#' \code{"binary"}, \code{"count"}.
+#' @param verbose Integer.
+#' @returns list of (default) control arguments.
+#' @export
+control_rwl <- function(moPropen,
+                        moMain,
+                        regime,
+                        fSet = NULL,
+                        lambdas = 2,
+                        cvFolds = 0L,
+                        kernel = "linear",
+                        kparam = NULL,
+                        responseType = "continuous",
+                        verbose = 2L){
+  control <- as.list(environment())
+  return(control)
+}
+
 dyntxregime_rwl <- function(policy_data,
                             alpha,
                             L,
                             moPropen,
                             moMain,
                             regime,
-                            fSet = NULL,
-                            lambdas = 2,
-                            cvFolds = 0L,
-                            kernel = "linear",
-                            kparam = NULL,
-                            responseType = "continuous",
-                            verbose = 0,
+                            fSet,
+                            lambdas,
+                            cvFolds,
+                            kernel,
+                            kparam,
+                            responseType,
+                            verbose,
                             ...){
   K <- get_K(policy_data)
   if (K != 1)
@@ -75,7 +108,7 @@ get_policy.RWL <- function(object){
 
     H <- get_H(get_history(policy_data))
 
-    pred <- optTx(rwl_object, H)
+    pred <- DynTxRegime::optTx(rwl_object, H)
     policy_actions <- get_id_stage(policy_data)
     d <- NULL
     policy_actions[, d := pred$optimalTx]

@@ -1,10 +1,41 @@
+#' @title Control arguments for Policy Tree Learning
+#' @description \code{control_ptl} sets the default control arguments
+#' for doubly robust policy tree learning, \code{type = "ptl"}.
+#' The arguments are passed directly to [policytree::policy_tree()] (or
+#' [policytree::hybrid_policy_tree()]) if not specified otherwise.
+#' @param policy_vars Character vector/string or list of character
+#' vectors/strings. Variable names used to construct the V-restricted policy tree.
+#' The names must be a subset of the history names, see get_history_names().
+#' Not passed to \code{policy_tree()}.
+#' @param hybrid If \code{TRUE}, [policytree::hybrid_policy_tree()] is used to
+#' fit a policy tree. Not passed to \code{policy_tree()}.
+#' @param depth Integer or integer vector. The depth of the fitted policy
+#' tree for each stage.
+#' @param search.depth (only used if \code{hybrid = TRUE}) Integer or integer
+#' vector. Depth to look ahead when splitting at each stage.
+#' @param split.step Integer or integer vector. The number of possible splits
+#' to consider when performing policy tree search at each stage.
+#' @param min.node.size Integer or integer vector. The smallest terminal node
+#' size permitted at each stage.
+#' @returns list of (default) control arguments.
+#' @export
+control_ptl <- function(policy_vars = NULL,
+                        hybrid = FALSE,
+                        depth = 2,
+                        search.depth = 2,
+                        split.step = 1,
+                        min.node.size = 1){
+  control <- as.list(environment())
+  return(control)
+}
+
 ptl <- function(policy_data,
                 g_models, g_functions, g_full_history,
                 q_models, q_full_history,
-                policy_vars = NULL, full_history,
+                policy_vars, full_history,
                 L, save_cross_fit_models, future_args,
                 alpha,
-                depth = 2, split.step = 1, min.node.size = 1, hybrid = FALSE, search.depth = 2,
+                depth, split.step, min.node.size, hybrid, search.depth,
                 ...
                 ){
   if ((is.null(g_models) & is.null(g_functions))) stop("Provide either g-models or g-functions.")

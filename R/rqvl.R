@@ -50,12 +50,26 @@ evaluate.QV_function <- function(object, new_history){
   return(qv_values)
 }
 
-# note: if L > 1 and alpha > 0 then the g_functions fitted on the complete data is used to determine future realistic actions.
+
+#' @title Control arguments for QV-learning
+#' @description \code{control_rqvl} sets the default control arguments
+#' for doubly robust V-restricted Q-learning, \code{type = "rqvl"}.
+#' @param qv_models Single element or list of V-restricted Q-models created
+#' by [q_glm()], [q_rf()], [q_sl()] or similar functions.
+#' @returns list of (default) control arguments.
+#' @export
+control_rqvl <- function(qv_models = q_glm(~.)){
+  control <- as.list(environment())
+  return(control)
+}
+
+# note: if L > 1 and alpha > 0 then the g_functions fitted on the complete data
+# is used to determine future realistic actions.
 rqvl <- function(policy_data,
                  alpha,
                  g_models, g_functions, g_full_history,
                  q_models, q_full_history,
-                 qv_models = NULL, full_history,
+                 qv_models, full_history,
                  L, save_cross_fit_models, future_args,
                  ...){
   K <- get_K(policy_data)

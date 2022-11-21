@@ -220,9 +220,9 @@ head(IC(pe1))
 # evaluating the policy using random forest nuisance models:
 set.seed(1)
 pe1_rf <- policy_eval(policy_data = pd1,
-                   policy = pl1,
-                   g_models = g_rf(),
-                   q_models = q_rf())
+                      policy = pl1,
+                      g_models = g_rf(),
+                      q_models = q_rf())
 
 # merging the two estimates (equivalent to pe1 + pe1_rf):
 (est1 <- merge(pe1, pe1_rf))
@@ -233,17 +233,17 @@ head(IC(est1))
 source(system.file("sim", "two_stage.R", package="polle"))
 d2 <- sim_two_stage(5e2, seed=1)
 pd2 <- policy_data(d2,
-                  action = c("A_1", "A_2"),
-                  covariates = list(L = c("L_1", "L_2"),
-                                    C = c("C_1", "C_2")),
-                  utility = c("U_1", "U_2", "U_3"))
+                   action = c("A_1", "A_2"),
+                   covariates = list(L = c("L_1", "L_2"),
+                                     C = c("C_1", "C_2")),
+                   utility = c("U_1", "U_2", "U_3"))
 pd2
 
 # defining a policy learner based on cross-fitted doubly robust Q-learning:
 pl2 <- policy_learn(type = "rqvl",
-                   rqvl_args = list(qv_models = list(q_glm(~C_1), q_glm(~C_1+C_2))),
-                   full_history = TRUE,
-                   L = 2) # number of folds for cross-fitting
+                    control = control_rqvl(qv_models = list(q_glm(~C_1), q_glm(~C_1+C_2))),
+                    full_history = TRUE,
+                    L = 2) # number of folds for cross-fitting
 
 # evaluating the policy learner using 2-fold cross fitting:
 pe2 <- policy_eval(type = "dr",

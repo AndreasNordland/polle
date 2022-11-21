@@ -43,8 +43,8 @@ pd
 ### Realistic V-restricted Policy Tree Learning
 # specifying the learner:
 pl <- policy_learn(type = "ptl",
-                   ptl_args = list(policy_vars = list(c("C_1", "BB"),
-                                      c("L_1", "BB"))),
+                   control = control_ptl(policy_vars = list(c("C_1", "BB"),
+                                                            c("L_1", "BB"))),
                    full_history = TRUE,
                    alpha = 0.05)
 

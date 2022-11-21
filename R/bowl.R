@@ -1,12 +1,50 @@
+#' @title Control arguments for Outcome Weighted Learning
+#' @description \code{control_bowl} sets the default control arguments
+#' for backwards outcome weighted learning, \code{type = "bowl"}.
+#' The arguments are passed directly to [DTRlearn2::owl()] if not
+#' specified otherwise.
+#' @param policy_vars Character vector/string or list of character
+#' vectors/strings. Variable names used to restrict the policy.
+#' The names must be a subset of the history names, see get_history_names().
+#' Not passed to \code{owl()}.
+#' @param reuse_scales The history matrix passed to \code{owl()} is scaled
+#' using [scale()] as advised. If \code{TRUE}, the scales of the history matrix
+#' will be saved and reused when applied to (new) test data.
+#' @param res.lasso If \code{TRUE} a lasso penalty is applied.
+#' @param loss Loss function. The options are \code{"hinge"}, \code{"ramp"},
+#' \code{"logit"}, \code{"logit.lasso"}, \code{"l2"}, \code{"l2.lasso"}.
+#' @param kernel Type of kernel used by the support vector machine. The
+#' options are \code{"linear"}, \code{"rbf"}.
+#' @param augment If \code{TRUE} the outcomes are augmented.
+#' @param c Regularization parameter.
+#' @param sigma Tuning parameter.
+#' @param s Slope parameter.
+#' @param m Number of folds for cross-validation of the parameters.
+#' @returns list of (default) control arguments.
+#' @export
+control_bowl <- function(policy_vars = NULL,
+                         reuse_scales = TRUE,
+                         res.lasso = TRUE,
+                         loss = 'hinge',
+                         kernel = 'linear',
+                         augment = FALSE,
+                         c = 2^(-2:2),
+                         sigma = c(0.03,0.05,0.07),
+                         s = 2.^(-2:2),
+                         m = 4){
+  control <- as.list(environment())
+  return(control)
+}
+
 bowl <- function(policy_data,
                  alpha,
                  g_models, g_functions, g_full_history,
-                 policy_vars = NULL, full_history,
+                 policy_vars, full_history,
                  L, save_cross_fit_models, future_args,
-                 reuse_scales = TRUE,
-                 res.lasso = TRUE, loss = 'hinge', kernel = 'linear',
-                 augment = FALSE, c = 2^(-2:2), sigma = c(0.03,0.05,0.07),
-                 s = 2.^(-2:2), m = 4,
+                 reuse_scales,
+                 res.lasso, loss, kernel,
+                 augment, c, sigma,
+                 s, m,
                  ...){
 
   if ((is.null(g_models) & is.null(g_functions)))
