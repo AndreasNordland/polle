@@ -170,8 +170,6 @@ Z^d_1 = Q^d_1(H_1 , d_1(...)) + \sum_{r = 1}^K \prod_{j = 1}^{r}
 \frac{I\{A_j = d_j(...)\}}{g_{j}(H_j, A_j)}
 \{Q_{r+1}^d(H_{r+1} , d_{r+1}(...)) - Q_{r}^d(H_r , d_r(...))\}.
 }
-
-For references, see \doi{10.1515/jci-2013-0022}, \doi{10.1201/9780429192692}.
 }
 \section{S3 generics}{
 
@@ -257,6 +255,14 @@ pe2
 
 # getting the cross-fitted policy actions:
 head(get_policy_actions(pe2))
+}
+\references{
+van der Laan, Mark J., and Alexander R. Luedtke. "Targeted learning of the
+mean outcome under an optimal dynamic treatment rule." Journal of causal
+inference 3.1 (2015): 61-95. \doi{10.1515/jci-2013-0022}\cr
+\cr
+Tsiatis, Anastasios A., et al. Dynamic treatment regimes: Statistical methods
+for precision medicine. Chapman and Hall/CRC, 2019. \doi{10.1201/9780429192692}.
 }
 \seealso{
 \link[lava:IC]{lava::IC}, \link[lava:estimate.default]{lava::estimate.default}.
