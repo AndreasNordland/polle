@@ -1,5 +1,3 @@
-
-
 #' Policy Evaluation
 #'
 #' \code{policy_eval()} is used to estimate the value of a given fixed policy or a data adaptive policy (e.g. a policy learned from the data).
@@ -27,6 +25,7 @@
 #' @param M Number of folds for cross-fitting.
 #' @param type Type of evaluation (dr/doubly robust, ipw/inverse propensity weighting, or/outcome regression).
 #' @param future_args Arguments passed to [future.apply::future_apply()].
+#' @param name Character string.
 #' @param object,x,y Objects of class "policy_eval".
 #' @param labels Name(s) of the estimate(s).
 #' @param paired \code{TRUE} indicates that the estimates are based on
@@ -136,14 +135,15 @@
 #' pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
 #' pd1
 #'
-#' # defining a static policy:
-#' pl1 <- policy_def(static_policy(1))
+#' # defining a static policy (A=1):
+#' pl1 <- policy_def(1)
 #'
 #' # evaluating the policy:
 #' pe1 <- policy_eval(policy_data = pd1,
 #'                    policy = pl1,
 #'                    g_models = g_glm(),
-#'                    q_models = q_glm())
+#'                    q_models = q_glm(),
+#'                    name = "A=1 (glm)")
 #'
 #' # summarizing the estimated value of the policy:
 #' # (equivalent to summary(pe1)):
@@ -163,7 +163,8 @@
 #' pe1_rf <- policy_eval(policy_data = pd1,
 #'                       policy = pl1,
 #'                       g_models = g_rf(),
-#'                       q_models = q_rf())
+#'                       q_models = q_rf(),
+#'                       name = "A=1 (rf)")
 #'
 #' # merging the two estimates (equivalent to pe1 + pe1_rf):
 #' (est1 <- merge(pe1, pe1_rf))
@@ -182,7 +183,8 @@
 #'
 #' # defining a policy learner based on cross-fitted doubly robust Q-learning:
 #' pl2 <- policy_learn(type = "rqvl",
-#'                     control = control_rqvl(qv_models = list(q_glm(~C_1), q_glm(~C_1+C_2))),
+#'                     control = control_rqvl(qv_models = list(q_glm(~C_1),
+#'                                                             q_glm(~C_1+C_2))),
 #'                     full_history = TRUE,
 #'                     L = 2) # number of folds for cross-fitting
 #'
@@ -192,7 +194,8 @@
 #'                    policy_learn = pl2,
 #'                    q_models = q_glm(),
 #'                    g_models = g_glm(),
-#'                    M = 2) # number of folds for cross-fitting
+#'                    M = 2, # number of folds for cross-fitting
+#'                    name = "rqvl")
 #' # summarizing the estimated value of the policy:
 #' pe2
 #'
@@ -203,12 +206,14 @@ policy_eval <- function(policy_data,
                         g_functions=NULL, g_models=g_glm(), g_full_history = FALSE,
                         q_functions=NULL, q_models=q_glm(), q_full_history = FALSE,
                         type = "dr",
-                        M=1, future_args = list(future.seed = TRUE)
+                        M=1, future_args = list(future.seed = TRUE),
+                        name = NULL
                         ) {
   args <- as.list(environment())
   args[["policy_data"]] <- NULL
   args[["M"]] <- NULL
   args[["future_args"]] <- NULL
+  args[["name"]] <- NULL
 
   if (M > 1){
     val <- policy_eval_cross(args = args,
@@ -220,8 +225,14 @@ policy_eval <- function(policy_data,
     args[["valid_policy_data"]] <- policy_data
     val <- do.call(what = policy_eval_type, args = args)
   }
+  if (is.null(name)){
+    if (!is.null(policy))
+      val$name <- attr(policy, "name")
+    else
+      val$name <- attr(policy_learn, "name")
+  } else
+    val$name <- name
 
-  val$name <- attr(policy, "name")
   return(val)
 }
 

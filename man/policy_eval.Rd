@@ -24,7 +24,8 @@ policy_eval(
   q_full_history = FALSE,
   type = "dr",
   M = 1,
-  future_args = list(future.seed = TRUE)
+  future_args = list(future.seed = TRUE),
+  name = NULL
 )
 
 \method{coef}{policy_eval}(object, ...)
@@ -79,6 +80,8 @@ If a single model is provided, the model is reused at every stage.}
 \item{M}{Number of folds for cross-fitting.}
 
 \item{future_args}{Arguments passed to \code{\link[future.apply:future_apply]{future.apply::future_apply()}}.}
+
+\item{name}{Character string.}
 
 \item{object, x, y}{Objects of class "policy_eval".}
 
@@ -193,14 +196,15 @@ d1 <- sim_single_stage(5e2, seed=1)
 pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
 pd1
 
-# defining a static policy:
-pl1 <- policy_def(static_policy(1))
+# defining a static policy (A=1):
+pl1 <- policy_def(1)
 
 # evaluating the policy:
 pe1 <- policy_eval(policy_data = pd1,
                    policy = pl1,
                    g_models = g_glm(),
-                   q_models = q_glm())
+                   q_models = q_glm(),
+                   name = "A=1 (glm)")
 
 # summarizing the estimated value of the policy:
 # (equivalent to summary(pe1)):
@@ -220,7 +224,8 @@ set.seed(1)
 pe1_rf <- policy_eval(policy_data = pd1,
                       policy = pl1,
                       g_models = g_rf(),
-                      q_models = q_rf())
+                      q_models = q_rf(),
+                      name = "A=1 (rf)")
 
 # merging the two estimates (equivalent to pe1 + pe1_rf):
 (est1 <- merge(pe1, pe1_rf))
@@ -239,7 +244,8 @@ pd2
 
 # defining a policy learner based on cross-fitted doubly robust Q-learning:
 pl2 <- policy_learn(type = "rqvl",
-                    control = control_rqvl(qv_models = list(q_glm(~C_1), q_glm(~C_1+C_2))),
+                    control = control_rqvl(qv_models = list(q_glm(~C_1),
+                                                            q_glm(~C_1+C_2))),
                     full_history = TRUE,
                     L = 2) # number of folds for cross-fitting
 
@@ -249,7 +255,8 @@ pe2 <- policy_eval(type = "dr",
                    policy_learn = pl2,
                    q_models = q_glm(),
                    g_models = g_glm(),
-                   M = 2) # number of folds for cross-fitting
+                   M = 2, # number of folds for cross-fitting
+                   name = "rqvl")
 # summarizing the estimated value of the policy:
 pe2
 

@@ -29,8 +29,8 @@ source(system.file("sim", "single_stage.R", package="polle"))
 d1 <- sim_single_stage(5e2, seed=1)
 pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
 pd1
-# defining a static policy:
-pl1 <- policy_def(static_policy(1))
+# defining a static policy (A=1):
+pl1 <- policy_def(1, name = "A=1")
 
 # doubly robust evaluation of the policy:
 pe1 <- policy_eval(policy_data = pd1,

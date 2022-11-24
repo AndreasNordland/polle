@@ -4,23 +4,27 @@
 \alias{policy_def}
 \title{Define Policy}
 \usage{
-policy_def(policy_functions, full_history = FALSE, reuse = FALSE)
+policy_def(policy_functions, full_history = FALSE, reuse = FALSE, name = NULL)
 }
 \arguments{
-\item{policy_functions}{A single policy function or a list of policy functions; see \link{static_policy} and \link{dynamic_policy}.
-The list must have the same length as the number of stages.}
+\item{policy_functions}{A single function/character string or a list of
+functions/character strings. A list must have the same length as the number
+of stages.}
 
-\item{full_history}{If TRUE, the full history at each stage is used as input to the policy functions.}
+\item{full_history}{If TRUE, the full history at each stage is used as
+input to the policy functions.}
 
 \item{reuse}{If TRUE, the policy function is reused at every stage.}
+
+\item{name}{Character string.}
 }
 \value{
-Function of inherited class \code{"policy"}. The function takes a
+Function of class \code{"policy"}. The function takes a
 \link{policy_data} object as input and returns a \link{data.table}
 with keys \code{id} and \code{stage} and action variable \code{d}.
 }
 \description{
-\code{policy_def} returns a function of inherited class \link{policy}.
+\code{policy_def} returns a function of class \link{policy}.
 The function input is a \link{policy_data} object and it returns a \link{data.table}
 with keys \code{id} and \code{stage} and action variable \code{d}.
 }
@@ -32,17 +36,17 @@ d1 <- sim_single_stage(5e2, seed=1)
 pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
 pd1
 
-# defining a static policy:
-p1_static <- policy_def(static_policy(1))
+# defining a static policy (A=1):
+p1_static <- policy_def(1)
 
 # applying the policy:
-head(p1_static(pd1),5)
+p1_static(pd1)
 
 # defining a dynamic policy:
 p1_dynamic <- policy_def(
-  dynamic_policy(fun = function(Z, L) ((3*Z + 1*L -2.5)>0)*1)
+  function(Z, L) ((3*Z + 1*L -2.5)>0)*1
 )
-head(p1_dynamic(pd1),5)
+p1_dynamic(pd1)
 
 ### Two stages:
 source(system.file("sim", "two_stage.R", package="polle"))
@@ -53,17 +57,17 @@ pd2 <- policy_data(d2,
                                     C = c("C_1", "C_2")),
                   utility = c("U_1", "U_2", "U_3"))
 
-# defining a static policy:
-p2_static <- policy_def(static_policy(0),
+# defining a static policy (A=0):
+p2_static <- policy_def(0,
                         reuse = TRUE)
-head(p2_static(pd2),5)
+p2_static(pd2)
 
-# defining a repeated dynamic policy:
+# defining a reused dynamic policy:
 p2_dynamic_reuse <- policy_def(
-  dynamic_policy(function(L) (L > 0) * 1),
+  function(L) (L > 0)*1,
   reuse = TRUE
 )
-head(p2_dynamic_reuse(pd2), 5)
+p2_dynamic_reuse(pd2)
 
 # defining a dynamic policy for each stage based on the full history:
 # available variable names at each stage:
@@ -72,13 +76,12 @@ get_history_names(pd2, stage = 2)
 
 p2_dynamic <- policy_def(
   policy_functions = list(
-    dynamic_policy(function(L_1) (L_1 > 0)*1),
-    dynamic_policy(function(L_1, L_2) (L_1 + L_2 > 0)*1)
+    function(L_1) (L_1 > 0)*1,
+    function(L_1, L_2) (L_1 + L_2 > 0)*1
   ),
   full_history = TRUE
 )
-head(p2_dynamic(pd2))
-
+p2_dynamic(pd2)
 }
 \seealso{
 \code{\link[=get_history_names]{get_history_names()}}, \code{\link[=get_history]{get_history()}}.

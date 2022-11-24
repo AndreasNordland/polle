@@ -33,7 +33,7 @@ pd
 
 # evaluating the static policy a=1:
 pe <- policy_eval(policy_data = pd,
-                  policy = policy_def(static_policy(1), reuse = TRUE),
+                  policy = policy_def(1, reuse = TRUE),
                   g_models = g_glm(),
                   q_models = q_glm())
 

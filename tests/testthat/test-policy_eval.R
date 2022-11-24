@@ -12,7 +12,7 @@ test_that("policy_eval handles missing covariates", {
                     covariates = list(L = c("L_1", "L_2"),
                                       C = c(NA, "C_2")), # C_1 is missing
                     utility = c("U_1", "U_2", "U_3"))
-  p <- policy_def(static_policy(1), reuse = TRUE)
+  p <- policy_def(1, reuse = TRUE)
 
   expect_error(
     policy_eval(policy_data = pd,
@@ -47,8 +47,8 @@ test_that("input to policy_eval with type dr handles incorrect arguments",{
                     utility = c("U_1", "U_2", "U_3"))
 
   p_dynamic <- policy_def(
-    policy_functions = list(dynamic_policy(function(L_1) (L_1>0)),
-                            dynamic_policy(function(C_2) (C_2>0))),
+    policy_functions = list(function(L_1) (L_1>0)*1,
+                            function(C_2) (C_2>0)*1),
     reuse = FALSE
   )
 

@@ -179,8 +179,8 @@ q_step_cf <- function(folds, policy_data, k, full_history, Q, q_models, future_a
 #'                   utility = c("U_1", "U_2", "U_3"))
 #' pd
 #'
-#' # Defining a static policy
-#' pl <- policy_def(static_policy(1), reuse = TRUE)
+#' # Defining a static policy (A=1)
+#' pl <- policy_def(1, reuse = TRUE)
 #'
 #' # fitting a Q-model for each stage:
 #' q_functions <- fit_Q_functions(policy_data = pd,
@@ -267,7 +267,7 @@ fit_Q_functions <- function(policy_data,
 #' # based on a GLM model at each stage.
 #' pe2 <- policy_eval(type = "or",
 #'                    policy_data = pd2,
-#'                    policy = policy_def(static_policy(1), reuse = TRUE),
+#'                    policy = policy_def(1, reuse = TRUE, name = "A=1"),
 #'                    q_models = list(q_glm(), q_glm()))
 #' pe2
 #'

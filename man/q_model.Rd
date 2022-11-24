@@ -90,7 +90,10 @@ library("polle")
 ### Single stage case
 source(system.file("sim", "single_stage.R", package="polle"))
 d <- sim_single_stage(5e2, seed=1)
-pd <- policy_data(d, action="A", covariates=list("Z", "B", "L"), utility="U")
+pd <- policy_data(d,
+                  action="A",
+                  covariates=list("Z", "B", "L"),
+                  utility="U")
 pd
 
 # available history variable names for the outcome regression:
@@ -100,12 +103,12 @@ get_history_names(pd)
 # propensity weighting based on the given Q-model:
 pe <- policy_eval(type = "or",
             policy_data = pd,
-            policy = policy_def(static_policy(1)),
+            policy = policy_def(1, name = "A=1"),
             q_model = q_glm(formula = ~A*.))
 pe
 
 # getting the fitted Q-function values
-predict(get_q_functions(pe), pd)
+head(predict(get_q_functions(pe), pd))
 
 ### Two stages:
 source(system.file("sim", "two_stage.R", package="polle"))
@@ -126,14 +129,14 @@ get_history_names(pd2, stage = 2)
 # regression based on a glm model for each stage:
 pe2 <- policy_eval(type = "or",
             policy_data = pd2,
-            policy = policy_def(static_policy(1), reuse = TRUE),
+            policy = policy_def(1, reuse = TRUE, name = "A=1"),
             q_model = list(q_glm(~ A * L_1),
                            q_glm(~ A * (L_1 + L_2))),
             q_full_history = TRUE)
 pe2
 
 # getting the fitted Q-function values
-predict(get_q_functions(pe2), pd2)
+head(predict(get_q_functions(pe2), pd2))
 }
 \seealso{
 \code{\link[=get_history_names]{get_history_names()}}, \code{\link[=get_q_functions]{get_q_functions()}}.

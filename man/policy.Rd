@@ -40,7 +40,7 @@ pd <- policy_data(d,
 
 # defining a dynamic policy:
 p <- policy_def(
-  dynamic_policy(function(L) (L > 0) * 1),
+  function(L) (L>0)*1,
   reuse = TRUE
 )
 p
@@ -60,5 +60,4 @@ p <- get_policy(po)
 p
 
 head(p(pd))
-
 }

@@ -55,6 +55,7 @@
 #' @param full_history If \code{TRUE}, the full
 #' history is used to fit each policy function (e.g. QV-model, policy tree). If FALSE, the single stage/
 #' "Markov type" history is used to fit each policy function.
+#' @param name Character string.
 #' @param x Object of class "policy_object" or "policy_learn".
 #' @param ... Additional arguments passed to print.
 #' @returns Function of inherited class \code{"policy_learn"}.
@@ -139,7 +140,8 @@ policy_learn <- function(type = "rql",
                          L = 1,
                          full_history = FALSE,
                          save_cross_fit_models = FALSE,
-                         future_args = list(future.seed = TRUE)
+                         future_args = list(future.seed = TRUE),
+                         name = type
 ){
 
   pl_args <- list(
@@ -179,6 +181,7 @@ policy_learn <- function(type = "rql",
   class(pl) <- c("policy_learn", "function")
   attr(pl, "type") <- type
   attr(pl, "pl_args") <- pl_args
+  attr(pl, "name") <- name
 
   return(pl)
 }

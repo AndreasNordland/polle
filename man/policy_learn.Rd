@@ -14,7 +14,8 @@ policy_learn(
   L = 1,
   full_history = FALSE,
   save_cross_fit_models = FALSE,
-  future_args = list(future.seed = TRUE)
+  future_args = list(future.seed = TRUE),
+  name = type
 )
 
 \method{print}{policy_object}(x, ...)
@@ -80,6 +81,8 @@ history is used to fit each policy function (e.g. QV-model, policy tree). If FAL
 \item{save_cross_fit_models}{If \code{TRUE}, the cross-fitted models will be saved.}
 
 \item{future_args}{Arguments passed to \code{\link[future.apply:future_apply]{future.apply::future_apply()}}.}
+
+\item{name}{Character string.}
 
 \item{x}{Object of class "policy_object" or "policy_learn".}
 

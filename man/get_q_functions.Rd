@@ -32,7 +32,7 @@ pd2
 # based on a GLM model at each stage.
 pe2 <- policy_eval(type = "or",
                    policy_data = pd2,
-                   policy = policy_def(static_policy(1), reuse = TRUE),
+                   policy = policy_def(1, reuse = TRUE, name = "A=1"),
                    q_models = list(q_glm(), q_glm()))
 pe2
 

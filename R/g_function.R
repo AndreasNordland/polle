@@ -254,7 +254,7 @@ fit_g_functions_cf <- function(folds,
 #' # based on a GLM model at each stage
 #' pe2 <- policy_eval(type = "ipw",
 #'                    policy_data = pd2,
-#'                    policy = policy_def(static_policy(1), reuse = TRUE),
+#'                    policy = policy_def(1, reuse = TRUE, name = "A=1"),
 #'                    g_models = list(g_glm(), g_glm()))
 #' pe2
 #'
