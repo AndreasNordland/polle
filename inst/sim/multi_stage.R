@@ -1,13 +1,13 @@
 library(data.table)
 
 a0 <- function(t, x, beta, ...){
-  prob <- lava::expit(beta[1] + (beta[2] * t) + (beta[3] * x))
+  prob <- lava::expit(beta[1] + (beta[2] * t^2) + (beta[3] * x))
   rbinom(n = 1, size = 1, prob = prob)
 }
 
 sim_multi_stage_obs <- function(a,
                                 tau,
-                                lambda,
+                                gamma,
                                 alpha,
                                 sigma,
                                 beta,
@@ -22,7 +22,7 @@ sim_multi_stage_obs <- function(a,
   a_vec <- vector("numeric")
 
   # latent variable
-  w <- rnorm(n=1, 0, 1)
+  w <- rnorm(n=1)
 
   # baseline variable
   b <- rbinom(n = 1, size = 1, prob = xi)
@@ -50,9 +50,10 @@ sim_multi_stage_obs <- function(a,
     if (a == 1){
       entry_vec <- c(entry_vec, t)
     }
-    # the time increment comes from an exponential distribution with mean exp(lambda[1] + lambda[2] * x + lambda[3] * w)
+    # the time increment comes from an exponential distribution with mean exp(gamma[1] + gamma[2] * x + gamma[3] * w)
     # remember that mean(t_increment)  = 1 / rate
-    t_increment <- if(a == 1) rexp(n = 1, 1) / exp(lambda[1] + lambda[2] * x + lambda[3] * w)  else Inf
+    rate <- exp((gamma[1] + gamma[2] * x + gamma[3] * w))
+    t_increment <- if(a == 1) rexp(n = 1, rate = rate) else Inf
 
     t <- t + t_increment + psi # minimum time increment psi
     stage <- stage + 1
@@ -81,18 +82,18 @@ sim_multi_stage_obs <- function(a,
   stage_data <- matrix(c(stage_vec, entry_vec, exit_vec, event_vec, a_vec, x_vec, x_lead_vec), ncol = 7, byrow = FALSE)
   colnames(stage_data) <- c("stage", "entry", "exit", "event", "A", "X", "X_lead")
 
-  baseline_data <- matrix(b, ncol = 1)
-  colnames(baseline_data) <- c("B")
+  baseline_data <- matrix(b, ncol = 1) # cbind(b, w)
+  colnames(baseline_data) <- c("B") # c("B", "W")
 
   return(list(stage_data = stage_data, baseline_data = baseline_data))
 }
 
 sim_multi_stage <- function(n,
                             par = list(tau = 10,
-                                       lambda = c(0, -0.4, 0.3),
-                                       alpha = c(0, 0.5, 0.1, -0.5, 0.4),
+                                       gamma = c(0, -0.2, 0.3),
+                                       alpha = c(0, 0.5, 0.2, -0.5, 0.4),
                                        sigma = 1,
-                                       beta = c(0.3, 0, -0.5),
+                                       beta = c(3, -0.5, -0.5),
                                        psi = 1,
                                        xi = 0.3),
                             a = a0,
