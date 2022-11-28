@@ -15,7 +15,7 @@
 #   lava::sim(m, n)
 # }
 
-sim_multi_action <- function(n = 1e4, seed = NULL){
+sim_multi_action <- function(n = 1e3, seed = NULL){
   if (!is.null(seed)) set.seed(seed)
 
   z <- runif(n)
