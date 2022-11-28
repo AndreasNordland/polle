@@ -8,7 +8,7 @@ policy_def(policy_functions, full_history = FALSE, reuse = FALSE, name = NULL)
 }
 \arguments{
 \item{policy_functions}{A single function/character string or a list of
-functions/character strings. A list must have the same length as the number
+functions/character strings. The list must have the same length as the number
 of stages.}
 
 \item{full_history}{If TRUE, the full history at each stage is used as
