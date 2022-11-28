@@ -92,12 +92,12 @@ sim_multi_stage <- function(n,
                             par = list(tau = 10,
                                        gamma = c(0, -0.2, 0.3),
                                        alpha = c(0, 0.5, 0.2, -0.5, 0.4),
-                                       sigma = 1,
                                        beta = c(3, -0.5, -0.5),
                                        psi = 1,
                                        xi = 0.3),
                             a = a0,
                             seed = NULL){
+  par <- append(par, list(sigma = 1))
 
   if (!is.null(seed)) set.seed(seed)
 
