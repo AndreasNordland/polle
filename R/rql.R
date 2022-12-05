@@ -1,12 +1,17 @@
 rql<- function(policy_data, alpha,
                g_models, g_functions, g_full_history,
                q_models, q_full_history,
+               L,
                ...){
   K <- policy_data$dim$K
   n <- policy_data$dim$n
   action_set <- policy_data$action_set
 
-  if (!(is.numeric(alpha) &  (length(alpha) == 1) & (alpha >=0 & alpha < 0.5))) stop("alpha must be numeric and in [0, 0.5).")
+  if (!(is.numeric(alpha) &  (length(alpha) == 1) & (alpha >=0 & alpha < 0.5)))
+    stop("alpha must be numeric and in [0, 0.5).")
+
+  if (L != 1)
+    stop("L must be 1 when using rql (no cross-fitting).")
 
   if (!is.null(g_functions)){
     if(!(class(g_functions)[[1]] == "nuisance_functions"))
