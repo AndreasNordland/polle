@@ -1,0 +1,23 @@
+author1 <- "Andreas Nordland and Klaus K. Holst"
+year1 <- 2022
+journal1 <- "arXiv"
+title1 <- "Policy Learning with the polle package"
+doi1 <- "https://doi.org/10.48550/arXiv.2212.02335"
+textver1 <- paste(author1, " (", year1, "). ",
+                  title1, ". ", journal1,
+                  ##", ", volume1, " (", number1 ,")",
+                  ##", pp. ", pages1,
+                  ". doi: ", doi1, ".", sep="")
+
+citHeader("To cite 'polle' in publications use:")
+
+citEntry(entry="Misc",
+         title = title1,
+         author = author1,
+         year = year1,
+         ## volume = volume1,
+         ## number = number1,
+         ## pages = pages1,
+         publisher = journal1,
+         doi = doi1,
+         textVersion = textver1)
