@@ -6,8 +6,11 @@
 \alias{polle}
 \title{Policy Learning}
 \description{
-Framework for evaluating and learning realistic policies based on
-doubly robust loss functions.
+Framework for evaluating user-specified finite stage policies
+and learning realistic policies via doubly robust loss functions. Policy
+learning methods include doubly robust restricted Q-learning,
+sequential policy tree learning and outcome weighted learning.
+See Nordland and Holst (20222) \url{arXiv:2212.02335} for documentation and references.
 }
 \author{
 Andreas Nordland (Maintainer) \href{mailto:andreas.nordland@gmail.com}{andreas.nordland@gmail.com}, Klaus Holst.
