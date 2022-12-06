@@ -22,8 +22,10 @@ test_that("policy_data handles varying sets of/missing covariates in a given sta
   library("polle")
   library("data.table")
   d <- data.table(id = 1:n,
+                  Y_1 = rnorm(n),
                   X_1 = rnorm(n),
                   Z_1 = rnorm(n),
+                  W_1 = rep("test", n),
                   A_1 = rbinom(n = n, size = 1, prob = .5),
                   X_2 = rnorm(n),
                   Z_2 = rnorm(n),
@@ -31,14 +33,28 @@ test_that("policy_data handles varying sets of/missing covariates in a given sta
                   A_2 = rbinom(n = n, size = 1, prob = .5),
                   U = rnorm(n))
 
-  tmp <- melt(d, id = "id",
-              measure.vars = list(X = c("X_1", "X_2"),
-                                  Y = c(NA, "Y_2")))
-  expect_equal(
-    tmp$Y,
-    c(rep(NA, n),d$Y_2)
+
+  # tmp <- copy(d)
+  # tmp[, `_NA` := Y_2]
+  # tmp[, `_NA` := NA]
+  # measure.vars <- list(X = c("X_1", "X_2"),
+  #                      Y = c("_NA", "Y_2"))
+  # tmp <- melt(tmp, id = "id", measure.vars = measure.vars)
+  #
+  # expect_equal(
+  #   tmp$Y,
+  #   c(rep(NA, n),d$Y_2)
+  # )
+  # rm(tmp)
+
+  expect_error(
+    pd <- policy_data(data = d,
+                      id = "id",
+                      action = c("A_1"),
+                      covariates = c("X_1", NA),
+                      utility = "U"),
+    "covariate NA is invalid."
   )
-  rm(tmp)
 
   pd <- policy_data(data = d,
                     id = "id",
@@ -46,13 +62,59 @@ test_that("policy_data handles varying sets of/missing covariates in a given sta
                     covariates = list(X = c("X_1", "X_2"),
                                       Y = c(NA, "Y_2")),
                     utility = "U")
-
-  tmp <- polle:::get_stage_data.policy_data(pd)
   expect_equal(
     polle:::get_stage_data.policy_data(pd)$Y,
     unlist(lapply(d$Y_2, function(x) c(NA, x, NA)))
   )
-  rm(tmp)
+
+  pd <- policy_data(data = d,
+                    id = "id",
+                    action = c("A_1", "A_2"),
+                    covariates = list(X = c("X_1", "X_2"),
+                                      Y = c("Y_1", NA)),
+                    utility = "U")
+  expect_equal(
+    polle:::get_stage_data.policy_data(pd)$Y,
+    unlist(lapply(d$Y_1, function(x) c(x, NA, NA)))
+  )
+
+  pd <- policy_data(data = d,
+                    id = "id",
+                    action = c("A_1", "A_2"),
+                    covariates = list(X = c("X_1", "X_2"),
+                                      W = c("W_1", NA)),
+                    utility = "U")
+  expect_equal(
+    polle:::get_stage_data.policy_data(pd)$W,
+    unlist(lapply(d$W_1, function(x) c(x, NA, NA)))
+  )
+
+  expect_error(
+    policy_data(data = d,
+                id = "id",
+                action = c("A_1", "A_2"),
+                covariates = list(X = c("X_1", "X_2"),
+                                  W = c(NA, NA)),
+                utility = "U"),
+    "'covariates' must be a character vector or a list of character vectors."
+  )
+
+  pd <- policy_data(data = d,
+                    id = "id",
+                    action = c("A_1", "A_2"),
+                    covariates = list(X = c("X_1", "X_2"),
+                                      Y = c(NA, "Y_2"),
+                                      W = c("W_1", NA)),
+                    utility = "U")
+  expect_equal(
+    polle:::get_stage_data.policy_data(pd)$W,
+    unlist(lapply(d$W_1, function(x) c(x, NA, NA)))
+  )
+  expect_equal(
+    polle:::get_stage_data.policy_data(pd)$Y,
+    unlist(lapply(d$Y_2, function(x) c(NA, x, NA)))
+  )
+
 })
 
 test_that("policy_data melts wide data correctly in a two stage case.", {

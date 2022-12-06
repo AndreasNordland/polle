@@ -373,6 +373,7 @@ melt_wide_data <- function(wide_data,
       stop(mes)
     }
   }
+
   # action:
   if (is.list(action))
     action <- unlist(action)
@@ -382,6 +383,7 @@ melt_wide_data <- function(wide_data,
   K <- length(action)
   # getting the action set:
   action_set <- sort(unique(unlist(wide_data[ , action, with = FALSE])))
+
   # covariates:
   if (!(is.list(covariates) | is.vector(covariates)))
     stop("'covariates' must be a character vector or a list of character vectors.")
@@ -402,6 +404,7 @@ melt_wide_data <- function(wide_data,
     else
       stop("'covariates' must be a named list in case of multiple actions.")
   }
+
   # baseline:
   if (!is.null(baseline)){
     baseline <- unlist(baseline)
@@ -453,7 +456,7 @@ melt_wide_data <- function(wide_data,
   }
   rm(tmp)
 
-  ### checking for non-NA duplicates
+  ### checking for non-NA duplicates:
   tmp <- unlist(c(id, action, covariates, baseline, utility, deterministic_rewards))
   tmp <- tmp[!is.na(tmp)]
   if (anyDuplicated(tmp)>0){
@@ -470,7 +473,7 @@ melt_wide_data <- function(wide_data,
   }
 
   ### setting default variables if missing:
-  # setting id if missing
+  # setting id if missing:
   if (is.null(id)){
     if (any("id" %in% colnames(wide_data))){
       stop("'data' has a variable id, but 'id' = NULL. Please set 'id' = \"id\" or change the name of the id variable.")
@@ -479,13 +482,32 @@ melt_wide_data <- function(wide_data,
     wide_data[, id := 1:.N]
     id <- "id"
   }
-  # setting the rewards to 0 in case the final utility is provided.
+
+  # setting the rewards to 0 in case the final utility is provided:
   if (length(utility)==1) {
     for (i in seq(K)) {
       u <- paste0("_", utility[i], "_", i)
       stopifnot(!any(u %in% names(wide_data)))
       wide_data[, (u) := 0]
       utility <- c(u, utility)
+    }
+  }
+
+  # augmenting wide_data to handle NA covariates entries:
+  for (l in seq_along(covariates)){
+    na_idx <- is.na(covariates[[l]])
+    if (any(na_idx)){
+      if (all(na_idx)){
+        mes <- names(covariates[l])
+        mes <- paste("covariate", mes, 'is invalid.')
+        stop(mes)
+      }
+      # augmenting wide_data with NA column (of the same class):
+      NA_col_name <- paste("_NA_", l, sep = "")
+      wide_data[, c(NA_col_name) := wide_data[[covariates[[l]][!na_idx][[1]]]]]
+      wide_data[, c(NA_col_name) := NA]
+      # updating the covariate names:
+      covariates[[l]][na_idx] <- NA_col_name
     }
   }
 
