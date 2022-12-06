@@ -18,7 +18,7 @@
 ##' and learning realistic policies via doubly robust loss functions. Policy
 ##' learning methods include doubly robust restricted Q-learning,
 ##' sequential policy tree learning and outcome weighted learning.
-##' See Nordland and Holst (20222) <arXiv:2212.02335> for documentation and references.
+##' See Nordland and Holst (20222) <https://arxiv.org/abs/2212.02335> for documentation and references.
 NULL
 
 ##' For internal use
