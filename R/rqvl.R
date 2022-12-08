@@ -133,6 +133,7 @@ rqvl <- function(policy_data,
       g_functions_cf <- getElement(g_cf, "functions")
     }
     g_values <- getElement(g_cf, "values")
+    rm(g_cf)
     # fitting the non-cross-fitted g-functions
     # for determining new realistic actions:
     if (alpha > 0){
@@ -190,10 +191,11 @@ rqvl <- function(policy_data,
         future_args = future_args
       )
       if (save_cross_fit_models == TRUE){
-        q_functions_cf[[k]] <- q_step_cf_k$q_function
+        q_functions_cf[[k]] <- getElement(q_step_cf_k, "q_functions_cf")
       }
-      q_values_k <- q_step_cf_k$q_values
-      idx_k <- q_step_cf_k$idx_k
+      q_values_k <- getElement(q_step_cf_k, "q_values")
+      idx_k <- getElement(q_step_cf_k, "idx_k")
+      rm(q_step_cf_k)
     }
 
     # getting the action matrix for stage k:
