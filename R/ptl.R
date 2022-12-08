@@ -140,8 +140,8 @@ ptl <- function(policy_data,
     if (save_cross_fit_models == TRUE){
       g_functions_cf <- getElement(g_cf, "functions")
     }
-
     g_values <- getElement(g_cf, "values")
+    rm(g_cf)
     # fitting the non-cross-fitted g-functions
     # for determining future realistic actions:
     if (alpha > 0){
@@ -185,9 +185,9 @@ ptl <- function(policy_data,
         q_models = q_models
       )
       # getting the Q-function, Q-function values and the ID-index:
-      q_functions[[k]] <- q_step_k$q_function
-      q_values_k <- q_step_k$q_values
-      idx_k <- q_step_k$idx_k
+      q_functions[[k]] <- getElement(q_step_k, "q_function")
+      q_values_k <- getElement(q_step_k, "q_values")
+      idx_k <- getElement(q_step_k, "idx_k")
 
     } else{
       # cross-fitting the Q-function
@@ -201,10 +201,11 @@ ptl <- function(policy_data,
         future_args = future_args
       )
       if (save_cross_fit_models == TRUE){
-        q_functions_cf[[k]] <- q_step_cf_k$q_function
+        q_functions_cf[[k]] <- getElement(q_step_cf_k, "q_functions_cf")
       }
-      q_values_k <- q_step_cf_k$q_values
-      idx_k <- q_step_cf_k$idx_k
+      q_values_k <- getElement(q_step_cf_k, "q_values")
+      idx_k <- getElement(q_step_cf_k, "idx_k")
+      rm(q_step_cf_k)
     }
 
     # getting the action matrix for stage k:
@@ -309,8 +310,6 @@ ptl <- function(policy_data,
     g_functions_cf = g_functions_cf,
     q_functions = q_functions,
     q_functions_cf = q_functions_cf,
-    # g_values = g_values,
-    # D = D,
     action_set = action_set,
     alpha = alpha,
     K = K,
