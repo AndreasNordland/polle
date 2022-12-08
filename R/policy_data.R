@@ -70,7 +70,7 @@ new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
     if (any(sdf)){
       f_names <- colnames(stage_data)[sdf]
       stage_data[, (f_names) := lapply(.SD, as.character), .SDcols = f_names]
-      rm(mes, f_names)
+      rm(f_names)
     }
     rm(sdf)
 
@@ -103,7 +103,7 @@ new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
       if (any(bdf)){
         f_names <- colnames(baseline_data)[bdf]
         baseline_data[, (f_names) := lapply(.SD, as.character), .SDcols = f_names]
-        rm(mes, f_names)
+        rm(f_names)
       }
       rm(bdf)
 
