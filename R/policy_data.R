@@ -312,6 +312,12 @@ policy_data <- function(data, baseline_data,
       verbose = verbose
     )
   } else if (any(type %in% "long")) {
+    if (!is.null(deterministic_rewards))
+      warning("deterministic_rewards is not used when type = 'long'.")
+    if (missing(covariates))
+      covariates <- NULL
+    if(!is.null(covariates))
+      warning("covariates is not used when type = 'long'.")
 
     ld <- format_long_data(
       data,
