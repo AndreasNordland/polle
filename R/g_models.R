@@ -256,6 +256,7 @@ g_rf <- function(formula = ~.,
     check_g_formula(formula = formula, data = H)
     des <- get_design(formula, data=H)
     data <- data.frame(A, des$x)
+    colnames(data) <- gsub("[^[:alnum:]]", "_", colnames(data))
     res <- NULL; best <- 1
     if (length(ml)>1) {
       res <- tryCatch(targeted::cv(ml, data=data, perf=perf_ranger_prob,
@@ -286,6 +287,7 @@ predict.g_rf <- function(object, new_H, ...) {
   mf <- with(object, model.frame(terms, data=new_H, xlev = xlevels,
                                  drop.unused.levels=FALSE))
   newx <- model.matrix(mf, data=new_H, xlev = object$xlevels)
+  colnames(newx) <- gsub("[^[:alnum:]]", "_", colnames(newx))
   pr <- predict(object$fit, data=newx, num.threads=1)$predictions
   return(pr)
 }
