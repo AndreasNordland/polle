@@ -25,6 +25,7 @@ g_sl(
   formula = ~.,
   SL.library = c("SL.mean", "SL.glm"),
   family = binomial(),
+  save_env = FALSE,
   ...
 )
 }
@@ -61,6 +62,9 @@ of folds and
 
 \item{SL.library}{(Only used by \code{g_sl}) Either a character vector of prediction algorithms or
 a list containing character vectors, see \link[SuperLearner:SuperLearner]{SuperLearner::SuperLearner}.}
+
+\item{save_env}{(Only used by \code{g_sl}) Logical. If, FALSE, the calling
+environment is not saved.}
 }
 \value{
 g-model object: function with arguments 'A'
