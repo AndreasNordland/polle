@@ -314,6 +314,7 @@ g_sl <- function(formula = ~ .,
     sl_args <- append(list(Y=A, X=X, family=family, SL.library=SL.library),
                       dotdotdot)
     fit <- do.call(SuperLearner::SuperLearner, sl_args)
+    fit$call <- NULL
     m <- with(des, list(fit = fit,
                         xlevels = x_levels,
                         terms = terms,

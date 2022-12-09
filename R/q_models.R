@@ -289,8 +289,9 @@ q_sl <- function(formula = ~ A*., SL.library=c("SL.mean", "SL.glm"), ...){
                     X = X,
                     SL.library = SL.library)
     args_SL <- append(args_SL, dotdotdot)
-    SL_model <- suppressWarnings(do.call(SuperLearner::SuperLearner, args = args_SL))
-    m <- with(des, list(fit = SL_model,
+    fit <- suppressWarnings(do.call(SuperLearner::SuperLearner, args = args_SL))
+    fit$call <- NULL
+    m <- with(des, list(fit = fit,
                         xlevels = x_levels,
                         terms = terms))
     class(m) <- c("q_sl")
