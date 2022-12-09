@@ -236,6 +236,7 @@ q_rf <- function(formula = ~ .,
     check_q_formula(formula = formula, data = AH)
     des <- get_design(formula, data=AH)
     data <- data.frame(V_res, des$x)
+    colnames(data) <- gsub("[^[:alnum:]]", "_", colnames(data))
     res <- NULL; best <- 1
     if (length(ml)>1) {
       res <- tryCatch(targeted::cv(ml, data=data, perf=perf_ranger,
@@ -264,6 +265,7 @@ predict.q_rf <- function(object, new_AH, ...) {
   mf <- with(object, model.frame(terms, data=new_AH, xlev = xlevels,
                                  drop.unused.levels=FALSE))
   newx <- model.matrix(mf, data=new_AH, xlev = object$xlevels)
+  colnames(newx) <- gsub("[^[:alnum:]]", "_", colnames(newx))
   pr <- predict(object$fit, data=newx, num.threads=1)$predictions
   return(pr)
 
