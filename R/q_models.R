@@ -42,6 +42,7 @@ check_q_formula <- function(formula, data){
 #' @param SL.library (Only used by \code{q_sl}) Either a character vector of
 #' prediction algorithms or a list containing character vectors,
 #' see [SuperLearner::SuperLearner].
+#' @param env (Only used by \code{q_sl}) Environment containing the learner functions. Defaults to the calling environment.
 #' @param ... Additional arguments passed to [glm()], [glmnet::glmnet],
 #' [ranger::ranger] or [SuperLearner::SuperLearner].
 #' @details
@@ -275,7 +276,10 @@ predict.q_rf <- function(object, new_AH, ...) {
 
 #' @rdname q_model
 #' @export
-q_sl <- function(formula = ~ A*., SL.library=c("SL.mean", "SL.glm"), ...){
+q_sl <- function(formula = ~ A*.,
+                 SL.library=c("SL.mean", "SL.glm"),
+                 env = parent.frame(),
+                 ...){
   if (!requireNamespace("SuperLearner"))
     stop("Package 'SuperLearner' required.")
   dotdotdot <- list(...)
@@ -289,7 +293,8 @@ q_sl <- function(formula = ~ A*., SL.library=c("SL.mean", "SL.glm"), ...){
     colnames(X) <- gsub("[^[:alnum:]]", "_", colnames(X))
     args_SL <- list(Y = as.numeric(V_res),
                     X = X,
-                    SL.library = SL.library)
+                    SL.library = SL.library,
+                    env = env)
     args_SL <- append(args_SL, dotdotdot)
     fit <- suppressWarnings(do.call(SuperLearner::SuperLearner, args = args_SL))
     fit$call <- NULL

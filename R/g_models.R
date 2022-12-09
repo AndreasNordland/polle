@@ -82,6 +82,7 @@ get_design <- function(formula, data, intercept=FALSE) {
 #' \code{rep} is the number of replications.
 #' @param SL.library (Only used by \code{g_sl}) Either a character vector of prediction algorithms or
 #' a list containing character vectors, see [SuperLearner::SuperLearner].
+#' @param env (Only used by \code{g_sl}) Environment containing the learner functions. Defaults to the calling environment.
 #' @param ... Additional arguments passed to [glm()], [glmnet::glmnet],
 #' [ranger::ranger] or [SuperLearner::SuperLearner].
 #' @details
@@ -299,6 +300,7 @@ predict.g_rf <- function(object, new_H, ...) {
 g_sl <- function(formula = ~ .,
                  SL.library=c("SL.mean", "SL.glm"),
                  family=binomial(),
+                 env = parent.frame(),
                  ...) {
   if (!requireNamespace("SuperLearner"))
     stop("Package 'SuperLearner' required.")
@@ -311,7 +313,11 @@ g_sl <- function(formula = ~ .,
     des <- get_design(formula, data=H)
     X <- data.frame(des$x)
     colnames(X) <- gsub("[^[:alnum:]]", "_", colnames(X))
-    sl_args <- append(list(Y=A, X=X, family=family, SL.library=SL.library),
+    sl_args <- append(list(Y=A,
+                           X=X,
+                           family=family,
+                           SL.library=SL.library,
+                           env = env),
                       dotdotdot)
     fit <- do.call(SuperLearner::SuperLearner, sl_args)
     fit$call <- NULL

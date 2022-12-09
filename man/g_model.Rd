@@ -25,6 +25,7 @@ g_sl(
   formula = ~.,
   SL.library = c("SL.mean", "SL.glm"),
   family = binomial(),
+  env = parent.frame(),
   ...
 )
 }
@@ -61,6 +62,8 @@ of folds and
 
 \item{SL.library}{(Only used by \code{g_sl}) Either a character vector of prediction algorithms or
 a list containing character vectors, see \link[SuperLearner:SuperLearner]{SuperLearner::SuperLearner}.}
+
+\item{env}{(Only used by \code{g_sl}) Environment containing the learner functions. Defaults to the calling environment.}
 }
 \value{
 g-model object: function with arguments 'A'

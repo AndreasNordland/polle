@@ -27,7 +27,12 @@ q_rf(
   ...
 )
 
-q_sl(formula = ~A * ., SL.library = c("SL.mean", "SL.glm"), ...)
+q_sl(
+  formula = ~A * .,
+  SL.library = c("SL.mean", "SL.glm"),
+  env = parent.frame(),
+  ...
+)
 }
 \arguments{
 \item{formula}{An object of class \link{formula} specifying the design matrix for
@@ -65,6 +70,8 @@ of folds and
 \item{SL.library}{(Only used by \code{q_sl}) Either a character vector of
 prediction algorithms or a list containing character vectors,
 see \link[SuperLearner:SuperLearner]{SuperLearner::SuperLearner}.}
+
+\item{env}{(Only used by \code{q_sl}) Environment containing the learner functions. Defaults to the calling environment.}
 }
 \value{
 q_model object: function with arguments 'AH'
