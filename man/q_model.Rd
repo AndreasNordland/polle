@@ -31,6 +31,7 @@ q_sl(
   formula = ~A * .,
   SL.library = c("SL.mean", "SL.glm"),
   env = parent.frame(),
+  onlySL = TRUE,
   ...
 )
 }
@@ -71,7 +72,11 @@ of folds and
 prediction algorithms or a list containing character vectors,
 see \link[SuperLearner:SuperLearner]{SuperLearner::SuperLearner}.}
 
-\item{env}{(Only used by \code{q_sl}) Environment containing the learner functions. Defaults to the calling environment.}
+\item{env}{(Only used by \code{q_sl}) Environment containing the learner
+functions. Defaults to the calling environment.}
+
+\item{onlySL}{(Only used by \code{q_sl}) Logical. If TRUE, only saves and computes predictions
+for algorithms with non-zero coefficients in the super learner object.}
 }
 \value{
 q_model object: function with arguments 'AH'

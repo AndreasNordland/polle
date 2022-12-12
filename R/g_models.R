@@ -83,6 +83,8 @@ get_design <- function(formula, data, intercept=FALSE) {
 #' @param SL.library (Only used by \code{g_sl}) Either a character vector of prediction algorithms or
 #' a list containing character vectors, see [SuperLearner::SuperLearner].
 #' @param env (Only used by \code{g_sl}) Environment containing the learner functions. Defaults to the calling environment.
+#' @param onlySL (Only used by \code{g_sl}) Logical. If TRUE, only saves and computes predictions
+#' for algorithms with non-zero coefficients in the super learner object.
 #' @param ... Additional arguments passed to [glm()], [glmnet::glmnet],
 #' [ranger::ranger] or [SuperLearner::SuperLearner].
 #' @details
@@ -301,6 +303,7 @@ g_sl <- function(formula = ~ .,
                  SL.library=c("SL.mean", "SL.glm"),
                  family=binomial(),
                  env = parent.frame(),
+                 onlySL = TRUE,
                  ...) {
   if (!requireNamespace("SuperLearner"))
     stop("Package 'SuperLearner' required.")
@@ -321,7 +324,11 @@ g_sl <- function(formula = ~ .,
                       dotdotdot)
     fit <- do.call(SuperLearner::SuperLearner, sl_args)
     fit$call <- NULL
+    if(onlySL == TRUE){
+      fit$fitLibrary[fit$coef == 0] <- NA
+    }
     m <- with(des, list(fit = fit,
+                        onlySL = onlySL,
                         xlevels = x_levels,
                         terms = terms,
                         action_set = action_set))
@@ -334,11 +341,16 @@ g_sl <- function(formula = ~ .,
 
 #' @export
 predict.g_sl <- function(object, new_H, ...) {
+  onlySL <- getElement(object, "onlySL")
   mf <- with(object, model.frame(terms, data=new_H, xlev = xlevels,
                                  drop.unused.levels=FALSE))
   newx <- as.data.frame(model.matrix(mf, data=new_H, xlev = object$xlevels))
   colnames(newx) <- gsub("[^[:alnum:]]", "_", colnames(newx))
-  pr <- predict(object$fit, newdata=newx)$pred
+  pr <- suppressWarnings(
+    predict(object$fit,
+            newdata=newx,
+            onlySL = onlySL)$pred
+  )
   pr <- cbind((1-pr), pr)
   return(pr)
 }

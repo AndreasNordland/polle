@@ -42,7 +42,10 @@ check_q_formula <- function(formula, data){
 #' @param SL.library (Only used by \code{q_sl}) Either a character vector of
 #' prediction algorithms or a list containing character vectors,
 #' see [SuperLearner::SuperLearner].
-#' @param env (Only used by \code{q_sl}) Environment containing the learner functions. Defaults to the calling environment.
+#' @param env (Only used by \code{q_sl}) Environment containing the learner
+#' functions. Defaults to the calling environment.
+#' @param onlySL (Only used by \code{q_sl}) Logical. If TRUE, only saves and computes predictions
+#' for algorithms with non-zero coefficients in the super learner object.
 #' @param ... Additional arguments passed to [glm()], [glmnet::glmnet],
 #' [ranger::ranger] or [SuperLearner::SuperLearner].
 #' @details
@@ -279,6 +282,7 @@ predict.q_rf <- function(object, new_AH, ...) {
 q_sl <- function(formula = ~ A*.,
                  SL.library=c("SL.mean", "SL.glm"),
                  env = parent.frame(),
+                 onlySL = TRUE,
                  ...){
   if (!requireNamespace("SuperLearner"))
     stop("Package 'SuperLearner' required.")
@@ -298,7 +302,12 @@ q_sl <- function(formula = ~ A*.,
     args_SL <- append(args_SL, dotdotdot)
     fit <- suppressWarnings(do.call(SuperLearner::SuperLearner, args = args_SL))
     fit$call <- NULL
+    if(onlySL == TRUE){
+      fit$fitLibrary[fit$coef == 0] <- NA
+    }
+
     m <- with(des, list(fit = fit,
+                        onlySL = onlySL,
                         xlevels = x_levels,
                         terms = terms))
     class(m) <- c("q_sl")
@@ -309,12 +318,16 @@ q_sl <- function(formula = ~ A*.,
 }
 
 predict.q_sl <- function(object, new_AH, ...) {
+  onlySL <- getElement(object, "onlySL")
   mf <- with(object, model.frame(terms, data=new_AH, xlev = xlevels,
                                  drop.unused.levels=FALSE))
   newx <- model.matrix(mf, data=as.data.frame(new_AH), xlev = object$xlevels)
   newx <- as.data.frame(newx)
   colnames(newx) <- gsub("[^[:alnum:]]", "_", colnames(newx))
-  pred <- suppressWarnings(predict(getElement(object, "fit"),
-                                   newdata = newx)$pred[, 1])
+  pred <- suppressWarnings(
+    predict(getElement(object, "fit"),
+            newdata = newx,
+            onlySL = onlySL)$pred[, 1]
+  )
   return(pred)
 }
