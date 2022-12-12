@@ -41,6 +41,7 @@ new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
 
     # getting the set of actions (A):
     action_set <- sort(unlist(unique(stage_data[,"A"])))
+    action_set <- unname(action_set)
 
     # checking the utility variable (U):
     if (!all(is.numeric(unlist(stage_data[,"U"]))))
