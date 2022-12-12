@@ -503,3 +503,26 @@ test_that("policy_data handles missing values.", {
 })
 
 
+# subset ------------------------------------------------------------------
+
+test_that("the action set is preserved when subsetting",{
+
+  source(system.file("sim", "single_stage.R", package="polle"))
+  d1 <- sim_single_stage(10, seed=1)
+  pd1 <- policy_data(d1, action = "A", covariates = c("Z"), utility = "U")
+
+  expect_error(
+    pd2 <- subset(pd1, id = get_id(pd1)[d1$A == "0"]),
+    NA
+  )
+
+  expect_equal(
+    get_action_set(pd1),
+    get_action_set(pd2)
+  )
+
+  expect_error(
+    print(pd2),
+    NA
+  )
+})

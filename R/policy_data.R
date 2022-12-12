@@ -1,4 +1,4 @@
-new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
+new_policy_data <- function(stage_data, baseline_data = NULL, action_set = NULL, verbose){
 
   # checking and processing stage_data:
   {
@@ -40,7 +40,14 @@ new_policy_data <- function(stage_data, baseline_data = NULL, verbose){
     rm(event, A)
 
     # getting the set of actions (A):
-    action_set <- sort(unlist(unique(stage_data[,"A"])))
+    obs_actions <- sort(unlist(unique(stage_data[,"A"])))
+    if (!is.null(action_set)){
+      if (!all(obs_actions %in% action_set))
+        stop("The given action set does not include all observed actions.")
+      action_set <- sort(action_set)
+    } else{
+      action_set <- obs_actions
+    }
     action_set <- unname(action_set)
 
     # checking the utility variable (U):

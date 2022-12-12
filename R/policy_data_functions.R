@@ -15,9 +15,10 @@ print.policy_data <- function(x, digits = 2, ...){
 
   cat("\n")
   st <- stage_data[event == 0,][, c("stage", "A"), with = FALSE]
+  st$A <- factor(st$A, levels = action_set)
   colnames(st) <- c("stage", "action")
-  stable <- addmargins(table(st), 2, FUN = list(n = sum))
-
+  tab <- table(st)
+  stable <- addmargins(tab, 2, FUN = list(n = sum))
   print(stable)
 
   cat("\n")
@@ -196,7 +197,8 @@ subset.policy_data <- function(x, id, ...){
 
   spd <- new_policy_data(
     stage_data = x$stage_data[id %in% id_],
-    baseline_data = x$baseline_data[id %in% id_]
+    baseline_data = x$baseline_data[id %in% id_],
+    action_set = x$action_set
   )
 
   return(spd)
