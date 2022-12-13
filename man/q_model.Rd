@@ -28,7 +28,7 @@ q_rf(
 )
 
 q_sl(
-  formula = ~A * .,
+  formula = ~.,
   SL.library = c("SL.mean", "SL.glm"),
   env = parent.frame(),
   onlySL = TRUE,

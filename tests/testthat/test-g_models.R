@@ -9,7 +9,7 @@ test_that("g_rf",{
                      utility="U")
 
   expect_error(
-    policy_eval(
+    pe <- policy_eval(
       policy_data = pd1,
       policy_learn = policy_learn(type = "rql", alpha = 0.05),
       g_models = g_rf(formula = ~.),
@@ -89,11 +89,31 @@ test_that("g_sl can find user-defined learners",{
   his <- get_history(pd1)
 
   expect_error({
-    suppressWarnings({
+
       g_model(H = polle:::get_H(his),
               A = polle:::get_A(his),
               action_set = pd1$action_set)
-    })
 
   },NA)
+})
+
+test_that("g_glmnet formats data correctly via the formula",{
+  source(system.file("sim", "single_stage.R", package="polle"))
+  d1 <- sim_single_stage(200, seed=1)
+  d1$BB <- sample(c("group 1", "group & 2", "group & 3"), size = 200, replace = TRUE)
+  pd1 <- policy_data(d1,
+                     action="A",
+                     covariates = list("Z", "B", "L", "BB"),
+                     utility="U")
+
+  expect_error(
+    pe <- policy_eval(
+      policy_data = pd1,
+      policy_learn = policy_learn(type = "rql", alpha = 0.05),
+      g_models = g_glmnet(formula = ~.),
+      g_full_history = FALSE,
+      q_models = q_glm()
+    ),
+    NA
+  )
 })

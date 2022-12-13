@@ -239,7 +239,7 @@ ptl <- function(policy_data,
     }
 
     # design matrix for policy_tree:
-    design_k <- get_design(formula = ~., data = H)
+    design_k <- get_design(formula = ~., data = H, intercept = TRUE)
     X <- design_k$x
     design_k$x <- NULL
     ptl_designs[[k]] <- design_k
@@ -351,8 +351,11 @@ get_policy.PTL <- function(object){
       H <- get_H(policy_history_k, vars = vars)
 
       des <- ptl_designs[[k]]
-      mf <- with(des, model.frame(terms, data=H, xlev = x_levels, drop.unused.levels=FALSE))
-      newdata <- model.matrix(mf, data=H, xlev = des$x_levels)
+      mf <- with(des, model.frame(terms, data=H, xlev = xlevels, drop.unused.levels=FALSE))
+      newdata <- model.matrix(mf, data=H, xlev = des$xlevels)
+      idx_inter <- which(colnames(newdata) == "(Intercept)")
+      if (length(idx_inter)>0)
+        newdata <- newdata[,-idx_inter, drop = FALSE]
 
       dd <- predict(ptl_objects[[k]], newdata = newdata)
       d <- action_set[dd]
@@ -424,8 +427,12 @@ get_policy_functions.PTL <- function(object, stage){
       stop(mes)
     }
     newdata <- H[, policy_vars, with = FALSE]
-    mf <- with(ptl_design, model.frame(terms, data = newdata, xlev = x_levels, drop.unused.levels=FALSE))
-    newdata <- model.matrix(mf, data = newdata, xlev = ptl_design$x_levels)
+    mf <- with(ptl_design, model.frame(terms, data = newdata, xlev = xlevels, drop.unused.levels=FALSE))
+    newdata <- model.matrix(mf, data = newdata, xlev = ptl_design$xlevels)
+    idx_inter <- which(colnames(newdata) == "(Intercept)")
+    if (length(idx_inter)>0)
+      newdata <- newdata[,-idx_inter, drop = FALSE]
+
     dd <- predict(ptl_object, newdata = newdata)
     d <- action_set[dd]
 

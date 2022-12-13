@@ -75,9 +75,6 @@ dtrlearn2_owl <- function(policy_data,
   # getting the IDs:
   id <- get_id(policy_data)
 
-  # getting the observed (complete) utilities:
-  # utility <- get_utility(policy_data)
-
   # getting the rewards
   rewards <- get_rewards(policy_data)
 
@@ -155,7 +152,7 @@ dtrlearn2_owl <- function(policy_data,
 
     ### constructing the inputs for owl:
     # getting the design of the history (X) for owl:
-    design_k <- get_design(formula = ~., data = H)
+    design_k <- get_design(formula = ~., data = H, intercept = TRUE)
     x <- design_k$x
     if ((ncol(x) == 1))
       stop("DTRlearn2 has a bug. H must be a matrix with ncol(H) > 1.")
@@ -246,9 +243,12 @@ get_policy.OWL <- function(object){
       design <- X_designs[[k]]
       x <- model.frame(design$terms,
                        data=H,
-                       xlev = design$x_levels,
+                       xlev = design$xlevels,
                        drop.unused.levels=FALSE)
-      x <- model.matrix(x, data=H, xlev = design$x_levels)
+      x <- model.matrix(x, data=H, xlev = design$xlevels)
+      idx_inter <- which(colnames(x) == "(Intercept)")
+      if (length(idx_inter)>0)
+        x <- x[,-idx_inter, drop = FALSE]
 
       if (reuse_scales == TRUE){
         x <- scale(x,

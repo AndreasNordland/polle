@@ -32,7 +32,7 @@ g_sl(
 }
 \arguments{
 \item{formula}{An object of class \link{formula} specifying the design matrix for
-the propensity model/g-model. Use \code{\link[=get_history_names]{get_history_names()}} to se the available
+the propensity model/g-model. Use \code{\link[=get_history_names]{get_history_names()}} to view the available
 variable names.}
 
 \item{family}{A description of the error distribution and link function to
@@ -44,7 +44,7 @@ not be saved.}
 \item{...}{Additional arguments passed to \code{\link[=glm]{glm()}}, \link[glmnet:glmnet]{glmnet::glmnet},
 \link[ranger:ranger]{ranger::ranger} or \link[SuperLearner:SuperLearner]{SuperLearner::SuperLearner}.}
 
-\item{alpha}{(Only used by \code{g_glmnet}) The elasticnet mixing parameter
+\item{alpha}{(Only used by \code{g_glmnet}) The elastic net mixing parameter
 between 0 and 1. alpha equal to 1 is the lasso penalty, and alpha equal
 to 0 the ridge penalty.}
 
