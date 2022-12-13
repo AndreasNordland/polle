@@ -521,8 +521,11 @@ test_that("the action set is preserved when subsetting",{
     get_action_set(pd2)
   )
 
-  expect_error(
-    print(pd2),
-    NA
-  )
+  invisible(capture.output(
+    expect_error(
+      print(pd2),
+      NA
+    )
+  ))
+
 })
