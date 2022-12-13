@@ -81,6 +81,7 @@ rql<- function(policy_data, alpha,
     Q[idx_k, k] <- q_max_realistic_k
     Q[!idx_k, k] <- Q[!idx_k, k+1]
   }
+  names(q_functions) <- paste("stage_", 1:K, sep = "")
   class(q_functions) <- "nuisance_functions"
   attr(q_functions, "full_history") <- q_full_history
 
