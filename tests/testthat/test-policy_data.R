@@ -529,3 +529,40 @@ test_that("the action set is preserved when subsetting",{
   ))
 
 })
+
+
+# partial -----------------------------------------------------------------
+
+test_that("partial checks input",{
+  source(system.file("sim", "multi_stage.R", package="polle"))
+  d <- sim_multi_stage(5e2, seed = 1)
+  # constructing policy_data object:
+  pd <- policy_data(data = d$stage_data,
+                    baseline_data = d$baseline_data,
+                    type = "long",
+                    id = "id",
+                    stage = "stage",
+                    event = "event",
+                    action = "A",
+                    utility = "U")
+
+  expect_equal(
+    get_K(partial(pd, K = 3)),
+    3
+  )
+
+  expect_error(
+    partial(pd, K = 0),
+    "K must be an integer greater than or equal to 1."
+  )
+  expect_error(
+    partial(pd, K = 1.5),
+    "K must be an integer greater than or equal to 1."
+  )
+  expect_error(
+    partial(pd, K = "1"),
+    "K must be an integer greater than or equal to 1."
+  )
+
+})
+

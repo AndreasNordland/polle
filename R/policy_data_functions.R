@@ -151,10 +151,18 @@ partial <- function(object, K)
 
 #' @export
 partial.policy_data <- function(object, K){
+  if (!is.numeric(K))
+    stop("K must be an integer greater than or equal to 1.")
+
+  if (!((K %% 1 == 0) & (K>0)))
+    stop("K must be an integer greater than or equal to 1.")
+
+  object_K <- get_K(object)
+
   # copy object to avoid reference issues in data.table
   object <- copy_policy_data(object)
 
-  if(K >= object$dim$K)
+  if(K >= object_K)
     return(object)
 
   # column names of the deterministic rewards:
