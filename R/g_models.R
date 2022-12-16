@@ -33,6 +33,7 @@ update_g_formula <- function(formula, A, H) {
 }
 
 check_missing_regressor <- function(formula, data){
+  data <- as.data.table(data)
   tt <- terms(formula, data = data)
   tt <- terms(reformulate(attr(tt, "term.labels"), response = NULL),
               data = data)
@@ -41,7 +42,7 @@ check_missing_regressor <- function(formula, data){
   if (length(cols_na) > 0){
     mes <- paste(cols_na, collapse = ", ")
     mes <- paste("The regression variables ", mes, " have missing NA values.", sep = "")
-    stop(mes)
+    warning(mes)
   }
 }
 
@@ -62,9 +63,11 @@ get_design <- function(formula, data, intercept=TRUE) {
     attr(tt, "intercept") <- 0
   }
   tt <- delete.response(tt)
+  op <- options(na.action = "na.pass")
   mf <- model.frame(tt, data=data, drop.unused.levels = TRUE)
   xlevels <- .getXlevels(tt, mf)
   x <- model.matrix(mf, data=data)
+  options(op)
   idx_inter <- which(colnames(x) == "(Intercept)")
   if (length(idx_inter)>0)
     x <- x[,-idx_inter, drop = FALSE]
@@ -170,17 +173,21 @@ NULL
 g_glm <- function(formula = ~.,
                   family = "binomial",
                   model = FALSE,
+                  na.action = NULL,
                   ...) {
   formula <- as.formula(formula)
   dotdotdot <- list(...)
 
   g_glm <- function(A, H, action_set){
     check_g_formula(formula = formula, data = H)
-    check_missing_regressor(formula = formula, data = H)
     formula <- update_g_formula(formula, A, H)
 
-    args_glm <- append(list(formula = formula, data = H,
-                            family = family, model = model), dotdotdot)
+    args_glm <- append(list(formula = formula,
+                            data = H,
+                            family = family,
+                            model = model,
+                            na.action = na.action),
+                       dotdotdot)
 
     glm_model <- do.call(what = "glm", args = args_glm)
     glm_model$call <- NULL
@@ -213,6 +220,7 @@ g_glmnet <- function(formula = ~.,
   dotdotdot <- list(...)
   g_glmnet <- function(A, H, action_set){
     check_g_formula(formula = formula, data = H)
+    check_missing_regressor(formula = formula, data = H)
     formula <- update_g_formula(formula, A, H)
     y <- get_response(formula, data=H)
     des <- get_design(formula, data=H, intercept = TRUE)
@@ -238,9 +246,11 @@ g_glmnet <- function(formula = ~.,
 
 predict.g_glmnet <- function(object, new_H) {
   glmnet_model <- object$glmnet_model
+  op <- options(na.action = "na.pass")
   mf <- with(object, model.frame(terms, data=new_H, xlev = xlevels,
                                  drop.unused.levels=FALSE))
   newx <- model.matrix(mf, data=new_H, xlev = object$xlevels)
+  options(op)
   idx_inter <- which(colnames(newx) == "(Intercept)")
   if (length(idx_inter)>0)
     newx <- newx[,-idx_inter, drop = FALSE]

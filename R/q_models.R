@@ -133,7 +133,8 @@ NULL
 q_glm <- function(formula = ~ A*.,
                   family = gaussian(),
                   model = FALSE,
-                  ...) {
+                  na.action = NULL,
+                  ...){
   formula <- as.formula(formula)
   dotdotdot <- list(...)
 
@@ -141,13 +142,13 @@ q_glm <- function(formula = ~ A*.,
     data <- AH
     check_q_formula(formula = formula, data = data)
     formula <- update_q_formula(formula = formula, data = data, V_res = V_res)
-    check_missing_regressor(formula = formula, data = data)
 
     args_glm <- list(
       formula = formula,
       data = data,
       family = family,
-      model = model
+      model = model,
+      na.action = na.action
     )
     args_glm <- append(args_glm, dotdotdot)
     glm_model <- do.call(what = "glm", args = args_glm)
@@ -184,6 +185,7 @@ q_glmnet <- function(formula = ~ A*.,
 
   q_glmnet <- function(AH, V_res) {
     check_q_formula(formula = formula, data = AH)
+    check_missing_regressor(formula = formula, data = AH)
     des <- get_design(formula, data=AH, intercept = TRUE)
     y <- V_res
     args_glmnet <- c(list(y = y, x = des$x,
@@ -204,9 +206,11 @@ q_glmnet <- function(formula = ~ A*.,
 }
 
 predict.q_glmnet <- function(object, new_AH, ...) {
+  op <- options(na.action = "na.pass")
   mf <- with(object, model.frame(terms, data=new_AH, xlev = xlevels,
                                  drop.unused.levels=FALSE))
   newx <- model.matrix(mf, data=new_AH, xlev = object$xlevels)
+  options(op)
   idx_inter <- which(colnames(newx) == "(Intercept)")
   if (length(idx_inter)>0)
     newx <- newx[,-idx_inter, drop = FALSE]

@@ -157,6 +157,9 @@ test_that("q_glmnet formats data correctly via the formula",{
 })
 
 
+# missing data ------------------------------------------------------------
+
+
 test_that("q_glm handles missing covariates", {
   source(system.file("sim", "two_stage.R", package="polle"))
   d <- sim_two_stage(2e3, seed=1)
@@ -172,7 +175,7 @@ test_that("q_glm handles missing covariates", {
   expect_error(
     policy_eval(policy_data = pd,
                 policy = p),
-    "The regression variables C have missing NA values."
+    "NA/NaN/Inf in 'x'"
   )
   expect_error(
     policy_eval(policy_data = pd,
@@ -187,6 +190,68 @@ test_that("q_glm handles missing covariates", {
                 type = "or",
                 q_models = list(q_glm(~L), q_glm())),
     NA
+  )
+})
+
+test_that("q_glmnet handles missing covariates", {
+  source(system.file("sim", "two_stage.R", package="polle"))
+  d <- sim_two_stage(2e3, seed=1)
+  d$C_1 <- NULL
+  pd <- policy_data(d,
+                    action = c("A_1", "A_2"),
+                    baseline = c("BB", "B"),
+                    covariates = list(L = c("L_1", "L_2"),
+                                      C = c(NA, "C_2")), # C_1 is missing
+                    utility = c("U_1", "U_2", "U_3"))
+  p <- policy_def(1, reuse = TRUE)
+
+  expect_error(
+    suppressWarnings({
+      pe <- policy_eval(policy_data = pd,
+                  policy = p,
+                  type = "or",
+                  q_models = q_glmnet())
+    }),
+    NA # glmnet ignores all NA regressors!
+  )
+  expect_warning(
+    pe <- policy_eval(policy_data = pd,
+                      policy = p,
+                      type = "or",
+                      q_models = q_glmnet())
+  )
+
+  expect_error(
+    policy_eval(policy_data = pd,
+                policy = p,
+                type = "or",
+                q_models = q_glmnet(~L + A)),
+    NA
+  )
+  expect_error(
+    policy_eval(policy_data = pd,
+                policy = p,
+                type = "or",
+                q_models = list(q_glmnet(~L + A), q_glmnet())),
+    NA
+  )
+
+  d <- sim_two_stage(2e3, seed=1)
+  d$C_1[1:10] <- NA
+  pd <- policy_data(d,
+                    action = c("A_1", "A_2"),
+                    baseline = c("BB", "B"),
+                    covariates = list(L = c("L_1", "L_2"),
+                                      C = c("C_1", "C_2")),
+                    utility = c("U_1", "U_2", "U_3"))
+
+
+  expect_warning(
+    policy_eval(policy_data = pd,
+                policy = p,
+                type = "or",
+                q_models = q_glmnet()),
+    "The regression variables C have missing NA values."
   )
 })
 
