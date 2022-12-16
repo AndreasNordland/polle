@@ -11,6 +11,84 @@ test_that("check_data fails if not given a data.table with unique variables.", {
   expect_error(check_data(data), "'data' has duplicated variable names.")
 })
 
+# Input checks ----
+
+test_that("policy_data checks inputs",{
+  source(system.file("sim", "single_stage.R", package="polle"))
+  d <- sim_single_stage(10, seed=1)
+
+  expect_error(
+    policy_data(d, action = 1),
+    "'action' must be a vector or a list of type character."
+  )
+  expect_error(
+    policy_data(d, action = TRUE),
+    "'action' must be a vector or a list of type character."
+  )
+  expect_error(
+    policy_data(d, action = "a"),
+    "Action variables a not found in data."
+  )
+  expect_error(
+    policy_data(d, action = c("A", "a")),
+    "Action variables a not found in data."
+  )
+  expect_error(
+    policy_data(d, action = c("a1", "a")),
+    "Action variables a1,a not found in data."
+  )
+
+  expect_error(
+    policy_data(d, action = c("A"), covariates = 1),
+    "'covariates' must be a character vector or a list of character vectors."
+  )
+
+  expect_error(
+    policy_data(d,
+                action = c("A"),
+                covariates = list(X="a",Y="b"),
+                utility = "U"),
+    "Variables not found in data: \"a\", \"b\"."
+  )
+  expect_error(
+    policy_data(d,
+                action = c("A"),
+                covariates = "a",
+                utility = "U"),
+    "Variables not found in data: \"a\"."
+  )
+  expect_error(
+    policy_data(d,
+                action = c("A"),
+                covariates = c("Z"),
+                utility = "U"),
+    NA
+  )
+  expect_error(
+    policy_data(c(1,2,3),
+                action = c("A"),
+                covariates = c("Z"),
+                utility = "U"),
+    "'data' must be a data.table."
+  )
+  expect_error(
+    policy_data(d,
+                type = "test",
+                action = c("A"),
+                covariates = c("Z"),
+                utility = "U"),
+    "'type' must be either \"wide\" or \"long\"."
+  )
+  expect_error(
+    suppressWarnings({
+      policy_data(d,
+                  type = "long",
+                  action = c("A"),
+                  covariates = c("Z"),
+                  utility = "U")
+    })
+  )
+})
 
 # policy_data wide data ---------------------------------------------------
 
@@ -32,20 +110,6 @@ test_that("policy_data handles varying sets of/missing covariates in a given sta
                   Y_2 = rnorm(n),
                   A_2 = rbinom(n = n, size = 1, prob = .5),
                   U = rnorm(n))
-
-
-  # tmp <- copy(d)
-  # tmp[, `_NA` := Y_2]
-  # tmp[, `_NA` := NA]
-  # measure.vars <- list(X = c("X_1", "X_2"),
-  #                      Y = c("_NA", "Y_2"))
-  # tmp <- melt(tmp, id = "id", measure.vars = measure.vars)
-  #
-  # expect_equal(
-  #   tmp$Y,
-  #   c(rep(NA, n),d$Y_2)
-  # )
-  # rm(tmp)
 
   expect_error(
     pd <- policy_data(data = d,
@@ -494,12 +558,20 @@ test_that("policy_data handles missing values.", {
   expect_error(policy_data(data = ld, baseline_data = bd, type = "long"))
   ld$A <- c(0, NA, 1, NA)
 
+  # missing utility
   ld$U <- c(NA, 10, 0, 5)
-  expect_error(policy_data(data = ld, baseline_data = bd, type = "long"))
+  expect_error(
+    policy_data(data = ld, baseline_data = bd, type = "long"),
+    "The utility varible U has missing values"
+  )
   ld$U <- c(0, 10, 0, 5)
 
+  # allowing for missing covariates
   ld$Z <- c(NA, NA, "B", NA)
-  expect_error(policy_data(data = ld, baseline_data = bd, type = "long"), NA) # allowing for missing covariates
+  expect_error(
+    policy_data(data = ld, baseline_data = bd, type = "long"),
+    NA
+  )
 })
 
 

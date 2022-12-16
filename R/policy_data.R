@@ -52,8 +52,9 @@ new_policy_data <- function(stage_data, baseline_data = NULL, action_set = NULL,
 
     # checking the utility variable (U):
     if (!all(is.numeric(unlist(stage_data[,"U"]))))
-      stop("'utility' (U) must be numeric.")
-    if(any(is.na(stage_data[,"U"]))) stop("'utility' (U) has missing values")
+      stop("'utility' U must be numeric.")
+    if(any(is.na(stage_data[,"U"])))
+      stop("The utility varible U has missing values")
 
     # checking the deterministic reward variables (U_A[.]):
     deterministic_reward_names <- paste("U_A", action_set, sep = "")
@@ -61,7 +62,7 @@ new_policy_data <- function(stage_data, baseline_data = NULL, action_set = NULL,
       deterministic_reward_names[!(deterministic_reward_names %in% names(stage_data))]
     if (length(missing_deterministic_reward_names) > 0){
       mes <- paste(missing_deterministic_reward_names, collapse = ", ")
-      mes <- paste("Setting the deterministic reward(s) '", mes, "' to default value 0.", sep = "")
+      mes <- paste("Setting the deterministic rewards '", mes, "' to default value 0.", sep = "")
       if (verbose == TRUE){
         message(mes)
       }
@@ -295,7 +296,7 @@ policy_data <- function(data, baseline_data,
   }
 
   if(!(is.character(type) & (length(type == 1))))
-    stop("'type' must be either \"wide\ or \"long\".")
+    stop("'type' must be either \"wide\" or \"long\".")
   type <- tolower(type)
   if (any(type %in% c("wide"))) {
     if (!missing(baseline_data)){
@@ -345,7 +346,7 @@ policy_data <- function(data, baseline_data,
       verbose = verbose)
 
   } else{
-    stop("'type' must be either \"wide\ or \"long\".")
+    stop("'type' must be either \"wide\" or \"long\".")
   }
   return(pd)
 }
@@ -395,6 +396,12 @@ melt_wide_data <- function(wide_data,
     stop("'action' must be a vector or a list of type character.")
   # getting the number of stages:
   K <- length(action)
+  if(!all(action %in% colnames(wide_data))){
+    mes <- paste(action[!(action %in% colnames(wide_data))], collapse = ",")
+    mes <- paste("Action variables ", mes, " not found in data.", sep = "")
+    stop(mes)
+  }
+
   # getting the action set:
   action_set <- sort(unique(unlist(wide_data[ , action, with = FALSE])))
 
@@ -465,7 +472,7 @@ melt_wide_data <- function(wide_data,
   if (!all(tmp %in% names(wide_data))){
     mes <- tmp[!(tmp %in% names(wide_data))]
     mes <- paste(mes, collapse = "\", \"")
-    mes <- paste("Not found in data: \"", mes, "\".", sep = "")
+    mes <- paste("Variables not found in data: \"", mes, "\".", sep = "")
     stop(mes)
   }
   rm(tmp)
@@ -631,7 +638,7 @@ format_long_data <- function(long_data, baseline_data, id, action, stage, event,
   deterministic_reward_names <- paste("U_A", action_set, sep = "")
   drn <- names(long_data)[names(long_data) %in% deterministic_reward_names]
   if ((length(drn) > 0) & (verbose == TRUE)){
-    mes <- paste("The variable(s) ", paste(drn, collapse = ", "), " in 'data' are considered deternistic rewards.", sep = "")
+    mes <- paste("The variables ", paste(drn, collapse = ", "), " in 'data' are considered deternistic rewards.", sep = "")
     message(mes)
   }
 
