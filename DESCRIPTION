@@ -11,7 +11,7 @@ Authors@R: c(person(given = "Andreas",
                     email = "klaus@holst.it",
                     comment = c(ORCID="0000-0002-1364-6789"))
              )
-Description: Framework for evaluating user-specified finite stage policies and learning realistic policies via doubly robust loss functions. Policy learning methods include doubly robust restricted Q-learning, sequential policy tree learning and outcome weighted learning. See Nordland and Holst (2022) for documentation and references.
+Description: Framework for evaluating user-specified finite stage policies and learning realistic policies via doubly robust loss functions. Policy learning methods include doubly robust restricted Q-learning, sequential policy tree learning and outcome weighted learning. See Nordland and Holst (2022) <arXiv:2212.02335> for documentation and references.
 License: Apache License (>= 2)
 Encoding: UTF-8
 LazyData: true
@@ -37,5 +37,4 @@ Depends:
     R (>= 4.0)
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.1
-URL: https://arxiv.org/abs/2212.02335
 BugReports: https://github.com/AndreasNordland/polle/issues
