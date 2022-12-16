@@ -230,6 +230,7 @@ print.policy_learn <- function(x, ...) {
 
   cat("\n")
   cat(cp)
+  cat("\n")
 
 }
 
