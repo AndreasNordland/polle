@@ -37,6 +37,8 @@ update_q_formula <- function(formula, data, V_res){
 #' be used in the model.
 #' @param model (Only used by \code{q_glm}) If \code{FALSE} model frame will
 #' not be saved.
+#' @param na.action (Only used by \code{q_glm}) A function which indicates what
+#' should happen when the data contain NAs, see [na.pass].
 #' @param alpha (Only used by \code{q_glmnet}) The elasticnet mixing parameter
 #' between 0 and 1. alpha equal to 1 is the lasso penalty, and alpha equal
 #' to 0 the ridge penalty.
@@ -133,7 +135,7 @@ NULL
 q_glm <- function(formula = ~ A*.,
                   family = gaussian(),
                   model = FALSE,
-                  na.action = NULL,
+                  na.action = na.pass,
                   ...){
   formula <- as.formula(formula)
   dotdotdot <- list(...)

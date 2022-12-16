@@ -9,7 +9,13 @@
 \alias{g_sl}
 \title{g_model class object}
 \usage{
-g_glm(formula = ~., family = "binomial", model = FALSE, ...)
+g_glm(
+  formula = ~.,
+  family = "binomial",
+  model = FALSE,
+  na.action = na.pass,
+  ...
+)
 
 g_glmnet(formula = ~., family = "binomial", alpha = 1, s = "lambda.min", ...)
 
@@ -40,6 +46,9 @@ be used in the model.}
 
 \item{model}{(Only used by \code{g_glm}) If \code{FALSE} model frame will
 not be saved.}
+
+\item{na.action}{(Only used by \code{g_glm}) A function which indicates what
+should happen when the data contain NAs, see \link{na.pass}.}
 
 \item{...}{Additional arguments passed to \code{\link[=glm]{glm()}}, \link[glmnet:glmnet]{glmnet::glmnet},
 \link[ranger:ranger]{ranger::ranger} or \link[SuperLearner:SuperLearner]{SuperLearner::SuperLearner}.}

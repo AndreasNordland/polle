@@ -9,7 +9,13 @@
 \alias{q_sl}
 \title{q_model class object}
 \usage{
-q_glm(formula = ~A * ., family = gaussian(), model = FALSE, ...)
+q_glm(
+  formula = ~A * .,
+  family = gaussian(),
+  model = FALSE,
+  na.action = na.pass,
+  ...
+)
 
 q_glmnet(
   formula = ~A * .,
@@ -47,6 +53,9 @@ be used in the model.}
 
 \item{model}{(Only used by \code{q_glm}) If \code{FALSE} model frame will
 not be saved.}
+
+\item{na.action}{(Only used by \code{q_glm}) A function which indicates what
+should happen when the data contain NAs, see \link{na.pass}.}
 
 \item{...}{Additional arguments passed to \code{\link[=glm]{glm()}}, \link[glmnet:glmnet]{glmnet::glmnet},
 \link[ranger:ranger]{ranger::ranger} or \link[SuperLearner:SuperLearner]{SuperLearner::SuperLearner}.}
