@@ -10,6 +10,16 @@ check_q_formula <- function(formula, data){
   }
 }
 
+update_q_formula <- function(formula, data, V_res){
+  tt <- terms(formula, data = data)
+  if (length(attr(tt, "term.labels")) == 0)
+    formula <- V_res ~ 1
+  else
+    formula <- reformulate(attr(tt, "term.labels"), response = "V_res")
+
+  return(formula)
+}
+
 # Q-model documentation ---------------------------------------------------
 
 #' @title q_model class object
@@ -124,17 +134,14 @@ q_glm <- function(formula = ~ A*.,
                   family = gaussian(),
                   model = FALSE,
                   ...) {
-  force(formula)
+  formula <- as.formula(formula)
   dotdotdot <- list(...)
 
   q_glm <- function(AH, V_res) {
     data <- AH
     check_q_formula(formula = formula, data = data)
-    tt <- terms(formula, data = data)
-    if (length(attr(tt, "term.labels")) == 0)
-      formula <- V_res ~ 1
-    else
-      formula <- reformulate(attr(tt, "term.labels"), response = "V_res")
+    formula <- update_q_formula(formula = formula, data = data, V_res = V_res)
+    check_missing_regressor(formula = formula, data = data)
 
     args_glm <- list(
       formula = formula,
@@ -143,7 +150,6 @@ q_glm <- function(formula = ~ A*.,
       model = model
     )
     args_glm <- append(args_glm, dotdotdot)
-
     glm_model <- do.call(what = "glm", args = args_glm)
     glm_model$call <- NULL
 

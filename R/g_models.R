@@ -28,7 +28,21 @@ update_g_formula <- function(formula, A, H) {
   environment(formula)$AA <- AA
   attr(formula, "action_set") <- action_set
   attr(formula, "response") <- "AA"
+
   return(formula)
+}
+
+check_missing_regressor <- function(formula, data){
+  tt <- terms(formula, data = data)
+  tt <- terms(reformulate(attr(tt, "term.labels"), response = NULL),
+              data = data)
+  v <- all.vars(tt)
+  cols_na <- names(which(colSums(is.na(data[,v, with = FALSE])) > 0))
+  if (length(cols_na) > 0){
+    mes <- paste(cols_na, collapse = ", ")
+    mes <- paste("The regression variables ", mes, " have missing NA values.", sep = "")
+    stop(mes)
+  }
 }
 
 get_response <- function(formula, ...) {
@@ -157,11 +171,14 @@ g_glm <- function(formula = ~.,
                   family = "binomial",
                   model = FALSE,
                   ...) {
+  formula <- as.formula(formula)
   dotdotdot <- list(...)
-  force(formula)
+
   g_glm <- function(A, H, action_set){
     check_g_formula(formula = formula, data = H)
+    check_missing_regressor(formula = formula, data = H)
     formula <- update_g_formula(formula, A, H)
+
     args_glm <- append(list(formula = formula, data = H,
                             family = family, model = model), dotdotdot)
 
