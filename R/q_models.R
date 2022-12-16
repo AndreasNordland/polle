@@ -153,10 +153,10 @@ q_glm <- function(formula = ~ A*.,
       na.action = na.action
     )
     args_glm <- append(args_glm, dotdotdot)
-    glm_model <- do.call(what = "glm", args = args_glm)
-    glm_model$call <- NULL
+    model <- do.call(what = "glm", args = args_glm)
+    model$call <- NULL
 
-    m <- list(glm_model = glm_model)
+    m <- list(model = model)
 
     class(m) <- c("q_glm")
     return(m)
@@ -166,8 +166,8 @@ q_glm <- function(formula = ~ A*.,
 }
 
 predict.q_glm <- function(object, new_AH){
-  glm_model <- getElement(object, "glm_model")
-  pred <- predict(object$glm_model, newdata = new_AH, type = "response")
+  model <- getElement(object, "model")
+  pred <- predict(model, newdata = new_AH, type = "response")
   return(pred)
 }
 
@@ -188,18 +188,17 @@ q_glmnet <- function(formula = ~ A*.,
   q_glmnet <- function(AH, V_res) {
     check_q_formula(formula = formula, data = AH)
     check_missing_regressor(formula = formula, data = AH)
-    des <- get_design(formula, data=AH, intercept = TRUE)
+    des <- get_design(formula, data=AH)
     y <- V_res
     args_glmnet <- c(list(y = y, x = des$x,
                         family = family, alpha = alpha), dotdotdot)
-    fit <- do.call(glmnet::cv.glmnet, args = args_glmnet)
-    fit$call <- NULL
-    m <- with(des, list(
-                     fit = fit,
-                     s = s,
-                     formula = formula,
-                     terms = terms,
-                     xlevels = xlevels))
+    model <- do.call(glmnet::cv.glmnet, args = args_glmnet)
+    model$call <- NULL
+
+    m  <- list(model = model,
+               s = s,
+               design = des)
+
     class(m) <- c("q_glmnet")
     return(m)
   }
@@ -208,18 +207,15 @@ q_glmnet <- function(formula = ~ A*.,
 }
 
 predict.q_glmnet <- function(object, new_AH, ...) {
-  op <- options(na.action = "na.pass")
-  mf <- with(object, model.frame(terms, data=new_AH, xlev = xlevels,
-                                 drop.unused.levels=FALSE))
-  newx <- model.matrix(mf, data=new_AH, xlev = object$xlevels)
-  options(op)
-  idx_inter <- which(colnames(newx) == "(Intercept)")
-  if (length(idx_inter)>0)
-    newx <- newx[,-idx_inter, drop = FALSE]
-  pred <- predict(getElement(object, "fit"),
+  design <- getElement(object, "design")
+  model <- getElement(object, "model")
+  s <- getElement(object, "s")
+
+  newx <- apply_design(design, data = new_AH)
+  pred <- predict(model,
                   newx = newx,
                   type = "response",
-                  s = getElement(object, "s"))
+                  s = s)
   return(pred)
 }
 
@@ -253,9 +249,8 @@ q_rf <- function(formula = ~.,
 
   q_rf <- function(AH, V_res) {
     check_q_formula(formula = formula, data = AH)
-    des <- get_design(formula, data=AH, intercept = TRUE)
+    des <- get_design(formula, data=AH)
     data <- data.frame(V_res, des$x)
-    colnames(data) <- gsub("[^[:alnum:]]", "_", colnames(data))
     res <- NULL; best <- 1
     if (length(ml)>1) {
       res <- tryCatch(targeted::cv(ml, data=data, perf=perf_ranger,
@@ -264,34 +259,30 @@ q_rf <- function(formula = ~.,
       best <- if (is.null(res)) 1 else which.min(summary(res))
     }
     if (!is.null(res)) {
-      fit <- res$fit[[best]]
+      model <- res$fit[[best]]
     } else {
-      fit <- ml[[best]](data)
+      model <- ml[[best]](data)
     }
-    fit$call <- NULL
-    res <- with(des, list(fit = fit,
-                          rf_args = rf_args(hyper_par[[best]]),
-                          num.trees=num.trees[best],
-                          xlevels = xlevels,
-                          terms = terms))
-    class(res) <- c("q_rf")
-    return(res)
+    model$call <- NULL
+
+    m <- list(model = model,
+              rf_args = rf_args(hyper_par[[best]]),
+              num.trees=num.trees[best],
+              design = des)
+    class(m) <- c("q_rf")
+    return(m)
   }
   class(q_rf) <- c("q_model")
   return(q_rf)
 }
 
 predict.q_rf <- function(object, new_AH, ...) {
-  mf <- with(object, model.frame(terms, data=new_AH, xlev = xlevels,
-                                 drop.unused.levels=FALSE))
-  newx <- model.matrix(mf, data=new_AH, xlev = object$xlevels)
-  idx_inter <- which(colnames(newx) == "(Intercept)")
-  if (length(idx_inter)>0)
-    newx <- newx[,-idx_inter, drop = FALSE]
-  colnames(newx) <- gsub("[^[:alnum:]]", "_", colnames(newx))
-  pr <- predict(object$fit, data=newx, num.threads=1)$predictions
-  return(pr)
+  model <- getElement(object, "model")
+  design <- getElement(object, "design")
 
+  new_data <- apply_design(design = design, data = new_AH)
+  pr <- predict(model, data=new_data, num.threads=1)$predictions
+  return(pr)
 }
 
 # SuperLearner interface --------------------------------------------------
@@ -305,30 +296,28 @@ q_sl <- function(formula = ~ .,
                  ...){
   if (!requireNamespace("SuperLearner"))
     stop("Package 'SuperLearner' required.")
-  dotdotdot <- list(...)
+  formula <- as.formula(formula)
   force(SL.library)
+  dotdotdot <- list(...)
   q_sl <- function(AH, V_res) {
     check_q_formula(formula = formula, data = AH)
-    des <- get_design(formula, data=AH, intercept = TRUE)
+    des <- get_design(formula, data=AH)
     if (missing(V_res) || is.null(V_res))
       V_res <- get_response(formula, data=AH)
-    X <- as.data.frame(des$x)
-    colnames(X) <- gsub("[^[:alnum:]]", "_", colnames(X))
     args_SL <- list(Y = as.numeric(V_res),
-                    X = X,
+                    X = as.data.frame(des$x),
                     SL.library = SL.library,
                     env = env)
     args_SL <- append(args_SL, dotdotdot)
-    fit <- do.call(SuperLearner::SuperLearner, args = args_SL)
-    fit$call <- NULL
+    model <- do.call(SuperLearner::SuperLearner, args = args_SL)
+    model$call <- NULL
     if(onlySL == TRUE){
-      fit$fitLibrary[fit$coef == 0] <- NA
+      model$fitLibrary[model$coef == 0] <- NA
     }
 
-    m <- with(des, list(fit = fit,
-                        onlySL = onlySL,
-                        xlevels = xlevels,
-                        terms = terms))
+    m <- list(model = model,
+              design = des,
+              onlySL = onlySL)
     class(m) <- c("q_sl")
     return(m)
   }
@@ -337,17 +326,14 @@ q_sl <- function(formula = ~ .,
 }
 
 predict.q_sl <- function(object, new_AH, ...) {
+  model <- getElement(object, "model")
+  design <- getElement(object, "design")
   onlySL <- getElement(object, "onlySL")
-  mf <- with(object, model.frame(terms, data=new_AH, xlev = xlevels,
-                                 drop.unused.levels=FALSE))
-  newx <- model.matrix(mf, data=as.data.frame(new_AH), xlev = object$xlevels)
-  idx_inter <- which(colnames(newx) == "(Intercept)")
-  if (length(idx_inter)>0)
-    newx <- newx[,-idx_inter, drop = FALSE]
-  newx <- as.data.frame(newx)
-  colnames(newx) <- gsub("[^[:alnum:]]", "_", colnames(newx))
-  pred <- predict(getElement(object, "fit"),
-                  newdata = newx,
+
+  newdata <- apply_design(design = design, data = new_AH)
+  newdata <- as.data.frame(newdata)
+  pred <- predict(model,
+                  newdata = newdata,
                   onlySL = onlySL)$pred[, 1]
   return(pred)
 }

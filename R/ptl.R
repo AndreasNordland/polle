@@ -239,7 +239,7 @@ ptl <- function(policy_data,
     }
 
     # design matrix for policy_tree:
-    design_k <- get_design(formula = ~., data = H, intercept = TRUE)
+    design_k <- get_design(formula = ~., data = H)
     X <- design_k$x
     design_k$x <- NULL
     ptl_designs[[k]] <- design_k
@@ -337,26 +337,23 @@ get_policy.PTL <- function(object){
     if (get_K(policy_data) != K)
       stop("The policy do not have the same number of stages as the policy data object.")
 
-    # getting the actions recommended by the ptl objects:
+    ### getting the actions recommended by the ptl objects:
     policy_actions <- list()
     for (k in K:1){
       # getting the policy history:
       policy_history_k <- get_history(policy_data, stage = k, full_history = full_history)
 
+      # getting the design matrix:
       if (full_history == TRUE){
         vars <- policy_vars[[k]]
       } else{
         vars <- policy_vars
       }
       H <- get_H(policy_history_k, vars = vars)
+      design <- ptl_designs[[k]]
+      newdata <- apply_design(design = design, data = H)
 
-      des <- ptl_designs[[k]]
-      mf <- with(des, model.frame(terms, data=H, xlev = xlevels, drop.unused.levels=FALSE))
-      newdata <- model.matrix(mf, data=H, xlev = des$xlevels)
-      idx_inter <- which(colnames(newdata) == "(Intercept)")
-      if (length(idx_inter)>0)
-        newdata <- newdata[,-idx_inter, drop = FALSE]
-
+      # policy tree predictions:
       dd <- predict(ptl_objects[[k]], newdata = newdata)
       d <- action_set[dd]
 

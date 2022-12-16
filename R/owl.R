@@ -152,7 +152,7 @@ dtrlearn2_owl <- function(policy_data,
 
     ### constructing the inputs for owl:
     # getting the design of the history (X) for owl:
-    design_k <- get_design(formula = ~., data = H, intercept = TRUE)
+    design_k <- get_design(formula = ~., data = H)
     x <- design_k$x
     if ((ncol(x) == 1))
       stop("DTRlearn2 has a bug. H must be a matrix with ncol(H) > 1.")
@@ -238,18 +238,10 @@ get_policy.OWL <- function(object){
       } else{
         vars <- policy_vars
       }
+      # getting the design matrix:
       H <- get_H(policy_history_k, vars = vars)
-
       design <- X_designs[[k]]
-      x <- model.frame(design$terms,
-                       data=H,
-                       xlev = design$xlevels,
-                       drop.unused.levels=FALSE)
-      x <- model.matrix(x, data=H, xlev = design$xlevels)
-      idx_inter <- which(colnames(x) == "(Intercept)")
-      if (length(idx_inter)>0)
-        x <- x[,-idx_inter, drop = FALSE]
-
+      x <- apply_design(design, data = H)
       if (reuse_scales == TRUE){
         x <- scale(x,
                    center = X_scales[[k]]$`scaled:center`,

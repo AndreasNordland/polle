@@ -272,7 +272,6 @@ test_that("policy_learn with type ptl works as intended",{
 
 })
 
-
 ## Q-learning --------------------------------------------------------------
 
 test_that("policy_learn with type rql works as intended",{

@@ -55,13 +55,9 @@ get_response <- function(formula, ...) {
   return(y)
 }
 
-get_design <- function(formula, data, intercept=TRUE) {
+get_design <- function(formula, data) {
   tt <- terms(formula, data=data)
-  if (intercept == TRUE){
-    attr(tt, "intercept") <- 1
-  } else{
-    attr(tt, "intercept") <- 0
-  }
+  attr(tt, "intercept") <- 1
   tt <- delete.response(tt)
   op <- options(na.action = "na.pass")
   mf <- model.frame(tt, data=data, drop.unused.levels = TRUE)
@@ -72,9 +68,29 @@ get_design <- function(formula, data, intercept=TRUE) {
   if (length(idx_inter)>0)
     x <- x[,-idx_inter, drop = FALSE]
   attr(tt, ".Environment") <- NULL
+  colnames(x) <- gsub("[^[:alnum:]]", "_", colnames(x))
   return(list(terms=tt, xlevels=xlevels, x=x))
 }
 
+apply_design <- function(design, data){
+  terms <- getElement(design, "terms")
+  xlevels <- getElement(design, "xlevels")
+
+  op <- options(na.action = "na.pass")
+  mf <- model.frame(terms,
+                    data=data,
+                    xlev = xlevels,
+                    drop.unused.levels=FALSE)
+  newx <- model.matrix(mf, data=data, xlev = xlevels)
+  options(op)
+
+  idx_inter <- which(colnames(newx) == "(Intercept)")
+  if (length(idx_inter)>0)
+    newx <- newx[,-idx_inter, drop = FALSE]
+
+  colnames(newx) <- gsub("[^[:alnum:]]", "_", colnames(newx))
+  return(newx)
+}
 
 # g_model documentation -----------------------------------------------------------
 
@@ -191,10 +207,10 @@ g_glm <- function(formula = ~.,
                             na.action = na.action),
                        dotdotdot)
 
-    glm_model <- do.call(what = "glm", args = args_glm)
-    glm_model$call <- NULL
+    model <- do.call(what = "glm", args = args_glm)
+    model$call <- NULL
 
-    m <- list(glm_model = glm_model)
+    m <- list(model = model)
     class(m) <- c("g_glm")
     return(m)
   }
@@ -202,8 +218,8 @@ g_glm <- function(formula = ~.,
   return(g_glm)
 }
 predict.g_glm <- function(object, new_H){
-  glm_model <- getElement(object, "glm_model")
-  fit <- predict.glm(object = glm_model, newdata = new_H, type = "response")
+  model <- getElement(object, "model")
+  fit <- predict.glm(object = model, newdata = new_H, type = "response")
   probs <- cbind((1-fit), fit)
   return(probs)
 }
@@ -225,20 +241,19 @@ g_glmnet <- function(formula = ~.,
     check_missing_regressor(formula = formula, data = H)
     formula <- update_g_formula(formula, A, H)
     y <- get_response(formula, data=H)
-    des <- get_design(formula, data=H, intercept = TRUE)
+    des <- get_design(formula, data=H)
     if (ncol(des$x)<2)
       stop("g_glmnet requires a model matrix with two or more columns.")
 
     args_glmnet <- list(y = y,  x = des$x, family = family, alpha = alpha)
     args_glmnet <- append(args_glmnet, dotdotdot)
-    glmnet_model <- do.call(glmnet::cv.glmnet, args = args_glmnet)
-    glmnet_model$call <- NULL
+    model <- do.call(glmnet::cv.glmnet, args = args_glmnet)
+    model$call <- NULL
 
-    m <- with(des, list(glmnet_model = glmnet_model,
-                        s = s,
-                        xlevels = xlevels,
-                        terms = terms,
-                        action_set = action_set))
+    m  <- list(model = model,
+               s = s,
+               design = des,
+               action_set = action_set)
     class(m) <- c("g_glmnet")
     return(m)
   }
@@ -247,16 +262,12 @@ g_glmnet <- function(formula = ~.,
 }
 
 predict.g_glmnet <- function(object, new_H) {
-  glmnet_model <- object$glmnet_model
-  op <- options(na.action = "na.pass")
-  mf <- with(object, model.frame(terms, data=new_H, xlev = xlevels,
-                                 drop.unused.levels=FALSE))
-  newx <- model.matrix(mf, data=new_H, xlev = object$xlevels)
-  options(op)
-  idx_inter <- which(colnames(newx) == "(Intercept)")
-  if (length(idx_inter)>0)
-    newx <- newx[,-idx_inter, drop = FALSE]
-  fit <- predict(glmnet_model,  newx = newx, type = "response", s = object$s)
+  design <- getElement(object, "design")
+  model <- getElement(object, "model")
+  s <- getElement(object, "s")
+
+  newx <- apply_design(design, data = new_H)
+  fit <- predict(model,  newx = newx, type = "response", s = s)
   probs <- cbind((1-fit), fit)
   return(probs)
 }
@@ -294,9 +305,8 @@ g_rf <- function(formula = ~.,
   g_rf <- function(A, H, action_set) {
     A <- factor(A, levels = action_set)
     check_g_formula(formula = formula, data = H)
-    des <- get_design(formula, data=H, intercept = TRUE)
+    des <- get_design(formula, data=H)
     data <- data.frame(A, des$x)
-    colnames(data) <- gsub("[^[:alnum:]]", "_", colnames(data))
     res <- NULL; best <- 1
     if (length(ml)>1) {
       res <- tryCatch(targeted::cv(ml, data=data, perf=perf_ranger_prob,
@@ -305,17 +315,17 @@ g_rf <- function(formula = ~.,
       best <- if (is.null(res)) 1 else which.min(summary(res))
     }
     if (!is.null(res)) {
-      fit <- res$fit[[best]]
+      model <- res$fit[[best]]
     } else {
-      fit <- ml[[best]](data)
+      model <- ml[[best]](data)
     }
-    fit$call <- NULL
-    m <- with(des, list(fit = fit,
-                        rf_args = rf_args(hyper_par[[best]]),
-                        num.trees=num.trees[best],
-                        xlevels = xlevels,
-                        terms = terms,
-                        action_set = action_set))
+    model$call <- NULL
+
+    m <- list(model = model,
+              rf_args = rf_args(hyper_par[[best]]),
+              num.trees=num.trees[best],
+              design = des,
+              action_set = action_set)
     class(m) <- c("g_rf")
     return(m)
   }
@@ -323,15 +333,12 @@ g_rf <- function(formula = ~.,
   return(g_rf)
 }
 
-predict.g_rf <- function(object, new_H, ...) {
-  mf <- with(object, model.frame(terms, data=new_H, xlev = xlevels,
-                                 drop.unused.levels=FALSE))
-  newx <- model.matrix(mf, data=new_H, xlev = object$xlevels)
-  idx_inter <- which(colnames(newx) == "(Intercept)")
-  if (length(idx_inter)>0)
-    newx <- newx[,-idx_inter, drop = FALSE]
-  colnames(newx) <- gsub("[^[:alnum:]]", "_", colnames(newx))
-  pr <- predict(object$fit, data=newx, num.threads=1)$predictions
+predict.g_rf <- function(object, new_H, ...){
+  model <- getElement(object, "model")
+  design <- getElement(object, "design")
+
+  new_data <- apply_design(design = design, data = new_H)
+  pr <- predict(model, data=new_data, num.threads=1)$predictions
   return(pr)
 }
 
@@ -353,25 +360,23 @@ g_sl <- function(formula = ~ .,
   g_sl <- function(A, H, action_set) {
     A <- as.numeric(factor(A, levels=action_set))-1
     check_g_formula(formula = formula, data = H)
-    des <- get_design(formula, data=H, intercept = TRUE)
-    X <- data.frame(des$x)
-    colnames(X) <- gsub("[^[:alnum:]]", "_", colnames(X))
+    des <- get_design(formula, data=H)
     sl_args <- append(list(Y=A,
-                           X=X,
+                           X=as.data.frame(des$x),
                            family=family,
                            SL.library=SL.library,
                            env = env),
                       dotdotdot)
-    fit <- do.call(SuperLearner::SuperLearner, sl_args)
-    fit$call <- NULL
+    model <- do.call(SuperLearner::SuperLearner, sl_args)
+    model$call <- NULL
     if(onlySL == TRUE){
-      fit$fitLibrary[fit$coef == 0] <- NA
+      model$fitLibrary[model$coef == 0] <- NA
     }
-    m <- with(des, list(fit = fit,
-                        onlySL = onlySL,
-                        xlevels = xlevels,
-                        terms = terms,
-                        action_set = action_set))
+    m <- list(model = model,
+              design = des,
+              onlySL = onlySL,
+              action_set = action_set)
+
     class(m) <- c("g_sl")
     return(m)
   }
@@ -381,24 +386,20 @@ g_sl <- function(formula = ~ .,
 
 #' @export
 predict.g_sl <- function(object, new_H, ...) {
+  model <- getElement(object, "model")
+  design <- getElement(object, "design")
   onlySL <- getElement(object, "onlySL")
-  mf <- with(object, model.frame(terms, data=new_H, xlev = xlevels,
-                                 drop.unused.levels=FALSE))
-  newx <- as.data.frame(model.matrix(mf, data=new_H, xlev = object$xlevels))
-  idx_inter <- which(colnames(newx) == "(Intercept)")
-  if (length(idx_inter)>0)
-    newx <- newx[,-idx_inter, drop = FALSE]
-  colnames(newx) <- gsub("[^[:alnum:]]", "_", colnames(newx))
-  pr <- predict(object$fit,
-                newdata=newx,
+
+  newdata <- apply_design(design = design, data = new_H)
+  newdata <- as.data.frame(newdata)
+  pr <- predict(model,
+                newdata=newdata,
                 onlySL = onlySL)$pred
   pr <- cbind((1-pr), pr)
   return(pr)
 }
 
-################################################################################
-## sl3 (SuperLearner) interface
-################################################################################
+## sl3 (SuperLearner) interface ----
 
 # g_sl3 <- function(formula = ~ ., learner, folds=5, ...) {
 #   if (!requireNamespace("sl3"))
@@ -415,7 +416,7 @@ predict.g_sl <- function(object, new_H, ...) {
 #   g_sl3 <- function(A, H, action_set) {
 #     A <- factor(A, levels=action_set)
 #     check_g_formula(formula = formula, data = H)
-#     des <- get_design(formula, data=H, intercept = TRUE)
+#     des <- get_design(formula, data=H)
 #     X <- data.frame(des$x)
 #     colnames(X) <- gsub("[^[:alnum:]]", "_", colnames(X))
 #     tsk <- sl3::make_sl3_Task(data=cbind(A, X),

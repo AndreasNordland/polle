@@ -99,7 +99,8 @@ test_that("q_sl can find user-defined learners",{
   )
 })
 
-test_that("q_glm and q_sl(SL.library('SL.glm')) are (almost) equivaleny",{
+test_that("q_glm and q_sl(SL.library('SL.glm')) are (almost) equivalent",{
+  library("SuperLearner")
   source(system.file("sim", "single_stage.R", package="polle"))
   d1 <- sim_single_stage(200, seed=1)
   d1$A <- as.character(d1$A)
@@ -113,8 +114,8 @@ test_that("q_glm and q_sl(SL.library('SL.glm')) are (almost) equivaleny",{
 
   # names are different
   expect_equal(
-    unname(coef(q1$glm_model)),
-    unname(coef(q2$fit$fitLibrary$SL.glm_All$object))
+    unname(coef(q1$model)),
+    unname(coef(q2$model$fitLibrary$SL.glm_All$object))
   )
 
   q1 <- q_glm(formula = ~.)

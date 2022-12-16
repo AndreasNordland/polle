@@ -1,5 +1,5 @@
 
-test_that("g_rf",{
+test_that("g_rf runs:",{
   source(system.file("sim", "single_stage.R", package="polle"))
   d1 <- sim_single_stage(200, seed=1)
   d1$BB <- sample(c("group 1", "group & 2", "group & 3"), size = 200, replace = TRUE)
@@ -14,7 +14,7 @@ test_that("g_rf",{
       policy_learn = policy_learn(type = "rql", alpha = 0.05),
       g_models = g_rf(formula = ~.),
       g_full_history = FALSE,
-      q_models = q_glm()
+      type = "ipw"
     ),
     NA
   )
