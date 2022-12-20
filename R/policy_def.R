@@ -1,3 +1,10 @@
+new_policy <- function(fun, name){
+  attr(fun, "name") <- name
+  class(fun) <- c("policy", "function")
+
+  return(fun)
+}
+
 #' @title Policy-class
 #' @name policy
 #'
@@ -196,8 +203,8 @@ policy_def <- function(policy_functions, full_history = FALSE, reuse = FALSE, na
     return(policy_actions)
   }
 
-  attr(policy, "name") <- name
-  class(policy) <- c("policy", "function")
+  # setting class and attributes:
+  policy <- new_policy(policy, name = name)
 
   return(policy)
 }

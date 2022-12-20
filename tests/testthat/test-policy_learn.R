@@ -1,9 +1,124 @@
 
-
-
 # Single stage ------------------------------------------------------------
 
+
+## RQL ---------------------------------------------------------------------
+
+test_that("get_policy.RQL returns a policy", {
+  source(system.file("sim", "single_stage.R", package="polle"))
+  d <- sim_single_stage(200, seed=1)
+  pd <- policy_data(d,
+                     action="A",
+                     covariates = list("Z", "B", "L"),
+                     utility="U")
+
+  pl <- policy_learn()
+  expect_error({
+    p <- get_policy(pl(pd, q_models = q_glm()))
+  },
+  NA
+  )
+  expect_true(
+    inherits(p, what = "policy")
+  )
+  expect_error(
+    p(pd),
+    NA
+  )
+
+})
+
+
+## RQVL --------------------------------------------------------------------
+
+test_that("get_policy.RQVL returns a policy", {
+  source(system.file("sim", "single_stage.R", package="polle"))
+  d <- sim_single_stage(200, seed=1)
+  pd <- policy_data(d,
+                    action="A",
+                    covariates = list("Z", "B", "L"),
+                    utility="U")
+
+  pl <- policy_learn(type = "rqvl", control = control_rqvl())
+  expect_error({
+    p <- get_policy(pl(pd, q_models = q_glm(), g_models = g_glm()))
+  },
+  NA
+  )
+  expect_true(
+    inherits(p, what = "policy")
+  )
+  expect_error(
+    p(pd),
+    NA
+  )
+})
+
+
+## PTL ---------------------------------------------------------------------
+
+test_that("get_policy.PTL returns a policy", {
+  source(system.file("sim", "single_stage.R", package="polle"))
+  d <- sim_single_stage(200, seed=1)
+  pd <- policy_data(d,
+                    action="A",
+                    covariates = list("Z", "B", "L"),
+                    utility="U")
+
+  pl <- policy_learn(type = "ptl", control = control_ptl())
+  expect_error({
+    p <- get_policy(pl(pd, q_models = q_glm(), g_models = g_glm()))
+  },
+  NA
+  )
+
+  expect_true(
+    inherits(p, what = "policy")
+  )
+
+  expect_error(
+    p(pd),
+    NA
+  )
+})
+
+
 ## EARL --------------------------------------------------------------------
+
+test_that("get_policy.EARL returns a policy", {
+  library("modelObj")
+
+  source(system.file("sim", "single_stage.R", package="polle"))
+  d <- sim_single_stage(200, seed=1)
+  pd <- policy_data(d,
+                    action="A",
+                    covariates = list("Z", "B", "L"),
+                    utility="U")
+
+  moPropen1 <- buildModelObj(model = ~B+Z+L,
+                             solver.method = 'glm',
+                             solver.args = list('family'='binomial'),
+                             predict.method = 'predict.glm',
+                             predict.args = list(type='response'))
+
+  pl <- policy_learn(type = "earl",
+                     control = control_earl(moPropen = moPropen1,
+                                            regime = ~B+Z+L,))
+  expect_error({
+    p <- get_policy(pl(pd, q_models = q_glm(), g_models = g_glm()))
+  },
+  NA
+  )
+
+  expect_true(
+    inherits(p, what = "policy")
+  )
+
+  expect_error(
+    p(pd),
+    NA
+  )
+})
 
 test_that("the polle implementation of earl agrees with direct application of DynTxRegime::earl in the single stage case.",{
   library("DynTxRegime")
@@ -272,7 +387,7 @@ test_that("policy_learn with type ptl works as intended",{
 
 })
 
-## Q-learning --------------------------------------------------------------
+## RQL --------------------------------------------------------------
 
 test_that("policy_learn with type rql works as intended",{
 
@@ -315,7 +430,7 @@ test_that("policy_learn with type rql works as intended",{
   expect_s3_class(p(pd), class = "data.table")
 })
 
-## QV-learning -------------------------------------------------------------
+## RQVL -------------------------------------------------------------
 
 test_that("policy_learn with type rqvl works as intended",{
   source(system.file("sim", "two_stage.R", package="polle"))
