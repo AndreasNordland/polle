@@ -76,6 +76,11 @@ evaluate.g_function <- function(object, new_history){
     stop("new_history does not have the same column names as the original history.")
 
   g_values <- predict(g_model, new_H = new_H)
+  if (!all(g_values >= 0) |
+      !all(g_values <= 1)){
+    stop("Not all g-model values are within [0,1].")
+  }
+
   colnames(g_values) <- paste("g", action_set, sep = "_")
 
   if (!all(complete.cases(g_values))){
@@ -129,22 +134,31 @@ fit_g_functions <- function(policy_data, g_models, full_history){
     stop("Please provide g_models.")
 
   # checking the g_models:
-  if (class(g_models)[[1]] == "list"){
-    if (length(g_models) != K) stop("g_models must either be a list of length K or a single g-model.")
+  if (is.list(g_models)){
+    if (length(g_models) != K)
+      stop("g_models must either be a list of length K or a single g-model.")
   } else{
-    if (full_history == TRUE) stop("full_history must be FALSE when a single g-model is provided.")
+    if (full_history == TRUE)
+      stop("full_history must be FALSE when a single g-model is provided.")
   }
 
-  if (class(g_models)[[1]] == "list"){
-    history <- lapply(1:K, function(s) get_history(policy_data, stage = s, full_history = full_history))
-    g_functions <- mapply(history, g_models, FUN = function(h, gm) fit_g_function(history = h, g_model = gm), SIMPLIFY = FALSE)
+  if (is.list(g_models)){
+    history <- lapply(1:K,
+                      function(s) get_history(policy_data,
+                                              stage = s,
+                                              full_history = full_history))
+    g_functions <- mapply(history,
+                          g_models,
+                          FUN = function(h, gm) fit_g_function(history = h,
+                                                               g_model = gm),
+                          SIMPLIFY = FALSE)
     names(g_functions) <- paste("stage_", 1:K, sep = "")
   } else{
     history <- state_history(policy_data)
     g_functions <- list(all_stages = fit_g_function(history, g_models))
   }
 
-  class(g_functions) <- "nuisance_functions"
+  class(g_functions) <- c("g_functions", "nuisance_functions")
   attr(g_functions, "full_history") <- full_history
 
   return(g_functions)

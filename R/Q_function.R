@@ -93,7 +93,7 @@ q_step <- function(policy_data, k, full_history, Q, q_models){
   idx_k <- (id %in% id_k)
   rm(stage)
 
-  if (class(q_models)[[1]] == "list"){
+  if (is.list(q_models)){
     q_model <- q_models[[k]]
   } else{
     q_model <- q_models
@@ -197,8 +197,9 @@ fit_Q_functions <- function(policy_data,
   action_set <- get_action_set(policy_data)
 
   # checking q_models: must either be a list of length K or a single Q-model
-  if (class(q_models)[[1]] == "list"){
-    if (length(q_models) != K) stop("q_models must either be a list of length K or a single Q-model.")
+  if (is.list(q_models)){
+    if (length(q_models) != K)
+      stop("q_models must either be a list of length K or a single Q-model.")
   }
 
   # getting the IDs:
@@ -237,8 +238,10 @@ fit_Q_functions <- function(policy_data,
     Q[idx_k, k] <- q_d_values_k
     Q[!idx_k, k] <- Q[!idx_k, k+1]
   }
+
+  # setting names, classes and attributes:
   names(q_functions) <- paste("stage_", 1:K, sep = "")
-  class(q_functions) <- "nuisance_functions"
+  class(q_functions) <- c("q_functions", "nuisance_functions")
   attr(q_functions, "full_history") <- full_history
 
   return(q_functions)
