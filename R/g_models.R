@@ -92,6 +92,11 @@ apply_design <- function(design, data){
   return(newx)
 }
 
+new_g_model <- function(g_model){
+  class(g_model) <- c("g_model", "function")
+  return(g_model)
+}
+
 # g_model documentation -----------------------------------------------------------
 
 #' @title g_model class object
@@ -214,7 +219,10 @@ g_glm <- function(formula = ~.,
     class(m) <- c("g_glm")
     return(m)
   }
-  class(g_glm) <- c("g_model", "function")
+
+  # setting class:
+  g_glm <- new_g_model(g_glm)
+
   return(g_glm)
 }
 predict.g_glm <- function(object, new_H){
@@ -257,7 +265,9 @@ g_glmnet <- function(formula = ~.,
     class(m) <- c("g_glmnet")
     return(m)
   }
-  class(g_glmnet) <- c("g_model", "function")
+  # setting class:
+  g_glmnet <- new_g_model(g_glmnet)
+
   return(g_glmnet)
 }
 
@@ -329,7 +339,9 @@ g_rf <- function(formula = ~.,
     class(m) <- c("g_rf")
     return(m)
   }
-  class(g_rf) <- c("g_model", "function")
+  # setting class:
+  g_rf <- new_g_model(g_rf)
+
   return(g_rf)
 }
 
@@ -380,7 +392,9 @@ g_sl <- function(formula = ~ .,
     class(m) <- c("g_sl")
     return(m)
   }
-  class(g_sl) <- c("g_model", "function")
+  # setting class:
+  g_sl <- new_g_model(g_sl)
+
   return(g_sl)
 }
 

@@ -20,6 +20,11 @@ update_q_formula <- function(formula, data, V_res){
   return(formula)
 }
 
+new_q_model <- function(q_model){
+  class(q_model) <- c("q_model", "function")
+  return(q_model)
+}
+
 # Q-model documentation ---------------------------------------------------
 
 #' @title q_model class object
@@ -161,7 +166,7 @@ q_glm <- function(formula = ~ A*.,
     class(m) <- c("q_glm")
     return(m)
   }
-  class(q_glm) <- c("q_model")
+  q_glm <- new_q_model(q_glm)
   return(q_glm)
 }
 
@@ -202,7 +207,7 @@ q_glmnet <- function(formula = ~ A*.,
     class(m) <- c("q_glmnet")
     return(m)
   }
-  class(q_glmnet) <- c("q_model")
+  q_glmnet <- new_q_model(q_glmnet)
   return(q_glmnet)
 }
 
@@ -272,7 +277,7 @@ q_rf <- function(formula = ~.,
     class(m) <- c("q_rf")
     return(m)
   }
-  class(q_rf) <- c("q_model")
+  q_rf <- new_q_model(q_rf)
   return(q_rf)
 }
 
@@ -321,7 +326,7 @@ q_sl <- function(formula = ~ .,
     class(m) <- c("q_sl")
     return(m)
   }
-  class(q_sl) <- c("q_model")
+  q_sl <- new_q_model(q_sl)
   return(q_sl)
 }
 
