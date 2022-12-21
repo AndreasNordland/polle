@@ -54,7 +54,6 @@ test_that("get_policy.RQVL returns a policy", {
   )
 })
 
-
 ## PTL ---------------------------------------------------------------------
 
 test_that("get_policy.PTL returns a policy", {
@@ -86,7 +85,7 @@ test_that("get_policy.PTL returns a policy", {
 ## EARL --------------------------------------------------------------------
 
 test_that("get_policy.EARL returns a policy", {
-  library("modelObj")
+  library("DynTxRegime")
 
   source(system.file("sim", "single_stage.R", package="polle"))
   d <- sim_single_stage(200, seed=1)
@@ -409,6 +408,10 @@ test_that("policy_learn with type rql works as intended",{
     ql(policy_data = pd, q_models = q_glm()),
     NA
   )
+  expect_error(
+    ql(policy_data = pd, q_models = list(q_glm(), q_glm())),
+    NA
+  )
 
   ql <- policy_learn(type = "rql",
                      alpha = 0.1,
@@ -432,6 +435,45 @@ test_that("policy_learn with type rql works as intended",{
 
 ## RQVL -------------------------------------------------------------
 
+test_that("policy_learn with type = 'rqvl' checks input",{
+  source(system.file("sim", "two_stage.R", package="polle"))
+  d <- sim_two_stage(200, seed=1)
+
+  pd <- policy_data(d,
+                    action = c("A_1", "A_2"),
+                    baseline = c("BB", "B"),
+                    covariates = list(L = c("L_1", "L_2"),
+                                      C = c("C_1", "C_2")),
+                    utility = c("U_1", "U_2", "U_3"))
+  qv <- policy_learn(type = "rqvl", control = control_rqvl())
+
+  gfun <- fit_g_functions(pd, g_models = g_glm(), full_history = FALSE)
+  gfun2 <- fit_g_functions(pd, g_models = list(g_glm(), g_glm()), full_history = FALSE)
+
+  expect_error(
+    qv(policy_data = pd, q_models = q_glm()),
+    "Provide either g-models or g-functions."
+  )
+  expect_error(
+    qv(policy_data = pd, q_models = q_glm(), g_functions = g_glm()),
+    "g-functions must be of class 'g_functions'."
+  )
+  expect_error(
+    qv(policy_data = pd, q_models = list(), g_models = g_glm()),
+    "q_models must either be a list of length K or a single Q-model."
+  )
+  expect_error(
+    qv(policy_data = pd,
+       q_models = list(q_glm(), q_glm(),q_glm()),
+       g_models = g_glm()),
+    "q_models must either be a list of length K or a single Q-model."
+  )
+
+
+
+
+})
+
 test_that("policy_learn with type rqvl works as intended",{
   source(system.file("sim", "two_stage.R", package="polle"))
   d <- sim_two_stage(200, seed=1)
@@ -444,14 +486,31 @@ test_that("policy_learn with type rqvl works as intended",{
                     utility = c("U_1", "U_2", "U_3"))
 
   qv <- policy_learn(type = "rqvl", control = control_rqvl())
+  gfun <- fit_g_functions(pd, g_models = g_glm(), full_history = FALSE)
+  gfun2 <- fit_g_functions(pd, g_models = list(g_glm(), g_glm()), full_history = FALSE)
 
   expect_error(
     qv(policy_data = pd, g_models = g_glm(), q_models = q_glm()),
     NA
   )
-
+  expect_error(
+    qv(policy_data = pd, g_functions = gfun, q_models = q_glm()),
+    NA
+  )
+  expect_error(
+    qv(policy_data = pd, g_functions = gfun2, q_models = q_glm()),
+    NA
+  )
   expect_error(
     policy_eval(policy_data = pd,policy_learn = qv),
+    NA
+  )
+  expect_error(
+    policy_eval(policy_data = pd,policy_learn = qv, g_functions = gfun),
+    NA
+  )
+  expect_error(
+    policy_eval(policy_data = pd,policy_learn = qv,g_functions = gfun2),
     NA
   )
 

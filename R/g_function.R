@@ -130,18 +130,26 @@ evaluate.g_function <- function(object, new_history){
 fit_g_functions <- function(policy_data, g_models, full_history){
   K <- get_K(policy_data)
 
+  # input checks:
   if (is.null(g_models))
     stop("Please provide g_models.")
 
-  # checking the g_models:
+  mes <- "g_models must be a single g_model or a list of K g_models's."
   if (is.list(g_models)){
+    tmp <- all(unlist(lapply(g_models, function(gm) inherits(gm, "g_model"))))
+    if (!tmp)
+      stop(mes)
+    rm(tmp)
     if (length(g_models) != K)
-      stop("g_models must either be a list of length K or a single g-model.")
+      stop(mes)
   } else{
+    if (!inherits(g_models, "g_model"))
+      stop(mes)
     if (full_history == TRUE)
       stop("full_history must be FALSE when a single g-model is provided.")
   }
 
+  # fitting the g-models:
   if (is.list(g_models)){
     history <- lapply(1:K,
                       function(s) get_history(policy_data,

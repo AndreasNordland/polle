@@ -313,8 +313,6 @@ static_policy <- function(action, name=paste0("a=",action)) {
 #' head(dynamic_policy(fun = function(C_1, C_2) (C_1>1) & (C_2>1))(his))
 #' @noRd
 dynamic_policy <- function(fun){
-  if (!any(class(fun) == "function"))
-    stop("the fun argument in dynamic_policy must be a function.")
 
   if (!"..." %in% names(formals(fun))) {
     formals(fun) <- c(formals(fun), alist(...=))

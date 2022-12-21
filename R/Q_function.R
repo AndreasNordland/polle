@@ -196,10 +196,23 @@ fit_Q_functions <- function(policy_data,
   n <- get_n(policy_data)
   action_set <- get_action_set(policy_data)
 
-  # checking q_models: must either be a list of length K or a single Q-model
+  # input checks:
+  if (is.null(q_models))
+    stop("Please provide q_models.")
+
+  mes <- "q_models must be a single q_models or a list of K q_models's."
   if (is.list(q_models)){
+    tmp <- all(unlist(lapply(q_models, function(gm) inherits(gm, "q_model"))))
+    if (!tmp)
+      stop(mes)
+    rm(tmp)
     if (length(q_models) != K)
-      stop("q_models must either be a list of length K or a single Q-model.")
+      stop(mes)
+  } else{
+    if (!inherits(q_models, "q_model"))
+      stop(mes)
+    if (full_history == TRUE)
+      stop("full_history must be FALSE when a single q-model is provided.")
   }
 
   # getting the IDs:

@@ -203,10 +203,10 @@
 #' head(get_policy_actions(pe2))
 policy_eval <- function(policy_data,
                         policy = NULL, policy_learn = NULL,
-                        g_functions=NULL, g_models=g_glm(), g_full_history = FALSE,
-                        q_functions=NULL, q_models=q_glm(), q_full_history = FALSE,
+                        g_functions = NULL, g_models = g_glm(), g_full_history = FALSE,
+                        q_functions = NULL, q_models = q_glm(), q_full_history = FALSE,
                         type = "dr",
-                        M=1, future_args = list(future.seed = TRUE),
+                        M = 1, future_args = list(future.seed=TRUE),
                         name = NULL
                         ) {
   args <- as.list(environment())
@@ -214,6 +214,31 @@ policy_eval <- function(policy_data,
   args[["M"]] <- NULL
   args[["future_args"]] <- NULL
   args[["name"]] <- NULL
+
+  # input checks:
+  if (!inherits(policy_data, what = "policy_data"))
+    stop("policy_data must be of inherited class 'policy_data'.")
+  if (!is.null(policy)){
+    if (!inherits(policy, what = "policy"))
+      stop("policy must be of inherited class 'policy'.")
+  }
+  if ((is.null(policy) & is.null(policy_learn)) |
+      (!is.null(policy_learn) & !is.null(policy)))
+    stop("Provide either policy or policy_learn.")
+  if (is.null(policy) & !is.null(policy_learn)){
+    if (!inherits(policy_learn, what = "policy_learn"))
+      stop("policy_learn must be of inherited class 'policy_learn'.")
+  }
+  if (!is.null(g_functions)){
+    if(!(inherits(g_functions, "g_functions")))
+      stop("g_functions must be of class 'g_functions'.")
+  }
+
+  if (!is.null(q_functions)){
+    if(!(inherits(q_functions, "q_functions")))
+      stop("q-functions must be of class 'q_functions'.")
+  }
+
 
   if (M > 1){
     val <- policy_eval_cross(args = args,

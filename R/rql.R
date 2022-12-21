@@ -14,12 +14,13 @@ rql<- function(policy_data, alpha,
     stop("L must be 1 when using rql (no cross-fitting).")
 
   if (!is.null(g_functions)){
-    if(!(class(g_functions)[[1]] == "nuisance_functions"))
-      stop("g-functions must be of class 'nuisance_functions'.")
+    if(!inherits(g_functions, what = "g_functions"))
+      stop("g-functions must be of class 'g_functions'.")
   }
 
-  if (class(q_models)[[1]] == "list"){
-    if (length(q_models) != K) stop("q_models must either be a list of length K or a single Q-model.")
+  if (is.list(q_models)){
+    if (length(q_models) != K)
+      stop("q_models must either be a list of length K or a single Q-model.")
   }
 
   # getting the IDs:

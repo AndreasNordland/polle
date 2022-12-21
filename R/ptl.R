@@ -51,7 +51,7 @@ ptl <- function(policy_data,
       stop("realistic policy tree learning is only implemented for binary actions. Use realistic QV-learning (rqvl) instead.")
   }
 
-  if (class(q_models)[[1]] == "list"){
+  if (is.list(q_models)){
     if (length(q_models) != K)
       stop("q_models must either be a list of length K or a single Q-model.")
   }
