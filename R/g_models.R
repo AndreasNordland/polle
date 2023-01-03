@@ -189,6 +189,32 @@ new_g_model <- function(g_model){
 #' get_g_functions(pe2)
 NULL
 
+
+# empirical (group) probability -------------------------------------------
+
+#' @export
+g_group <- function(formula, ...) {
+  formula <- as.formula(formula)
+  dots <- list(...)
+
+  g_group <- function(A, H, action_set) {
+    A <- factor(A, levels=action_set)
+    tab <- ftable(update(formula, A ~ .), cbind(A,H))
+    tab <- prop.table(tab, margin=1)
+    tab <- list(tab, formula=formula, action_set=action_set)
+    class(tab) <- c("g_group")
+    return(tab)
+  }
+  # setting class:
+  g_group <- new_g_model(g_group)
+  return(g_group)
+}
+predict.g_group <- function(object, new_H){
+  X <- model.matrix(object$formula, new_H)%*%c(1,1)
+  probs <- object[[1]][X,]
+  return(probs)
+}
+
 # glm interface --------------------------------------
 
 #' @rdname g_model
