@@ -1,6 +1,112 @@
+test_that("predict.g_functions checks the action set",{
+  source(system.file("sim", "two_stage_multi_actions.R", package="polle"))
+  d <- sim_two_stage_multi_actions(n = 1e2)
+
+  pd <- policy_data(data = d,
+                    action = c("A_1", "A_2"),
+                    baseline = c("B", "BB"),
+                    covariates = list(L = c("L_1", "L_2"),
+                                      C = c("C_1", "C_2")),
+                    utility = c("U_1", "U_2", "U_3"))
+
+  expect_error(
+    gfit <- fit_g_functions(pd, g_models = list(g_glm(), g_rf()), full_history = TRUE),
+    NA
+  )
+
+  d2 <- copy(d)
+  d2$A_1[d2$A_1 == "no"] <- "maybe"
+
+  pd2 <- policy_data(data = d2,
+                     action = c("A_1", "A_2"),
+                     baseline = c("B", "BB"),
+                     covariates = list(L = c("L_1", "L_2"),
+                                       C = c("C_1", "C_2")),
+                     utility = c("U_1", "U_2", "U_3"))
+
+  expect_error(
+    predict(gfit, pd2),
+    "factor A_1 has new levels maybe"
+  )
+
+  expect_equal(
+    {
+      gval <- evaluate.g_function(gfit[[1]],
+                          get_history(pd2, stage = 1, full_history = TRUE))
+      names(gval)
+    },
+    c("id", "stage", paste("g_", pd2$action_set, sep = ""))
+  )
+
+  d3 <- copy(d2)
+  d3$A_2[d3$A_2 == "no"] <- "maybe"
+
+  pd3 <- policy_data(data = d3,
+                     action = c("A_1", "A_2"),
+                     baseline = c("B", "BB"),
+                     covariates = list(L = c("L_1", "L_2"),
+                                       C = c("C_1", "C_2")),
+                     utility = c("U_1", "U_2", "U_3"))
+
+  expect_error(
+    predict(gfit, pd3),
+    "The fitted stage action set is not a subset of the new action set."
+  )
+
+})
+
+test_that("fit_g_functions handles varying stage-action sets", {
+  source(system.file("sim", "two_stage_multi_actions.R", package="polle"))
+  d <- sim_two_stage_multi_actions(n = 1e2)
+  expect_error(
+    pd <- policy_data(data = d,
+                      action = c("A_1", "A_2"),
+                      baseline = c("B", "BB"),
+                      covariates = list(L = c("L_1", "L_2"),
+                                        C = c("C_1", "C_2")),
+                      utility = c("U_1", "U_2", "U_3")),
+    NA
+  )
+
+  expect_error(
+    gfit <- fit_g_functions(pd, g_models = list(g_glm(), g_rf()), full_history = TRUE),
+    NA
+  )
+  expect_error(
+    predict(gfit, pd),
+    NA
+  )
+
+  expect_error(
+    gfit <- fit_g_functions(pd, g_models = list(g_glm(), g_rf()), full_history = FALSE),
+    NA
+  )
+  expect_error(
+    predict(gfit, pd),
+    NA
+  )
+
+  expect_error(
+    gfit <- fit_g_functions(pd, g_models = g_glm(), full_history = FALSE),
+    "g_glm requires exactly two levels."
+  )
+
+  set.seed(1)
+  folds <- list(c(1:30), 31:get_n(pd))
+  expect_error(
+    gfit <- fit_g_functions_cf(folds,
+                               policy_data = pd,
+                               g_models = list(g_glm(), g_rf()),
+                               full_history = FALSE),
+    NA
+  )
+
+
+})
+
 test_that("g_models checks formula input", {
   source(system.file("sim", "two_stage.R", package="polle"))
-  d <- sim_two_stage(2e3, seed=1)
+  d <- sim_two_stage(1e2, seed=1)
   pd <- policy_data(d,
                     action = c("A_1", "A_2"),
                     baseline = c("BB", "B"),

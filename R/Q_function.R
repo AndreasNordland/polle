@@ -1,23 +1,21 @@
 fit_Q_function <- function(history, Q, q_model){
-
   action_set <- getElement(history, "action_set")
+  stage_action_set <- getElement(history, "stage_action_set")
+  stage <- getElement(history, "stage")
   deterministic_rewards <- getElement(history, "deterministic_rewards")
 
   # getting the action (A) and the model matrix (H):
   A <- get_A(history)
   H <- get_H(history)
-
   AH <- cbind(A, H)
 
-  # checking that all actions in the actions set occur:
-  if (!all(action_set == sort(unique(A)))){
-    mes <- "Not all actions occur at stage"
-    k <- getElement(history, "stage")
-    mes <- paste(mes, k)
+  # checking that all actions in the stage action set occur:
+  if (!all(stage_action_set == sort(unique(A)))){
+    mes <- "Not all stage actions occur at stage"
+    mes <- paste(mes, paste(stage, collapse = ", "))
     mes <- paste(mes, ". Unable to fit Q-function.", sep = "")
     stop(mes)
   }
-
 
   # getting the historic rewards
   U <- getElement(history, "U")
@@ -34,7 +32,10 @@ fit_Q_function <- function(history, Q, q_model){
 
   q_function <- list(
     q_model = q_model,
-    AH_names = colnames(AH)
+    AH_names = colnames(AH),
+    action_set = action_set,
+    stage_action_set = stage_action_set,
+    stage = stage
   )
   class(q_function) <- "Q_function"
 
@@ -51,27 +52,50 @@ print.Q_function <- function(x, ...){
 
 evaluate.Q_function <- function(object, new_history){
   q_model <- getElement(object, "q_model")
+  AH_names <- getElement(object, "AH_names")
+  # action set of the new history object
   action_set <- getElement(new_history, "action_set")
+  # stage action set of the fitted Q-function
+  stage_action_set <- getElement(object, "stage_action_set")
+  stage <- getElement(object, "stage")
+  # deterministic rewards of the new history object
   deterministic_rewards <- getElement(new_history, "deterministic_rewards")
 
   id_stage <- get_id_stage(new_history)
   new_H <- get_H(new_history)
 
+  # checks
+  if(!all(stage_action_set %in% action_set))
+    stop("The fitted stage action set is not a subset of the new action set.")
+  if (!all(names(new_H) %in% AH_names))
+    stop("new_history does not have the same column names as the original history.")
+
   # getting the historic rewards
   U <- new_history$U
 
-  # getting the residual predictions
+  # getting the residual predictions for the stage action set
   residual_q_predictions <- sapply(
-    action_set,
+    stage_action_set,
     function(a) predict(q_model, new_AH = cbind(A = a, new_H))
   )
-  # adding the historic utilities and deterministic rewards
-  q_values <- U$U_bar + U[, deterministic_rewards, with = FALSE] + residual_q_predictions
-  names(q_values) <- paste("Q", action_set, sep = "_")
+  tmp <- matrix(data = NA, nrow = nrow(id_stage), ncol = length(action_set))
+  colnames(tmp) <- action_set
+  tmp[, stage_action_set] <- residual_q_predictions
+  q_values <- tmp; rm(tmp)
 
-  if (!all(complete.cases(q_values))){
-    stage <- unique(id_stage$stage)
-    mes <- paste("Evaluation of the Q-function at stage ", stage, " have missing values.", sep = "")
+  # adding the historic utilities and deterministic rewards
+  q_values <- U$U_bar + U[, deterministic_rewards, with = FALSE] + q_values
+  colnames(q_values) <- paste("Q", action_set, sep = "_")
+
+  if (!all(complete.cases(q_values[, action_set %in% stage_action_set, with = FALSE]))){
+    if(!is.null(stage)){
+      mes <- paste("The Q-function predictions at stage ",
+                   stage,
+                   " have missing values.",
+                   sep = "")
+    } else {
+      mes <- "The Q-function predictions have missing values."
+    }
     stop(mes)
   }
 

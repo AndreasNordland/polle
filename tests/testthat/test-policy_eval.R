@@ -147,3 +147,38 @@ test_that("policy_eval evaluates on a subset of the data with missing actions",{
     (pe1_or$IC[d1$A == "0"] + pe1_or$value_estimate)
   )
 })
+
+test_that("policy_eval handles varying stage action sets",{
+  source(system.file("sim", "two_stage_multi_actions.R", package="polle"))
+  d <- sim_two_stage_multi_actions(n = 1e2)
+
+  pd <- policy_data(data = d,
+                    action = c("A_1", "A_2"),
+                    baseline = c("B", "BB"),
+                    covariates = list(L = c("L_1", "L_2"),
+                                      C = c("C_1", "C_2")),
+                    utility = c("U_1", "U_2", "U_3"))
+
+  p <- policy_def(
+    c("yes", "no")
+  )
+  expect_error(
+    pe <- policy_eval(pd,
+                policy = p,
+                type = "dr",
+                g_models = list(g_glm(), g_rf())),
+    NA
+  )
+
+  p <- policy_def(
+    c("default", "default")
+  )
+  expect_error(
+    policy_eval(pd,
+                policy = p,
+                type = "dr",
+                g_models = list(g_glm(), g_rf())),
+    "The policy actions does not comply with the stage action sets of the policy data object."
+  )
+
+})

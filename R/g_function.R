@@ -28,27 +28,37 @@
 #' @noRd
 fit_g_function <- function(history, g_model){
   action_set <- getElement(history, "action_set")
+  stage_action_set <- getElement(history, "stage_action_set")
+  if(is.null(stage_action_set)){
+    stage_action_set <- action_set
+  }
+  stage <- getElement(history, "stage")
 
   # getting the action (A) and the model matrix (H):
   A <- get_A(history)
   H <- get_H(history)
-  stage <- unique(get_id_stage(history)[, "stage"])
 
-  # checking that all actions in the actions set occur:
-  if (!all(action_set == sort(unique(A)))){
-    mes <- "Not all actions occur at stage"
-    mes <- paste(mes, paste(stage, collapse = ", "))
-    mes <- paste(mes, ". Unable to fit g-function.", sep = "")
+  # checking that all actions in the stage action set occur:
+  if (!all(stage_action_set == sort(unique(A)))){
+    if (!is.null(stage)){
+      mes <- "Not all actions in the stage action set occur at stage"
+      mes <- paste(mes, paste(stage, collapse = ", "))
+      mes <- paste(mes, ". Unable to fit g-function.", sep = "")
+    } else{
+      mes <- "Not all actions in the action set occur. Unable to fit g-function."
+    }
     stop(mes)
   }
 
   # fitting the model:
-  g_model <- g_model(A = A, H = H, action_set = action_set)
+  g_model <- g_model(A = A, H = H, action_set = stage_action_set)
 
   g_function <- list(
     g_model = g_model,
     H_names = colnames(H),
-    action_set = action_set
+    action_set = action_set,
+    stage_action_set = stage_action_set,
+    stage = stage
   )
   class(g_function) <- "g_function"
 
@@ -65,13 +75,20 @@ print.g_function <- function(x, ...){
 }
 
 evaluate.g_function <- function(object, new_history){
-  g_model <- object$g_model
-  H_names <- object$H_names
-  action_set <- object$action_set
+  g_model <- getElement(object, "g_model")
+  H_names <- getElement(object, "H_names")
+  # action set of the new history object:
+  action_set <- getElement(new_history, "action_set")
+  # stage action set of the fitted g-function:
+  stage_action_set <- getElement(object, "stage_action_set")
+  stage <- getElement(object, "stage")
 
   id_stage <- get_id_stage(new_history)
   new_H <- get_H(new_history)
 
+  # checks
+  if(!all(stage_action_set %in% action_set))
+    stop("The fitted stage action set is not a subset of the new action set.")
   if (!all(names(new_H) %in% H_names))
     stop("new_history does not have the same column names as the original history.")
 
@@ -81,15 +98,38 @@ evaluate.g_function <- function(object, new_history){
     stop("Not all g-model values are within [0,1].")
   }
 
+  tmp <- matrix(data = 0, nrow = nrow(id_stage), ncol = length(action_set))
+  colnames(tmp) <- action_set
+  tmp[, stage_action_set] <- g_values
+  g_values <- tmp; rm(tmp)
   colnames(g_values) <- paste("g", action_set, sep = "_")
 
   if (!all(complete.cases(g_values))){
-    stage <- unique(new_history$H$stage)
-    mes <- paste("Evaluation of the g-function at stage ", stage, " have missing values.", sep = "")
+    if(!is.null(stage)){
+      mes <- paste("The g-function predictions at stage ",
+                   stage,
+                   " have missing values.",
+                   sep = "")
+    } else {
+      mes <- "The g-function predictions have missing values."
+    }
     stop(mes)
   }
 
-  # including the id's
+  if (!all(abs(apply(g_values, sum, MARGIN = 1) - 1) < 1e-12)){
+    if(!is.null(stage)){
+      mes <- paste("The g-function predictions at stage ",
+                   stage,
+                   " do not sum to 1.",
+                   sep = "")
+    } else {
+      mes <- "The g-function predictions do not sum to 1."
+    }
+    stop(mes)
+  }
+
+
+  # including the id's and stage number(s)
   g_values <- data.table(id_stage, g_values)
   setkeyv(g_values, c("id", "stage"))
 

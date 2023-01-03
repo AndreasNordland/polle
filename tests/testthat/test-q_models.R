@@ -1,3 +1,40 @@
+test_that("fit_q_functions handles varying stage-action sets", {
+  source(system.file("sim", "two_stage_multi_actions.R", package="polle"))
+  d <- sim_two_stage_multi_actions(n = 1e2)
+  expect_error(
+    pd <- policy_data(data = d,
+                      action = c("A_1", "A_2"),
+                      baseline = c("B", "BB"),
+                      covariates = list(L = c("L_1", "L_2"),
+                                        C = c("C_1", "C_2")),
+                      utility = c("U_1", "U_2", "U_3")),
+    NA
+  )
+  p <- policy_def(
+    c("yes", "no")
+  )
+
+  expect_error(
+    qfit <- fit_Q_functions(pd, policy_actions = p(pd), q_models = list(q_glm(), q_glm()), full_history = FALSE),
+    NA
+  )
+  expect_error(
+    tmp <- predict(qfit, pd),
+    NA
+  )
+
+  tmp2 <- predict(qfit$stage_1$q_model$model,
+                  newdata = cbind(A = "yes", get_history(pd, stage = 1)$H[1,]))
+  tmp2 <- tmp2 + get_history(pd, stage = 1)$U$U_bar[1]
+  expect_equal(unname(tmp2), unname(unlist(tmp[1, "Q_yes"])))
+
+  tmp2 <- predict(qfit$stage_1$q_model$model,
+                  newdata = cbind(A = "no", get_history(pd, stage = 1)$H[1,]))
+  tmp2 <- tmp2 + get_history(pd, stage = 1)$U$U_bar[1]
+  expect_equal(unname(tmp2), unname(unlist(tmp[1, "Q_no"])))
+
+})
+
 test_that("q_models checks formula input", {
   source(system.file("sim", "two_stage.R", package="polle"))
   d <- sim_two_stage(2e3, seed=1)

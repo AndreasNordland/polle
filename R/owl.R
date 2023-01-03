@@ -53,13 +53,16 @@ dtrlearn2_owl <- function(policy_data,
   K <- get_K(policy_data)
   n <- get_n(policy_data)
   action_set <- get_action_set(policy_data)
+  stage_action_sets <- get_stage_action_sets(policy_data)
   id_stage <- get_id_stage(policy_data)
 
   if(!(length(unlist(unique(id_stage[,.N, by = "id"][, "N"]))) == 1))
     stop("owl is only implemented for a fixed number of stages.")
 
-  if (!(length(action_set) == 2))
-    stop("owl only works for binary actions.")
+  for (k in seq_along(stage_action_sets)){
+    if (length(stage_action_sets[[k]]) != 2)
+      stop("owl only works for dichotomous stage action sets.")
+  }
 
   if (alpha != 0)
     stop("alpha must be 0 when type = 'owl'")
@@ -163,10 +166,11 @@ dtrlearn2_owl <- function(policy_data,
     X[[k]] <- x
     X_scales[[k]] <- attributes(x)[c("scaled:center", "scaled:scale")]
 
+    stage_action_set <- stage_action_sets[[k]]
     # formatting the actions as {-1, 1}:
     aa <- A <- get_A(policy_history_k)
-    aa[A == action_set[1]] <- -1
-    aa[A == action_set[2]] <- 1
+    aa[A == stage_action_set[1]] <- -1
+    aa[A == stage_action_set[2]] <- 1
     aa <- as.numeric(aa)
     AA[[k]] <- aa
 
@@ -201,6 +205,7 @@ dtrlearn2_owl <- function(policy_data,
     full_history = full_history,
     policy_vars = policy_vars,
     action_set = action_set,
+    stage_action_sets = stage_action_sets,
     K = K
   )
   class(out) <- "OWL"
@@ -217,7 +222,7 @@ get_policy.OWL <- function(object){
   g_functions <- getElement(object, "g_functions")
   full_history <- getElement(object, "full_history")
   policy_vars <- getElement(object, "policy_vars")
-  action_set <- getElement(object, "action_set")
+  stage_action_sets <- getElement(object, "stage_action_sets")
   K <- getElement(object, "K")
 
   policy <- function(policy_data){
@@ -258,9 +263,10 @@ get_policy.OWL <- function(object){
     stage <- NULL
     d <- NULL
     for (k in K:1){
+      stage_action_set <- stage_action_sets[[k]]
       dd <- d_ <- pred$treatment[[k]]
-      d_[dd == -1] <- action_set[1]
-      d_[dd == 1] <- action_set[2]
+      d_[dd == -1] <- stage_action_set[1]
+      d_[dd == 1] <- stage_action_set[2]
       policy_actions[stage == k, d := d_]
     }
     rm(stage)

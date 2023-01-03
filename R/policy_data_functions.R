@@ -84,19 +84,16 @@ copy_policy_data <- function(object){
 }
 
 partial_stage_data <- function(stage_data, K, deterministic_rewards){
-  if (is.data.frame(stage_data))
-    stage_data <- as.data.table(stage_data)
-
   required_names <- c("id", "stage", "event", "A", "U")
 
   # filtering stage_data rows up till stage K:
   stage <- NULL
   stage_data_K <- stage_data[stage <= K, ]
 
-  # filtering stage_data rows for stages above K and the required columns:
+  # filtering the residual stage data rows for stages above K:
   stage_data_res <- stage_data[stage > K, required_names, with = FALSE]
 
-  # summarizing stage_data_res as a single row:
+  # summarizing residual stage data as a single row:
   event <- U <- NULL
   stage_data_res_sum <- stage_data_res[
     ,
@@ -107,16 +104,33 @@ partial_stage_data <- function(stage_data, K, deterministic_rewards){
     ),
     by = "id"
   ]
-  if (!is.null(deterministic_rewards))
-    stage_data_res_sum[, (deterministic_rewards) := NA]
+
+  # updated action set:
+  action_set <- unname(sort(unlist(unique(stage_data_K[,"A"]))))
+  deterministic_rewards_K <- paste("U_A", action_set, sep = "")
+
+  # removing excess deterministic reward variables:
+  tmp <- setdiff(deterministic_rewards, deterministic_rewards_K)
+  if (length(tmp) > 0)
+    stage_data_K[, (tmp) := NULL]
+
+  stage_data_res_sum[, (deterministic_rewards_K) := NA]
   # binding stage_data_K with stage_data_res_sum
-  stage_data <- rbindlist(list(stage_data_K, stage_data_res_sum), fill = TRUE, use.names = TRUE)
+  stage_data <- rbindlist(list(stage_data_K, stage_data_res_sum),
+                          fill = TRUE,
+                          use.names = TRUE)
 
   # setting keys and index
   setkeyv(stage_data, c("id", "stage"))
   setindexv(stage_data, "event")
 
-  return(stage_data)
+  out <- list(
+    stage_data = stage_data,
+    action_set = action_set,
+    deterministic_rewards = deterministic_rewards_K
+  )
+
+  return(out)
 }
 
 #' Trim Number of Stages
@@ -151,25 +165,32 @@ partial <- function(object, K)
 
 #' @export
 partial.policy_data <- function(object, K){
+  # input checks:
   if (!is.numeric(K))
     stop("K must be an integer greater than or equal to 1.")
-
   if (!((K %% 1 == 0) & (K>0)))
     stop("K must be an integer greater than or equal to 1.")
-
-  object_K <- get_K(object)
 
   # copy object to avoid reference issues in data.table
   object <- copy_policy_data(object)
 
+  object_K <- get_K(object)
   if(K >= object_K)
     return(object)
 
-  # column names of the deterministic rewards:
-  deterministic_rewards <- object$colnames$deterministic_rewards
+  # transforming the stage data:
+  psd <- partial_stage_data(
+    stage_data = object[["stage_data"]],
+    K = K,
+    deterministic_rewards = object[["colnames"]][["deterministic_rewards"]]
+  )
 
-  object$stage_data <- partial_stage_data(stage_data = object[["stage_data"]], K = K, deterministic_rewards = deterministic_rewards)
-  object$dim$K <- K
+  # updating the object
+  object[["stage_data"]] <- psd[["stage_data"]]
+  object[["dim"]][["K"]] <- K
+  object[["stage_action_sets"]] <- object[["stage_action_sets"]][1:K]
+  object[["action_set"]] <- psd[["action_set"]]
+  object[["colnames"]][["deterministic_rewards"]] <- psd[["deterministic_rewards"]]
 
   return(object)
 }
@@ -206,7 +227,8 @@ subset.policy_data <- function(x, id, ...){
   spd <- new_policy_data(
     stage_data = x$stage_data[id %in% id_],
     baseline_data = x$baseline_data[id %in% id_],
-    action_set = x$action_set
+    action_set = x$action_set,
+    stage_action_sets = x$stage_action_sets
   )
 
   return(spd)
@@ -230,6 +252,7 @@ full_history <- function(object, stage){
   baseline_data <- getElement(object, "baseline_data")
   baseline_names <- getElement(object_colnames, "baseline_names")
   action_set <- get_action_set(object)
+  stage_action_sets <- get_stage_action_sets(object)
   deterministic_rewards <- getElement(object_colnames, "deterministic_rewards")
   stage_ <- stage; rm(stage)
 
@@ -275,6 +298,7 @@ full_history <- function(object, stage){
     action_name = action_name,
     deterministic_rewards = deterministic_rewards,
     action_set = action_set,
+    stage_action_set = stage_action_sets[[stage_]],
     stage = stage_
   )
   class(history) <- "history"
@@ -297,7 +321,8 @@ stage_state_history <- function(object, stage){
   state_names <- object$colnames$state_names
   baseline_data <- object$baseline_data
   baseline_names <- object$colnames$baseline_names
-  action_set <- object$action_set
+  action_set <- get_action_set(object)
+  stage_action_sets <- get_stage_action_sets(object)
   deterministic_rewards <- object$colnames$deterministic_rewards
   stage_ <- stage
 
@@ -336,6 +361,7 @@ stage_state_history <- function(object, stage){
     action_name = "A",
     deterministic_rewards = deterministic_rewards,
     action_set = action_set,
+    stage_action_set = stage_action_sets[[stage_]],
     stage = stage
   )
   class(history) <- "history"
@@ -783,6 +809,38 @@ get_action_set.policy_data <- function(object){
   action_set <- object$action_set
   return(action_set)
 }
+
+#' Get Stage Action Sets
+#'
+#' \code{get_stage_action_sets} returns the action sets at each stage, i.e.,
+#' the possible actions at each stage for the policy data object.
+#' @param object Object of class [policy_data].
+#' @returns List of character vectors.
+#' @examples
+#' ### Two stages:
+#' source(system.file("sim", "two_stage_multi_actions.R", package="polle"))
+#' d2 <- sim_two_stage_multi_actions(5e2, seed=1)
+#' # constructing policy_data object:
+#' pd2 <- policy_data(d2,
+#'                   action = c("A_1", "A_2"),
+#'                   baseline = c("B"),
+#'                   covariates = list(L = c("L_1", "L_2"),
+#'                                     C = c("C_1", "C_2")),
+#'                   utility = c("U_1", "U_2", "U_3"))
+#' pd2
+#'
+#' # getting the stage actions set:
+#' get_stage_action_sets(pd2)
+#' @export
+get_stage_action_sets <- function(object)
+  UseMethod("get_stage_action_sets")
+
+#' @export
+get_stage_action_sets.policy_data <- function(object){
+  stage_action_sets <- getElement(object, "stage_action_sets")
+  return(stage_action_sets)
+}
+
 
 
 

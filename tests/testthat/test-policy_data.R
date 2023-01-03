@@ -94,6 +94,48 @@ test_that("policy_data checks inputs",{
 
 ## two stage ---------------------------------------------------------------
 
+test_that("policy_data handles varying actions set",{
+  source(system.file("sim", "two_stage_multi_actions.R", package="polle"))
+  d <- sim_two_stage_multi_actions(n = 1e4)
+  expect_error(
+    pd <- policy_data(data = d,
+                      action = c("A_1", "A_2"),
+                      baseline = c("B", "BB"),
+                      covariates = list(L = c("L_1", "L_2"),
+                                        C = c("C_1", "C_2")),
+                      utility = c("U_1", "U_2", "U_3")),
+    NA
+  )
+
+  expect_equal(
+    pd$action_set,
+    sort(c("yes", "no", "default"))
+  )
+
+  sas <- list(c("no", "yes"), c("default","no", "yes"))
+  names(sas) <- c("stage_1", "stage_2")
+  expect_equal(
+    pd$stage_action_sets,
+    sas
+  )
+
+  expect_equal(
+    partial(pd, K=2)$stage_action_sets,
+    sas
+  )
+
+  expect_equal(
+    partial(pd, K=1)$stage_action_sets,
+    sas[1]
+  )
+
+  expect_equal(
+    get_stage_action_sets(subset(pd, id = 1:2)),
+    sas
+  )
+
+})
+
 test_that("policy_data handles varying sets of/missing covariates in a given stage",{
   n <- 20
   set.seed(1)

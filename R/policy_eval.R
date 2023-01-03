@@ -295,6 +295,10 @@ policy_eval_type <- function(type,
   }
   policy_actions <- policy(valid_policy_data)
 
+  # checking that the (fitted) policy actions comply with the stage action sets:
+  check_actions(actions = policy_actions,
+                policy_data = train_policy_data)
+
   # calculating the doubly robust score and value estimate:
   value_object <- value(type = type,
                         policy_data = valid_policy_data,
@@ -414,6 +418,27 @@ policy_eval_fold <- function(fold,
   out <- do.call(what = "policy_eval_type", args = eval_args)
 
   return(out)
+}
+
+check_actions <- function(actions, policy_data){
+  # checking the format of the actions data.table
+  if (!is.data.table(actions))
+    stop("actions must be a data.table.")
+  if (!any("d" %in% colnames(actions)))
+    stop("actions must have an action varible named 'd'.")
+  if (!all(key(actions) == c("id", "stage")))
+    stop("actions must have keys 'id' and 'stage'.")
+
+  # checking that the actions comply with the stage action sets
+  K <- get_K(policy_data)
+  stage_action_sets <- get_stage_action_sets(policy_data)
+  stage <- NULL
+  for(k_ in 1:K){
+    if (!all(unlist(actions[stage == k_, "d"]) %in% stage_action_sets[[k_]])){
+      mes <- "The policy actions does not comply with the stage action sets of the policy data object."
+      stop(mes)
+    }
+  }
 }
 
 #' @rdname policy_eval

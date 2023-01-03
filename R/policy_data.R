@@ -1,4 +1,4 @@
-new_policy_data <- function(stage_data, baseline_data = NULL, action_set = NULL, verbose){
+new_policy_data <- function(stage_data, baseline_data = NULL, action_set = NULL, stage_action_sets = NULL, verbose){
 
   # checking and processing stage_data:
   {
@@ -39,9 +39,10 @@ new_policy_data <- function(stage_data, baseline_data = NULL, action_set = NULL,
     }
     rm(event, A)
 
-    # getting the set of actions (A):
+    # getting the global set of actions (A):
     obs_actions <- sort(unlist(unique(stage_data[,"A"])))
     if (!is.null(action_set)){
+      action_set <- as.character(action_set)
       if (!all(obs_actions %in% action_set))
         stop("The given action set does not include all observed actions.")
       action_set <- sort(action_set)
@@ -49,6 +50,25 @@ new_policy_data <- function(stage_data, baseline_data = NULL, action_set = NULL,
       action_set <- obs_actions
     }
     action_set <- unname(action_set)
+
+    # getting the action set at each stage:
+    event <- NULL
+    tmp <- stage_data[event == 0, list(set = list(sort(unique(A)))), stage]
+    obs_stage_action_sets <- lapply(tmp$set, c)
+    names(obs_stage_action_sets) <- paste("stage_", tmp$stage, sep = "")
+    rm(event, tmp)
+    if (!is.null(stage_action_sets)){
+      if(length(stage_action_sets) != length(obs_stage_action_sets))
+        stop("the given stage action set does not comply with the observed stage action sets.")
+      for (k in seq_along(stage_action_sets)){
+        if (!all(obs_stage_action_sets[[k]] %in% stage_action_sets[[k]]))
+          stop("The given stage action sets do not include all observed stage actions.")
+        stage_action_sets <- lapply(stage_action_sets, sort)
+      }
+
+    } else {
+      stage_action_sets <- obs_stage_action_sets
+    }
 
     # checking the utility variable (U):
     if (!all(is.numeric(unlist(stage_data[,"U"]))))
@@ -140,6 +160,7 @@ new_policy_data <- function(stage_data, baseline_data = NULL, action_set = NULL,
       baseline_names = baseline_names
     ),
     action_set = action_set,
+    stage_action_sets = stage_action_sets,
     dim = list(
       n = n,
       K = K
@@ -184,6 +205,7 @@ new_policy_data <- function(stage_data, baseline_data = NULL, action_set = NULL,
 #' @param id ID variable name. Character string.
 #' @param stage Stage number variable name.
 #' @param event Event indicator name.
+#' @param action_set Character string. Action set across all stages.
 #' @param verbose Logical. If TRUE, formatting comments are printed to the console.
 #' @param digits Minimum number of digits to be printed.
 #' @param x Object to be printed.
@@ -213,7 +235,9 @@ new_policy_data <- function(stage_data, baseline_data = NULL, action_set = NULL,
 #'                        covariate names, and the deterministic reward variable
 #'                        names.}
 #' \item{\code{action_set}}{Sorted character vector describing the action set, i.e.,
-#'                          the possible actions at each stage.}
+#'                          the possible actions at all stages.}
+#' \item{\code{stage_action_sets}}{List of sorted character vectors describing
+#'                                 the observed actions at each stage.}
 #' \item{\code{dim}}{List containing the number of observations (n) and the
 #'                   number of stages (K).}
 #' @section S3 generics:
@@ -287,6 +311,7 @@ policy_data <- function(data, baseline_data,
                         baseline = NULL,
                         deterministic_rewards = NULL,
                         id = NULL, stage = NULL, event = NULL,
+                        action_set = NULL,
                         verbose = FALSE) {
   data <- check_data(data)
   data <- copy(data)
@@ -318,6 +343,7 @@ policy_data <- function(data, baseline_data,
     pd <- new_policy_data(
       stage_data = md$stage_data,
       baseline_data = md$baseline_data,
+      action_set = action_set,
       verbose = verbose
     )
   } else if (any(type %in% "long")) {
@@ -343,6 +369,7 @@ policy_data <- function(data, baseline_data,
     pd <- new_policy_data(
       stage_data = ld$stage_data,
       baseline_data = ld$baseline_data,
+      action_set = action_set,
       verbose = verbose)
 
   } else{

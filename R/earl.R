@@ -58,7 +58,7 @@ dyntxregime_earl <- function(policy_data,
   id_stage <- get_id_stage(policy_data)
 
   if (!(length(action_set) == 2))
-    stop("earl only works for binary actions.")
+    stop("earl only works for a dichotomous action set.")
 
   if (alpha != 0)
     stop("alpha must be 0 when using earl")

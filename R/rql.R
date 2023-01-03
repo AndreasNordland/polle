@@ -3,21 +3,19 @@ rql<- function(policy_data, alpha,
                q_models, q_full_history,
                L,
                ...){
-  K <- policy_data$dim$K
-  n <- policy_data$dim$n
-  action_set <- policy_data$action_set
+  K <- get_K(policy_data)
+  n <- get_n(policy_data)
+  action_set <- get_action_set(policy_data)
 
+  # input checks:
   if (!(is.numeric(alpha) &  (length(alpha) == 1) & (alpha >=0 & alpha < 0.5)))
     stop("alpha must be numeric and in [0, 0.5).")
-
   if (L != 1)
     stop("L must be 1 when using rql (no cross-fitting).")
-
   if (!is.null(g_functions)){
     if(!inherits(g_functions, what = "g_functions"))
       stop("g-functions must be of class 'g_functions'.")
   }
-
   if (is.list(q_models)){
     if (length(q_models) != K)
       stop("q_models must either be a list of length K or a single Q-model.")
@@ -85,8 +83,6 @@ rql<- function(policy_data, alpha,
   names(q_functions) <- paste("stage_", 1:K, sep = "")
   class(q_functions) <- "nuisance_functions"
   attr(q_functions, "full_history") <- q_full_history
-
-  # Zd_or <- Q[, 1]
 
   out <- list(
     q_functions = q_functions,

@@ -17,6 +17,7 @@ policy_data(
   id = NULL,
   stage = NULL,
   event = NULL,
+  action_set = NULL,
   verbose = FALSE
 )
 
@@ -61,6 +62,8 @@ The name of each element must be on the form "U_Aa" where "a" corresponds to an 
 
 \item{event}{Event indicator name.}
 
+\item{action_set}{Character string. Action set across all stages.}
+
 \item{verbose}{Logical. If TRUE, formatting comments are printed to the console.}
 
 \item{x}{Object to be printed.}
@@ -82,7 +85,9 @@ covariates (\eqn{B}).}
 covariate names, and the deterministic reward variable
 names.}
 \item{\code{action_set}}{Sorted character vector describing the action set, i.e.,
-the possible actions at each stage.}
+the possible actions at all stages.}
+\item{\code{stage_action_sets}}{List of sorted character vectors describing
+the observed actions at each stage.}
 \item{\code{dim}}{List containing the number of observations (n) and the
 number of stages (K).}
 }

@@ -193,12 +193,10 @@ policy_def <- function(policy_functions, full_history = FALSE, reuse = FALSE, na
     policy_actions <- rbindlist(policy_actions)
     setkeyv(policy_actions, c("id", "stage"))
 
-    stopifnot(
-      any("d" %in% colnames(policy_actions)),
-      all(key(policy_actions) == c("id", "stage"))
-    )
-    if (!all(unlist(policy_actions[, "d"]) %in% action_set))
-      stop("The policy actions does not comply with the action set of the policy data object.")
+    if (!all(unlist(policy_actions[, "d"]) %in% action_set)){
+      mes <- "The policy actions does not comply with the action set of the policy data object."
+      warning(mes)
+    }
 
     return(policy_actions)
   }

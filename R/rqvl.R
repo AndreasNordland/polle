@@ -1,4 +1,7 @@
 fit_QV_function <- function(history, Z, qv_model){
+  action_set <- getElement(history, "action_set")
+  stage_action_set <- getElement(history, "stage_action_set")
+  stage <- getElement(history, "stage")
   H <- get_H(history)
 
   # checking qv_model formula:
@@ -7,16 +10,15 @@ fit_QV_function <- function(history, Z, qv_model){
   formula <- reformulate(attr(tt, "term.labels"), response = NULL)
   tt <- terms(formula, data = H)
   variables <- as.character(attr(tt, "variables"))[-1]
-
   if(!all(variables %in% colnames(H))){
     mes <- deparse(formula)
     mes <- paste("The QV-model formula", mes, "is invalid.")
     stop(mes)
   }
 
-  # fitting the QV-model
+  # fitting the QV-model:
   qv_model <- apply(
-    Z,
+    Z[, stage_action_set],
     MARGIN = 2,
     function(z){
       qv_model(V_res = z, AH = H)
@@ -24,7 +26,10 @@ fit_QV_function <- function(history, Z, qv_model){
   )
 
   qv_function <- list(
-    qv_model = qv_model
+    qv_model = qv_model,
+    action_set = action_set,
+    stage_action_set = stage_action_set,
+    stage = stage
   )
   class(qv_function) <- "QV_function"
 
@@ -32,24 +37,28 @@ fit_QV_function <- function(history, Z, qv_model){
 }
 
 evaluate.QV_function <- function(object, new_history){
-
   id_stage <- get_id_stage(new_history)
   new_H <- get_H(new_history)
-  qv_model <- object$qv_model
+  # action set of the new history object
+  action_set <- getElement(new_history, "action_set")
+  # stage action set of the fitted QV-function
+  stage_action_set <- getElement(object, "stage_action_set")
+  stage <- getElement(object, "stage")
+  qv_model <- getElement(object, "qv_model")
 
-  qv_values <- sapply(
+  qv_values <- matrix(NA, nrow = nrow(new_H), ncol = length(action_set))
+  colnames(qv_values) <- paste("QV_", action_set, sep = "")
+  qv_values[, action_set %in% stage_action_set] <- sapply(
     qv_model,
     function(qvm){
       predict(qvm, new_H)
     }
   )
-
   qv_values <- data.table(id_stage, qv_values)
   setkeyv(qv_values, c("id", "stage"))
 
   return(qv_values)
 }
-
 
 #' @title Control arguments for QV-learning
 #' @description \code{control_rqvl} sets the default control arguments
@@ -75,24 +84,19 @@ rqvl <- function(policy_data,
   K <- get_K(policy_data)
   n <- get_n(policy_data)
   action_set <- get_action_set(policy_data)
+  stage_action_sets <- get_stage_action_sets(policy_data)
 
   # input checks:
   if (!(is.numeric(alpha) &  (length(alpha) == 1) & (alpha >=0 & alpha < 0.5)))
     stop("alpha must be numeric and in [0, 0.5).")
-
-  if ((is.null(g_models) & is.null(g_functions)))
-    stop("Provide either g-models or g-functions.")
-
   if (!is.null(g_functions)){
     if(!inherits(g_functions, what = "g_functions"))
       stop("g-functions must be of class 'g_functions'.")
   }
-
   if (is.list(q_models)){
     if (length(q_models) != K)
       stop("q_models must either be a list of length K or a single Q-model.")
   }
-
   if(is.null(qv_models))
     stop("qv_models are missing.")
   if (is.list(qv_models)){
@@ -155,8 +159,11 @@ rqvl <- function(policy_data,
   # (n X K) matrix with entries I(d_k(H_k) = A_k):
   II <- matrix(nrow = n, ncol = K)
   # (n X K) matrix with entries g_k(A_k, H_k)
-  g_A_values <- get_a_values(a = actions$A, action_set = action_set, g_values)
-  G <- as.matrix(dcast(g_A_values, id ~ stage, value.var = "P")[, -c("id"), with = FALSE])
+  g_A_values <- get_a_values(a = actions$A,
+                             action_set = action_set,
+                             g_values)
+  G <- dcast(g_A_values, id ~ stage, value.var = "P")[, -c("id"), with = FALSE]
+  G <- as.matrix(G)
   # (n X K+1) matrix with entries Q_k(H_{k,i}, d_k(H_{k,i})), Q_{K+1} = U:
   Q <- matrix(nrow = n, ncol = K+1)
   Q[, K+1] <- U
@@ -165,6 +172,7 @@ rqvl <- function(policy_data,
 
   g_cols <- paste("g_", action_set, sep = "")
   q_cols <- paste("Q_", action_set, sep = "")
+  qv_cols <- paste("QV_", action_set, sep = "")
 
   q_functions <- list()
   q_functions_cf <- list()
@@ -213,21 +221,27 @@ rqvl <- function(policy_data,
     Z_3 <- 0
     if (k != K){
       for (r in (k+1):K){
-        Z_3 <- Z_3 + ipw_weight(II[idx_k,(k+1):r], G[idx_k,(k+1):r]) * (Q[idx_k, r+1] - Q[idx_k, r])
+        Z_3 <- Z_3 + ipw_weight(II[idx_k,(k+1):r], G[idx_k,(k+1):r]) *
+          (Q[idx_k, r+1] - Q[idx_k, r])
       }
       Z_3 <- (IA_k / G[idx_k, k]) * Z_3
     }
     Z <- Z_1 + Z_2 + Z_3
+    colnames(Z) <- action_set
 
     # getting the history for the QV model:
-    qv_history_k <- get_history(policy_data, stage = k, full_history = full_history)
+    qv_history_k <- get_history(policy_data,
+                                stage = k,
+                                full_history = full_history)
     # fitting the QV-function:
     if (is.list(qv_models)){
       qv_model_k <- qv_models[[k]]
     } else{
       qv_model_k <- qv_models
     }
-    qv_function_k <- fit_QV_function(qv_history_k, Z = Z, qv_model = qv_model_k)
+    qv_function_k <- fit_QV_function(qv_history_k,
+                                     Z = Z,
+                                     qv_model = qv_model_k)
     qv_functions[[k]] <- qv_function_k
     # getting the QV-function values:
     qv_values_k <- evaluate(qv_function_k, new_history = qv_history_k)
@@ -237,13 +251,18 @@ rqvl <- function(policy_data,
       g_values_k <- g_values[stage == k, ]
 
       # calculating the realistic actions:
-      realistic_actions <- t(apply(g_values_k[, g_cols, with = FALSE], MARGIN = 1, function(x) x >= alpha))
+      realistic_actions <- t(apply(g_values_k[, g_cols, with = FALSE],
+                                   MARGIN = 1,
+                                   function(x) x >= alpha))
+      # checking that a realistic action exists:
+      if (any(apply(realistic_actions, MARGIN = 1, sum) == 0))
+        stop("Cases with no realistic actions occur. Consider resetting the alpha level.")
       realistic_actions[which(realistic_actions == FALSE)] <- NA
 
       # getting the action with the maximal realistic QV-function value:
-      dd <- apply(qv_values_k[, q_cols, with = FALSE] * realistic_actions, MARGIN = 1, which.max)
+      dd <- apply(qv_values_k[, qv_cols, with = FALSE] * realistic_actions, MARGIN = 1, which.max)
     } else {
-      dd <- apply(qv_values_k[, q_cols, with = FALSE], MARGIN = 1, which.max)
+      dd <- apply(qv_values_k[, qv_cols, with = FALSE], MARGIN = 1, which.max)
     }
 
     d <- action_set[dd]
@@ -278,6 +297,7 @@ rqvl <- function(policy_data,
     g_functions = g_functions,
     g_functions_cf = g_functions_cf,
     action_set = action_set,
+    stage_action_sets = stage_action_sets,
     alpha = alpha,
     K = K,
     folds = folds
@@ -291,27 +311,25 @@ rqvl <- function(policy_data,
 #' @rdname get_policy_functions
 #' @export
 get_policy_functions.RQVL <- function(object, stage){
-  action_set <- object$action_set
-  K <- object$K
-
+  stage_action_sets <- getElement(object, "stage_action_sets")
+  stage_action_set <- stage_action_sets[[stage]]; rm(stage_action_sets)
+  K <- getElement(object, "K")
   if(!((stage >= 0) & (stage <= K)))
     stop("stage must be smaller than or equal to K.")
-
-  if (!is.null(object$g_functions)){
-    g_full_history <- attr(object$g_functions, "full_history")
-    if (length(object$g_functions) == K){
-      g_function <- object$g_functions[[stage]]
+  alpha <- getElement(object, "alpha")
+  g_functions <- getElement(object, "g_functions")
+  if (!is.null(g_functions)){
+    g_full_history <- attr(g_functions, "full_history")
+    if (length(g_functions) == K){
+      g_function <- g_functions[[stage]]
     }
     else{
-      g_function <- object$g_functions[[1]]
+      g_function <- g_functions[[1]]
     }
   }
-
-  qv_model <- object$qv_functions[[stage]]$qv_model
-  full_history <- attr(object$qv_functions, "full_history")
-
-  alpha <- object$alpha
-
+  qv_functions <- getElement(object, "qv_functions")
+  qv_model <- getElement(qv_functions[[stage]], "qv_model")
+  full_history <- attr(qv_functions, "full_history")
 
   stage_policy <- function(H){
     qv_values <- sapply(
@@ -323,7 +341,7 @@ get_policy_functions.RQVL <- function(object, stage){
 
     if (alpha == 0){
       dd <- apply(qv_values, MARGIN = 1, which.max)
-      d <- action_set[dd]
+      d <- stage_action_set[dd]
     } else{
       # evaluating the g-function:
       if (!all(g_function$H_names %in% names(H))){
@@ -338,11 +356,13 @@ get_policy_functions.RQVL <- function(object, stage){
 
       # calculating the realistic actions:
       realistic_actions <- t(apply(g_values, MARGIN = 1, function(x) x >= alpha))
+      if (any(apply(realistic_actions, MARGIN = 1, sum) == 0))
+        stop("Cases with no realistic actions occur. Consider resetting the alpha level.")
       realistic_actions[which(realistic_actions == FALSE)] <- NA
 
       # getting the action with the maximal realistic Q-function value:
       dd <- apply(qv_values * realistic_actions, MARGIN = 1, which.max)
-      d <- action_set[dd]
+      d <- stage_action_set[dd]
     }
 
     return(d)
@@ -361,7 +381,7 @@ get_policy.RQVL <- function(object){
   alpha <- getElement(object, "alpha")
 
   g_cols <- paste("g_", action_set, sep = "")
-  q_cols <- paste("Q_", action_set, sep = "")
+  qv_cols <- paste("QV_", action_set, sep = "")
 
   policy <- function(policy_data){
     if (get_K(policy_data) != K)
@@ -378,11 +398,13 @@ get_policy.RQVL <- function(object){
         MARGIN = 1,
         function(x) x >= alpha
       ))
+      if (any(apply(realistic_actions, MARGIN = 1, sum) == 0))
+        stop("Cases with no realistic actions occur. Consider resetting the alpha level.")
       realistic_actions[which(realistic_actions == FALSE)] <- NA
 
       # getting the action with the maximal realistic Q-function value:
       dd <- apply(
-        qv_values[ , q_cols, with = FALSE] * realistic_actions,
+        qv_values[ , qv_cols, with = FALSE] * realistic_actions,
         MARGIN = 1,
         which.max
       )
@@ -390,7 +412,7 @@ get_policy.RQVL <- function(object){
     } else{
       # getting the action with the maximal Q-function value:
       dd <- apply(
-        qv_values[ , q_cols, with = FALSE],
+        qv_values[ , qv_cols, with = FALSE],
         MARGIN = 1,
         which.max
       )
