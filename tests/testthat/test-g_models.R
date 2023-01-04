@@ -1,3 +1,5 @@
+library("data.table")
+
 test_that("predict.g_functions checks the action set",{
   source(system.file("sim", "two_stage_multi_actions.R", package="polle"))
   d <- sim_two_stage_multi_actions(n = 1e2)
@@ -132,6 +134,9 @@ test_that("g_models checks formula input", {
   expect_error(policy_eval(policy_data = pd,
                            policy = p_dynamic,
                            g_models = g_glmnet(formula = ~X)), "The g-model formula ~X is invalid.")
+  expect_error(policy_eval(policy_data = pd,
+                           policy = p_dynamic,
+                           g_models = g_empir(formula = ~X)), "The g-model formula ~X is invalid.")
 })
 
 test_that("g_rf runs:",{

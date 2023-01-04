@@ -1,5 +1,7 @@
 check_g_formula <- function(formula, data){
   tt <- terms(formula, data = data)
+  if (length(attr(tt, "term.labels")) == 0)
+    return(NULL)
   formula <- reformulate(attr(tt, "term.labels"), response = NULL)
   tt <- terms(formula, data = data)
   v <- all.vars(tt)
@@ -101,7 +103,7 @@ new_g_model <- function(g_model){
 
 #' @title g_model class object
 #'
-#' @description  Use \code{g_glm()}, \code{g_glmnet()}, \code{g_rf()}, and \code{g_sl()} to construct
+#' @description  Use \code{g_glm()}, \code{g_empir()}, \code{g_glmnet()}, \code{g_rf()}, and \code{g_sl()} to construct
 #' an action probability model/g-model object.
 #' The constructors are used as input for [policy_eval()] and [policy_learn()].
 #'
@@ -135,6 +137,8 @@ new_g_model <- function(g_model){
 #' [ranger::ranger] or [SuperLearner::SuperLearner].
 #' @details
 #' \code{g_glm()} is a wrapper of [glm()] (generalized linear model).\cr
+#' \code{g_empir()} calculates the empirical probabilities within the groups
+#' defined by the formula.\cr
 #' \code{g_glmnet()} is a wrapper of [glmnet::glmnet()] (generalized linear model via
 #' penalized maximum likelihood).\cr
 #' \code{g_rf()} is a wrapper of [ranger::ranger()] (random forest).
@@ -192,26 +196,63 @@ NULL
 
 # empirical (group) probability -------------------------------------------
 
+calculate_prop_table <- function(data, formula){
+  tt <- terms(formula, data = data)
+  # grouping variables:
+  v <- all.vars(tt)
+  tab <- data[ , list(N_ = .N), by = c("A", v)]
+  tab[, N_group_ := sum(N_), by = v]
+  tab <- tab[, empir_prob := N_ / N_group_][order(A), ]
+  tab[, c("N_","N_group_") := NULL]
+
+  return(list(tab=tab, v=v))
+}
+
+#' @rdname g_model
 #' @export
-g_group <- function(formula, ...) {
+g_empir <- function(formula = ~1, ...) {
   formula <- as.formula(formula)
   dots <- list(...)
 
-  g_group <- function(A, H, action_set) {
-    A <- factor(A, levels=action_set)
-    tab <- ftable(update(formula, A ~ .), cbind(A,H))
-    tab <- prop.table(tab, margin=1)
-    tab <- list(tab, formula=formula, action_set=action_set)
-    class(tab) <- c("g_group")
-    return(tab)
+  g_empir <- function(A, H, action_set){
+    check_g_formula(formula = formula, data = H)
+    data <- cbind(A, H)
+    tmp <- calculate_prop_table(data, formula = formula)
+    tab <- tmp[["tab"]]
+    v <- tmp[["v"]]
+    out <- list(tab=tab, action_set=action_set, v=v)
+    class(out) <- c("g_empir")
+    return(out)
   }
   # setting class:
-  g_group <- new_g_model(g_group)
-  return(g_group)
+  g_empir <- new_g_model(g_empir)
+  return(g_empir)
 }
-predict.g_group <- function(object, new_H){
-  X <- model.matrix(object$formula, new_H)%*%c(1,1)
-  probs <- object[[1]][X,]
+predict.g_empir <- function(object, new_H){
+  tab <- object[["tab"]]
+  action_set <- object[["action_set"]]
+  v <- object[["v"]]
+
+  if (length(v) == 0){
+    probs <- tab[order(A),]$empir_prob
+    probs <- matrix(probs,
+                    nrow = nrow(new_H),
+                    ncol = length(action_set),
+                    byrow = TRUE)
+  } else{
+    probs <- matrix(0,
+                    nrow = nrow(new_H),
+                    ncol = length(action_set),
+                    byrow = TRUE)
+    new_H <- cbind(id = 1:nrow(new_H), new_H)
+    for (j in seq_along(action_set)){
+      A_ <- action_set[j]
+      tmp <- merge(new_H, tab[A == A_,], all.x = TRUE)[order(id)]
+      tmp[is.na(tmp)] <- 0
+      probs[,j] <- tmp[["empir_prob"]]
+    }
+  }
+
   return(probs)
 }
 

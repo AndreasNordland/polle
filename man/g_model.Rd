@@ -3,12 +3,15 @@
 \docType{class}
 \name{g_model}
 \alias{g_model}
+\alias{g_empir}
 \alias{g_glm}
 \alias{g_glmnet}
 \alias{g_rf}
 \alias{g_sl}
 \title{g_model class object}
 \usage{
+g_empir(formula = ~1, ...)
+
 g_glm(
   formula = ~.,
   family = "binomial",
@@ -41,6 +44,9 @@ g_sl(
 the propensity model/g-model. Use \code{\link[=get_history_names]{get_history_names()}} to view the available
 variable names.}
 
+\item{...}{Additional arguments passed to \code{\link[=glm]{glm()}}, \link[glmnet:glmnet]{glmnet::glmnet},
+\link[ranger:ranger]{ranger::ranger} or \link[SuperLearner:SuperLearner]{SuperLearner::SuperLearner}.}
+
 \item{family}{A description of the error distribution and link function to
 be used in the model.}
 
@@ -49,9 +55,6 @@ not be saved.}
 
 \item{na.action}{(Only used by \code{g_glm}) A function which indicates what
 should happen when the data contain NAs, see \link{na.pass}.}
-
-\item{...}{Additional arguments passed to \code{\link[=glm]{glm()}}, \link[glmnet:glmnet]{glmnet::glmnet},
-\link[ranger:ranger]{ranger::ranger} or \link[SuperLearner:SuperLearner]{SuperLearner::SuperLearner}.}
 
 \item{alpha}{(Only used by \code{g_glmnet}) The elastic net mixing parameter
 between 0 and 1. alpha equal to 1 is the lasso penalty, and alpha equal
@@ -83,12 +86,14 @@ g-model object: function with arguments 'A'
 (action vector), 'H' (history matrix) and 'action_set'.
 }
 \description{
-Use \code{g_glm()}, \code{g_glmnet()}, \code{g_rf()}, and \code{g_sl()} to construct
+Use \code{g_glm()}, \code{g_empir()}, \code{g_glmnet()}, \code{g_rf()}, and \code{g_sl()} to construct
 an action probability model/g-model object.
 The constructors are used as input for \code{\link[=policy_eval]{policy_eval()}} and \code{\link[=policy_learn]{policy_learn()}}.
 }
 \details{
 \code{g_glm()} is a wrapper of \code{\link[=glm]{glm()}} (generalized linear model).\cr
+\code{g_empir()} calculates the empirical probabilities within the groups
+defined by the formula.\cr
 \code{g_glmnet()} is a wrapper of \code{\link[glmnet:glmnet]{glmnet::glmnet()}} (generalized linear model via
 penalized maximum likelihood).\cr
 \code{g_rf()} is a wrapper of \code{\link[ranger:ranger]{ranger::ranger()}} (random forest).
