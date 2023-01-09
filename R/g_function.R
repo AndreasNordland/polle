@@ -138,10 +138,12 @@ evaluate.g_function <- function(object, new_history){
 
 #' Fit g-functions
 #'
-#' \code{fit_g_functions} is used to fit a list of g-models
+#' \code{fit_g_functions} is used to fit a list of g-models.
 #' @param policy_data Policy data object created by [policy_data()].
-#' @param g_models Propensity models/g-models created by [g_glm()], [g_rf()], [g_sl()] or similar functions.
-#' @param full_history If TRUE, the full history is used to fit each g-model. If FALSE, the single stage/"Markov type" history is used to fit each g-model.
+#' @param g_models List of action probability models/g-models for each stage
+#' created by [g_empir()], [g_glm()], [g_rf()], [g_sl()] or similar functions.
+#' @param full_history If TRUE, the full history is used to fit each g-model.
+#' If FALSE, the single stage/"Markov type" history is used to fit each g-model.
 #' @examples
 #' library("polle")
 #' ### Simulating two-stage policy data
@@ -166,7 +168,7 @@ evaluate.g_function <- function(object, new_history){
 #'                                g_models = list(g_glm(), g_glm()),
 #'                                full_history = TRUE)
 #' g_functions
-#' @noRd
+#' @export
 fit_g_functions <- function(policy_data, g_models, full_history){
   K <- get_K(policy_data)
 

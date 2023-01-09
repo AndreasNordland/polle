@@ -5,7 +5,7 @@
 #' @param policy Policy object created by [policy_def()].
 #' @param policy_learn Policy learner object created by [policy_learn()].
 #' @param g_models List of action probability models/g-models for each stage
-#' created by [g_glm()], [g_rf()], [g_sl()] or similar functions.
+#' created by [g_empir()], [g_glm()], [g_rf()], [g_sl()] or similar functions.
 #' Only used for evaluation if \code{g_functions} is \code{NULL}.
 #' If a single model is provided and \code{g_full_history} is \code{FALSE},
 #' a single g-model is fitted across all stages. If \code{g_full_history} is

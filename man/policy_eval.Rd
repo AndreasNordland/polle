@@ -55,7 +55,7 @@ policy_eval(
 Preferably, use \code{g_models}.}
 
 \item{g_models}{List of action probability models/g-models for each stage
-created by \code{\link[=g_glm]{g_glm()}}, \code{\link[=g_rf]{g_rf()}}, \code{\link[=g_sl]{g_sl()}} or similar functions.
+created by \code{\link[=g_empir]{g_empir()}}, \code{\link[=g_glm]{g_glm()}}, \code{\link[=g_rf]{g_rf()}}, \code{\link[=g_sl]{g_sl()}} or similar functions.
 Only used for evaluation if \code{g_functions} is \code{NULL}.
 If a single model is provided and \code{g_full_history} is \code{FALSE},
 a single g-model is fitted across all stages. If \code{g_full_history} is
