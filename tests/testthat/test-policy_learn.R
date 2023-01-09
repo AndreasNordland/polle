@@ -47,10 +47,11 @@ test_that("get_policy.RQVL returns a policy", {
   expect_true(
     inherits(p, what = "policy")
   )
-  expect_error(
-    p(pd),
-    NA
+  expect_true(
+    is.data.table(p(pd))
   )
+
+
 })
 
 ## PTL ---------------------------------------------------------------------
@@ -821,6 +822,35 @@ test_that("policy_learn with type rqvl handles varying action sets",{
 
 })
 
+test_that("policy_learn with type = 'rqvl' works with cross_fit_g_models.",{
+  source(system.file("sim", "two_stage_multi_actions.R", package="polle"))
+  d <- sim_two_stage_multi_actions(n = 1e2)
+  pd <- policy_data(data = d,
+                    action = c("A_1", "A_2"),
+                    baseline = c("B", "BB"),
+                    covariates = list(L = c("L_1", "L_2"),
+                                      C = c("C_1", "C_2")),
+                    utility = c("U_1", "U_2", "U_3"))
+
+  pl <- policy_learn(type = "rqvl",
+                     cross_fit_g_models = FALSE,
+                     L = 2,
+                     alpha = 0.1,
+                     control = control_rqvl())
+
+  gfun <- fit_g_functions(pd, list(g_empir(), g_empir()), full_history = FALSE)
+
+  po <- pl(pd,
+           g_models = list(g_empir(), g_empir()),
+           q_models = q_glm())
+
+  expect_equal(
+    po$g_functions,
+    gfun
+  )
+
+})
+
 
 ## OWL --------------------------------------------------------------------
 
@@ -912,6 +942,43 @@ test_that("the implementation of owl agrees with direct application of DTRlearn2
 
   expect_equal(owl1_d1,owl3_d1)
   expect_equal(owl1_d2,owl3_d2)
+})
+
+test_that("policy_learn with type owl runs as intended", {
+  source(system.file("sim", "two_stage.R", package="polle"))
+  d <- sim_two_stage(200, seed=1)
+  pd <- policy_data(d,
+                    action = c("A_1", "A_2"),
+                    baseline = c("BB", "B"),
+                    covariates = list(L = c("L_1", "L_2"),
+                                      C = c("C_1", "C_2")),
+                    utility = c("U_1", "U_2", "U_3"))
+
+  pl <- policy_learn(type = "ptl",
+                     control = control_ptl(),
+                     L = 2,
+                     alpha = 0.3,
+                     save_cross_fit_models = TRUE)
+
+  po <- pl(pd,
+           g_models = g_glm(),
+           q_models = q_glm())
+
+  expect_true(
+    is.null(po$g_function)
+  )
+  expect_true(
+    !is.null(po$g_functions_cf)
+  )
+
+  expect_true(
+    is.data.table(get_policy(po)(pd))
+  )
+  expect_true(
+    all(complete.cases(get_policy(po)(pd)))
+  )
+
+
 })
 
 # Multiple stages ---------------------------------------------------------

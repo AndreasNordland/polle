@@ -11,8 +11,9 @@ policy_learn(
   type = "rql",
   control = list(),
   alpha = 0,
-  L = 1,
   full_history = FALSE,
+  L = 1,
+  cross_fit_g_models = TRUE,
   save_cross_fit_models = FALSE,
   future_args = list(future.seed = TRUE),
   name = type
@@ -72,11 +73,14 @@ options are \code{"linear"}, \code{"rbf"}.
 
 \item{alpha}{Probability threshold for determining realistic actions.}
 
-\item{L}{Number of folds for cross-fitting nuisance models.}
-
 \item{full_history}{If \code{TRUE}, the full
 history is used to fit each policy function (e.g. QV-model, policy tree). If FALSE, the single stage/
 "Markov type" history is used to fit each policy function.}
+
+\item{L}{Number of folds for cross-fitting nuisance models.}
+
+\item{cross_fit_g_models}{If \code{TRUE}, the g-models will not be
+cross-fitted even if L > 1.}
 
 \item{save_cross_fit_models}{If \code{TRUE}, the cross-fitted models will be saved.}
 

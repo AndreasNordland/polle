@@ -50,6 +50,8 @@
 #' }
 #' @param alpha Probability threshold for determining realistic actions.
 #' @param L Number of folds for cross-fitting nuisance models.
+#' @param cross_fit_g_models If \code{TRUE}, the g-models will not be
+#' cross-fitted even if L > 1.
 #' @param save_cross_fit_models If \code{TRUE}, the cross-fitted models will be saved.
 #' @param future_args Arguments passed to [future.apply::future_apply()].
 #' @param full_history If \code{TRUE}, the full
@@ -137,8 +139,9 @@
 policy_learn <- function(type = "rql",
                          control = list(),
                          alpha = 0,
-                         L = 1,
                          full_history = FALSE,
+                         L = 1,
+                         cross_fit_g_models = TRUE,
                          save_cross_fit_models = FALSE,
                          future_args = list(future.seed = TRUE),
                          name = type
@@ -147,6 +150,7 @@ policy_learn <- function(type = "rql",
   pl_args <- list(
     alpha = alpha,
     L = L,
+    cross_fit_g_models = cross_fit_g_models,
     save_cross_fit_models = save_cross_fit_models,
     future_args = future_args,
     full_history = full_history

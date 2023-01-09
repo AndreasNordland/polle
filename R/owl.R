@@ -37,15 +37,17 @@ control_owl <- function(policy_vars = NULL,
 }
 
 dtrlearn2_owl <- function(policy_data,
-                 alpha,
-                 g_models, g_functions, g_full_history,
-                 policy_vars, full_history,
-                 L, save_cross_fit_models, future_args,
-                 reuse_scales,
-                 res.lasso, loss, kernel,
-                 augment, c, sigma,
-                 s, m,
-                 ...){
+                          alpha,
+                          g_models, g_functions, g_full_history,
+                          policy_vars, full_history,
+                          L,
+                          cross_fit_g_models, save_cross_fit_models,
+                          future_args,
+                          reuse_scales,
+                          res.lasso, loss, kernel,
+                          augment, c, sigma,
+                          s, m,
+                          ...){
 
   if ((is.null(g_models) & is.null(g_functions)))
     stop("Provide either g-models or g-functions.")
@@ -88,15 +90,9 @@ dtrlearn2_owl <- function(policy_data,
     folds <- NULL
   }
 
+  # (cross-)fitting the g-functions:
   g_functions_cf <- NULL
-  if (is.null(folds)){
-    if (is.null(g_functions)){
-      # fitting the g-functions:
-      g_functions <- fit_g_functions(policy_data, g_models, full_history = g_full_history)
-    }
-    g_values <- evaluate(g_functions, policy_data)
-  } else{
-    # cross-fitting the g-functions:
+  if (!is.null(folds) & cross_fit_g_models == TRUE){
     g_cf <- fit_g_functions_cf(
       policy_data = policy_data,
       g_models = g_models,
@@ -107,19 +103,27 @@ dtrlearn2_owl <- function(policy_data,
     if (save_cross_fit_models == TRUE){
       g_functions_cf <- getElement(g_cf, "functions")
     }
-
     g_values <- getElement(g_cf, "values")
-    # fitting the non-cross-fitted g-functions
-    # for determining future realistic actions:
-    if (alpha > 0){
-      if (is.null(g_functions)){
-        g_functions <- fit_g_functions(policy_data,
-                                       g_models = g_models,
-                                       full_history = g_full_history)
-      }
-    } else{
-      g_functions <- NULL
+    rm(g_cf)
+  } else {
+    if (is.null(g_functions)){
+      g_functions <- fit_g_functions(policy_data,
+                                     g_models = g_models,
+                                     full_history = g_full_history)
     }
+    g_values <- evaluate(g_functions, policy_data)
+  }
+
+  # fitting g-functions for determining new realistic actions:
+  if (alpha > 0){
+    if (is.null(g_functions)){
+      g_functions <- fit_g_functions(policy_data,
+                                     g_models = g_models,
+                                     full_history = g_full_history)
+    }
+  } else{
+    # g-functions are not saved if alpha == 0:
+    g_functions <- NULL
   }
 
   # (n X K) matrix with entries U_{i,k+1}:

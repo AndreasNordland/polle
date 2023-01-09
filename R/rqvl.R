@@ -79,7 +79,8 @@ rqvl <- function(policy_data,
                  g_models, g_functions, g_full_history,
                  q_models, q_full_history,
                  qv_models, full_history,
-                 L, save_cross_fit_models, future_args,
+                 L, cross_fit_g_models,
+                 save_cross_fit_models, future_args,
                  ...){
   K <- get_K(policy_data)
   n <- get_n(policy_data)
@@ -119,16 +120,9 @@ rqvl <- function(policy_data,
     folds <- NULL
   }
 
-  # cross-fitting the g-functions:
+  # (cross-)fitting the g-functions:
   g_functions_cf <- NULL
-  if (is.null(folds)){
-    if (is.null(g_functions)){
-      g_functions <- fit_g_functions(policy_data,
-                                     g_models = g_models,
-                                     full_history = g_full_history)
-    }
-    g_values <- evaluate(g_functions, policy_data)
-  } else{
+  if (!is.null(folds) & cross_fit_g_models == TRUE){
     g_cf <- fit_g_functions_cf(
       policy_data = policy_data,
       g_models = g_models,
@@ -141,17 +135,25 @@ rqvl <- function(policy_data,
     }
     g_values <- getElement(g_cf, "values")
     rm(g_cf)
-    # fitting the non-cross-fitted g-functions
-    # for determining new realistic actions:
-    if (alpha > 0){
-      if (is.null(g_functions)){
-        g_functions <- fit_g_functions(policy_data,
-                                       g_models = g_models,
-                                       full_history = g_full_history)
-      }
-    } else{
-      g_functions <- NULL
+  } else {
+    if (is.null(g_functions)){
+      g_functions <- fit_g_functions(policy_data,
+                                     g_models = g_models,
+                                     full_history = g_full_history)
     }
+    g_values <- evaluate(g_functions, policy_data)
+  }
+
+  # fitting g-functions for determining new realistic actions:
+  if (alpha > 0){
+    if (is.null(g_functions)){
+      g_functions <- fit_g_functions(policy_data,
+                                     g_models = g_models,
+                                     full_history = g_full_history)
+    }
+  } else{
+    # g-functions are not saved if alpha == 0:
+    g_functions <- NULL
   }
 
   # (n) vector with entries U_i:

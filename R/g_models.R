@@ -200,6 +200,7 @@ calculate_prop_table <- function(data, formula){
   tt <- terms(formula, data = data)
   # grouping variables:
   v <- all.vars(tt)
+  N_ <- N_group_ <- empir_prob <- A <-  NULL
   tab <- data[ , list(N_ = .N), by = c("A", v)]
   tab[, N_group_ := sum(N_), by = v]
   tab <- tab[, empir_prob := N_ / N_group_][order(A), ]
@@ -234,6 +235,7 @@ predict.g_empir <- function(object, new_H){
   v <- object[["v"]]
 
   if (length(v) == 0){
+    A <- NULL
     probs <- tab[order(A),]$empir_prob
     probs <- matrix(probs,
                     nrow = nrow(new_H),
@@ -247,6 +249,7 @@ predict.g_empir <- function(object, new_H){
     new_H <- cbind(id = 1:nrow(new_H), new_H)
     for (j in seq_along(action_set)){
       A_ <- action_set[j]
+      id <- A <- NULL
       tmp <- merge(new_H, tab[A == A_,], all.x = TRUE)[order(id)]
       tmp[is.na(tmp)] <- 0
       probs[,j] <- tmp[["empir_prob"]]
