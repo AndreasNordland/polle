@@ -75,7 +75,8 @@ If a single model is provided, the model is reused at every stage.}
 
 \item{q_full_history}{Similar to g_full_history.}
 
-\item{type}{Type of evaluation (dr/doubly robust, ipw/inverse propensity weighting, or/outcome regression).}
+\item{type}{Type of evaluation (dr/doubly robust, ipw/inverse propensity
+weighting, or/outcome regression).}
 
 \item{M}{Number of folds for cross-fitting.}
 
@@ -96,8 +97,10 @@ the same data sample.}
 \code{policy_eval()} returns an object of class "policy_eval".
 The object is a list containing the following elements:
 \item{\code{value_estimate}}{Numeric. The estimated value of the policy.}
-\item{\code{type}}{Character string. The type of evaluation ("dr", "ipw", "or").}
-\item{\code{IC}}{Numeric vector. Estimated influence curve associated with the value estimate.}
+\item{\code{type}}{Character string. The type of evaluation ("dr", "ipw",
+"or").}
+\item{\code{IC}}{Numeric vector. Estimated influence curve associated with
+the value estimate.}
 \item{\code{value_estimate_ipw}}{(only if \code{type = "dr"}) Numeric.
 The estimated value of the policy based on inverse probability weighting.}
 \item{\code{value_estimate_or}}{(only if \code{type = "dr"}) Numeric.
@@ -117,7 +120,8 @@ fitted Q-functions. Object of class "nuisance_functions".}
 for cross-fitting.}
 }
 \description{
-\code{policy_eval()} is used to estimate the value of a given fixed policy or a data adaptive policy (e.g. a policy learned from the data).
+\code{policy_eval()} is used to estimate the value of a given fixed policy
+or a data adaptive policy (e.g. a policy learned from the data).
 }
 \details{
 Each observation has the sequential form
@@ -177,7 +181,7 @@ Z^d_1 = Q^d_1(H_1 , d_1(...)) + \sum_{r = 1}^K \prod_{j = 1}^{r}
 \section{S3 generics}{
 
 The following S3 generic functions are available for an object of
-class \code{policy_data}:
+class \code{policy_eval}:
 \itemize{
 \item{\code{\link[=get_g_functions]{get_g_functions()}}}{ Extract the fitted g-functions.}
 \item{\code{\link[=get_q_functions]{get_q_functions()}}}{ Extract the fitted Q-functions.}

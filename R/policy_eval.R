@@ -1,6 +1,7 @@
 #' Policy Evaluation
 #'
-#' \code{policy_eval()} is used to estimate the value of a given fixed policy or a data adaptive policy (e.g. a policy learned from the data).
+#' \code{policy_eval()} is used to estimate the value of a given fixed policy
+#' or a data adaptive policy (e.g. a policy learned from the data).
 #' @param policy_data Policy data object created by [policy_data()].
 #' @param policy Policy object created by [policy_def()].
 #' @param policy_learn Policy learner object created by [policy_learn()].
@@ -23,7 +24,8 @@
 #' If FALSE, the state/Markov type history is used to fit each g-model.
 #' @param q_full_history Similar to g_full_history.
 #' @param M Number of folds for cross-fitting.
-#' @param type Type of evaluation (dr/doubly robust, ipw/inverse propensity weighting, or/outcome regression).
+#' @param type Type of evaluation (dr/doubly robust, ipw/inverse propensity
+#' weighting, or/outcome regression).
 #' @param future_args Arguments passed to [future.apply::future_apply()].
 #' @param name Character string.
 #' @param object,x,y Objects of class "policy_eval".
@@ -34,8 +36,10 @@
 #' @returns \code{policy_eval()} returns an object of class "policy_eval".
 #' The object is a list containing the following elements:
 #' \item{\code{value_estimate}}{Numeric. The estimated value of the policy.}
-#' \item{\code{type}}{Character string. The type of evaluation ("dr", "ipw", "or").}
-#' \item{\code{IC}}{Numeric vector. Estimated influence curve associated with the value estimate.}
+#' \item{\code{type}}{Character string. The type of evaluation ("dr", "ipw",
+#' "or").}
+#' \item{\code{IC}}{Numeric vector. Estimated influence curve associated with
+#' the value estimate.}
 #' \item{\code{value_estimate_ipw}}{(only if \code{type = "dr"}) Numeric.
 #' The estimated value of the policy based on inverse probability weighting.}
 #' \item{\code{value_estimate_or}}{(only if \code{type = "dr"}) Numeric.
@@ -55,7 +59,7 @@
 #' for cross-fitting.}
 #' @section S3 generics:
 #' The following S3 generic functions are available for an object of
-#' class \code{policy_data}:
+#' class \code{policy_eval}:
 #' \itemize{
 #' \item{[get_g_functions()]}{ Extract the fitted g-functions.}
 #' \item{[get_q_functions()]}{ Extract the fitted Q-functions.}
@@ -510,6 +514,63 @@ estimate.policy_eval <- function(x, ..., labels=x$name) {
 #' @export
 "+.policy_eval" <- function(x,...) {
   merge(x, ...)
+}
+
+#' @title Conditional Policy Evaluation
+#' @description \code{conditional()} is used to calculate the
+#' policy value for each group defined by a given baseline variable.
+#' @param object Policy evaluation object created by [policy_eval()].
+#' @param policy_data Policy data object created by [policy_data()].
+#' @param baseline Character string.
+#' @returns object of inherited class 'estimate', see [lava::estimate.default].
+#' The object is a list with elements 'coef' (policy value estimate for each
+#' group) and 'IC' (influence curve estimate matrix).
+#' @export
+conditional <- function(object, policy_data, baseline)
+  UseMethod("conditional")
+
+#' @export
+conditional.policy_eval <- function(object, policy_data, baseline){
+  policy_eval <- object
+
+  if (!inherits(policy_eval, "policy_eval"))
+    stop("policy_eval must be of inherited class 'policy_eval'.")
+  if (!inherits(policy_data, "policy_data"))
+    stop("policy_data must be of inherited class 'policy_data'.")
+  if (!is.character(baseline) | length(baseline)!= 1)
+    stop("baseline must be a single character.")
+
+  baseline_data <- policy_data[["baseline_data"]]
+
+  # checking IDs
+  check <- all.equal(
+    policy_eval[["id"]],
+    baseline_data[["id"]]
+  )
+  if (!check)
+    stop("ID's does not match.")
+
+  # getting the doubly robust score:
+  z <- IC(policy_eval) + coef(policy_eval)
+
+  by <- baseline_data[, baseline, with = FALSE]
+  agg <- aggregate(z, by = by, mean)
+  coef <- agg[["V1"]]
+
+  groups <- agg[[baseline]]
+  IC <- matrix(0, nrow = nrow(baseline_data), ncol = length(groups))
+  for (j in seq_along(coef)){
+    idx <- baseline_data[[baseline]] == groups[j]
+    id <- baseline_data[["id"]][idx]
+    ic <- z[idx,] - coef[j]
+    IC[idx,j] <- ic
+  }
+  est <- estimate(NULL,
+                  coef = coef,
+                  IC = cbind(IC),
+                  id = baseline_data[["id"]],
+                  labels = paste(baseline, groups, sep = ":"))
+  return(est)
 }
 
 #' @export

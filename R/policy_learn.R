@@ -213,6 +213,7 @@ print.policy_object <- function(x, ...){
   cat(cp)
   cat("\n")
   cat("Use 'get_policy' to get the associated policy.")
+  cat("\n")
 }
 
 
