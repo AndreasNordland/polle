@@ -169,7 +169,7 @@ evaluate.g_function <- function(object, new_history){
 #'                                full_history = TRUE)
 #' g_functions
 #' @export
-fit_g_functions <- function(policy_data, g_models, full_history){
+fit_g_functions <- function(policy_data, g_models, full_history = FALSE){
   K <- get_K(policy_data)
 
   # input checks:

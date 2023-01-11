@@ -4,7 +4,7 @@
 \alias{fit_g_functions}
 \title{Fit g-functions}
 \usage{
-fit_g_functions(policy_data, g_models, full_history)
+fit_g_functions(policy_data, g_models, full_history = FALSE)
 }
 \arguments{
 \item{policy_data}{Policy data object created by \code{\link[=policy_data]{policy_data()}}.}
