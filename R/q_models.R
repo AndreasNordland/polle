@@ -1,12 +1,14 @@
 check_q_formula <- function(formula, data){
   tt <- terms(formula, data = data)
-  formula <- reformulate(attr(tt, "term.labels"), response = NULL)
-  tt <- terms(formula, data = data)
-  v <- all.vars(tt)
-  if(!all(v %in% colnames(data))){
-    mes <- deparse(formula)
-    mes <- paste("The Q-model formula", mes, "is invalid.")
-    stop(mes)
+  if (length(attr(tt, "term.labels"))>0){
+    formula <- reformulate(attr(tt, "term.labels"), response = NULL)
+    tt <- terms(formula, data = data)
+    v <- all.vars(tt)
+    if(!all(v %in% colnames(data))){
+      mes <- deparse(formula)
+      mes <- paste("The Q-model formula", mes, "is invalid.")
+      stop(mes)
+    }
   }
 }
 

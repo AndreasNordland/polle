@@ -7,13 +7,15 @@ fit_QV_function <- function(history, Z, qv_model){
   # checking qv_model formula:
   formula <- get("formula", environment(qv_model))
   tt <- terms(formula, data = H)
-  formula <- reformulate(attr(tt, "term.labels"), response = NULL)
-  tt <- terms(formula, data = H)
-  variables <- as.character(attr(tt, "variables"))[-1]
-  if(!all(variables %in% colnames(H))){
-    mes <- deparse(formula)
-    mes <- paste("The QV-model formula", mes, "is invalid.")
-    stop(mes)
+  if (length(attr(tt, "term.labels")) > 0){
+    formula <- reformulate(attr(tt, "term.labels"), response = NULL)
+    tt <- terms(formula, data = H)
+    variables <- as.character(attr(tt, "variables"))[-1]
+    if(!all(variables %in% colnames(H))){
+      mes <- deparse(formula)
+      mes <- paste("The QV-model formula", mes, "is invalid.")
+      stop(mes)
+    }
   }
 
   # fitting the QV-model:
