@@ -102,3 +102,10 @@ evaluate.nuisance_functions <- function(object, policy_data){
 
   return(values)
 }
+
+#' @export
+print.nuisance_functions <- function(x, ...){
+  attr(x, "class") <- NULL
+  print(x)
+}
+

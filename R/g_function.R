@@ -332,6 +332,3 @@ fit_g_functions_cf <- function(folds,
 get_g_functions <- function(object)
   UseMethod("get_g_functions")
 
-
-
-
