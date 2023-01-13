@@ -462,6 +462,8 @@ IC.policy_eval <- function(x, ...) {
 #' @export
 vcov.policy_eval <- function(object, ...) {
   ic <- IC(object)
+  if (is.null(ic))
+    return(NULL)
   n <- nrow(ic)
   return(crossprod(ic)/(n*n))
 }
@@ -475,7 +477,7 @@ print.policy_eval <- function(x, ...) {
 
 #' @rdname policy_eval
 #' @export
-summary.policy_eval <- function(object, ...) {
+summary.policy_eval <- function(object, ...){
   lava::estimate(object, ...)
 }
 
@@ -490,7 +492,11 @@ estimate.policy_eval <- function(x, ..., labels=x$name) {
       labels <- paste0("value", seq(p))
     }
   }
-  est <- lava::estimate(NULL, coef=coef(x), IC=IC(x), labels=labels, ...)
+  ic <- IC(x)
+  if (is.null(ic))
+    est <- lava::estimate(NULL, coef=coef(x), vcov=NULL, labels=labels, ...)
+  else
+    est <- lava::estimate(NULL, coef=coef(x), IC=ic, labels=labels, ...)
   return(est)
 }
 

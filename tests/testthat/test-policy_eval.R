@@ -127,7 +127,7 @@ test_that("policy_eval evaluates on a subset of the data with missing actions",{
   )
   expect_equal(
     pe2_ipw$IC,
-    (pe1_ipw$IC[d1$A == "0"] + pe1_ipw$value_estimate)
+    NULL
   )
 
   ### or
@@ -143,8 +143,8 @@ test_that("policy_eval evaluates on a subset of the data with missing actions",{
     NA
   )
   expect_equal(
-    pe2_or$IC + pe2_or$value_estimate,
-    (pe1_or$IC[d1$A == "0"] + pe1_or$value_estimate)
+    pe2_or$IC,
+    NULL
   )
 })
 
