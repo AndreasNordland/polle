@@ -15,10 +15,12 @@ Description: Framework for evaluating user-specified finite stage policies and l
 License: Apache License (>= 2)
 Encoding: UTF-8
 LazyData: true
-Imports:
+Depends:
+    R (>= 4.0),
     data.table (>= 1.14.5),
+    lava (>= 1.7.0)
+Imports:
     future.apply,
-    lava (>= 1.7.0),
     methods,
     policytree (>= 1.2.0),
     SuperLearner,
@@ -33,8 +35,6 @@ Suggests:
     ranger,
     rmarkdown,
     testthat (>= 3.0)
-Depends:
-    R (>= 4.0)
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.1
 BugReports: https://github.com/AndreasNordland/polle/issues
