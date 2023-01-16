@@ -202,6 +202,7 @@ q_glmnet <- function(formula = ~ A*.,
     model <- do.call(glmnet::cv.glmnet, args = args_glmnet)
     model$call <- NULL
 
+    des$x <- NULL
     m  <- list(model = model,
                s = s,
                design = des)
@@ -272,6 +273,7 @@ q_rf <- function(formula = ~.,
     }
     model$call <- NULL
 
+    des$x <- NULL
     m <- list(model = model,
               rf_args = rf_args(hyper_par[[best]]),
               num.trees=num.trees[best],
@@ -322,6 +324,7 @@ q_sl <- function(formula = ~ .,
       model$fitLibrary[model$coef == 0] <- NA
     }
 
+    des$x <- NULL
     m <- list(model = model,
               design = des,
               onlySL = onlySL)

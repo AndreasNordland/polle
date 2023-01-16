@@ -328,6 +328,7 @@ g_glmnet <- function(formula = ~.,
     model <- do.call(glmnet::cv.glmnet, args = args_glmnet)
     model$call <- NULL
 
+    des$x <- NULL
     m  <- list(model = model,
                s = s,
                design = des,
@@ -401,6 +402,7 @@ g_rf <- function(formula = ~.,
     }
     model$call <- NULL
 
+    des$x <- NULL
     m <- list(model = model,
               rf_args = rf_args(hyper_par[[best]]),
               num.trees=num.trees[best],
@@ -454,6 +456,8 @@ g_sl <- function(formula = ~ .,
     if(onlySL == TRUE){
       model$fitLibrary[model$coef == 0] <- NA
     }
+
+    des$x <- NULL
     m <- list(model = model,
               design = des,
               onlySL = onlySL,
