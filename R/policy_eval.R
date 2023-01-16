@@ -339,10 +339,12 @@ policy_eval_cross <- function(args,
   folds <- lapply(folds, sort)
   names(folds) <- paste("fold_", 1:M, sep = "")
 
+  prog <- progressor(along = folds)
   cross_args <- append(list(X = folds,
                             FUN = policy_eval_fold,
                             policy_data = policy_data,
-                            args = args),
+                            args = args,
+                            prog = prog),
                        future_args)
 
   # cross fitting the policy evaluation using the folds:
@@ -399,7 +401,8 @@ policy_eval_cross <- function(args,
 
 policy_eval_fold <- function(fold,
                              policy_data,
-                             args
+                             args,
+                             prog
 ){
 
   K <- get_K(policy_data)
@@ -420,6 +423,9 @@ policy_eval_fold <- function(fold,
                                  train_policy_data = train_policy_data))
 
   out <- do.call(what = "policy_eval_type", args = eval_args)
+
+  # progress:
+  prog()
 
   return(out)
 }

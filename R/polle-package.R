@@ -10,6 +10,7 @@
 ##' @importFrom methods formalArgs
 ##' @importFrom utils tail capture.output
 ##' @importFrom survival survfit
+##' @importFrom progressr progressor
 ##' @import data.table SuperLearner
 ##' @export IC estimate
 ##' @export All
