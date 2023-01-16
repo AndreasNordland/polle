@@ -499,8 +499,9 @@ estimate.policy_eval <- function(x, ..., labels=x$name) {
     }
   }
   ic <- IC(x)
-  if (is.null(ic))
-    est <- lava::estimate(NULL, coef=coef(x), vcov=NULL, labels=labels, ...)
+  if (is.null(ic)){
+    est <- lava::estimate(NULL, coef=coef(x), vcov=NULL, ...) # labels=labels
+  }
   else
     est <- lava::estimate(NULL, coef=coef(x), IC=ic, labels=labels, ...)
   return(est)
