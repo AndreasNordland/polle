@@ -127,7 +127,7 @@ test_that("policy_eval evaluates on a subset of the data with missing actions",{
   )
   expect_equal(
     pe2_ipw$IC,
-    NULL
+    rep(0, get_n(pd2))
   )
 
   ### or
@@ -182,3 +182,19 @@ test_that("policy_eval handles varying stage action sets",{
   )
 
 })
+
+# test_that("policy_eval progress works",{
+#   source(system.file("sim", "single_stage.R", package="polle"))
+#   d <- sim_single_stage(1e2, seed=1)
+#   pd <- policy_data(d, action = "A", covariates = c("Z"), utility = "U")
+#   p <- policy_def(1)
+#
+#   library(progressr)
+#   handlers(global = TRUE)
+#
+#   policy_eval(policy_data = pd,
+#               policy = p,
+#               M = 10)
+#
+#   handlers(global = FALSE)
+# })
