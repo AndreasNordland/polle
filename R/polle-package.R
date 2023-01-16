@@ -3,6 +3,7 @@
 ##'
 ##' @name polle-package
 ##' @importFrom lava IC estimate
+##' @importFrom SuperLearner All
 ##' @importFrom stats predict gaussian binomial glm as.formula nls model.frame
 ##'   model.matrix reformulate predict.glm terms update .getXlevels addmargins
 ##'   coef delete.response complete.cases model.response na.pass
@@ -10,6 +11,8 @@
 ##' @importFrom utils tail capture.output
 ##' @importFrom survival survfit
 ##' @import data.table SuperLearner
+##' @export IC estimate
+##' @export All
 ##' @aliases polle-package polle
 ##' @docType package
 ##' @keywords package

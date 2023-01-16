@@ -16,10 +16,10 @@ License: Apache License (>= 2)
 Encoding: UTF-8
 LazyData: true
 Depends:
-    R (>= 4.0),
-    data.table (>= 1.14.5),
-    lava (>= 1.7.0)
+    R (>= 4.0)
 Imports:
+    data.table (>= 1.14.5),
+    lava (>= 1.7.0),
     future.apply,
     methods,
     policytree (>= 1.2.0),
