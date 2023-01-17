@@ -95,14 +95,18 @@ test_that("q_sl formats data correctly via the formula",{
                      covariates = list("Z", "B", "L", "BB"),
                      utility="U")
 
-  suppressWarnings({
-    pe <- policy_eval(
-      policy_data = pd1,
-      policy_learn = policy_learn(type = "rql", alpha = 0.05),
-      g_models = g_glm(),
-      g_full_history = FALSE,
-      q_models = q_sl()
-    ) })
+  expect_error(
+    suppressWarnings({
+      pe <- policy_eval(
+        policy_data = pd1,
+        policy_learn = policy_learn(type = "rql", alpha = 0.05),
+        g_models = g_glm(),
+        g_full_history = FALSE,
+        q_models = q_sl()
+      ) }),
+    NA
+  )
+
 })
 
 test_that("q_sl can find user-defined learners",{
