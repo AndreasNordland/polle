@@ -300,7 +300,7 @@ predict.q_rf <- function(object, new_AH, ...) {
 #' @export
 q_sl <- function(formula = ~ .,
                  SL.library=c("SL.mean", "SL.glm"),
-                 env = parent.frame(),
+                 env = as.environment("package:SuperLearner"),
                  onlySL = TRUE,
                  ...){
   if (!requireNamespace("SuperLearner"))

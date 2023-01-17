@@ -16,7 +16,8 @@ License: Apache License (>= 2)
 Encoding: UTF-8
 LazyData: true
 Depends:
-    R (>= 4.0)
+    R (>= 4.0),
+    SuperLearner
 Imports:
     data.table (>= 1.14.5),
     lava (>= 1.7.0),
@@ -24,7 +25,6 @@ Imports:
     progressr,
     methods,
     policytree (>= 1.2.0),
-    SuperLearner,
     survival,
     targeted,
     DynTxRegime
