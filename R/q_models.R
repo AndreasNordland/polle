@@ -307,6 +307,7 @@ q_sl <- function(formula = ~ .,
     stop("Package 'SuperLearner' required.")
   formula <- as.formula(formula)
   force(SL.library)
+  force(env)
   dotdotdot <- list(...)
   q_sl <- function(AH, V_res) {
     check_q_formula(formula = formula, data = AH)

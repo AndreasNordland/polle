@@ -433,13 +433,14 @@ predict.g_rf <- function(object, new_H, ...){
 g_sl <- function(formula = ~ .,
                  SL.library=c("SL.mean", "SL.glm"),
                  family=binomial(),
-                 env = parent.frame(),
+                 env = as.environment("package:SuperLearner"),
                  onlySL = TRUE,
                  ...) {
   if (!requireNamespace("SuperLearner"))
     stop("Package 'SuperLearner' required.")
   force(formula)
   force(SL.library)
+  force(env)
   dotdotdot <- list(...)
   g_sl <- function(A, H, action_set) {
     A <- as.numeric(factor(A, levels=action_set))-1
