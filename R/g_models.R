@@ -213,7 +213,7 @@ calculate_prop_table <- function(data, formula){
 #' @export
 g_empir <- function(formula = ~1, ...) {
   formula <- as.formula(formula)
-  dots <- list(...)
+  environment(formula) <- NULL
 
   g_empir <- function(A, H, action_set){
     check_g_formula(formula = formula, data = H)
@@ -269,6 +269,7 @@ g_glm <- function(formula = ~.,
                   na.action = na.pass,
                   ...) {
   formula <- as.formula(formula)
+  environment(formula) <- NULL
   dotdotdot <- list(...)
 
   g_glm <- function(A, H, action_set){
@@ -312,7 +313,8 @@ g_glmnet <- function(formula = ~.,
                      alpha = 1,
                      s = "lambda.min", ...) {
   if (!requireNamespace("glmnet")) stop("Package 'glmnet' required")
-  force(formula)
+  formula <- as.formula(formula)
+  environment(formula) <- NULL
   dotdotdot <- list(...)
   g_glmnet <- function(A, H, action_set){
     check_g_formula(formula = formula, data = H)
@@ -369,7 +371,8 @@ g_rf <- function(formula = ~.,
                  cv_args=list(K=5, rep=1),
                  ...) {
   if (!requireNamespace("ranger")) stop("Package 'ranger' required")
-  force(formula)
+  formula <- as.formula(formula)
+  environment(formula) <- NULL
   dotdotdot <- list(...)
   hyper_par <- expand.list(num.trees=num.trees, mtry=mtry)
   rf_args <- function(p) {
@@ -438,7 +441,8 @@ g_sl <- function(formula = ~ .,
                  ...) {
   if (!requireNamespace("SuperLearner"))
     stop("Package 'SuperLearner' required.")
-  force(formula)
+  formula <- as.formula(formula)
+  environment(formula) <- NULL
   force(SL.library)
   force(env)
   dotdotdot <- list(...)

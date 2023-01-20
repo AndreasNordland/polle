@@ -145,6 +145,7 @@ q_glm <- function(formula = ~ A*.,
                   na.action = na.pass,
                   ...){
   formula <- as.formula(formula)
+  environment(formula) <- NULL
   dotdotdot <- list(...)
 
   q_glm <- function(AH, V_res) {
@@ -189,7 +190,8 @@ q_glmnet <- function(formula = ~ A*.,
                      ...) {
   if (!requireNamespace("glmnet"))
     stop("Package 'glmnet' required.")
-  force(formula)
+  formula <- as.formula(formula)
+  environment(formula) <- NULL
   dotdotdot <- list(...)
 
   q_glmnet <- function(AH, V_res) {
@@ -241,7 +243,8 @@ q_rf <- function(formula = ~.,
                  num.trees=c(250, 500, 750), mtry=NULL,
                  cv_args=list(K=3, rep=1), ...) {
   if (!requireNamespace("ranger")) stop("Package 'ranger' required.")
-  force(formula)
+  formula <- as.formula(formula)
+  environment(formula) <- NULL
   dotdotdot <- list(...)
   hyper_par <- expand.list(num.trees=num.trees, mtry=mtry)
   rf_args <- function(p) {
@@ -306,6 +309,7 @@ q_sl <- function(formula = ~ .,
   if (!requireNamespace("SuperLearner"))
     stop("Package 'SuperLearner' required.")
   formula <- as.formula(formula)
+  environment(formula) <- NULL
   force(SL.library)
   force(env)
   dotdotdot <- list(...)
