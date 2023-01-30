@@ -111,7 +111,7 @@ dtrlearn2_owl <- function(policy_data,
                                      g_models = g_models,
                                      full_history = g_full_history)
     }
-    g_values <- evaluate(g_functions, policy_data)
+    g_values <- predict(g_functions, policy_data)
   }
 
   # fitting g-functions for determining new realistic actions:

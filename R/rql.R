@@ -35,7 +35,7 @@ rql<- function(policy_data, alpha,
     if (is.null(g_functions)){
       g_functions <- fit_g_functions(policy_data, g_models = g_models, full_history = g_full_history)
     }
-    g_values <- evaluate(g_functions, policy_data)
+    g_values <- predict(g_functions, policy_data)
   }
 
   # (n X K+1) matrix with entries Q_k(H_{k,i}, d_k(H_{k,i})), Q_{K+1} = U:
@@ -110,11 +110,11 @@ get_policy.RQL <- function(object){
 
   policy <- function(policy_data){
     # evaluating the Q-functions:
-    q_values <- evaluate(q_functions, policy_data = policy_data)
+    q_values <- predict(q_functions, policy_data)
 
     if (alpha != 0){
       # evaluating the g-functions:
-      g_values <- evaluate(g_functions, policy_data = policy_data)
+      g_values <- predict(g_functions, policy_data)
       # calculating the realistic actions:
       realistic_actions <- t(apply(
         g_values[ , g_cols, with = FALSE],

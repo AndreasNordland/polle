@@ -141,7 +141,7 @@ ptl <- function(policy_data,
                                      g_models = g_models,
                                      full_history = g_full_history)
     }
-    g_values <- evaluate(g_functions, policy_data)
+    g_values <- predict(g_functions, policy_data)
   }
 
   # fitting g-functions for determining new realistic actions:
@@ -345,7 +345,7 @@ get_policy.PTL <- function(object){
 
     if (alpha != 0){
       # evaluating the g-functions:
-      g_values <- evaluate(g_functions, policy_data = policy_data)
+      g_values <- predict(g_functions, policy_data)
     }
 
     ### getting the actions recommended by the ptl objects:
@@ -461,7 +461,7 @@ get_policy_functions.PTL <- function(object, stage){
         )
         stop(mes)
       }
-      g_values <- predict(g_function$g_model, new_H = H)
+      g_values <- predict(g_function$g_model, H)
       colnames(g_values) <- stage_action_set
 
       # excluding unrealistic recommendations:

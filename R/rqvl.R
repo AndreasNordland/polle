@@ -38,7 +38,7 @@ fit_QV_function <- function(history, Z, qv_model){
   return(qv_function)
 }
 
-evaluate.QV_function <- function(object, new_history){
+predict.QV_function <- function(object, new_history){
   id_stage <- get_id_stage(new_history)
   new_H <- get_H(new_history)
   # action set of the new history object
@@ -143,7 +143,7 @@ rqvl <- function(policy_data,
                                      g_models = g_models,
                                      full_history = g_full_history)
     }
-    g_values <- evaluate(g_functions, policy_data)
+    g_values <- predict(g_functions, policy_data)
   }
 
   # fitting g-functions for determining new realistic actions:
@@ -248,7 +248,7 @@ rqvl <- function(policy_data,
                                      qv_model = qv_model_k)
     qv_functions[[k]] <- qv_function_k
     # getting the QV-function values:
-    qv_values_k <- evaluate(qv_function_k, new_history = qv_history_k)
+    qv_values_k <- predict(qv_function_k, new_history = qv_history_k)
 
     if (alpha != 0){
       # getting the g-function values for each action:
@@ -391,11 +391,11 @@ get_policy.RQVL <- function(object){
     if (get_K(policy_data) != K)
       stop("The policy do not have the same number of stages as the policy data object.")
     # evaluating the Q-functions:
-    qv_values <- evaluate(qv_functions, policy_data = policy_data)
+    qv_values <- predict(qv_functions, policy_data)
 
     if (alpha != 0){
       # evaluating the g-functions:
-      g_values <- evaluate(g_functions, policy_data = policy_data)
+      g_values <- predict(g_functions, policy_data)
       # calculating the realistic actions:
       realistic_actions <- t(apply(
         g_values[ , g_cols, with = FALSE],

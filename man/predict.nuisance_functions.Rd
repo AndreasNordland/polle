@@ -4,7 +4,7 @@
 \alias{predict.nuisance_functions}
 \title{Predict g-functions and Q-functions}
 \usage{
-\method{predict}{nuisance_functions}(object, new_policy_data, ...)
+\method{predict}{nuisance_functions}(object, new_policy_data)
 }
 \arguments{
 \item{object}{Object of class "nuisance_functions". Either \code{g_functions}

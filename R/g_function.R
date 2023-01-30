@@ -72,7 +72,7 @@ print.g_function <- function(x, ...){
   print(y)
 }
 
-evaluate.g_function <- function(object, new_history){
+predict.g_function <- function(object, new_history){
   g_model <- getElement(object, "g_model")
   H_names <- getElement(object, "H_names")
   # action set of the new history object:
@@ -266,7 +266,7 @@ fit_g_functions_cf <- function(folds,
 
                                             valid_id <- id[f]
                                             valid_policy_data <- subset(policy_data, valid_id)
-                                            valid_g_values <- evaluate(train_g_functions, valid_policy_data)
+                                            valid_g_values <- predict(train_g_functions, valid_policy_data)
 
                                             list(
                                               train_g_functions = train_g_functions,

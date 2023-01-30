@@ -50,7 +50,7 @@ print.Q_function <- function(x, ...){
   print(y)
 }
 
-evaluate.Q_function <- function(object, new_history){
+predict.Q_function <- function(object, new_history){
   q_model <- getElement(object, "q_model")
   AH_names <- getElement(object, "AH_names")
   # action set of the new history object
@@ -128,7 +128,7 @@ q_step <- function(policy_data, k, full_history, Q, q_models){
   # fitting the Q-function:
   q_function <- fit_Q_function(q_history, Q = Q[idx_k], q_model = q_model)
   # getting the Q-function values for each action
-  q_values <- evaluate(q_function, new_history = q_history)
+  q_values <- predict(q_function, new_history = q_history)
 
   out <- list(
     q_function = q_function,
@@ -157,7 +157,7 @@ q_step_cf <- function(folds, policy_data, k, full_history, Q, q_models, future_a
                                             valid_id <- id[f]
                                             valid_policy_data <- subset(policy_data, valid_id)
                                             valid_history <- get_history(valid_policy_data, stage = k, full_history = full_history)
-                                            valid_values <- evaluate(train_q_function, valid_history)
+                                            valid_values <- predict(train_q_function, valid_history)
 
                                             out <- list(
                                               train_q_function = train_q_function,

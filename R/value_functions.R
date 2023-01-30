@@ -36,10 +36,10 @@ dr_value <- function(policy_data,
   policy_actions <- policy(policy_data)
 
   # getting the g-function values:
-  g_values <- evaluate(g_functions, policy_data)
+  g_values <- predict(g_functions, policy_data)
 
   # getting the Q-function values:
-  q_values <- evaluate(q_functions, policy_data = policy_data)
+  q_values <- predict(q_functions, policy_data)
 
   ### calculating the doubly robust score:
 
@@ -124,7 +124,7 @@ or_value <- function(policy_data,
   policy_actions <- policy(policy_data)
 
   # getting the Q-function values:
-  q_values <- evaluate(q_functions, policy_data = policy_data)
+  q_values <- predict(q_functions, policy_data)
 
   ### calculating the score:
 
@@ -170,7 +170,7 @@ ipw_value <- function(policy_data,
   policy_actions <- policy(policy_data)
 
   # getting the g-function values:
-  g_values <- evaluate(g_functions, policy_data)
+  g_values <- predict(g_functions, policy_data)
 
   ### calculating the score:
 

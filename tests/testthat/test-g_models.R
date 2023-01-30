@@ -32,8 +32,9 @@ test_that("predict.g_functions checks the action set",{
 
   expect_equal(
     {
-      gval <- evaluate.g_function(gfit[[1]],
-                          get_history(pd2, stage = 1, full_history = TRUE))
+      gval <- predict.g_function(gfit[[1]],
+                                 get_history(pd2, stage = 1,
+                                             full_history = TRUE))
       names(gval)
     },
     c("id", "stage", paste("g_", pd2$action_set, sep = ""))
