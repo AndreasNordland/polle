@@ -21,9 +21,7 @@ If FALSE, the single stage/"Markov type" history is used to fit each g-model.}
 \examples{
 library("polle")
 ### Simulating two-stage policy data
-source(system.file("sim", "two_stage.R", package="polle"))
-par0 <- c(gamma = 0.5, beta = 1)
-d <- sim_two_stage(2e3, seed=1, par=par0)
+d <- sim_two_stage(2e3, seed=1)
 pd <- policy_data(d,
                   action = c("A_1", "A_2"),
                   covariates = list(L = c("L_1", "L_2"),

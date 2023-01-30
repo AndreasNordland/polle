@@ -51,17 +51,16 @@ get_A <- function(history){
 #' @examples
 #' library("polle")
 #' ### Single stage: Wide data
-#' source(system.file("sim", "single_stage.R", package="polle"))
-#' d1 <- sim_single_stage(5e2, seed=1)
-#' head(d1, 5)
+#' d <- sim_single_stage(5e2, seed=1)
+#' head(d, 5)
 #' # constructing policy_data object:
-#' pd1 <- policy_data(d1,
+#' pd <- policy_data(d,
 #'                    action="A",
 #'                    covariates=c("Z", "B", "L"),
 #'                    utility="U")
-#' pd1
+#' pd
 #'
-#' polle:::get_id.history(get_history(pd1))
+#' polle:::get_id.history(get_history(pd))
 get_id.history <- function(object){
   H <- getElement(object, "H")
   stopifnot(!is.null(H))

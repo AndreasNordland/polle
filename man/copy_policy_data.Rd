@@ -22,7 +22,6 @@ function is a wrapper of \code{\link[data.table:copy]{data.table::copy()}}.
 \examples{
 library("polle")
 ### Single stage case: Wide data
-source(system.file("sim", "single_stage.R", package="polle"))
 d1 <- sim_single_stage(5e2, seed=1)
 head(d1, 5)
 # constructing policy_data object:

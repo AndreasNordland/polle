@@ -104,7 +104,6 @@
 #' @examples
 #' library("polle")
 #' ### Two stages:
-#' source(system.file("sim", "two_stage.R", package="polle"))
 #' d <- sim_two_stage(5e2, seed=1)
 #' pd <- policy_data(d,
 #'                   action = c("A_1", "A_2"),
@@ -247,7 +246,6 @@ print.policy_learn <- function(x, ...) {
 #' @examples
 #' library("polle")
 #' ### Single stage:
-#' source(system.file("sim", "single_stage.R", package="polle"))
 #' d1 <- sim_single_stage(5e2, seed=1)
 #' pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
 #' pd1
@@ -282,7 +280,6 @@ get_policy_object.policy_eval <- function(object){
 #' @examples
 #' library("polle")
 #' ### Two stages:
-#' source(system.file("sim", "two_stage.R", package="polle"))
 #' d <- sim_two_stage(5e2, seed=1)
 #' pd <- policy_data(d,
 #'                   action = c("A_1", "A_2"),
@@ -342,7 +339,6 @@ get_policy.policy_eval <- function(object){
 #' @examples
 #' library("polle")
 #' ### Two stages:
-#' source(system.file("sim", "two_stage.R", package="polle"))
 #' d <- sim_two_stage(5e2, seed=1)
 #' pd <- policy_data(d,
 #'                   action = c("A_1", "A_2"),
@@ -373,7 +369,7 @@ get_policy.policy_eval <- function(object){
 #' # applying the policy function to new data:
 #' set.seed(1)
 #' L_1 <- rnorm(n = 10)
-#' new_H <- data.table(C = rnorm(n = 10),
+#' new_H <- data.frame(C = rnorm(n = 10),
 #'                     L = L_1,
 #'                     L_1 = L_1,
 #'                     BB = "group1")

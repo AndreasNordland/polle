@@ -17,7 +17,6 @@ Integer.
 the policy data object.
 }
 \examples{
-source(system.file("sim", "multi_stage.R", package="polle"))
 d <- sim_multi_stage(5e2, seed = 1)
 pd <- policy_data(data = d$stage_data,
                    baseline_data = d$baseline_data,

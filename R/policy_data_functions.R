@@ -54,7 +54,6 @@ print.policy_data <- function(x, digits = 2, ...){
 #' @examples
 #' library("polle")
 #' ### Single stage case: Wide data
-#' source(system.file("sim", "single_stage.R", package="polle"))
 #' d1 <- sim_single_stage(5e2, seed=1)
 #' head(d1, 5)
 #' # constructing policy_data object:
@@ -144,7 +143,6 @@ partial_stage_data <- function(stage_data, K, deterministic_rewards){
 #' @examples
 #' library("polle")
 #' ### Multiple stage case
-#' source(system.file("sim", "multi_stage.R", package="polle"))
 #' d <- sim_multi_stage(5e2, seed = 1)
 #' # constructing policy_data object:
 #' pd <- policy_data(data = d$stage_data,
@@ -206,7 +204,6 @@ partial.policy_data <- function(object, K){
 #' @examples
 #' library("polle")
 #' ### Single stage:
-#' source(system.file("sim", "single_stage.R", package="polle"))
 #' d <- sim_single_stage(5e2, seed=1)
 #' # constructing policy_data object:
 #' pd <- policy_data(d, action="A", covariates=list("Z", "B", "L"), utility="U")
@@ -459,7 +456,6 @@ NULL
 #' @examples
 #' library("polle")
 #' ### Single stage:
-#' source(system.file("sim", "single_stage.R", package="polle"))
 #' d1 <- sim_single_stage(5e2, seed=1)
 #' # constructing policy_data object:
 #' pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
@@ -471,7 +467,6 @@ NULL
 #' head(h1$A)
 #'
 #' ### Two stages:
-#' source(system.file("sim", "two_stage.R", package="polle"))
 #' d2 <- sim_two_stage(5e2, seed=1)
 #' # constructing policy_data object:
 #' pd2 <- policy_data(d2,
@@ -498,7 +493,6 @@ NULL
 #' head(h2$A)
 #'
 #' ### Multiple stages
-#' source(system.file("sim", "multi_stage.R", package="polle"))
 #' d3 <- sim_multi_stage(5e2, seed = 1)
 #' # constructing policy_data object:
 #' pd3 <- policy_data(data = d3$stage_data,
@@ -548,7 +542,6 @@ get_history.policy_data <- function(object, stage = NULL, full_history = FALSE){
 #' @examples
 #' library("polle")
 #' ### Multiple stages:
-#' source(system.file("sim", "multi_stage.R", package="polle"))
 #' d3 <- sim_multi_stage(5e2, seed = 1)
 #' pd3 <- policy_data(data = d3$stage_data,
 #'                    baseline_data = d3$baseline_data,
@@ -590,19 +583,18 @@ get_history_names.policy_data <- function(object, stage = NULL){
 #' @returns [data.table] with key id and numeric variable U.
 #' @examples
 #' ### Two stages:
-#' source(system.file("sim", "two_stage.R", package="polle"))
-#' d2 <- sim_two_stage(5e2, seed=1)
+#' d <- sim_two_stage(5e2, seed=1)
 #' # constructing policy_data object:
-#' pd2 <- policy_data(d2,
+#' pd <- policy_data(d,
 #'                   action = c("A_1", "A_2"),
 #'                   baseline = c("B"),
 #'                   covariates = list(L = c("L_1", "L_2"),
 #'                                     C = c("C_1", "C_2")),
 #'                   utility = c("U_1", "U_2", "U_3"))
-#' pd2
+#' pd
 #'
 #' # getting the utility:
-#' head(get_utility(pd2))
+#' head(get_utility(pd))
 #'@export
 get_utility <- function(object)
   UseMethod("get_utility")
@@ -629,19 +621,18 @@ get_rewards <- function(object){
 #' @returns [data.table] with keys id and stage and character variable A.
 #' @examples
 #' ### Two stages:
-#' source(system.file("sim", "two_stage.R", package="polle"))
-#' d2 <- sim_two_stage(5e2, seed=1)
+#' d <- sim_two_stage(5e2, seed=1)
 #' # constructing policy_data object:
-#' pd2 <- policy_data(d2,
+#' pd <- policy_data(d,
 #'                   action = c("A_1", "A_2"),
 #'                   baseline = c("B"),
 #'                   covariates = list(L = c("L_1", "L_2"),
 #'                                     C = c("C_1", "C_2")),
 #'                   utility = c("U_1", "U_2", "U_3"))
-#' pd2
+#' pd
 #'
 #' # getting the actions:
-#' head(get_actions(pd2))
+#' head(get_actions(pd))
 #' @export
 get_actions <- function(object)
   UseMethod("get_actions")
@@ -661,19 +652,18 @@ get_actions.policy_data <- function(object){
 #' @returns Character vector.
 #' @examples
 #' ### Two stages:
-#' source(system.file("sim", "two_stage.R", package="polle"))
-#' d2 <- sim_two_stage(5e2, seed=1)
+#' d <- sim_two_stage(5e2, seed=1)
 #' # constructing policy_data object:
-#' pd2 <- policy_data(d2,
+#' pd <- policy_data(d,
 #'                   action = c("A_1", "A_2"),
 #'                   baseline = c("B"),
 #'                   covariates = list(L = c("L_1", "L_2"),
 #'                                     C = c("C_1", "C_2")),
 #'                   utility = c("U_1", "U_2", "U_3"))
-#' pd2
+#' pd
 #'
 #' # getting the IDs:
-#' head(get_id(pd2))
+#' head(get_id(pd))
 #' @export
 get_id <- function(object)
   UseMethod("get_id")
@@ -691,19 +681,18 @@ get_id.policy_data <- function(object){
 #' @returns [data.table] with keys id and stage.
 #' @examples
 #' ### Two stages:
-#' source(system.file("sim", "two_stage.R", package="polle"))
-#' d2 <- sim_two_stage(5e2, seed=1)
+#' d <- sim_two_stage(5e2, seed=1)
 #' # constructing policy_data object:
-#' pd2 <- policy_data(d2,
+#' pd <- policy_data(d,
 #'                   action = c("A_1", "A_2"),
 #'                   baseline = c("B"),
 #'                   covariates = list(L = c("L_1", "L_2"),
 #'                                     C = c("C_1", "C_2")),
 #'                   utility = c("U_1", "U_2", "U_3"))
-#' pd2
+#' pd
 #'
 #' # getting the IDs and stages:
-#' head(get_id_stage(pd2))
+#' head(get_id_stage(pd))
 #' @export
 get_id_stage <- function(object)
   UseMethod("get_id_stage")
@@ -725,7 +714,6 @@ get_id_stage.policy_data <- function(object){
 #' @param object Object of class [policy_data].
 #' @returns Integer.
 #' @examples
-#' source(system.file("sim", "multi_stage.R", package="polle"))
 #' d <- sim_multi_stage(5e2, seed = 1)
 #' pd <- policy_data(data = d$stage_data,
 #'                    baseline_data = d$baseline_data,
@@ -756,19 +744,18 @@ get_K.policy_data <- function(object){
 #' @returns Integer.
 #' @examples
 #' ### Two stages:
-#' source(system.file("sim", "two_stage.R", package="polle"))
-#' d2 <- sim_two_stage(5e2, seed=1)
+#' d <- sim_two_stage(5e2, seed=1)
 #' # constructing policy_data object:
-#' pd2 <- policy_data(d2,
+#' pd <- policy_data(d,
 #'                   action = c("A_1", "A_2"),
 #'                   baseline = c("B"),
 #'                   covariates = list(L = c("L_1", "L_2"),
 #'                                     C = c("C_1", "C_2")),
 #'                   utility = c("U_1", "U_2", "U_3"))
-#' pd2
+#' pd
 #'
 #' # getting the number of observations:
-#' get_n(pd2)
+#' get_n(pd)
 #' @export
 get_n <- function(object)
   UseMethod("get_n")
@@ -787,19 +774,18 @@ get_n.policy_data <- function(object){
 #' @returns Character vector.
 #' @examples
 #' ### Two stages:
-#' source(system.file("sim", "two_stage.R", package="polle"))
-#' d2 <- sim_two_stage(5e2, seed=1)
+#' d <- sim_two_stage(5e2, seed=1)
 #' # constructing policy_data object:
-#' pd2 <- policy_data(d2,
+#' pd <- policy_data(d,
 #'                   action = c("A_1", "A_2"),
 #'                   baseline = c("B"),
 #'                   covariates = list(L = c("L_1", "L_2"),
 #'                                     C = c("C_1", "C_2")),
 #'                   utility = c("U_1", "U_2", "U_3"))
-#' pd2
+#' pd
 #'
 #' # getting the actions set:
-#' get_action_set(pd2)
+#' get_action_set(pd)
 #' @export
 get_action_set <- function(object)
   UseMethod("get_action_set")
@@ -818,19 +804,18 @@ get_action_set.policy_data <- function(object){
 #' @returns List of character vectors.
 #' @examples
 #' ### Two stages:
-#' source(system.file("sim", "two_stage_multi_actions.R", package="polle"))
-#' d2 <- sim_two_stage_multi_actions(5e2, seed=1)
+#' d <- sim_two_stage_multi_actions(5e2, seed=1)
 #' # constructing policy_data object:
-#' pd2 <- policy_data(d2,
+#' pd <- policy_data(d,
 #'                   action = c("A_1", "A_2"),
 #'                   baseline = c("B"),
 #'                   covariates = list(L = c("L_1", "L_2"),
 #'                                     C = c("C_1", "C_2")),
 #'                   utility = c("U_1", "U_2", "U_3"))
-#' pd2
+#' pd
 #'
 #' # getting the stage actions set:
-#' get_stage_action_sets(pd2)
+#' get_stage_action_sets(pd)
 #' @export
 get_stage_action_sets <- function(object)
   UseMethod("get_stage_action_sets")

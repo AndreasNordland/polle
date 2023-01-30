@@ -23,7 +23,6 @@ the design matrix for \link{g_model} and \link{q_model} objects.
 \examples{
 library("polle")
 ### Multiple stages:
-source(system.file("sim", "multi_stage.R", package="polle"))
 d3 <- sim_multi_stage(5e2, seed = 1)
 pd3 <- policy_data(data = d3$stage_data,
                    baseline_data = d3$baseline_data,

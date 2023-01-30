@@ -18,8 +18,6 @@ test_that("calculate_prop_table", {
 })
 
 test_that("g_empir predictions in a single stage setting", {
-  source(system.file("sim", "single_stage.R", package="polle"))
-
   n <- 1e2
   d <- sim_single_stage(n = n, seed = 1)
   set.seed(1)
@@ -103,7 +101,6 @@ test_that("g_empir predictions in a single stage setting", {
 })
 
 test_that("g_empir predictions in a two stage setting", {
-  source(system.file("sim", "two_stage_multi_actions.R", package="polle"))
   set.seed(1)
   d <- sim_two_stage_multi_actions(n = 1e2)
   pd <- policy_data(data = d,

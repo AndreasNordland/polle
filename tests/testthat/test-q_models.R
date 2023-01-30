@@ -1,5 +1,4 @@
 test_that("fit_q_functions handles varying stage-action sets", {
-  source(system.file("sim", "two_stage_multi_actions.R", package="polle"))
   d <- sim_two_stage_multi_actions(n = 1e2)
   expect_error(
     pd <- policy_data(data = d,
@@ -36,7 +35,6 @@ test_that("fit_q_functions handles varying stage-action sets", {
 })
 
 test_that("q_models checks formula input", {
-  source(system.file("sim", "two_stage.R", package="polle"))
   d <- sim_two_stage(2e3, seed=1)
   pd <- policy_data(d,
                     action = c("A_1", "A_2"),
@@ -66,7 +64,6 @@ test_that("q_models checks formula input", {
 })
 
 test_that("q_rf formats data correctly via the formula",{
-  source(system.file("sim", "single_stage.R", package="polle"))
   d1 <- sim_single_stage(200, seed=1)
   d1$BB <- sample(c("group 1", "group & 2", "group & 3"), size = 200, replace = TRUE)
   pd1 <- policy_data(d1,
@@ -87,7 +84,6 @@ test_that("q_rf formats data correctly via the formula",{
 })
 
 test_that("q_sl formats data correctly via the formula",{
-  source(system.file("sim", "single_stage.R", package="polle"))
   d1 <- sim_single_stage(200, seed=1)
   d1$BB <- sample(c("group 1", "group & 2", "group & 3"), size = 200, replace = TRUE)
   pd1 <- policy_data(d1,
@@ -111,7 +107,6 @@ test_that("q_sl formats data correctly via the formula",{
 
 test_that("q_sl can find user-defined learners",{
   library("polle")
-  source(system.file("sim", "single_stage.R", package="polle"))
   d <- sim_single_stage(200, seed=1)
   d$BB <- sample(c("group 1", "group & 2", "group & 3"), size = 200, replace = TRUE)
   pd <- policy_data(d,
@@ -162,7 +157,6 @@ test_that("q_sl can find user-defined learners",{
 
 test_that("q_glm and q_sl(SL.library('SL.glm')) are (almost) equivalent",{
   library("SuperLearner")
-  source(system.file("sim", "single_stage.R", package="polle"))
   d1 <- sim_single_stage(200, seed=1)
   d1$A <- as.character(d1$A)
   d1$BB <- sample(c("group 1", "group_2", "G & 4"), size = nrow(d1), replace = TRUE)
@@ -200,7 +194,6 @@ test_that("q_glm and q_sl(SL.library('SL.glm')) are (almost) equivalent",{
 })
 
 test_that("q_glmnet formats data correctly via the formula",{
-  source(system.file("sim", "single_stage.R", package="polle"))
   d1 <- sim_single_stage(200, seed=1)
   d1$BB <- sample(c("group 1", "group & 2", "group & 3"), size = 200, replace = TRUE)
   pd1 <- policy_data(d1,
@@ -223,7 +216,6 @@ test_that("q_glmnet formats data correctly via the formula",{
 
 
 test_that("q_glm handles missing covariates", {
-  source(system.file("sim", "two_stage.R", package="polle"))
   d <- sim_two_stage(2e3, seed=1)
   d$C_1 <- NULL
   pd <- policy_data(d,
@@ -256,7 +248,6 @@ test_that("q_glm handles missing covariates", {
 })
 
 test_that("q_glmnet handles missing covariates", {
-  source(system.file("sim", "two_stage.R", package="polle"))
   d <- sim_two_stage(2e3, seed=1)
   d$C_1 <- NULL
   pd <- policy_data(d,

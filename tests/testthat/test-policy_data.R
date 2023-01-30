@@ -14,7 +14,6 @@ test_that("check_data fails if not given a data.table with unique variables.", {
 # Input checks ----
 
 test_that("policy_data checks inputs",{
-  source(system.file("sim", "single_stage.R", package="polle"))
   d <- sim_single_stage(10, seed=1)
 
   expect_error(
@@ -95,7 +94,6 @@ test_that("policy_data checks inputs",{
 ## two stage ---------------------------------------------------------------
 
 test_that("policy_data handles varying actions set",{
-  source(system.file("sim", "two_stage_multi_actions.R", package="polle"))
   d <- sim_two_stage_multi_actions(n = 1e4)
   expect_error(
     pd <- policy_data(data = d,
@@ -620,8 +618,6 @@ test_that("policy_data handles missing values.", {
 # subset ------------------------------------------------------------------
 
 test_that("the action set is preserved when subsetting",{
-
-  source(system.file("sim", "single_stage.R", package="polle"))
   d1 <- sim_single_stage(10, seed=1)
   pd1 <- policy_data(d1, action = "A", covariates = c("Z"), utility = "U")
 
@@ -648,7 +644,6 @@ test_that("the action set is preserved when subsetting",{
 # partial -----------------------------------------------------------------
 
 test_that("partial checks input",{
-  source(system.file("sim", "multi_stage.R", package="polle"))
   d <- sim_multi_stage(5e2, seed = 1)
   # constructing policy_data object:
   pd <- policy_data(data = d$stage_data,

@@ -31,7 +31,6 @@ with keys \code{id} and \code{stage} and action variable \code{d}.
 \examples{
 library("polle")
 ### Single stage"
-source(system.file("sim", "single_stage.R", package="polle"))
 d1 <- sim_single_stage(5e2, seed=1)
 pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
 pd1
@@ -49,8 +48,7 @@ p1_dynamic <- policy_def(
 p1_dynamic(pd1)
 
 ### Two stages:
-source(system.file("sim", "two_stage.R", package="polle"))
-d2 <- sim_two_stage(5e2, seed=1)
+d2 <- sim_two_stage(5e2, seed = 1)
 pd2 <- policy_data(d2,
                   action = c("A_1", "A_2"),
                   covariates = list(L = c("L_1", "L_2"),

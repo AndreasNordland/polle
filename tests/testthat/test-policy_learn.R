@@ -5,7 +5,6 @@
 ## RQL ---------------------------------------------------------------------
 
 test_that("get_policy.RQL returns a policy", {
-  source(system.file("sim", "single_stage.R", package="polle"))
   d <- sim_single_stage(200, seed=1)
   pd <- policy_data(d,
                      action="A",
@@ -31,7 +30,6 @@ test_that("get_policy.RQL returns a policy", {
 ## RQVL --------------------------------------------------------------------
 
 test_that("get_policy.RQVL returns a policy", {
-  source(system.file("sim", "single_stage.R", package="polle"))
   d <- sim_single_stage(200, seed=1)
   pd <- policy_data(d,
                     action="A",
@@ -57,7 +55,6 @@ test_that("get_policy.RQVL returns a policy", {
 ## PTL ---------------------------------------------------------------------
 
 test_that("get_policy.PTL returns a policy", {
-  source(system.file("sim", "single_stage.R", package="polle"))
   d <- sim_single_stage(200, seed=1)
   pd <- policy_data(d,
                     action="A",
@@ -87,7 +84,6 @@ test_that("get_policy.PTL returns a policy", {
 test_that("get_policy.EARL returns a policy", {
   library("DynTxRegime")
 
-  source(system.file("sim", "single_stage.R", package="polle"))
   d <- sim_single_stage(200, seed=1)
   pd <- policy_data(d,
                     action="A",
@@ -122,7 +118,6 @@ test_that("get_policy.EARL returns a policy", {
 test_that("the polle implementation of earl agrees with direct application of DynTxRegime::earl in the single stage case.",{
   library("DynTxRegime")
 
-  source(system.file("sim", "single_stage.R", package="polle"))
   d1 <- sim_single_stage(200, seed=1)
   pd1 <- policy_data(d1,
                      action="A",
@@ -174,7 +169,6 @@ test_that("the polle implementation of earl agrees with direct application of Dy
 })
 
 test_that("the polle implementation is robust in respect to the action set.",{
-  source(system.file("sim", "single_stage.R", package="polle"))
   d1 <- sim_single_stage(200, seed=1)
   d2 <- d1
 
@@ -231,7 +225,6 @@ test_that("the polle implementation is robust in respect to the action set.",{
 test_that("earl handles missing arguments", {
   library("DynTxRegime")
 
-  source(system.file("sim", "single_stage.R", package="polle"))
   d1 <- sim_single_stage(200, seed=1)
   pd1 <- policy_data(d1,
                      action="A",
@@ -254,7 +247,6 @@ test_that("earl handles missing arguments", {
 test_that("the polle implementation of rwl agrees with direct application of DynTxRegime::rwl in the single stage case.",{
   library("DynTxRegime")
 
-  source(system.file("sim", "single_stage.R", package="polle"))
   d1 <- sim_single_stage(200, seed=1)
   pd1 <- policy_data(d1,
                      action="A",
@@ -306,7 +298,6 @@ test_that("the polle implementation of rwl agrees with direct application of Dyn
 test_that("the implementation of owl agrees with direct application of DTRlearn2::owl in the single stage case.",{
   library("DTRlearn2")
 
-  source(system.file("sim", "single_stage.R", package="polle"))
   d1 <- sim_single_stage(200, seed=1)
   pd1 <- policy_data(d1,
                      action="A",
@@ -340,8 +331,6 @@ test_that("the implementation of owl agrees with direct application of DTRlearn2
 ## PTL ---------------------------------------------------------------------
 
 test_that("policy_learn with type ptl works as intended",{
-
-  source(system.file("sim", "two_stage.R", package="polle"))
   d <- sim_two_stage(200, seed=1)
 
   pd <- policy_data(d,
@@ -387,7 +376,6 @@ test_that("policy_learn with type ptl works as intended",{
 })
 
 test_that("policy_learn with type ptl handles varying action sets",{
-  source(system.file("sim", "two_stage_multi_actions.R", package="polle"))
   d <- sim_two_stage_multi_actions(n = 1e2)
   pd <- policy_data(data = d,
                     action = c("A_1", "A_2"),
@@ -475,8 +463,6 @@ test_that("policy_learn with type ptl handles varying action sets",{
 ## RQL --------------------------------------------------------------
 
 test_that("policy_learn with type rql works as intended",{
-
-  source(system.file("sim", "two_stage.R", package="polle"))
   d <- sim_two_stage(200, seed=1)
 
   pd <- policy_data(d,
@@ -520,7 +506,6 @@ test_that("policy_learn with type rql works as intended",{
 })
 
 test_that("policy_learn with type rql handles varying action sets",{
-  source(system.file("sim", "two_stage_multi_actions.R", package="polle"))
   d <- sim_two_stage_multi_actions(n = 1e2)
   pd <- policy_data(data = d,
                     action = c("A_1", "A_2"),
@@ -549,7 +534,6 @@ test_that("policy_learn with type rql handles varying action sets",{
 ## RQVL -------------------------------------------------------------
 
 test_that("policy_learn with type = 'rqvl' checks input",{
-  source(system.file("sim", "two_stage.R", package="polle"))
   d <- sim_two_stage(200, seed=1)
 
   pd <- policy_data(d,
@@ -585,7 +569,6 @@ test_that("policy_learn with type = 'rqvl' checks input",{
 })
 
 test_that("policy_learn with type rqvl works as intended",{
-  source(system.file("sim", "two_stage.R", package="polle"))
   d <- sim_two_stage(200, seed=1)
 
   pd <- policy_data(d,
@@ -660,7 +643,6 @@ test_that("policy_learn with type rqvl works as intended",{
 })
 
 test_that("policy_learn with type rqvl handles varying action sets",{
-  source(system.file("sim", "two_stage_multi_actions.R", package="polle"))
   d <- sim_two_stage_multi_actions(n = 1e2)
   pd <- policy_data(data = d,
                     action = c("A_1", "A_2"),
@@ -823,7 +805,6 @@ test_that("policy_learn with type rqvl handles varying action sets",{
 })
 
 test_that("policy_learn with type = 'rqvl' works with cross_fit_g_models.",{
-  source(system.file("sim", "two_stage_multi_actions.R", package="polle"))
   d <- sim_two_stage_multi_actions(n = 1e2)
   pd <- policy_data(data = d,
                     action = c("A_1", "A_2"),
@@ -855,7 +836,6 @@ test_that("policy_learn with type = 'rqvl' works with cross_fit_g_models.",{
 ## OWL --------------------------------------------------------------------
 
 test_that("the implementation of owl agrees with direct application of DTRlearn2::owl in the two stage case.",{
-  source(system.file("sim", "two_stage.R", package="polle"))
   d <- sim_two_stage(200, seed=1)
   pd <- policy_data(d,
                     action = c("A_1", "A_2"),
@@ -945,7 +925,6 @@ test_that("the implementation of owl agrees with direct application of DTRlearn2
 })
 
 test_that("policy_learn with type owl runs as intended", {
-  source(system.file("sim", "two_stage.R", package="polle"))
   d <- sim_two_stage(200, seed=1)
   pd <- policy_data(d,
                     action = c("A_1", "A_2"),
@@ -987,7 +966,6 @@ test_that("policy_learn with type owl runs as intended", {
 ## RQVL --------------------------------------------------------------------
 
 test_that("policy_learn with type rqvl handles multiple stages with varying stage action sets",{
-  source(system.file("sim", "multi_stage.R", package="polle"))
   d <- sim_multi_stage(200, seed = 1)
   # constructing policy_data object:
   pd <- policy_data(data = d$stage_data,
@@ -1062,7 +1040,6 @@ test_that("policy_learn with type rqvl handles multiple stages with varying stag
 ## OWL ---------------------------------------------------------------------
 
 test_that("input to policy_learn with type owl handles incorrect input.",{
-  source(system.file("sim", "multi_stage.R", package="polle"))
   d <- sim_multi_stage(200, seed = 1)
   # constructing policy_data object:
   pd <- policy_data(data = d$stage_data,

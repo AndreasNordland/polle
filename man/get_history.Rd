@@ -51,7 +51,6 @@ for a possibly stochastic number of stages K.
 \examples{
 library("polle")
 ### Single stage:
-source(system.file("sim", "single_stage.R", package="polle"))
 d1 <- sim_single_stage(5e2, seed=1)
 # constructing policy_data object:
 pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
@@ -63,7 +62,6 @@ head(h1$H)
 head(h1$A)
 
 ### Two stages:
-source(system.file("sim", "two_stage.R", package="polle"))
 d2 <- sim_two_stage(5e2, seed=1)
 # constructing policy_data object:
 pd2 <- policy_data(d2,
@@ -90,7 +88,6 @@ head(h2$H)
 head(h2$A)
 
 ### Multiple stages
-source(system.file("sim", "multi_stage.R", package="polle"))
 d3 <- sim_multi_stage(5e2, seed = 1)
 # constructing policy_data object:
 pd3 <- policy_data(data = d3$stage_data,

@@ -132,7 +132,6 @@ a given stage.}
 \examples{
 library("polle")
 ### Two stages:
-source(system.file("sim", "two_stage.R", package="polle"))
 d <- sim_two_stage(5e2, seed=1)
 pd <- policy_data(d,
                   action = c("A_1", "A_2"),

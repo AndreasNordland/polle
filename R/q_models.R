@@ -84,32 +84,29 @@ new_q_model <- function(q_model){
 #' @examples
 #' library("polle")
 #' ### Single stage case
-#' source(system.file("sim", "single_stage.R", package="polle"))
-#' d <- sim_single_stage(5e2, seed=1)
-#' pd <- policy_data(d,
-#'                   action="A",
-#'                   covariates=list("Z", "B", "L"),
-#'                   utility="U")
-#' pd
+#' d1 <- sim_single_stage(5e2, seed=1)
+#' pd1 <- policy_data(d1,
+#'                    action="A",
+#'                    covariates=list("Z", "B", "L"),
+#'                    utility="U")
+#' pd1
 #'
 #' # available history variable names for the outcome regression:
-#' get_history_names(pd)
+#' get_history_names(pd1)
 #'
 #' # evaluating the static policy a=1 using inverse
 #' # propensity weighting based on the given Q-model:
-#' pe <- policy_eval(type = "or",
-#'             policy_data = pd,
-#'             policy = policy_def(1, name = "A=1"),
-#'             q_model = q_glm(formula = ~A*.))
-#' pe
+#' pe1 <- policy_eval(type = "or",
+#'                    policy_data = pd1,
+#'                    policy = policy_def(1, name = "A=1"),
+#'                    q_model = q_glm(formula = ~A*.))
+#' pe1
 #'
 #' # getting the fitted Q-function values
-#' head(predict(get_q_functions(pe), pd))
+#' head(predict(get_q_functions(pe1), pd1))
 #'
 #' ### Two stages:
-#' source(system.file("sim", "two_stage.R", package="polle"))
-#' par0 <- c(gamma = 0.5, beta = 1)
-#' d2 <- sim_two_stage(5e2, seed=1, par=par0); rm(par0)
+#' d2 <- sim_two_stage(5e2, seed=1)
 #' pd2 <- policy_data(d2,
 #'                   action = c("A_1", "A_2"),
 #'                   covariates = list(L = c("L_1", "L_2"),

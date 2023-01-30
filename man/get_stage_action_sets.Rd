@@ -18,17 +18,16 @@ the possible actions at each stage for the policy data object.
 }
 \examples{
 ### Two stages:
-source(system.file("sim", "two_stage_multi_actions.R", package="polle"))
-d2 <- sim_two_stage_multi_actions(5e2, seed=1)
+d <- sim_two_stage_multi_actions(5e2, seed=1)
 # constructing policy_data object:
-pd2 <- policy_data(d2,
+pd <- policy_data(d,
                   action = c("A_1", "A_2"),
                   baseline = c("B"),
                   covariates = list(L = c("L_1", "L_2"),
                                     C = c("C_1", "C_2")),
                   utility = c("U_1", "U_2", "U_3"))
-pd2
+pd
 
 # getting the stage actions set:
-get_stage_action_sets(pd2)
+get_stage_action_sets(pd)
 }

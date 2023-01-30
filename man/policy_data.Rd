@@ -128,8 +128,7 @@ a given stage.}
 \examples{
 library("polle")
 ### Single stage: Wide data
-source(system.file("sim", "single_stage.R", package="polle"))
-d1 <- sim_single_stage(5e2, seed=1)
+d1 <- sim_single_stage(n = 5e2, seed=1)
 head(d1, 5)
 # constructing policy_data object:
 pd1 <- policy_data(d1,
@@ -144,7 +143,6 @@ head(get_utility(pd1), 5)
 head(get_history(pd1)$H, 5)
 
 ### Two stage: Wide data
-source(system.file("sim", "two_stage.R", package="polle"))
 d2 <- sim_two_stage(5e2, seed=1)
 head(d2, 5)
 # constructing policy_data object:
@@ -159,7 +157,6 @@ head(get_history(pd2, stage = 2)$H, 5) # state/Markov type history and action, (
 head(get_history(pd2, stage = 2, full_history = TRUE)$H, 5) # Full history and action, (H_k,A_k).
 
 ### Multiple stages: Long data
-source(system.file("sim", "multi_stage.R", package="polle"))
 d3 <- sim_multi_stage(5e2, seed = 1)
 head(d3$stage_data, 10)
 # constructing policy_data object:

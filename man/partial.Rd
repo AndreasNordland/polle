@@ -22,7 +22,6 @@ given number.
 \examples{
 library("polle")
 ### Multiple stage case
-source(system.file("sim", "multi_stage.R", package="polle"))
 d <- sim_multi_stage(5e2, seed = 1)
 # constructing policy_data object:
 pd <- policy_data(data = d$stage_data,

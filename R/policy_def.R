@@ -25,7 +25,6 @@ new_policy <- function(fun, name){
 #' action variable \code{d}.
 #' @examples
 #' ### Two stages:
-#' source(system.file("sim", "two_stage.R", package="polle"))
 #' d <- sim_two_stage(5e2, seed=1)
 #' pd <- policy_data(d,
 #'                   action = c("A_1", "A_2"),
@@ -78,7 +77,6 @@ NULL
 #' @examples
 #' library("polle")
 #' ### Single stage"
-#' source(system.file("sim", "single_stage.R", package="polle"))
 #' d1 <- sim_single_stage(5e2, seed=1)
 #' pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
 #' pd1
@@ -96,8 +94,7 @@ NULL
 #' p1_dynamic(pd1)
 #'
 #' ### Two stages:
-#' source(system.file("sim", "two_stage.R", package="polle"))
-#' d2 <- sim_two_stage(5e2, seed=1)
+#' d2 <- sim_two_stage(5e2, seed = 1)
 #' pd2 <- policy_data(d2,
 #'                   action = c("A_1", "A_2"),
 #'                   covariates = list(L = c("L_1", "L_2"),
@@ -240,7 +237,6 @@ print.policy <- function(x, ...) {
 #' action variable \code{d}.
 #' @examples
 #' ### Two stages:
-#' source(system.file("sim", "two_stage.R", package="polle"))
 #' d <- sim_two_stage(5e2, seed=1)
 #' pd <- policy_data(d,
 #'                   action = c("A_1", "A_2"),
@@ -281,7 +277,6 @@ static_policy <- function(action, name=paste0("a=",action)) {
 #' action variable \code{d}.
 #' @examples
 #' ### Two stages:
-#' source(system.file("sim", "two_stage.R", package="polle"))
 #' d <- sim_two_stage(5e2, seed=1)
 #' pd <- policy_data(d,
 #'                   action = c("A_1", "A_2"),

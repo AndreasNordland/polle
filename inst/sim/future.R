@@ -2,7 +2,6 @@ library("polle")
 library("future.apply")
 library("SuperLearner")
 
-source(system.file("sim", "single_stage.R", package="polle"))
 d <- sim_single_stage(5e2, seed=1)
 
 pd <- policy_data(d, action="A", covariates=list("Z", "B", "L"), utility="U")

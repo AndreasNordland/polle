@@ -22,7 +22,6 @@ Object of class \link{policy_data}.
 \examples{
 library("polle")
 ### Single stage:
-source(system.file("sim", "single_stage.R", package="polle"))
 d <- sim_single_stage(5e2, seed=1)
 # constructing policy_data object:
 pd <- policy_data(d, action="A", covariates=list("Z", "B", "L"), utility="U")

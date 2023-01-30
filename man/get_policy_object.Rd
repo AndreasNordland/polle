@@ -18,7 +18,6 @@ Extract the fitted policy object.
 \examples{
 library("polle")
 ### Single stage:
-source(system.file("sim", "single_stage.R", package="polle"))
 d1 <- sim_single_stage(5e2, seed=1)
 pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
 pd1

@@ -1,6 +1,5 @@
 
 test_that("policy_def checks the action set",{
-  source(system.file("sim", "single_stage.R", package="polle"))
   d <- sim_single_stage(2e3, seed=1)
   pd <- policy_data(d,
                     action="A",
@@ -30,7 +29,6 @@ test_that("policy_def checks the action set",{
 # Single stage ------------------------------------------------------------
 
 test_that("policy_def handles static policies (single stage).",{
-  source(system.file("sim", "single_stage.R", package="polle"))
   d <- sim_single_stage(2e3, seed=1)
   pd <- policy_data(d,
                     action="A",
@@ -108,7 +106,6 @@ test_that("policy_def handles static policies (single stage).",{
 })
 
 test_that("policy_def handles dynamic policies (single stage).",{
-  source(system.file("sim", "single_stage.R", package="polle"))
   d <- sim_single_stage(2e3, seed=1)
   pd <- policy_data(d,
                     action="A",
@@ -154,7 +151,6 @@ test_that("policy_def handles dynamic policies (single stage).",{
 # Two stages ------------------------------------------------------------
 
 test_that("policy_def handles static policies (two stages).",{
-  source(system.file("sim", "two_stage.R", package="polle"))
   d <- sim_two_stage(2e3, seed=1)
   pd <- policy_data(d,
                     action = c("A_1", "A_2"),
@@ -216,7 +212,6 @@ test_that("policy_def handles static policies (two stages).",{
 })
 
 test_that("policy_def handles dynamic policies (two stages).",{
-  source(system.file("sim", "two_stage.R", package="polle"))
   d <- sim_two_stage(2e3, seed=1)
   pd <- policy_data(d,
                     action = c("A_1", "A_2"),
@@ -291,7 +286,6 @@ test_that("policy_def handles dynamic policies (two stages).",{
 # Stochastic number of stages ---------------------------------------------
 
 test_that("policy_def handles a stochastic number of stages", {
-  source(system.file("sim", "multi_stage.R", package="polle"))
   d <- sim_multi_stage(1e3, seed = 1)
   # constructing policy_data object:
   pd <- policy_data(data = d$stage_data,

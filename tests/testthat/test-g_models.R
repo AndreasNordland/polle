@@ -1,7 +1,6 @@
 library("data.table")
 
 test_that("predict.g_functions checks the action set",{
-  source(system.file("sim", "two_stage_multi_actions.R", package="polle"))
   d <- sim_two_stage_multi_actions(n = 1e2)
 
   pd <- policy_data(data = d,
@@ -58,7 +57,6 @@ test_that("predict.g_functions checks the action set",{
 })
 
 test_that("fit_g_functions handles varying stage-action sets", {
-  source(system.file("sim", "two_stage_multi_actions.R", package="polle"))
   d <- sim_two_stage_multi_actions(n = 1e2)
   expect_error(
     pd <- policy_data(data = d,
@@ -107,7 +105,6 @@ test_that("fit_g_functions handles varying stage-action sets", {
 })
 
 test_that("g_models checks formula input", {
-  source(system.file("sim", "two_stage.R", package="polle"))
   d <- sim_two_stage(1e2, seed=1)
   pd <- policy_data(d,
                     action = c("A_1", "A_2"),
@@ -140,7 +137,6 @@ test_that("g_models checks formula input", {
 })
 
 test_that("g_rf runs:",{
-  source(system.file("sim", "single_stage.R", package="polle"))
   d1 <- sim_single_stage(200, seed=1)
   d1$BB <- sample(c("group 1", "group & 2", "group & 3"), size = 200, replace = TRUE)
   pd1 <- policy_data(d1,
@@ -162,7 +158,6 @@ test_that("g_rf runs:",{
 })
 
 test_that("g_sl formats data correctly via the formula",{
-  source(system.file("sim", "single_stage.R", package="polle"))
   d1 <- sim_single_stage(200, seed=1)
   d1$BB <- sample(c("group 1", "group & 2", "group & 3"), size = 200, replace = TRUE)
   pd1 <- policy_data(d1,
@@ -186,7 +181,6 @@ test_that("g_sl formats data correctly via the formula",{
 })
 
 test_that("g_sl can find user-defined learners",{
-  source(system.file("sim", "single_stage.R", package="polle"))
   d1 <- sim_single_stage(200, seed=1)
   d1$BB <- sample(c("group 1", "group & 2", "group & 3"), size = 200, replace = TRUE)
   pd1 <- policy_data(d1,
@@ -238,7 +232,6 @@ test_that("g_sl can find user-defined learners",{
 })
 
 test_that("g_glmnet formats data correctly via the formula",{
-  source(system.file("sim", "single_stage.R", package="polle"))
   d1 <- sim_single_stage(200, seed=1)
   d1$BB <- sample(c("group 1", "group & 2", "group & 3"), size = 200, replace = TRUE)
   pd1 <- policy_data(d1,
@@ -262,7 +255,6 @@ test_that("g_glmnet formats data correctly via the formula",{
 # missing values ----------------------------------------------------------
 
 test_that("g_glm handles missing covariates", {
-  source(system.file("sim", "two_stage.R", package="polle"))
   d <- sim_two_stage(2e3, seed=1)
   d$C_1 <- NULL
   pd <- policy_data(d,
@@ -319,7 +311,6 @@ test_that("g_glm handles missing covariates", {
 })
 
 test_that("g_glmnet handles missing covariates", {
-  source(system.file("sim", "two_stage.R", package="polle"))
   d <- sim_two_stage(2e3, seed=1)
   d$C_1 <- NULL
   pd <- policy_data(d,

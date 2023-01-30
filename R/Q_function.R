@@ -193,9 +193,7 @@ q_step_cf <- function(folds, policy_data, k, full_history, Q, q_models, future_a
 #' @examples
 #' library("polle")
 #' ### Simulating two-stage policy data
-#' source(system.file("sim", "two_stage.R", package="polle"))
-#' par0 <- c(gamma = 0.5, beta = 1)
-#' d <- sim_two_stage(2e3, seed=1, par=par0)
+#' d <- sim_two_stage(2e3, seed=1)
 #' pd <- policy_data(d,
 #'                   action = c("A_1", "A_2"),
 #'                   covariates = list(L = c("L_1", "L_2"),
@@ -293,29 +291,28 @@ fit_Q_functions <- function(policy_data,
 #' @seealso [predict.nuisance_functions]
 #' @examples
 #' ### Two stages:
-#' source(system.file("sim", "two_stage.R", package="polle"))
-#' d2 <- sim_two_stage(5e2, seed=1)
-#' pd2 <- policy_data(d2,
+#' d <- sim_two_stage(5e2, seed=1)
+#' pd <- policy_data(d,
 #'                   action = c("A_1", "A_2"),
 #'                   baseline = c("B"),
 #'                   covariates = list(L = c("L_1", "L_2"),
 #'                                     C = c("C_1", "C_2")),
 #'                   utility = c("U_1", "U_2", "U_3"))
-#' pd2
+#' pd
 #'
 #' # evaluating the static policy a=1 using outcome regression
 #' # based on a GLM model at each stage.
-#' pe2 <- policy_eval(type = "or",
-#'                    policy_data = pd2,
-#'                    policy = policy_def(1, reuse = TRUE, name = "A=1"),
-#'                    q_models = list(q_glm(), q_glm()))
-#' pe2
+#' pe <- policy_eval(type = "or",
+#'                   policy_data = pd,
+#'                   policy = policy_def(1, reuse = TRUE, name = "A=1"),
+#'                   q_models = list(q_glm(), q_glm()))
+#' pe
 #'
 #' # getting the Q-functions
-#' q_functions <- get_q_functions(pe2)
+#' q_functions <- get_q_functions(pe)
 #'
 #' # getting the fitted g-function values
-#' head(predict(q_functions, pd2))
+#' head(predict(q_functions, pd))
 #' @export
 get_q_functions <- function(object)
   UseMethod("get_q_functions")

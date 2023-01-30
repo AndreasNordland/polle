@@ -25,24 +25,23 @@ Q-functions when applied to a (new) policy data object.
 \examples{
 library("polle")
 ### Single stage:
-source(system.file("sim", "single_stage.R", package="polle"))
-d1 <- sim_single_stage(5e2, seed=1)
-pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
-pd1
+d <- sim_single_stage(5e2, seed=1)
+pd <- policy_data(d, action="A", covariates=list("Z", "B", "L"), utility="U")
+pd
 # defining a static policy (A=1):
-pl1 <- policy_def(1, name = "A=1")
+pl <- policy_def(1, name = "A=1")
 
 # doubly robust evaluation of the policy:
-pe1 <- policy_eval(policy_data = pd1,
-            policy = pl1,
-            g_models = g_glm(),
-            q_models = q_glm())
+pe <- policy_eval(policy_data = pd,
+                  policy = pl,
+                  g_models = g_glm(),
+                  q_models = q_glm())
 # summarizing the estimated value of the policy:
-pe1
+pe
 
 # getting the fitted g-function values:
-head(predict(get_g_functions(pe1), pd1))
+head(predict(get_g_functions(pe), pd))
 
 # getting the fitted Q-function values:
-head(predict(get_q_functions(pe1), pd1))
+head(predict(get_q_functions(pe), pd))
 }

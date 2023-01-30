@@ -1,5 +1,4 @@
 test_that("policy_eval checks inputs",{
-  source(system.file("sim", "single_stage.R", package="polle"))
   d <- sim_single_stage(1e2, seed=1)
   pd <- policy_data(d, action = "A", covariates = c("Z"), utility = "U")
 
@@ -103,7 +102,6 @@ test_that("policy_eval checks inputs",{
 
 
 test_that("policy_eval evaluates on a subset of the data with missing actions",{
-  source(system.file("sim", "single_stage.R", package="polle"))
   d1 <- sim_single_stage(1e2, seed=1)
   pd1 <- policy_data(d1, action = "A", covariates = c("Z"), utility = "U")
 
@@ -149,7 +147,6 @@ test_that("policy_eval evaluates on a subset of the data with missing actions",{
 })
 
 test_that("policy_eval handles varying stage action sets",{
-  source(system.file("sim", "two_stage_multi_actions.R", package="polle"))
   d <- sim_two_stage_multi_actions(n = 1e2)
 
   pd <- policy_data(data = d,
@@ -184,7 +181,6 @@ test_that("policy_eval handles varying stage action sets",{
 })
 
 # test_that("policy_eval progress works",{
-#   source(system.file("sim", "single_stage.R", package="polle"))
 #   d <- sim_single_stage(1e2, seed=1)
 #   pd <- policy_data(d, action = "A", covariates = c("Z"), utility = "U")
 #   p <- policy_def(1)
