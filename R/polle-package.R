@@ -12,8 +12,6 @@
 ##' @importFrom survival survfit
 ##' @importFrom progressr progressor
 ##' @import data.table SuperLearner
-##' @export IC estimate
-##' @export All
 ##' @aliases polle-package polle
 ##' @docType package
 ##' @keywords package
@@ -24,6 +22,15 @@
 ##' sequential policy tree learning and outcome weighted learning.
 ##' See Nordland and Holst (20222) <https://arxiv.org/abs/2212.02335> for documentation and references.
 NULL
+
+##' @export
+lava::IC
+
+##' @export
+lava::estimate
+
+##' @export
+SuperLearner::All
 
 ##' For internal use
 ##'
