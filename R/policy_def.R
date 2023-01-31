@@ -221,6 +221,7 @@ print.policy <- function(x, ...) {
 
   cat("\n")
   cat(cp)
+  cat("\n")
 
 }
 
