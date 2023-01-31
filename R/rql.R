@@ -11,7 +11,7 @@ rql<- function(policy_data, alpha,
   if (!(is.numeric(alpha) &  (length(alpha) == 1) & (alpha >=0 & alpha < 0.5)))
     stop("alpha must be numeric and in [0, 0.5).")
   if (L != 1)
-    stop("L must be 1 when using rql (no cross-fitting).")
+    stop("L must be 1 when type = 'ql' (no cross-fitting).")
   if (!is.null(g_functions)){
     if(!inherits(g_functions, what = "g_functions"))
       stop("g-functions must be of class 'g_functions'.")
@@ -148,7 +148,7 @@ get_policy.RQL <- function(object){
   }
 
   # setting class and attributes:
-  policy <- new_policy(policy, name = "rql")
+  policy <- new_policy(policy, name = "ql")
 
   return(policy)
 }

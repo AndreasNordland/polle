@@ -50,7 +50,7 @@ ptl <- function(policy_data,
   if (alpha > 0){
     for (k in seq_along(stage_action_sets)){
       if (length(stage_action_sets[[k]]) != 2)
-        stop("realistic policy tree learning is only implemented for dichotomous stage action sets. Use realistic QV-learning (rqvl) instead.")
+        stop("realistic policy tree learning is only implemented for dichotomous stage action sets. Use doubly robust Q-learning (drql) instead.")
     }
   }
   if ((is.null(g_models) & is.null(g_functions)))

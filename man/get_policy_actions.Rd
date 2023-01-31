@@ -28,8 +28,8 @@ pd <- policy_data(d,
 pd
 
 # defining a policy learner based on cross-fitted doubly robust Q-learning:
-pl <- policy_learn(type = "rqvl",
-                   control = control_rqvl(qv_models = list(q_glm(~C_1), q_glm(~C_1+C_2))),
+pl <- policy_learn(type = "drql",
+                   control = control_drql(qv_models = list(q_glm(~C_1), q_glm(~C_1+C_2))),
                    full_history = TRUE,
                    L = 2) # number of folds for cross-fitting
 

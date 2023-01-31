@@ -36,7 +36,8 @@ test_that("get_policy.RQVL returns a policy", {
                     covariates = list("Z", "B", "L"),
                     utility="U")
 
-  pl <- policy_learn(type = "rqvl", control = control_rqvl())
+  pl <- policy_learn(type = "drql",
+                     control = control_drql())
   expect_error({
     p <- get_policy(pl(pd, q_models = q_glm(), g_models = g_glm()))
   },
@@ -462,7 +463,7 @@ test_that("policy_learn with type ptl handles varying action sets",{
 
 ## RQL --------------------------------------------------------------
 
-test_that("policy_learn with type rql works as intended",{
+test_that("policy_learn with type ql works as intended",{
   d <- sim_two_stage(200, seed=1)
 
   pd <- policy_data(d,
@@ -472,7 +473,7 @@ test_that("policy_learn with type rql works as intended",{
                                       C = c("C_1", "C_2")),
                     utility = c("U_1", "U_2", "U_3"))
 
-  ql <- policy_learn(type = "rql",
+  ql <- policy_learn(type = "ql",
                     alpha = 0,
                     L = 1)
 
@@ -485,7 +486,7 @@ test_that("policy_learn with type rql works as intended",{
     NA
   )
 
-  ql <- policy_learn(type = "rql",
+  ql <- policy_learn(type = "ql",
                      alpha = 0.1,
                      L = 1)
 
@@ -505,7 +506,7 @@ test_that("policy_learn with type rql works as intended",{
   expect_s3_class(p(pd), class = "data.table")
 })
 
-test_that("policy_learn with type rql handles varying action sets",{
+test_that("policy_learn with type ql handles varying action sets",{
   d <- sim_two_stage_multi_actions(n = 1e2)
   pd <- policy_data(data = d,
                     action = c("A_1", "A_2"),
@@ -533,7 +534,7 @@ test_that("policy_learn with type rql handles varying action sets",{
 
 ## RQVL -------------------------------------------------------------
 
-test_that("policy_learn with type = 'rqvl' checks input",{
+test_that("policy_learn with type = 'drql' checks input",{
   d <- sim_two_stage(200, seed=1)
 
   pd <- policy_data(d,
@@ -542,7 +543,8 @@ test_that("policy_learn with type = 'rqvl' checks input",{
                     covariates = list(L = c("L_1", "L_2"),
                                       C = c("C_1", "C_2")),
                     utility = c("U_1", "U_2", "U_3"))
-  qv <- policy_learn(type = "rqvl", control = control_rqvl())
+  qv <- policy_learn(type = "drql",
+                     control = control_drql())
 
   gfun <- fit_g_functions(pd, g_models = g_glm(), full_history = FALSE)
   gfun2 <- fit_g_functions(pd, g_models = list(g_glm(), g_glm()), full_history = FALSE)
@@ -568,7 +570,7 @@ test_that("policy_learn with type = 'rqvl' checks input",{
 
 })
 
-test_that("policy_learn with type rqvl works as intended",{
+test_that("policy_learn with type drql works as intended",{
   d <- sim_two_stage(200, seed=1)
 
   pd <- policy_data(d,
@@ -578,7 +580,8 @@ test_that("policy_learn with type rqvl works as intended",{
                                       C = c("C_1", "C_2")),
                     utility = c("U_1", "U_2", "U_3"))
 
-  qv <- policy_learn(type = "rqvl", control = control_rqvl())
+  qv <- policy_learn(type = "drql",
+                     control = control_drql())
   gfun <- fit_g_functions(pd, g_models = g_glm(), full_history = FALSE)
   gfun2 <- fit_g_functions(pd, g_models = list(g_glm(), g_glm()), full_history = FALSE)
 
@@ -607,29 +610,29 @@ test_that("policy_learn with type rqvl works as intended",{
     NA
   )
 
-  qv <- policy_learn(type = "rqvl",
-                     control = control_rqvl(qv_models = q_glm(formula = Y ~ .)))
+  qv <- policy_learn(type = "drql",
+                     control = control_drql(qv_models = q_glm(formula = Y ~ .)))
   expect_error(
     policy_eval(policy_data = pd, policy_learn = qv),
     NA
   )
 
-  qv <- policy_learn(type = "rqvl",
-                     control = control_rqvl(qv_models = q_glm(formula = Y ~ BB)))
+  qv <- policy_learn(type = "drql",
+                     control = control_drql(qv_models = q_glm(formula = Y ~ BB)))
   expect_error(
     policy_eval(policy_data = pd, policy_learn = qv),
     NA
   )
 
-  qv <- policy_learn(type = "rqvl",
-                     control = control_rqvl(qv_models = q_glm(formula = ~ X)))
+  qv <- policy_learn(type = "drql",
+                     control = control_drql(qv_models = q_glm(formula = ~ X)))
   expect_error(
     policy_eval(policy_data = pd,policy_learn = qv),
     "The QV-model formula ~X is invalid."
   )
 
-  qv <- policy_learn(type = "rqvl",
-                     control = control_rqvl(qv_models = q_glm(formula = Y ~ X)))
+  qv <- policy_learn(type = "drql",
+                     control = control_drql(qv_models = q_glm(formula = Y ~ X)))
   expect_error(
     policy_eval(policy_data = pd,policy_learn = qv),
     "The QV-model formula ~X is invalid."
@@ -637,12 +640,12 @@ test_that("policy_learn with type rqvl works as intended",{
 
   # q_glm formula default is A * (.), and A is not used when fitting the
   # QV-model.
-  qv <- policy_learn(type = "rqvl",
-                     control = control_rqvl(qv_models = q_glm()))
+  qv <- policy_learn(type = "drql",
+                     control = control_drql(qv_models = q_glm()))
   expect_error(policy_eval(policy_data = pd, policy_learn = qv))
 })
 
-test_that("policy_learn with type rqvl handles varying action sets",{
+test_that("policy_learn with type drql handles varying action sets",{
   d <- sim_two_stage_multi_actions(n = 1e2)
   pd <- policy_data(data = d,
                     action = c("A_1", "A_2"),
@@ -651,8 +654,8 @@ test_that("policy_learn with type rqvl handles varying action sets",{
                                       C = c("C_1", "C_2")),
                     utility = c("U_1", "U_2", "U_3"))
 
-  pl <- policy_learn(type = "rqvl",
-                     control = control_rqvl())
+  pl <- policy_learn(type = "drql",
+                     control = control_drql())
   expect_error(
     po <- pl(pd, q_models = q_glm(), g_models = list(g_glm(), g_rf())),
     NA
@@ -697,8 +700,8 @@ test_that("policy_learn with type rqvl handles varying action sets",{
   )
 
   # realistic policy:
-  pl <- policy_learn(type = "rqvl",
-                     control = control_rqvl(),
+  pl <- policy_learn(type = "drql",
+                     control = control_drql(),
                      alpha = 0.4)
   expect_error(
     po <- pl(pd, q_models = q_glm(), g_models = list(g_glm(), g_rf())),
@@ -706,8 +709,8 @@ test_that("policy_learn with type rqvl handles varying action sets",{
   )
 
   # realistic policy:
-  pl <- policy_learn(type = "rqvl",
-                     control = control_rqvl(),
+  pl <- policy_learn(type = "drql",
+                     control = control_drql(),
                      alpha = 0.2)
   expect_error(
     po <- pl(pd, q_models = q_glm(), g_models = list(g_glm(), g_rf())),
@@ -754,8 +757,8 @@ test_that("policy_learn with type rqvl handles varying action sets",{
 
   # cross-fitting
   # realistic policy:
-  pl <- policy_learn(type = "rqvl",
-                     control = control_rqvl(),
+  pl <- policy_learn(type = "drql",
+                     control = control_drql(),
                      alpha = 0.2,
                      L = 2)
   expect_error(
@@ -804,7 +807,7 @@ test_that("policy_learn with type rqvl handles varying action sets",{
 
 })
 
-test_that("policy_learn with type = 'rqvl' works with cross_fit_g_models.",{
+test_that("policy_learn with type = 'drql' works with cross_fit_g_models.",{
   d <- sim_two_stage_multi_actions(n = 1e2)
   pd <- policy_data(data = d,
                     action = c("A_1", "A_2"),
@@ -813,11 +816,11 @@ test_that("policy_learn with type = 'rqvl' works with cross_fit_g_models.",{
                                       C = c("C_1", "C_2")),
                     utility = c("U_1", "U_2", "U_3"))
 
-  pl <- policy_learn(type = "rqvl",
+  pl <- policy_learn(type = "drql",
                      cross_fit_g_models = FALSE,
                      L = 2,
                      alpha = 0.1,
-                     control = control_rqvl())
+                     control = control_drql())
 
   gfun <- fit_g_functions(pd, list(g_empir(), g_empir()), full_history = FALSE)
 
@@ -965,7 +968,7 @@ test_that("policy_learn with type owl runs as intended", {
 
 ## RQVL --------------------------------------------------------------------
 
-test_that("policy_learn with type rqvl handles multiple stages with varying stage action sets",{
+test_that("policy_learn with type drql handles multiple stages with varying stage action sets",{
   d <- sim_multi_stage(200, seed = 1)
   # constructing policy_data object:
   pd <- policy_data(data = d$stage_data,
@@ -979,8 +982,8 @@ test_that("policy_learn with type rqvl handles multiple stages with varying stag
 
   pd3 <- partial(pd, 3)
 
-  pl <- policy_learn(type = "rqvl",
-                     control = control_rqvl(),
+  pl <- policy_learn(type = "drql",
+                     control = control_drql(),
                      alpha = 0.1,
                      L = 2)
 

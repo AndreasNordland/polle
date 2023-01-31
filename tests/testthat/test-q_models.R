@@ -74,7 +74,7 @@ test_that("q_rf formats data correctly via the formula",{
   expect_error(
     pe <- policy_eval(
       policy_data = pd1,
-      policy_learn = policy_learn(type = "rql", alpha = 0.05),
+      policy_learn = policy_learn(type = "ql", alpha = 0.05),
       g_models = g_glm(),
       g_full_history = FALSE,
       q_models = q_rf()
@@ -95,7 +95,7 @@ test_that("q_sl formats data correctly via the formula",{
     suppressWarnings({
       pe <- policy_eval(
         policy_data = pd1,
-        policy_learn = policy_learn(type = "rql", alpha = 0.05),
+        policy_learn = policy_learn(type = "ql", alpha = 0.05),
         g_models = g_glm(),
         g_full_history = FALSE,
         q_models = q_sl()
@@ -204,7 +204,7 @@ test_that("q_glmnet formats data correctly via the formula",{
   expect_error(
     pe <- policy_eval(
       policy_data = pd1,
-      policy_learn = policy_learn(type = "rql", alpha = 0.05),
+      policy_learn = policy_learn(type = "ql", alpha = 0.05),
       q_models = q_glmnet(formula = ~ A*.)
     ),
     NA

@@ -25,8 +25,8 @@ pd1
 
 # evaluating the policy:
 pe1 <- policy_eval(policy_data = pd1,
-                   policy_learn = policy_learn(type = "rqvl",
-                                               control = control_rqvl(qv_models = q_glm(~.))),
+                   policy_learn = policy_learn(type = "drql",
+                                               control = control_drql(qv_models = q_glm(~.))),
                    g_models = g_glm(),
                    q_models = q_glm())
 

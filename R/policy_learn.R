@@ -1,12 +1,12 @@
 #' Create Policy Learner
 #'
 #' \code{policy_learn()} is used to specify a policy learning method (Q-learning,
-#' V-restricted (doubly robust) Q-learning, V-restricted policy tree
+#' doubly robust Q-learning, policy tree
 #' learning and outcome weighted learning). Evaluating the policy learner returns a policy object.
 #' @param type Type of policy learner method:
 #' \itemize{
-#'   \item{} \code{"rql"}: Realistic Quality/Q-learning.
-#'   \item{} \code{"rqvl"}: Realistic V-restricted (doubly robust) Q-learning.
+#'   \item{} \code{"ql"}: Quality/Q-learning.
+#'   \item{} \code{"drql"}: Doubly Robust Q-learning.
 #'   \item{} \code{"ptl"}: Policy Tree Learning.
 #'   \item{} \code{"owl"}: Outcome Weighted Learning.
 #'   \item{} \code{"earl"}: Efficient Augmentation and Relaxation Learning (only single stage).
@@ -14,7 +14,7 @@
 #' }
 #' @param control List of control arguments. Values (and default values) are set using
 #' \code{control_{type}()}. Key arguments include:\cr
-#' [control_rqvl()]:\cr
+#' [control_drql()]:\cr
 #' \itemize{
 #'   \item{} \code{qv_models}: Single element or list of V-restricted Q-models created
 #'           by [q_glm()], [q_rf()], [q_sl()] or similar functions.
@@ -70,7 +70,7 @@
 #'                          the possible actions at each stage.}
 #' \item{\code{alpha}}{Numeric. Probability threshold to determine realistic actions.}
 #' \item{\code{K}}{Integer. Maximal number of stages.}
-#' \item{\code{qv_functions}}{(only if \code{type = "rqvl"}) Fitted V-restricted
+#' \item{\code{qv_functions}}{(only if \code{type = "drql"}) Fitted V-restricted
 #' Q-functions. Contains a fitted model for each stage and action.}
 #' \item{\code{ptl_objects}}{(only if \code{type = "ptl"}) Fitted V-restricted
 #' policy trees. Contains a [policy_tree] for each stage.}
@@ -88,7 +88,7 @@
 #' \item{[get_policy_actions()]}{ Extract the (fitted) policy actions.}
 #' }
 #' @references
-#' V-restricted Q-learning (\code{type = "rqvl"}): Luedtke, Alexander R., and
+#' Doubly Robust Q-learning (\code{type = "drql"}): Luedtke, Alexander R., and
 #' Mark J. van der Laan. "Super-learning of an optimal dynamic treatment rule."
 #' The international journal of biostatistics 12.1 (2016): 305-332.
 #' \doi{10.1515/ijb-2015-0052}.\cr
@@ -117,8 +117,8 @@
 #'
 #' # specifying the learner:
 #' pl <- policy_learn(
-#'   type = "rqvl",
-#'   control = control_rqvl(qv_models = list(q_glm(formula = ~ C_1 + BB),
+#'   type = "drql",
+#'   control = control_drql(qv_models = list(q_glm(formula = ~ C_1 + BB),
 #'                                           q_glm(formula = ~ L_1 + BB))),
 #'   full_history = TRUE
 #' )
@@ -135,7 +135,7 @@
 #' po$qv_functions$stage_1
 #' head(get_policy(pe)(pd))
 #' @export
-policy_learn <- function(type = "rql",
+policy_learn <- function(type = "ql",
                          control = list(),
                          alpha = 0,
                          full_history = FALSE,
@@ -158,10 +158,10 @@ policy_learn <- function(type = "rql",
   if (length(type) != 1 | !is.character(type))
     stop("type must be a character string.")
   type <- tolower(type)
-  if (type %in% c("rql", "ql", "q_learning", "q-learning")) {
+  if (type %in% c("ql", "rql", "q_learning", "q-learning")) {
     call <- "rql"
-  } else if (type %in% c("rqvl", "qvl", "qv_learning", "qv-learning")) {
-    call <- "rqvl"
+  } else if (type %in% c("drql", "rqvl", "qvl", "qv_learning", "qv-learning")) {
+    call <- "drql"
   } else if (type %in% c("ptl", "policytree", "policy_tree")){
     if (!requireNamespace("policytree")) {
       stop("The policytree package is required to perform value searching using trees.")
@@ -177,7 +177,7 @@ policy_learn <- function(type = "rql",
   } else if (type %in% c("rwl")){
     call <- "dyntxregime_rwl"
   } else{
-    stop("Unknown type of policy learner. Use 'rql', 'rqvl', 'ptl', 'owl', 'earl' or 'rwl'.")
+    stop("Unknown type of policy learner. Use 'ql', 'drql', 'ptl', 'owl', 'earl' or 'rwl'.")
   }
   args <- append(pl_args, control)
   pl <- pl(call = call, args = args)
@@ -253,8 +253,8 @@ print.policy_learn <- function(x, ...) {
 #'
 #' # evaluating the policy:
 #' pe1 <- policy_eval(policy_data = pd1,
-#'                    policy_learn = policy_learn(type = "rqvl",
-#'                                                control = control_rqvl(qv_models = q_glm(~.))),
+#'                    policy_learn = policy_learn(type = "drql",
+#'                                                control = control_drql(qv_models = q_glm(~.))),
 #'                    g_models = g_glm(),
 #'                    q_models = q_glm())
 #'
@@ -292,8 +292,8 @@ get_policy_object.policy_eval <- function(object){
 #' ### V-restricted (Doubly Robust) Q-learning
 #'
 #' # specifying the learner:
-#' pl <- policy_learn(type = "rqvl",
-#'                    control = control_rqvl(qv_models = q_glm(formula = ~ C)))
+#' pl <- policy_learn(type = "drql",
+#'                    control = control_drql(qv_models = q_glm(formula = ~ C)))
 #'
 #' # fitting the policy (object):
 #' po <- pl(policy_data = pd,

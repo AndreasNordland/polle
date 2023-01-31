@@ -62,21 +62,21 @@ predict.QV_function <- function(object, new_history){
   return(qv_values)
 }
 
-#' @title Control arguments for QV-learning
-#' @description \code{control_rqvl} sets the default control arguments
-#' for doubly robust V-restricted Q-learning, \code{type = "rqvl"}.
+#' @title Control arguments for doubly robust Q-learning
+#' @description \code{control_drql} sets the default control arguments
+#' for doubly robust Q-learning, \code{type = "drql"}.
 #' @param qv_models Single element or list of V-restricted Q-models created
 #' by [q_glm()], [q_rf()], [q_sl()] or similar functions.
 #' @returns list of (default) control arguments.
 #' @export
-control_rqvl <- function(qv_models = q_glm(~.)){
+control_drql <- function(qv_models = q_glm(~.)){
   control <- as.list(environment())
   return(control)
 }
 
 # note: if L > 1 and alpha > 0 then the g_functions fitted on the complete data
 # is used to determine future realistic actions.
-rqvl <- function(policy_data,
+drql <- function(policy_data,
                  alpha,
                  g_models, g_functions, g_full_history,
                  q_models, q_full_history,
@@ -431,7 +431,7 @@ get_policy.RQVL <- function(object){
   }
 
   # setting class and attributes:
-  policy <- new_policy(policy, name = "rqvl")
+  policy <- new_policy(policy, name = "drql")
 
   return(policy)
 }

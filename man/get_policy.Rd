@@ -32,8 +32,8 @@ pd
 ### V-restricted (Doubly Robust) Q-learning
 
 # specifying the learner:
-pl <- policy_learn(type = "rqvl",
-                   control = control_rqvl(qv_models = q_glm(formula = ~ C)))
+pl <- policy_learn(type = "drql",
+                   control = control_drql(qv_models = q_glm(formula = ~ C)))
 
 # fitting the policy (object):
 po <- pl(policy_data = pd,
