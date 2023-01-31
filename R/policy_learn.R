@@ -146,6 +146,14 @@ policy_learn <- function(type = "ql",
                          name = type
 ){
 
+  # input checks:
+  if (!(is.numeric(alpha) & (length(alpha) == 1)))
+    stop("alpha must be numeric and in [0, 0.5).")
+  if (!(alpha >=0 & alpha < 0.5))
+    stop("alpha must be numeric and in [0, 0.5).")
+  if (!(is.logical(full_history) & (length(full_history) == 1)))
+    stop("full_history must be TRUE or FALSE")
+
   pl_args <- list(
     alpha = alpha,
     L = L,

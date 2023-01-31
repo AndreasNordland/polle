@@ -91,13 +91,13 @@ dyntxregime_rwl <- function(policy_data,
     action_set = action_set,
     K = K
   )
-  class(out) <- "RWL"
+  class(out) <- c("rwl","policy_object","list")
 
   return(out)
 }
 
 #' @export
-get_policy.RWL <- function(object){
+get_policy.rwl <- function(object){
   rwl_object <- getElement(object, "rwl_object")
   action_set <- getElement(object, "action_set")
   K <- getElement(object, "K")

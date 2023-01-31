@@ -90,8 +90,6 @@ drql <- function(policy_data,
   stage_action_sets <- get_stage_action_sets(policy_data)
 
   # input checks:
-  if (!(is.numeric(alpha) &  (length(alpha) == 1) & (alpha >=0 & alpha < 0.5)))
-    stop("alpha must be numeric and in [0, 0.5).")
   if (!is.null(g_functions)){
     if(!inherits(g_functions, what = "g_functions"))
       stop("g-functions must be of class 'g_functions'.")
@@ -307,14 +305,14 @@ drql <- function(policy_data,
     folds = folds
   )
   out <- remove_null_elements(out)
-  class(out) <- c("RQVL","policy_object","list")
+  class(out) <- c("drql","policy_object","list")
 
   return(out)
 }
 
 #' @rdname get_policy_functions
 #' @export
-get_policy_functions.RQVL <- function(object, stage){
+get_policy_functions.drql <- function(object, stage){
   stage_action_sets <- getElement(object, "stage_action_sets")
   stage_action_set <- stage_action_sets[[stage]]; rm(stage_action_sets)
   K <- getElement(object, "K")
@@ -376,7 +374,7 @@ get_policy_functions.RQVL <- function(object, stage){
 }
 
 #' @export
-get_policy.RQVL <- function(object){
+get_policy.drql <- function(object){
   g_functions <- get_g_functions(object)
   qv_functions <- getElement(object, "qv_functions")
 

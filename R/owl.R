@@ -212,13 +212,13 @@ dtrlearn2_owl <- function(policy_data,
     stage_action_sets = stage_action_sets,
     K = K
   )
-  class(out) <- "OWL"
+  class(out) <- c("owl","policy_object","list")
 
   return(out)
 }
 
 #' @export
-get_policy.OWL <- function(object){
+get_policy.owl <- function(object){
   owl_object <- getElement(object, "owl_object")
   reuse_scales <- getElement(object, "reuse_scales")
   X_scales <- getElement(object, "X_scales")

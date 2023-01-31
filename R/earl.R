@@ -100,13 +100,13 @@ dyntxregime_earl <- function(policy_data,
     action_set = action_set,
     K = K
   )
-  class(out) <- "EARL"
+  class(out) <- c("earl","policy_object","list")
 
   return(out)
 }
 
 #' @export
-get_policy.EARL <- function(object){
+get_policy.earl <- function(object){
   earl_object <- getElement(object, "earl_object")
   action_set <- getElement(object, "action_set")
   K <- getElement(object, "K")

@@ -8,8 +8,6 @@ rql<- function(policy_data, alpha,
   action_set <- get_action_set(policy_data)
 
   # input checks:
-  if (!(is.numeric(alpha) &  (length(alpha) == 1) & (alpha >=0 & alpha < 0.5)))
-    stop("alpha must be numeric and in [0, 0.5).")
   if (L != 1)
     stop("L must be 1 when type = 'ql' (no cross-fitting).")
   if (!is.null(g_functions)){
@@ -92,13 +90,13 @@ rql<- function(policy_data, alpha,
     K = K
   )
   out <- remove_null_elements(out)
-  class(out) <- c("RQL", "policy_object", "list")
+  class(out) <- c("ql", "policy_object", "list")
 
   return(out)
 }
 
 #' @export
-get_policy.RQL <- function(object){
+get_policy.ql <- function(object){
   g_functions <- get_g_functions(object)
   q_functions <- get_q_functions(object)
   action_set <- getElement(object, "action_set")

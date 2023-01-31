@@ -45,8 +45,7 @@ ptl <- function(policy_data,
   action_set <- get_action_set(policy_data)
   stage_action_sets <- get_stage_action_sets(policy_data)
 
-  if (!((0<=alpha) & (0.5>alpha)))
-    stop("alpha must be in [0, 0.5).")
+  # input checks:
   if (alpha > 0){
     for (k in seq_along(stage_action_sets)){
       if (length(stage_action_sets[[k]]) != 2)
@@ -323,13 +322,13 @@ ptl <- function(policy_data,
     folds = folds
   )
   out <- remove_null_elements(out)
-  class(out) <- c("PTL", "policy_object")
+  class(out) <- c("ptl", "policy_object")
 
   return(out)
 }
 
 #' @export
-get_policy.PTL <- function(object){
+get_policy.ptl <- function(object){
   stage_action_sets <- getElement(object, "stage_action_sets")
   K <- getElement(object, "K")
   full_history <- getElement(object, "full_history")
@@ -402,7 +401,7 @@ get_policy.PTL <- function(object){
 
 #' @rdname get_policy_functions
 #' @export
-get_policy_functions.PTL <- function(object, stage){
+get_policy_functions.ptl <- function(object, stage){
   stage_action_sets <- getElement(object, "stage_action_sets")
   K <- getElement(object, "K")
   g_functions <- getElement(object, "g_functions")

@@ -517,6 +517,10 @@ get_history <- function(object, stage = NULL, full_history = FALSE)
 
 #' @export
 get_history.policy_data <- function(object, stage = NULL, full_history = FALSE){
+  # input checks:
+  if (!is.logical(full_history) | (length(full_history) != 1))
+    stop("full_history must be TRUE or FALSE")
+
   if (full_history == TRUE){
     if (is.null(stage)) stop("Please provide a stage number.")
     his <- full_history(object, stage = stage)
