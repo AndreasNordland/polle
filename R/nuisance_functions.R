@@ -48,7 +48,7 @@ NULL
 #' @param object Object of class "nuisance_functions". Either \code{g_functions}
 #' or \code{q_functions} as returned by [policy_eval()] or [policy_learn()].
 #' @param new_policy_data Policy data object created by [policy_data()].
-#' @param ... Additional arguments passed to lower level functions.
+#' @param ... Additional arguments.
 #' @returns [data.table] with keys \code{id} and \code{stage} and variables \code{g_a} or \code{Q_a} for
 #' each action a in the actions set.
 #' @examples
@@ -74,7 +74,7 @@ NULL
 #' # getting the fitted Q-function values:
 #' head(predict(get_q_functions(pe), pd))
 #' @export
-predict.nuisance_functions <- function(object, new_policy_data){
+predict.nuisance_functions <- function(object, new_policy_data, ...){
   K <- get_K(new_policy_data)
   action_set <- get_action_set(new_policy_data)
   full_history <- attr(object, "full_history")

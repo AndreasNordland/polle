@@ -4,7 +4,7 @@
 \alias{predict.nuisance_functions}
 \title{Predict g-functions and Q-functions}
 \usage{
-\method{predict}{nuisance_functions}(object, new_policy_data)
+\method{predict}{nuisance_functions}(object, new_policy_data, ...)
 }
 \arguments{
 \item{object}{Object of class "nuisance_functions". Either \code{g_functions}
@@ -12,7 +12,7 @@ or \code{q_functions} as returned by \code{\link[=policy_eval]{policy_eval()}} o
 
 \item{new_policy_data}{Policy data object created by \code{\link[=policy_data]{policy_data()}}.}
 
-\item{...}{Additional arguments passed to lower level functions.}
+\item{...}{Additional arguments.}
 }
 \value{
 \link{data.table} with keys \code{id} and \code{stage} and variables \code{g_a} or \code{Q_a} for
