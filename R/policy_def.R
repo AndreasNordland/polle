@@ -132,9 +132,18 @@ policy_def <- function(policy_functions, full_history = FALSE, reuse = FALSE, na
   force(full_history)
   force(reuse)
 
+  # input checks
+  if (!(is.logical(full_history) & (length(full_history) == 1)))
+    stop("full_history must be TRUE or FALSE")
+  if (!(is.logical(reuse) & (length(reuse) == 1)))
+    stop("reuse must be TRUE or FALSE")
   if (full_history == TRUE & reuse == TRUE)
     stop("full_history must be FALSE when reuse is TRUE.")
-
+  if (!is.null(name)){
+    name <- as.character(name)
+    if (length(name) != 1)
+      stop("name must be a character string.")
+  }
   if (reuse == TRUE &
       inherits(policy_functions, what = c("list",
                                           "numeric",
