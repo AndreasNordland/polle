@@ -552,6 +552,24 @@ estimate.policy_eval <- function(x, ..., labels=x$name) {
 #' @returns object of inherited class 'estimate', see [lava::estimate.default].
 #' The object is a list with elements 'coef' (policy value estimate for each
 #' group) and 'IC' (influence curve estimate matrix).
+#' @examples
+#' library("polle")
+#' d <- sim_single_stage(n=2e3)
+#' pd <- policy_data(d,
+#'                   action = "A",
+#'                   baseline = c("B"),
+#'                   covariates = c("Z","L"),
+#'                   utility = "U")
+#'
+#' # static policy:
+#' p <- policy_def(1)
+#'
+#' pe <- policy_eval(pd,
+#'                   policy = p)
+#' pe
+#'
+#' # conditional value for each group defined by B
+#' conditional(pe, pd, "B")
 #' @export
 conditional <- function(object, policy_data, baseline)
   UseMethod("conditional")
