@@ -261,18 +261,12 @@ test_that("q_glmnet handles missing covariates", {
   expect_error(
     suppressWarnings({
       pe <- policy_eval(policy_data = pd,
-                  policy = p,
-                  type = "or",
-                  q_models = q_glmnet())
-    }),
-    NA # glmnet ignores all NA regressors!
+                        policy = p,
+                        type = "or",
+                        q_models = q_glmnet())
+    })
   )
-  expect_warning(
-    pe <- policy_eval(policy_data = pd,
-                      policy = p,
-                      type = "or",
-                      q_models = q_glmnet())
-  )
+
 
   expect_error(
     policy_eval(policy_data = pd,
@@ -298,13 +292,15 @@ test_that("q_glmnet handles missing covariates", {
                                       C = c("C_1", "C_2")),
                     utility = c("U_1", "U_2", "U_3"))
 
-
-  expect_warning(
-    policy_eval(policy_data = pd,
-                policy = p,
-                type = "or",
-                q_models = q_glmnet()),
-    "The regression variables C have missing NA values."
+  expect_error(
+    expect_warning(
+      policy_eval(policy_data = pd,
+                  policy = p,
+                  type = "or",
+                  q_models = q_glmnet()),
+      "The regression variables C have missing NA values."
+    )
   )
+
 })
 

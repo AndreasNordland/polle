@@ -328,15 +328,9 @@ test_that("g_glmnet handles missing covariates", {
                         policy = p,
                         type = "ipw",
                         g_models = list(g_glmnet(), g_glmnet()))
-    }),
-    NA # glmnet ignores all NA regressors!
+    })
   )
-  expect_warning(
-    policy_eval(policy_data = pd,
-                policy = p,
-                type = "ipw",
-                g_models = list(g_glmnet(), g_glmnet()))
-  )
+
   expect_error(
     policy_eval(policy_data = pd,
                 policy = p,
@@ -359,11 +353,14 @@ test_that("g_glmnet handles missing covariates", {
                     covariates = list(L = c("L_1", "L_2"),
                                       C = c("C_1", "C_2")), # C_1 is missing
                     utility = c("U_1", "U_2", "U_3"))
-  expect_warning(
-    policy_eval(policy_data = pd,
-                policy = p,
-                type = "ipw",
-                g_models = g_glmnet()),
-    "The regression variables C have missing NA values."
+  expect_error(
+    expect_warning(
+      policy_eval(policy_data = pd,
+                  policy = p,
+                  type = "ipw",
+                  g_models = g_glmnet()),
+      "The regression variables C have missing NA values."
+    )
   )
+
 })
