@@ -426,11 +426,11 @@ policy_eval_fold <- function(fold,
   validation_id <- id[fold]
 
   # training data:
-  train_policy_data <- subset(policy_data, train_id)
+  train_policy_data <- subset_id(policy_data, train_id)
   if (get_K(train_policy_data) != K) stop("The number of stages varies accross the training folds.")
 
   # validation data:
-  valid_policy_data <- subset(policy_data, validation_id)
+  valid_policy_data <- subset_id(policy_data, validation_id)
   if (get_K(valid_policy_data) != K) stop("The number of stages varies accross the validation folds.")
 
   eval_args <- append(args, list(valid_policy_data = valid_policy_data,

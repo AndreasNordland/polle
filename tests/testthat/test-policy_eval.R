@@ -173,7 +173,7 @@ test_that("policy_eval evaluates on a subset of the data with missing actions",{
   d1 <- sim_single_stage(1e2, seed=1)
   pd1 <- policy_data(d1, action = "A", covariates = c("Z"), utility = "U")
 
-  pd2 <- subset(pd1, id = get_id(pd1)[d1$A == "0"])
+  pd2 <- subset_id(pd1, id = get_id(pd1)[d1$A == "0"])
 
   ### ipw
   expect_error(

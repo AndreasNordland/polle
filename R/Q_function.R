@@ -148,14 +148,14 @@ q_step_cf <- function(folds, policy_data, k, full_history, Q, q_models, future_a
   future_args <- append(future_args, list(X = folds,
                                           FUN = function(f){
                                             train_id <- id[-f]
-                                            train_policy_data <- subset(policy_data, train_id)
+                                            train_policy_data <- subset_id(policy_data, train_id)
                                             train_Q <- Q[-f]
                                             if (train_policy_data$dim$K != K) stop("The number of stages varies accross the training folds.")
                                             train_q_step <- q_step(train_policy_data, k = k, full_history = full_history, Q = train_Q, q_models = q_models)
                                             train_q_function <- train_q_step$q_function
 
                                             valid_id <- id[f]
-                                            valid_policy_data <- subset(policy_data, valid_id)
+                                            valid_policy_data <- subset_id(policy_data, valid_id)
                                             valid_history <- get_history(valid_policy_data, stage = k, full_history = full_history)
                                             valid_values <- predict(train_q_function, valid_history)
 

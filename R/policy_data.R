@@ -246,7 +246,7 @@ new_policy_data <- function(stage_data, baseline_data = NULL, action_set = NULL,
 #' \itemize{
 #' \item{[partial()]}{ Trim the maximum number
 #'                              of stages in a \code{policy_data} object.}
-#' \item{[subset.policy_data()]}{ Subset a a \code{policy_data} object on ID.}
+#' \item{[subset_id()]}{ Subset a a \code{policy_data} object on ID.}
 #' \item{[get_history()]}{ Summarize the history and action at
 #'                                    a given stage.}
 #' \item{[get_history_names()]}{ Get history variable names.}

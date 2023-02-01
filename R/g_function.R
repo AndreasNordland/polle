@@ -260,12 +260,12 @@ fit_g_functions_cf <- function(folds,
   future_args <- append(future_args, list(X = folds,
                                           FUN = function(f){
                                             train_id <- id[-f]
-                                            train_policy_data <- subset(policy_data, train_id)
+                                            train_policy_data <- subset_id(policy_data, train_id)
                                             if (train_policy_data$dim$K != K) stop("The number of stages K varies across the training policy data folds.")
                                             train_g_functions <- fit_g_functions(policy_data = train_policy_data, g_models = g_models, full_history = full_history)
 
                                             valid_id <- id[f]
-                                            valid_policy_data <- subset(policy_data, valid_id)
+                                            valid_policy_data <- subset_id(policy_data, valid_id)
                                             valid_g_values <- predict(train_g_functions, valid_policy_data)
 
                                             list(

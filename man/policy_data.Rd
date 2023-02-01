@@ -116,7 +116,7 @@ class \code{policy_data}:
 \itemize{
 \item{\code{\link[=partial]{partial()}}}{ Trim the maximum number
 of stages in a \code{policy_data} object.}
-\item{\code{\link[=subset.policy_data]{subset.policy_data()}}}{ Subset a a \code{policy_data} object on ID.}
+\item{\code{\link[=subset_id]{subset_id()}}}{ Subset a a \code{policy_data} object on ID.}
 \item{\code{\link[=get_history]{get_history()}}}{ Summarize the history and action at
 a given stage.}
 \item{\code{\link[=get_history_names]{get_history_names()}}}{ Get history variable names.}

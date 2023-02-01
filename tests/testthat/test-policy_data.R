@@ -128,7 +128,7 @@ test_that("policy_data handles varying actions set",{
   )
 
   expect_equal(
-    get_stage_action_sets(subset(pd, id = 1:2)),
+    get_stage_action_sets(subset_id(pd, id = 1:2)),
     sas
   )
 
@@ -615,14 +615,14 @@ test_that("policy_data handles missing values.", {
 })
 
 
-# subset ------------------------------------------------------------------
+# subset_id ------------------------------------------------------------------
 
 test_that("the action set is preserved when subsetting",{
   d1 <- sim_single_stage(10, seed=1)
   pd1 <- policy_data(d1, action = "A", covariates = c("Z"), utility = "U")
 
   expect_error(
-    pd2 <- subset(pd1, id = get_id(pd1)[d1$A == "0"]),
+    pd2 <- subset_id(pd1, id = get_id(pd1)[d1$A == "0"]),
     NA
   )
 

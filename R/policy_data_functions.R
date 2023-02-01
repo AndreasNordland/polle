@@ -195,11 +195,9 @@ partial.policy_data <- function(object, K){
 
 #' Subset Policy Data on ID
 #'
-#' \code{subset} returns a policy data object containing the given IDs.
-#' @param x Object of class [policy_data].
+#' \code{subset_id} returns a policy data object containing the given IDs.
+#' @param object Object of class [policy_data].
 #' @param id character vectors of IDs.
-#' @param ... Additional parameters passed to lower level functions.
-#' @method subset policy_data
 #' @returns Object of class [policy_data].
 #' @examples
 #' library("polle")
@@ -213,24 +211,28 @@ partial.policy_data <- function(object, K){
 #' get_id(pd)[1:10]
 #'
 #' # subsetting on IDs:
-#' pdsub <- subset(pd, id = 250:500)
+#' pdsub <- subset_id(pd, id = 250:500)
 #' pdsub
 #' get_id(pdsub)[1:10]
 #' @export
-subset.policy_data <- function(x, id, ...){
-  if (!all(id %in% get_id(x))) stop("Invalid subset of IDs.")
+subset_id <- function(object, id)
+  UseMethod("subset_id")
+
+#' @export
+subset_id.policy_data <- function(object, id){
+  if (!all(id %in% get_id(object)))
+    stop("Invalid subset of IDs.")
   id_ <- id; rm(id)
 
   spd <- new_policy_data(
-    stage_data = x$stage_data[id %in% id_],
-    baseline_data = x$baseline_data[id %in% id_],
-    action_set = x$action_set,
-    stage_action_sets = x$stage_action_sets
+    stage_data = object$stage_data[id %in% id_],
+    baseline_data = object$baseline_data[id %in% id_],
+    action_set = object$action_set,
+    stage_action_sets = object$stage_action_sets
   )
 
   return(spd)
 }
-
 
 #' Get the full history for a given stage
 #'
