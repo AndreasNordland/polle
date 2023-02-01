@@ -522,6 +522,14 @@ get_history.policy_data <- function(object, stage = NULL, full_history = FALSE){
   # input checks:
   if (!is.logical(full_history) | (length(full_history) != 1))
     stop("full_history must be TRUE or FALSE")
+  if (!is.null(stage)){
+    if (!(is.numeric(stage) & (length(stage) == 1)))
+      stop("stage must be an integer greater than 0.")
+    if (!(stage %% 1 == 0))
+      stop("stage must be an integer greater than 0.")
+    if (stage<=0)
+      stop("stage must be an integer greater than 0.")
+  }
 
   if (full_history == TRUE){
     if (is.null(stage)) stop("Please provide a stage number.")

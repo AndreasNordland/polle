@@ -169,9 +169,10 @@ fit_g_functions <- function(policy_data, g_models, full_history = FALSE){
   K <- get_K(policy_data)
 
   # input checks:
+  if (!(is.logical(full_history) & (length(full_history) == 1)))
+    stop("full_history must be TRUE or FALSE")
   if (is.null(g_models))
     stop("Please provide g_models.")
-
   mes <- "g_models must be a single g_model or a list of K g_models's."
   if (is.list(g_models)){
     tmp <- all(unlist(lapply(g_models, function(gm) inherits(gm, "g_model"))))
