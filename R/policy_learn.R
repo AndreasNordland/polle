@@ -145,14 +145,31 @@ policy_learn <- function(type = "ql",
                          future_args = list(future.seed = TRUE),
                          name = type
 ){
+  name <- as.character(name)
 
   # input checks:
+  if (length(type) != 1 | !is.character(type))
+    stop("type must be a character string.")
   if (!(is.numeric(alpha) & (length(alpha) == 1)))
     stop("alpha must be numeric and in [0, 0.5).")
   if (!(alpha >=0 & alpha < 0.5))
     stop("alpha must be numeric and in [0, 0.5).")
   if (!(is.logical(full_history) & (length(full_history) == 1)))
     stop("full_history must be TRUE or FALSE")
+  if (!(is.numeric(L) & (length(L) == 1)))
+    stop("L must be an integer greater than 0.")
+  if (!(L %% 1 == 0))
+    stop("L must be an integer greater than 0.")
+  if (L<=0)
+    stop("L must be an integer greater than 0.")
+  if (!(is.logical(cross_fit_g_models) & (length(cross_fit_g_models) == 1)))
+    stop("cross_fit_g_models must be TRUE or FALSE")
+  if (!(is.logical(save_cross_fit_models) & (length(save_cross_fit_models) == 1)))
+    stop("save_cross_fit_models must be TRUE or FALSE")
+  if (length(name) != 1)
+    stop("name must be a character string.")
+  if (!is.list(future_args))
+    stop("future_args must be a list.")
 
   pl_args <- list(
     alpha = alpha,
@@ -163,8 +180,7 @@ policy_learn <- function(type = "ql",
     full_history = full_history
   )
 
-  if (length(type) != 1 | !is.character(type))
-    stop("type must be a character string.")
+
   type <- tolower(type)
   if (type %in% c("ql", "rql", "q_learning", "q-learning")) {
     call <- "rql"
