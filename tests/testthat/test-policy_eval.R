@@ -29,6 +29,32 @@ test_that("policy_eval checks inputs",{
     "policy must be of inherited class 'policy'."
   )
 
+  # type
+  expect_error(
+    policy_eval(
+      policy_data = pd,
+      policy = p,
+      type = "test"
+    ),
+    "type must be either 'dr', 'ipw' or  'or'."
+  )
+  expect_error(
+    policy_eval(
+      policy_data = pd,
+      policy = p,
+      type = NULL
+    ),
+    "type must be a character string."
+  )
+  expect_error(
+    policy_eval(
+      policy_data = pd,
+      policy = p,
+      type = c("test", "test")
+    ),
+    "type must be a character string."
+  )
+
   # policy_learn
   expect_error(
     policy_eval(
@@ -97,6 +123,48 @@ test_that("policy_eval checks inputs",{
                       q_functions = gfun),
     "q-functions must be of class 'q_functions'."
   )
+
+  # M
+  mm <- list("test", TRUE, c(1,2), -1, 0, 1.2)
+  lapply(mm, function(m){
+    expect_error(
+      policy_eval(policy_data = pd,
+                  policy = p,
+                  M = m)
+    )
+  })
+  mm <- list(1,2)
+  lapply(mm, function(m){
+    expect_error(
+      policy_eval(policy_data = pd,
+                  policy = p,
+                  M = m),
+      NA
+    )
+  })
+  rm(mm)
+
+  # names
+  nn <- list("test", NULL, 1, TRUE)
+  lapply(nn, function(n){
+    expect_error(
+      policy_eval(policy_data = pd,
+                  policy = p,
+                  name = n),
+      NA
+    )
+  })
+
+  nn <- list(c(1,2), list())
+  lapply(nn, function(n){
+    expect_error(
+      policy_eval(policy_data = pd,
+                  policy = p,
+                  name = n)
+    )
+  })
+
+
 })
 
 

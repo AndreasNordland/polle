@@ -145,8 +145,6 @@ policy_learn <- function(type = "ql",
                          future_args = list(future.seed = TRUE),
                          name = type
 ){
-  name <- as.character(name)
-
   # input checks:
   if (length(type) != 1 | !is.character(type))
     stop("type must be a character string.")
@@ -166,8 +164,11 @@ policy_learn <- function(type = "ql",
     stop("cross_fit_g_models must be TRUE or FALSE")
   if (!(is.logical(save_cross_fit_models) & (length(save_cross_fit_models) == 1)))
     stop("save_cross_fit_models must be TRUE or FALSE")
-  if (length(name) != 1)
-    stop("name must be a character string.")
+  if (!is.null(name)){
+    name <- as.character(name)
+    if (length(name) != 1)
+      stop("name must be a character string.")
+  }
   if (!is.list(future_args))
     stop("future_args must be a list.")
 

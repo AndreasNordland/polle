@@ -235,10 +235,26 @@ policy_eval <- function(policy_data,
     if(!(inherits(g_functions, "g_functions")))
       stop("g_functions must be of class 'g_functions'.")
   }
-
+  if (!(is.logical(g_full_history) & (length(g_full_history) == 1)))
+    stop("g_full_history must be TRUE or FALSE")
   if (!is.null(q_functions)){
     if(!(inherits(q_functions, "q_functions")))
       stop("q-functions must be of class 'q_functions'.")
+  }
+  if (!(is.logical(q_full_history) & (length(q_full_history) == 1)))
+    stop("q_full_history must be TRUE or FALSE")
+  if (!(is.numeric(M) & (length(M) == 1)))
+    stop("M must be an integer greater than 0.")
+  if (!(M %% 1 == 0))
+    stop("M must be an integer greater than 0.")
+  if (M<=0)
+    stop("M must be an integer greater than 0.")
+  if (!is.list(future_args))
+    stop("future_args must be a list.")
+  if (!is.null(name)){
+    name <- as.character(name)
+    if (length(name) != 1)
+      stop("name must be a character string.")
   }
 
 
