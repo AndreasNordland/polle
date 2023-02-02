@@ -252,6 +252,7 @@ new_policy_data <- function(stage_data, baseline_data = NULL, action_set = NULL,
 #' \item{[get_history_names()]}{ Get history variable names.}
 #' \item{[get_actions()]}{ Get the action at every stage.}
 #' \item{[get_utility()]}{Get the utility.}
+#' \item{[plot()]}{Plot method.}
 #' }
 #' @seealso
 #' [policy_eval()], [policy_learn()], [copy_policy_data()]

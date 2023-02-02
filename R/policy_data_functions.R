@@ -36,14 +36,18 @@ get_regime <- function(x, regime=NULL) {
   dd <- dd[order(id, stage), ]
   dd[, U:=cumsum(U), by=id]
   dd[, U:=c(U[-1],NA), by=id]
-  dd <- dd[stage<=K]
+  dd <- dd[stage<=K] # Last stage contains no action
   count <- 0
   dd[,x:=0]
   if (!is.null(regime)) {
     if (!is.list(regime)) regime <- list(regime)
-    for (s in regime) {
+    for (reg_ in regime) {
       count <- count+1
-      dd[, x:=x+all(A==s)*count, by=id]
+      dd[stage<=length(reg_),
+         x:=(length(stage)==length(reg_)
+           && any(!is.na(A))
+           && all(A==reg_))*count,
+         by=id]
     }
     dd <- subset(dd, x>0)
     lab <- unlist(lapply(regime, function(x) paste0(x,collapse=",")))
@@ -54,7 +58,7 @@ get_regime <- function(x, regime=NULL) {
 
 #' @export
 plot.policy_data <- function(x,
-                    regimes=NULL,
+                    regime=NULL,
                     ylab="Cumulative reward",
                     xlab="Stage",
                     legend="topleft",
@@ -62,23 +66,28 @@ plot.policy_data <- function(x,
                     alpha=.2,
                     pch=1L,
                     ...) {
-  dd <- get_regime(x, regimes)
+  dd <- get_regime(x, regime)
   lev <- unique(dd$x)
   id <- stage <- NULL  # R-check glob. var.
   for (i in seq_along(lev)) {
     wide <- t(dcast(subset(dd, x==lev[i]),
                     id ~ stage, value.var="U")[,-1])
-    graphics::matplot(wide, col=lava::Col(col[i],alpha), ...,
-                      lty=1, pch=pch, type="pl",
+    graphics::matplot(wide, col=lava::Col(col[i],alpha),
+                      pch=pch, type="p",
                       xlab="", ylab="",
                       add=(i>1), axes=FALSE)
+    graphics::matlines(wide, col=lava::Col(col[i],alpha),
+                      lty=1)
   }
   graphics::title(xlab=xlab, ylab=ylab)
-  graphics::legend(legend, legend=lev,
-                   col=col[seq_along(lev)], lty=1)
+  if (length(lev)>0 && !is.null(legend)) {
+    graphics::legend(legend, legend=lev,
+                     col=col[seq_along(lev)], lty=1)
+  }
   graphics::box()
   graphics::axis(2)
   graphics::axis(1, at=1:get_K(x))
+  invisible(wide)
 }
 
 #' @export

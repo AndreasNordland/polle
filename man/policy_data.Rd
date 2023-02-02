@@ -122,6 +122,7 @@ a given stage.}
 \item{\code{\link[=get_history_names]{get_history_names()}}}{ Get history variable names.}
 \item{\code{\link[=get_actions]{get_actions()}}}{ Get the action at every stage.}
 \item{\code{\link[=get_utility]{get_utility()}}}{Get the utility.}
+\item{\code{\link[=plot]{plot()}}}{Plot method.}
 }
 }
 
