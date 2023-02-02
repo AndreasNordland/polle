@@ -1,35 +1,22 @@
 #' @rdname policy_data
 #' @export
 print.policy_data <- function(x, digits = 2, ...){
-  K <- get_K(x)
-  n <- get_n(x)
-
+  s <- summary(x, probs=NULL)
   cat(
-    paste("Policy data with n = ", n, " observations and maximal K = ", K, " stages.", sep = "")
+    paste("Policy data with n = ", s$n,
+          " observations and maximal K = ", s$K,
+          " stages.", sep = "")
+  )
+  cat("\n\n")
+  print(s$tab)
+
+  cat("\n")
+  cat(
+    paste("Baseline covariates: ", s$baseline_covar, sep = "")
   )
   cat("\n")
-
-  action_set <- get_action_set(x)
-  stage_data <- getElement(x, "stage_data")
-  event <- NULL
-
-  cat("\n")
-  st <- stage_data[event == 0,][, c("stage", "A"), with = FALSE]
-  st$A <- factor(st$A, levels = action_set)
-  colnames(st) <- c("stage", "action")
-  tab <- table(st)
-  stable <- addmargins(tab, 2, FUN = list(n = sum))
-  print(stable)
-
-  cat("\n")
-  bc <- paste(x$colnames$baseline_names, collapse = ", ")
   cat(
-    paste("Baseline covariates: ", bc, sep = "")
-  )
-  cat("\n")
-  sc <- paste(x$colnames$state_names, collapse = ", ")
-  cat(
-    paste("State covariates: ", sc, sep = "")
+    paste("State covariates: ", s$stage_covar, sep = "")
   )
   cat("\n")
   mean_utility <- mean(get_utility(x)$U)
@@ -39,6 +26,101 @@ print.policy_data <- function(x, digits = 2, ...){
     paste("Average utility: ", mean_utility, sep = "")
   )
   cat("\n")
+}
+
+get_regime <- function(x, regime=NULL) {
+  K <- get_K(x)
+  n <- get_n(x)
+  dd <- x$stage_data
+  dd <- dd[order(id, stage), ]
+  dd[, U:=cumsum(U), by=id]
+  dd[, U:=c(U[-1],NA), by=id]
+  dd <- dd[stage<=K]
+  count <- 0
+  dd[,x:=0]
+  if (!is.null(regime)) {
+    if (!is.list(regime)) regime <- list(regime)
+    for (s in regime) {
+      count <- count+1
+      dd[, x:=x+all(A==s)*count, by=id]
+    }
+    dd <- subset(dd, x>0)
+    lab <- unlist(lapply(regime, function(x) paste0(x,collapse=",")))
+    dd[,x:=lab[x]]
+  }
+  return(dd)
+}
+
+#' @rdname policy_data
+#' @export
+plot.policy_data <- function(x,
+                    regime=NULL,
+                    ylab="Cumulative reward",
+                    xlab="Stage",
+                    legend="topleft",
+                    pch=1,
+                    ...) {
+  dd <- get_regime(pd, regime)
+  lava::spaghetti(U ~ stage, id="id",
+                group="x",
+                pch=pch,
+                data=dd, axes=F,
+                ylab=ylab,xlab=xlab,
+                legend=legend)
+  box()
+  axis(2)
+  axis(1, at=1:K)
+}
+
+#' @rdname policy_data
+#' @export
+summary.policy_data <- function(object, probs=seq(0, 1, .25), ...) {
+  K <- get_K(object)
+  n <- get_n(object)
+  action_set <- get_action_set(object)
+  stage_data <- getElement(object, "stage_data")
+  st <- stage_data[event == 0,][, c("stage", "A"), with = FALSE]
+  st$A <- factor(st$A, levels = action_set)
+  colnames(st) <- c("stage", "action")
+  tab <- table(st)
+  stable <- addmargins(tab, 2, FUN = list(n = sum))
+  bc <- paste(object$colnames$baseline_names, collapse = ", ")
+  sc <- paste(object$colnames$state_names, collapse = ", ")
+  stagedist <- c()
+  dd <- get_regime(object)
+  if (!is.null(probs))
+    for (i in seq_len(K)) {
+      ss <- dd[stage==i]
+      val <- with(ss, by(ss, A,
+                         function(x) quantile(x[["U"]])))
+      stagedist <- c(stagedist, val)
+    }
+  res <- list(n=n, K=K, tab=stable, stagedist=stagedist,
+              baseline_covar=bc, stage_covar=sc)
+  class(res) <- "summary.policy_data"
+  res
+}
+
+#' @rdname policy_data
+#' @export
+print.summary.policy_data <- function(x, ...) {
+  cat(paste("Policy data with n = ", x$n,
+            " observations and maximal K = ",
+            x$K, " stages.\n", sep = ""))
+  cat("\n")
+  print(x$tab)
+  cat("\n")
+  cat(paste("Baseline covariates: ", x$baseline_covar, sep = ""))
+  cat("\n")
+  cat(paste("Stage covariates: ", x$stage_covar, sep = ""))
+  cat("\n")
+
+  cat("\n")
+  for (i in 1:x$K) {
+    cat("Cumulative reward distribution at stage ",i,":\n", sep="")
+    print(x$stagedist[[i]])
+    cat("\n")
+  }
 }
 
 #' Copy Policy Data Object
