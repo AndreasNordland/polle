@@ -189,6 +189,7 @@ class \code{policy_eval}:
 \item{\code{\link[=get_policy_functions]{get_policy_functions()}}}{ Extract the fitted policy function for
 a given stage.}
 \item{\code{\link[=get_policy_actions]{get_policy_actions()}}}{ Extract the (fitted) policy actions.}
+\item{\code{\link[=plot.policy_eval]{plot.policy_eval()}}}{Plot diagnostics.}
 }
 }
 
