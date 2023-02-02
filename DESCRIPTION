@@ -30,7 +30,7 @@ Imports:
     DynTxRegime
 Suggests:
     DTRlearn2,
-    glmnet,
+    glmnet (>= 4.1-6),
     mgcv,
     knitr,
     ranger,
