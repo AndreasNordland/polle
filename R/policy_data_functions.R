@@ -31,6 +31,7 @@ print.policy_data <- function(x, digits = 2, ...){
 get_regime <- function(x, regime=NULL) {
   K <- get_K(x)
   n <- get_n(x)
+  A <- U <- id <- stage <- NULL  # R-check glob. var.
   dd <- x$stage_data
   dd <- dd[order(id, stage), ]
   dd[, U:=cumsum(U), by=id]
@@ -51,7 +52,6 @@ get_regime <- function(x, regime=NULL) {
   return(dd)
 }
 
-#' @rdname policy_data
 #' @export
 plot.policy_data <- function(x,
                     regimes=NULL,
@@ -64,27 +64,28 @@ plot.policy_data <- function(x,
                     ...) {
   dd <- get_regime(x, regimes)
   lev <- unique(dd$x)
+  id <- stage <- NULL  # R-check glob. var.
   for (i in seq_along(lev)) {
     wide <- t(dcast(subset(dd, x==lev[i]),
                     id ~ stage, value.var="U")[,-1])
-    matplot(wide, col=lava::Col(col[i],alpha), ...,
-            lty=1, pch=pch, type="pl",
-            xlab="", ylab="",
-            add=(i>1), axes=FALSE)
+    graphics::matplot(wide, col=lava::Col(col[i],alpha), ...,
+                      lty=1, pch=pch, type="pl",
+                      xlab="", ylab="",
+                      add=(i>1), axes=FALSE)
   }
-  title(xlab=xlab, ylab=ylab)
-  legend(legend, legend=lev,
-         col=col[seq_along(lev)], lty=1)
-  box()
-  axis(2)
-  axis(1, at=1:get_K(x))
+  graphics::title(xlab=xlab, ylab=ylab)
+  graphics::legend(legend, legend=lev,
+                   col=col[seq_along(lev)], lty=1)
+  graphics::box()
+  graphics::axis(2)
+  graphics::axis(1, at=1:get_K(x))
 }
 
-#' @rdname policy_data
 #' @export
 summary.policy_data <- function(object, probs=seq(0, 1, .25), ...) {
   K <- get_K(object)
   n <- get_n(object)
+  stage <- event <- NULL  # R-check glob. var.
   action_set <- get_action_set(object)
   stage_data <- getElement(object, "stage_data")
   st <- stage_data[event == 0,][, c("stage", "A"), with = FALSE]
@@ -99,8 +100,8 @@ summary.policy_data <- function(object, probs=seq(0, 1, .25), ...) {
   if (!is.null(probs))
     for (i in seq_len(K)) {
       ss <- dd[stage==i]
-      val <- with(ss, by(ss, A,
-                         function(x) quantile(x[["U"]])))
+      val <- by(ss, ss$A,
+                function(x) stats::quantile(x[["U"]]))
       stagedist <- c(stagedist, val)
     }
   res <- list(n=n, K=K, tab=stable, stagedist=stagedist,
@@ -109,7 +110,6 @@ summary.policy_data <- function(object, probs=seq(0, 1, .25), ...) {
   res
 }
 
-#' @rdname policy_data
 #' @export
 print.summary.policy_data <- function(x, ...) {
   cat(paste("Policy data with n = ", x$n,

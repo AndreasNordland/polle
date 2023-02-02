@@ -3,9 +3,6 @@
 \name{policy_data}
 \alias{policy_data}
 \alias{print.policy_data}
-\alias{plot.policy_data}
-\alias{summary.policy_data}
-\alias{print.summary.policy_data}
 \title{Create Policy Data Object}
 \usage{
 policy_data(
@@ -25,22 +22,6 @@ policy_data(
 )
 
 \method{print}{policy_data}(x, digits = 2, ...)
-
-\method{plot}{policy_data}(
-  x,
-  regimes = NULL,
-  ylab = "Cumulative reward",
-  xlab = "Stage",
-  legend = "topleft",
-  col = 1L:10L,
-  alpha = 0.2,
-  pch = 1L,
-  ...
-)
-
-\method{summary}{policy_data}(object, probs = seq(0, 1, 0.25), ...)
-
-\method{print}{summary.policy_data}(x, ...)
 }
 \arguments{
 \item{data}{\link{data.frame} or \link{data.table}; see Examples.}
