@@ -28,11 +28,13 @@ policy_data(
 
 \method{plot}{policy_data}(
   x,
-  regime = NULL,
+  regimes = NULL,
   ylab = "Cumulative reward",
   xlab = "Stage",
   legend = "topleft",
-  pch = 1,
+  col = 1L:10L,
+  alpha = 0.2,
+  pch = 1L,
   ...
 )
 

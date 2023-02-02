@@ -67,7 +67,7 @@ plot.policy_data <- function(x,
   for (i in seq_along(lev)) {
     wide <- t(dcast(subset(dd, x==lev[i]),
                     id ~ stage, value.var="U")[,-1])
-    matplot(wide, col=Col(col[i],alpha), ...,
+    matplot(wide, col=lava::Col(col[i],alpha), ...,
             lty=1, pch=pch, type="pl",
             xlab="", ylab="",
             add=(i>1), axes=FALSE)
