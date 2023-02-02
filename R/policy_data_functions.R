@@ -54,19 +54,27 @@ get_regime <- function(x, regime=NULL) {
 #' @rdname policy_data
 #' @export
 plot.policy_data <- function(x,
-                    regime=NULL,
+                    regimes=NULL,
                     ylab="Cumulative reward",
                     xlab="Stage",
                     legend="topleft",
-                    pch=1,
+                    col=1L:10L,
+                    alpha=.2,
+                    pch=1L,
                     ...) {
-  dd <- get_regime(x, regime)
-  lava::spaghetti(U ~ stage, id="id",
-                group="x",
-                pch=pch,
-                data=dd, axes=F,
-                ylab=ylab,xlab=xlab,
-                legend=legend)
+  dd <- get_regime(x, regimes)
+  lev <- unique(dd$x)
+  for (i in seq_along(lev)) {
+    wide <- t(dcast(subset(dd, x==lev[i]),
+                    id ~ stage, value.var="U")[,-1])
+    matplot(wide, col=Col(col[i],alpha), ...,
+            lty=1, pch=pch, type="pl",
+            xlab="", ylab="",
+            add=(i>1), axes=FALSE)
+  }
+  title(xlab=xlab, ylab=ylab)
+  legend(legend, legend=lev,
+         col=col[seq_along(lev)], lty=1)
   box()
   axis(2)
   axis(1, at=1:get_K(x))
