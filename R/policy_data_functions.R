@@ -60,7 +60,7 @@ plot.policy_data <- function(x,
                     legend="topleft",
                     pch=1,
                     ...) {
-  dd <- get_regime(pd, regime)
+  dd <- get_regime(x, regime)
   lava::spaghetti(U ~ stage, id="id",
                 group="x",
                 pch=pch,
@@ -69,7 +69,7 @@ plot.policy_data <- function(x,
                 legend=legend)
   box()
   axis(2)
-  axis(1, at=1:K)
+  axis(1, at=1:get_K(x))
 }
 
 #' @rdname policy_data
