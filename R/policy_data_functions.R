@@ -58,8 +58,9 @@ get_regime <- function(x, regime=NULL) {
 
 #' @export
 plot.policy_data <- function(x,
-                    regime=NULL,
-                    ...) {
+                             regime=NULL,
+                             jitter=.05,
+                             ...) {
   dd <- get_regime(x, regime)
   lev <- unique(dd$reg_)
   reg_ <- id <- stage <- NULL  # R-check glob. var.
@@ -80,20 +81,19 @@ plot.policy_data <- function(x,
       dots[[p]] <- NULL
     }
   }
-    for (i in seq_along(lev)) {
-    wide <- t(dcast(subset(dd, reg_==lev[i]),
+  plot(U ~ stage, data=dd, type="n", xlab="", ylab="", axes=FALSE)
+  for (i in seq_along(lev)) {
+    di <- subset(dd, reg_==lev[i])
+    wide <- t(dcast(di,
                     id ~ stage, value.var="U")[,-1])
-
-    args <- c(list(wide,
-                   xlab="",
-                   ylab="",
-                   axes=FALSE), dots)
+    args <- dots
     for (p in pargs)
       args[[p]] <- args[[p]][i]
-    do.call(graphics::matplot,
-            c(args, list(add=(i>1), type="p")))
-    
-    do.call(graphics::matlines, args)
+
+    do.call(graphics::points, c(list(U ~ base::jitter(as.numeric(stage), jitter),
+                                   data=di),
+                              args))
+    do.call(graphics::matlines, c(list(wide), args))
   }
   graphics::title(xlab=xlab, ylab=ylab)
   if (length(lev)>0 && !is.null(legend)) {
