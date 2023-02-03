@@ -43,7 +43,7 @@ get_regime <- function(x, regime=NULL) {
     if (!is.list(regime)) regime <- list(regime)
     for (reg_ in regime) {
       count <- count+1
-      dd[stage<=length(reg_),
+      dd[stage<=length(reg_) & x==0,
          x:=(length(stage)==length(reg_)
            && any(!is.na(A))
            && all(A==reg_))*count,
@@ -59,30 +59,47 @@ get_regime <- function(x, regime=NULL) {
 #' @export
 plot.policy_data <- function(x,
                     regime=NULL,
-                    ylab="Cumulative reward",
-                    xlab="Stage",
-                    legend="topleft",
-                    col=1L:10L,
-                    alpha=.2,
-                    pch=1L,
                     ...) {
   dd <- get_regime(x, regime)
   lev <- unique(dd$x)
   id <- stage <- NULL  # R-check glob. var.
-  for (i in seq_along(lev)) {
+  dots <- list(...)
+  pargs <- c("col","lty","pch")
+  for (p in pargs) {
+    if (is.null(dots[[p]])) {
+      dots[[p]] <- seq_len(length(regime)+1)
+    }
+    dots[[p]] <- rep(dots[[p]], length.out=length(regime)+1)
+  }
+  ylab <- "Cumulative reward"
+  xlab <- "Stage"
+  legend <- "topleft"
+  for (p in c("xlab","ylab","legend")) {
+    if (!is.null(dots[[p]])) {
+      assign(p, dots[[p]])
+      dots[[p]] <- NULL
+    }
+  }
+    for (i in seq_along(lev)) {
     wide <- t(dcast(subset(dd, x==lev[i]),
                     id ~ stage, value.var="U")[,-1])
-    graphics::matplot(wide, col=lava::Col(col[i],alpha),
-                      pch=pch, type="p",
-                      xlab="", ylab="",
-                      add=(i>1), axes=FALSE)
-    graphics::matlines(wide, col=lava::Col(col[i],alpha),
-                      lty=1)
+
+    args <- c(list(wide,
+                   xlab="",
+                   ylab="",
+                   axes=FALSE), dots)
+    for (p in pargs)
+      args[[p]] <- args[[p]][i]
+    do.call(graphics::matplot,
+            c(args, list(add=(i>1), type="p")))
+    do.call(graphics::matlines, args)
   }
   graphics::title(xlab=xlab, ylab=ylab)
   if (length(lev)>0 && !is.null(legend)) {
     graphics::legend(legend, legend=lev,
-                     col=col[seq_along(lev)], lty=1)
+                     col=dots$col,
+                     pch=dots$pch,
+                     lty=dots$lty)
   }
   graphics::box()
   graphics::axis(2)
