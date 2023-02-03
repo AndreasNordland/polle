@@ -49,10 +49,10 @@ Simulate Two-Stage Data
 B \sim \mathcal{N}(0,1)\\
 L_{1} \sim \mathcal{N}(0, 1)\\
 C_{1} \mid L_{1} \sim \mathcal{N}(L_1, 1)\\
-A_1 \mid C_1 \sim \text{Bernoulli}(\text{expit}(\beta C_1))\\
+A_1 \mid C_1 \sim \operatorname{Bernoulli}(\operatorname{expit}(\beta C_1))\\
 L_{2} \sim \mathcal{N} (0, 1)\\
 C_{2} \mid A_1, L_1 \sim \mathcal{N}(\gamma L_1 + A_1, 1)\\
-A_2 \mid C_2 \sim \text{Bernoulli}(\text{expit}(\beta C_2))\\
+A_2 \mid C_2 \sim \operatorname{Bernoulli}(\operatorname{expit}(\beta C_2))\\
 L_{3} \sim \mathcal{N} (0, 1)
 }
 The rewards are calculated as

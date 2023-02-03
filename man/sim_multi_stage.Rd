@@ -45,23 +45,23 @@ Simulate Multi-Stage Data
 \eqn{O} with the following distribution:
 \deqn{
 W \sim \mathcal{N}(0, 1)\\
-B \sim \text{Ber}(\xi)
+B \sim \operatorname{Ber}(\xi)
 }
 For \eqn{k\geq 1} let
 \deqn{
 (T_k - T_{k-1})| X_{k-1}, A_{k-1}, W \sim
 \begin{cases}
-\text{Exp}\Big\{\exp\left(\gamma^T [1, X_{k-1}, W] \right) \Big\} + \psi & A_{k-1} = 1\\
+\operatorname{Exp}\Big\{\exp\left(\gamma^T [1, X_{k-1}, W] \right) \Big\} + \psi & A_{k-1} = 1\\
 \infty & A_{k-1} = 0
 \end{cases}\\
 X_{k}\mid T_k, X_{k-1}, B \sim
 \begin{cases}
-\text{N}\left\{ \alpha^T [1, T_k, T^2_k, X_{k-1}, B], 1\right\} & T_k < \infty \\
+\mathcal{N}\left\{ \alpha^T [1, T_k, T^2_k, X_{k-1}, B], 1\right\} & T_k < \infty \\
 0 & T_k = \infty
 \end{cases}\\
 A_k \mid X_k, T_k \sim
 \begin{cases}
-\text{Ber}\left\{ \text{expit}\left(\beta^T[1, T_{k}^2, X_k] \right)\right\} & T_k < \infty\\
+\operatorname{Ber}\left\{ \operatorname{expit}\left(\beta^T[1, T_{k}^2, X_k] \right)\right\} & T_k < \infty\\
 0 & T_k = \infty,
 \end{cases}
 }

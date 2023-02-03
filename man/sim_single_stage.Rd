@@ -52,8 +52,8 @@ Simulate Single-Stage Data
 \code{sim_single_stage} samples \code{n} iid observation
 \eqn{O = (B, Z, L, A, U)} with the following distribution:
 \deqn{
-B \sim \text{Bernoulli}(\pi)\\
-Z, L \sim \text{Uniform}([0,1])\\
+B \sim \operatorname{Bernoulli}(\pi)\\
+Z, L \sim \operatorname{Uniform}([0,1])\\
 A\mid Z,L,B \sim \operatorname{Bernoulli}(\operatorname{expit}\{\kappa Z^{-2}(Z+L-1) + \delta B)\\
 U\mid Z,L,A \sim \mathcal{N}(Z+L+A\cdot\{\gamma Z + \alpha L + \beta\}, 1)
 }

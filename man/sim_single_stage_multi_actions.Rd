@@ -21,13 +21,13 @@ Simulate Single-Stage Multi-Action Data
 \code{sim_single_stage_multi_actions} samples \code{n} iid observation
 \eqn{O = (z, x, a, u)} with the following distribution:
 \deqn{
-z, x \sim \text{Uniform}([0,1])\\
+z, x \sim \operatorname{Uniform}([0,1])\\
 \tilde a \sim \mathcal{N}(0,1)\\
 a \mid \tilde a \sim
 \begin{cases}
-0 & \text{if} \quad \tilde a < -1\\
-1 & \text{if} \quad \tilde a -1 \leq a < 0.5\\
-2 & \text{otherwise}
+0 & \operatorname{if} \quad \tilde a < -1\\
+1 & \operatorname{if} \quad \tilde a -1 \leq a < 0.5\\
+2 & \operatorname{otherwise}
 \end{cases}\\
 u \mid z, x \sim \mathcal{N}(x + z + I\{a=2\}(x-0.5) + I\{a=1\}(x^2 + z -0.5), 1)
 }
