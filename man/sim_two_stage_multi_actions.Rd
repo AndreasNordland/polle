@@ -43,7 +43,7 @@ Simulate Two-Stage Multi-Action Data
 B \sim \mathcal{N}(0,1)\\
 L_{1} \sim \mathcal{N}(0, 1)\\
 C_{1} \mid L_{1} \sim \mathcal{N}(L_1, 1)\\
-P(A_1='yes'\mid C_1) =  \operatorname{expit}(\beta C_1)\\
+P(A_1='yes'\mid C_1) =  expit(\beta C_1)\\
 P(A_1='no'\mid C_1) = 1 - P(A_1='yes' \mid C_1)\\
 L_{2} \sim \mathcal{N} (0, 1)\\
 C_{2} \mid A_1, L_1 \sim \mathcal{N}(\gamma L_1 + A_1, 1)\\

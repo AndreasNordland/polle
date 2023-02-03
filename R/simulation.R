@@ -21,9 +21,9 @@
 #' \code{sim_single_stage} samples \code{n} iid observation
 #' \eqn{O = (B, Z, L, A, U)} with the following distribution:
 #' \deqn{
-#' B \sim \operatorname{Bernoulli}(\pi)\\
-#' Z, L \sim \operatorname{Uniform}([0,1])\\
-#' A\mid Z,L,B \sim \operatorname{Bernoulli}(\operatorname{expit}\{\kappa Z^{-2}(Z+L-1) + \delta B)\\
+#' B \sim Bernoulli(\pi)\\
+#' Z, L \sim Uniform([0,1])\\
+#' A\mid Z,L,B \sim Bernoulli(expit\{\kappa Z^{-2}(Z+L-1) + \delta B)\\
 #' U\mid Z,L,A \sim \mathcal{N}(Z+L+A\cdot\{\gamma Z + \alpha L + \beta\}, 1)
 #' }
 #' @export
@@ -62,13 +62,13 @@ sim_single_stage <- function(n=1e4,
 #' \code{sim_single_stage_multi_actions} samples \code{n} iid observation
 #' \eqn{O = (z, x, a, u)} with the following distribution:
 #' \deqn{
-#' z, x \sim \operatorname{Uniform}([0,1])\\
+#' z, x \sim Uniform([0,1])\\
 #' \tilde a \sim \mathcal{N}(0,1)\\
 #' a \mid \tilde a \sim
 #' \begin{cases}
-#' 0 & \operatorname{if} \quad \tilde a < -1\\
-#' 1 & \operatorname{if} \quad \tilde a -1 \leq a < 0.5\\
-#' 2 & \operatorname{otherwise}
+#' 0 & if \quad \tilde a < -1\\
+#' 1 & if \quad \tilde a -1 \leq a < 0.5\\
+#' 2 & otherwise
 #' \end{cases}\\
 #' u \mid z, x \sim \mathcal{N}(x + z + I\{a=2\}(x-0.5) + I\{a=1\}(x^2 + z -0.5), 1)
 #' }
@@ -122,10 +122,10 @@ sim_single_stage_multi_actions <- function(n = 1e3, seed = NULL){
 #' B \sim \mathcal{N}(0,1)\\
 #' L_{1} \sim \mathcal{N}(0, 1)\\
 #' C_{1} \mid L_{1} \sim \mathcal{N}(L_1, 1)\\
-#' A_1 \mid C_1 \sim \operatorname{Bernoulli}(\operatorname{expit}(\beta C_1))\\
+#' A_1 \mid C_1 \sim Bernoulli(expit(\beta C_1))\\
 #' L_{2} \sim \mathcal{N} (0, 1)\\
 #' C_{2} \mid A_1, L_1 \sim \mathcal{N}(\gamma L_1 + A_1, 1)\\
-#' A_2 \mid C_2 \sim \operatorname{Bernoulli}(\operatorname{expit}(\beta C_2))\\
+#' A_2 \mid C_2 \sim Bernoulli(expit(\beta C_2))\\
 #' L_{3} \sim \mathcal{N} (0, 1)
 #' }
 #' The rewards are calculated as
@@ -219,7 +219,7 @@ sim_two_stage <- function(n = 1e4,
 #' B \sim \mathcal{N}(0,1)\\
 #' L_{1} \sim \mathcal{N}(0, 1)\\
 #' C_{1} \mid L_{1} \sim \mathcal{N}(L_1, 1)\\
-#' P(A_1='yes'\mid C_1) =  \operatorname{expit}(\beta C_1)\\
+#' P(A_1='yes'\mid C_1) =  expit(\beta C_1)\\
 #' P(A_1='no'\mid C_1) = 1 - P(A_1='yes' \mid C_1)\\
 #' L_{2} \sim \mathcal{N} (0, 1)\\
 #' C_{2} \mid A_1, L_1 \sim \mathcal{N}(\gamma L_1 + A_1, 1)\\
@@ -396,13 +396,13 @@ sim_multi_stage_obs <- function(a,
 #' \eqn{O} with the following distribution:
 #' \deqn{
 #' W \sim \mathcal{N}(0, 1)\\
-#' B \sim \operatorname{Ber}(\xi)
+#' B \sim Ber(\xi)
 #' }
 #' For \eqn{k\geq 1} let
 #' \deqn{
 #' (T_k - T_{k-1})| X_{k-1}, A_{k-1}, W \sim
 #' \begin{cases}
-#' \operatorname{Exp}\Big\{\exp\left(\gamma^T [1, X_{k-1}, W] \right) \Big\} + \psi & A_{k-1} = 1\\
+#' Exp\Big\{\exp\left(\gamma^T [1, X_{k-1}, W] \right) \Big\} + \psi & A_{k-1} = 1\\
 #' \infty & A_{k-1} = 0
 #' \end{cases}\\
 #' X_{k}\mid T_k, X_{k-1}, B \sim
@@ -412,7 +412,7 @@ sim_multi_stage_obs <- function(a,
 #' \end{cases}\\
 #' A_k \mid X_k, T_k \sim
 #' \begin{cases}
-#' \operatorname{Ber}\left\{ \operatorname{expit}\left(\beta^T[1, T_{k}^2, X_k] \right)\right\} & T_k < \infty\\
+#' Ber\left\{ expit\left(\beta^T[1, T_{k}^2, X_k] \right)\right\} & T_k < \infty\\
 #' 0 & T_k = \infty,
 #' \end{cases}
 #' }

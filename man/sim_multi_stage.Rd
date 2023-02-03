@@ -45,13 +45,13 @@ Simulate Multi-Stage Data
 \eqn{O} with the following distribution:
 \deqn{
 W \sim \mathcal{N}(0, 1)\\
-B \sim \operatorname{Ber}(\xi)
+B \sim Ber(\xi)
 }
 For \eqn{k\geq 1} let
 \deqn{
 (T_k - T_{k-1})| X_{k-1}, A_{k-1}, W \sim
 \begin{cases}
-\operatorname{Exp}\Big\{\exp\left(\gamma^T [1, X_{k-1}, W] \right) \Big\} + \psi & A_{k-1} = 1\\
+Exp\Big\{\exp\left(\gamma^T [1, X_{k-1}, W] \right) \Big\} + \psi & A_{k-1} = 1\\
 \infty & A_{k-1} = 0
 \end{cases}\\
 X_{k}\mid T_k, X_{k-1}, B \sim
@@ -61,7 +61,7 @@ X_{k}\mid T_k, X_{k-1}, B \sim
 \end{cases}\\
 A_k \mid X_k, T_k \sim
 \begin{cases}
-\operatorname{Ber}\left\{ \operatorname{expit}\left(\beta^T[1, T_{k}^2, X_k] \right)\right\} & T_k < \infty\\
+Ber\left\{ expit\left(\beta^T[1, T_{k}^2, X_k] \right)\right\} & T_k < \infty\\
 0 & T_k = \infty,
 \end{cases}
 }
