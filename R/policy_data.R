@@ -209,6 +209,8 @@ new_policy_data <- function(stage_data, baseline_data = NULL, action_set = NULL,
 #' @param verbose Logical. If TRUE, formatting comments are printed to the console.
 #' @param digits Minimum number of digits to be printed.
 #' @param x Object to be printed.
+#' @param object Object of class [policy_data]
+#' @param probs numeric vector (probabilities)
 #' @param ... Additional arguments passed to print.
 #' @details
 #' Each observation has the sequential form

@@ -2,36 +2,17 @@
 % Please edit documentation in R/policy_eval_functions.R
 \name{plot.policy_eval}
 \alias{plot.policy_eval}
-\title{Plot Diagnostics for a \code{policy_eval} Object}
+\title{Plot histogram of the influence curve for a \code{policy_eval} object}
 \usage{
-\method{plot}{policy_eval}(
-  x,
-  which = c(1),
-  policy_data = NULL,
-  stage = 1,
-  history_variables = NULL,
-  ...
-)
+\method{plot}{policy_eval}(x, ...)
 }
 \arguments{
 \item{x}{Object of class \link{policy_eval}}
 
-\item{which}{A subset of the numbers 1:2
-\itemize{
-\item{1} Histogram of the influence curve terms
-\item{2} Plot of the policy actions
-}}
-
-\item{policy_data}{Object of class \link{policy_data}}
-
-\item{stage}{Stage number for plot 2}
-
-\item{history_variables}{character vector of length 2 for plot 2}
-
-\item{...}{Additional arguments passed to \code{\link[=hist]{hist()}} and \code{\link[=plot]{plot()}}}
+\item{...}{Additional arguments}
 }
 \description{
-Plot Diagnostics for a \code{policy_eval} Object
+Plot histogram of the influence curve for a \code{policy_eval} object
 }
 \examples{
 d <- sim_two_stage(2e3, seed=1)
@@ -45,9 +26,5 @@ pd <- policy_data(d,
 pe <- policy_eval(pd,
                   policy_learn = policy_learn())
 
-plot(pe,
-     which = c(1,2),
-     policy_data = pd,
-     stage = 1,
-     history_variables = c("C", "L"))
+plot(pe)
 }

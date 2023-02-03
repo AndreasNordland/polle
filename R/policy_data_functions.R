@@ -28,86 +28,7 @@ print.policy_data <- function(x, digits = 2, ...){
   cat("\n")
 }
 
-get_regime <- function(x, regime=NULL) {
-  K <- get_K(x)
-  n <- get_n(x)
-  reg_ <- A <- U <- id <- stage <- NULL  # R-check glob. var.
-  dd <- x$stage_data
-  dd <- dd[order(id, stage), ]
-  dd[, U:=cumsum(U), by=id]
-  dd[, U:=c(U[-1],NA), by=id]
-  dd <- dd[stage<=K] # Last stage contains no action
-  count <- 0
-  dd[,reg_:=0]
-  if (!is.null(regime)) {
-    if (!is.list(regime)) regime <- list(regime)
-    for (r_ in regime) {
-      count <- count+1
-      dd[stage<=length(r_) & reg_==0,
-         reg_:=(length(stage)==length(r_)
-           && any(!is.na(A))
-           && all(A==r_))*count,
-         by=id]
-    }
-    dd <- subset(dd, reg_>0)
-    lab <- unlist(lapply(regime, function(x) paste0(x,collapse=",")))
-    dd[,reg_:=lab[reg_]]
-  }
-  return(dd)
-}
-
-#' @export
-plot.policy_data <- function(x,
-                             regime=NULL,
-                             jitter=.05,
-                             ...) {
-  dd <- get_regime(x, regime)
-  lev <- unique(dd$reg_)
-  reg_ <- id <- stage <- NULL  # R-check glob. var.
-  dots <- list(...)
-  pargs <- c("col","lty","pch")
-  for (p in pargs) {
-    if (is.null(dots[[p]])) {
-      dots[[p]] <- seq_len(length(regime)+1)
-    }
-    dots[[p]] <- rep(dots[[p]], length.out=length(regime)+1)
-  }
-  ylab <- "Cumulative reward"
-  xlab <- "Stage"
-  legend <- "topleft"
-  for (p in c("xlab","ylab","legend")) {
-    if (!is.null(dots[[p]])) {
-      assign(p, dots[[p]])
-      dots[[p]] <- NULL
-    }
-  }
-  plot(U ~ stage, data=dd, type="n", xlab="", ylab="", axes=FALSE)
-  for (i in seq_along(lev)) {
-    di <- subset(dd, reg_==lev[i])
-    wide <- t(dcast(di,
-                    id ~ stage, value.var="U")[,-1])
-    args <- dots
-    for (p in pargs)
-      args[[p]] <- args[[p]][i]
-
-    do.call(graphics::points, c(list(U ~ base::jitter(as.numeric(stage), jitter),
-                                   data=di),
-                              args))
-    do.call(graphics::matlines, c(list(wide), args))
-  }
-  graphics::title(xlab=xlab, ylab=ylab)
-  if (length(lev)>0 && !is.null(legend)) {
-    graphics::legend(legend, legend=lev,
-                     col=dots$col,
-                     pch=dots$pch,
-                     lty=dots$lty)
-  }
-  graphics::box()
-  graphics::axis(2)
-  graphics::axis(1, at=1:get_K(x))
-  invisible(wide)
-}
-
+#' @rdname policy_data
 #' @export
 summary.policy_data <- function(object, probs=seq(0, 1, .25), ...) {
   K <- get_K(object)
@@ -122,19 +43,190 @@ summary.policy_data <- function(object, probs=seq(0, 1, .25), ...) {
   stable <- addmargins(tab, 2, FUN = list(n = sum))
   bc <- paste(object$colnames$baseline_names, collapse = ", ")
   sc <- paste(object$colnames$state_names, collapse = ", ")
-  stagedist <- c()
-  dd <- get_regime(object)
+  stagedist <- list()
+  dt <- get_cum_rewards(object)
   if (!is.null(probs))
-    for (i in seq_len(K)) {
-      ss <- dd[stage==i]
-      val <- by(ss, ss$A,
-                function(x) stats::quantile(x[["U"]]))
-      stagedist <- c(stagedist, val)
+    for (i in seq_len(K+1)) {
+      ss <- dt[stage==i]
+      val <- stats::quantile(ss[["U"]], probs = probs, ...)
+      stagedist <- append(stagedist, list(val))
     }
   res <- list(n=n, K=K, tab=stable, stagedist=stagedist,
               baseline_covar=bc, stage_covar=sc)
   class(res) <- "summary.policy_data"
   res
+}
+
+#' Plot policy data for given policies
+#'
+#' @param x Object of class [policy_data]
+#' @param policy An object or list of objects of class [policy]
+#' @param which A subset of the numbers 1:2
+#' \itemize{
+#'  \item{1} Spaghetti plot of the cumulative rewards
+#'  \item{2} Plot of the policy actions for a given stage
+#' }
+#' @param stage Stage number for plot 2
+#' @param history_variables character vector of length 2 for plot 2
+#' @param jitter numeric
+#' @param ... Additional arguments
+#' @examples
+#' d3 <- sim_multi_stage(5e2, seed = 1)
+#' pd3 <- policy_data(data = d3$stage_data,
+#'                    baseline_data = d3$baseline_data,
+#'                    type = "long",
+#'                    id = "id",
+#'                    stage = "stage",
+#'                    event = "event",
+#'                    action = "A",
+#'                    utility = "U")
+#' pd3
+#'
+#' # specifying two static policies:
+#' p0 <- policy_def(c(1,1,0,0), name = "p0")
+#' p1 <- policy_def(c(1,0,0,0), name = "p1")
+#'
+#' plot(pd3)
+#' plot(pd3, policy = list(p0, p1))
+#'
+#' # learning and plotting a policy:
+#' suppressWarnings({
+#'  pe3 <- policy_eval(pd3,
+#'                     policy_learn = policy_learn(),
+#'                     q_models = q_glm(formula = ~t + X + X_lead))
+#' plot(pd3, list(get_policy(pe3), p0))
+#'
+#' # plotting the recommended actions at a specific stage:
+#' plot(pd3, get_policy(pe3),
+#'      which = 2,
+#'      stage = 2,
+#'      history_variables = c("t","X"))
+#' })
+#' @export
+plot.policy_data <- function(x,
+                             policy=NULL,
+                             which = c(1),
+                             stage = 1,
+                             history_variables = NULL,
+                             jitter=.05,
+                             ...) {
+  policy_data <- x
+  if (!is.numeric(which) || any(which < 1) || any(which > 2))
+    stop("'which' must be in 1:2")
+  show <- rep(FALSE, 2)
+  show[which] <- TRUE
+
+  if (!is.null(stage)){
+    if (!(is.numeric(stage) & (length(stage) == 1)))
+      stop("stage must be an integer greater than 0.")
+    if (!(stage %% 1 == 0))
+      stop("stage must be an integer greater than 0.")
+    if (stage<=0)
+      stop("stage must be an integer greater than 0.")
+  }
+  stage_ <- stage
+
+  if (show[1L]) {
+    dt <- get_cum_rewards(policy_data, policy = policy)
+    if (nrow(dt) == 0)
+      stop("No observations comply with the given policy/policies.")
+    lev <- unique(dt[["policy_group"]])
+    id <- stage <- NULL  # R-check glob. var.
+    dots <- list(...)
+    pargs <- c("col","lty","pch")
+    for (p in pargs) {
+      if (is.null(dots[[p]])) {
+        dots[[p]] <- seq_len(length(policy)+1)
+      }
+      dots[[p]] <- rep(dots[[p]], length.out=length(policy)+1)
+    }
+    ylab <- "Cumulative reward"
+    xlab <- "Stage"
+    legend <- "topleft"
+    for (p in c("xlab","ylab","legend")) {
+      if (!is.null(dots[[p]])) {
+        assign(p, dots[[p]])
+        dots[[p]] <- NULL
+      }
+    }
+    plot(U ~ stage, data=dt, type="n", xlab="", ylab="", axes=FALSE)
+    for (i in seq_along(lev)) {
+      di <- subset(dt, dt$policy_group==lev[i])
+      wide <- t(dcast(di,
+                      id ~ stage, value.var="U")[,-1])
+      args <- dots
+      for (p in pargs)
+        args[[p]] <- args[[p]][i]
+
+      do.call(graphics::points, c(list(U ~ base::jitter(as.numeric(stage), jitter),
+                                       data=di),
+                                  args))
+      do.call(graphics::matlines, c(list(wide), args))
+    }
+    graphics::title(xlab=xlab, ylab=ylab)
+    if (length(lev)>0 && !is.null(legend)) {
+      graphics::legend(legend, legend=lev,
+                       col=dots$col,
+                       pch=dots$pch,
+                       lty=dots$lty)
+    }
+    graphics::box()
+    graphics::axis(2)
+    graphics::axis(1, at=1:get_K(x))
+    grDevices::dev.flush()
+  }
+  if (show[2L]){
+    if (is.null(policy_data) | !inherits(policy_data, "policy_data"))
+      stop("For plot 2 please provide policy_data.")
+    K <- get_K(policy_data)
+    if (!(stage_ <= K))
+      stop("stage must be lower than or equal to the maximal number of stages.")
+    if (is.null(history_variables))
+      stop("For plot 2 please provide history_variables (character vector of length 2).")
+    if (!(is.character(history_variables) & length(history_variables)==2))
+      stop("For plot 2 please provide history_variables (character vector of length 2).")
+
+    plot_data <- data.table::merge.data.table(
+      policy(policy_data)[stage ==stage_],
+      get_history(policy_data)[["H"]][stage ==stage_]
+    )
+
+    if (!all(history_variables %in% colnames(plot_data)))
+      stop("Invalid history_variables.")
+
+    d <- as.factor(plot_data[["d"]])
+    main <- paste("Plot of policy actions at stage ", stage_, sep = "")
+    xx <- plot_data[[history_variables[1]]]
+    if (is.character(xx))
+      xx <- factor(xx, levels = sort(unique(xx)))
+    yy <- plot_data[[history_variables[2]]]
+    if (is.character(yy))
+      yy <- factor(yy, levels = sort(unique(yy)))
+    graphics::plot.default(
+      x = xx,
+      xlab = history_variables[1],
+      xaxt = 'n',
+      y = yy,
+      yaxt = 'n',
+      ylab = history_variables[2],
+      main = main,
+      col=d,
+      ...)
+    graphics::legend('topright', legend = levels(d), col = 1:8, cex = 0.8, pch = 1)
+    if (is.factor(xx)){
+      graphics::axis(1, at=(1:length(levels(xx))),labels=levels(xx))
+    } else {
+      graphics::axis(1)
+    }
+    if (is.factor(yy)){
+      graphics::axis(2, at=(1:length(levels(yy))),labels=levels(yy))
+    } else {
+      graphics::axis(2)
+    }
+    grDevices::dev.flush()
+  }
+
+  invisible()
 }
 
 #' @export
@@ -151,7 +243,7 @@ print.summary.policy_data <- function(x, ...) {
   cat("\n")
 
   cat("\n")
-  for (i in 1:x$K) {
+  for (i in 1:(x$K+1)) {
     cat("Cumulative reward distribution at stage ",i,":\n", sep="")
     print(x$stagedist[[i]])
     cat("\n")

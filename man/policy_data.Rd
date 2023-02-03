@@ -3,6 +3,7 @@
 \name{policy_data}
 \alias{policy_data}
 \alias{print.policy_data}
+\alias{summary.policy_data}
 \title{Create Policy Data Object}
 \usage{
 policy_data(
@@ -22,6 +23,8 @@ policy_data(
 )
 
 \method{print}{policy_data}(x, digits = 2, ...)
+
+\method{summary}{policy_data}(object, probs = seq(0, 1, 0.25), ...)
 }
 \arguments{
 \item{data}{\link{data.frame} or \link{data.table}; see Examples.}
@@ -71,6 +74,10 @@ The name of each element must be on the form "U_Aa" where "a" corresponds to an 
 \item{digits}{Minimum number of digits to be printed.}
 
 \item{...}{Additional arguments passed to print.}
+
+\item{object}{Object of class \link{policy_data}}
+
+\item{probs}{numeric vector (probabilities)}
 }
 \value{
 \code{policy_data()} returns an object of class "policy_data".

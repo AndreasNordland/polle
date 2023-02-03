@@ -246,18 +246,10 @@ get_policy_functions.policy_eval <- function(object, stage){
   return(pf)
 }
 
-#' @title Plot Diagnostics for a \code{policy_eval} Object
+#' @title Plot histogram of the influence curve for a \code{policy_eval} object
 #'
 #' @param x Object of class [policy_eval]
-#' @param which A subset of the numbers 1:2
-#' \itemize{
-#'  \item{1} Histogram of the influence curve terms
-#'  \item{2} Plot of the policy actions
-#' }
-#' @param policy_data Object of class [policy_data]
-#' @param stage Stage number for plot 2
-#' @param history_variables character vector of length 2 for plot 2
-#' @param ... Additional arguments passed to [hist()] and [plot()]
+#' @param ... Additional arguments
 #' @examples
 #' d <- sim_two_stage(2e3, seed=1)
 #' pd <- policy_data(d,
@@ -270,35 +262,9 @@ get_policy_functions.policy_eval <- function(object, stage){
 #' pe <- policy_eval(pd,
 #'                   policy_learn = policy_learn())
 #'
-#' plot(pe,
-#'      which = c(1,2),
-#'      policy_data = pd,
-#'      stage = 1,
-#'      history_variables = c("C", "L"))
+#' plot(pe)
 #' @export
-plot.policy_eval <- function(x,
-                             which = c(1),
-                             policy_data = NULL,
-                             stage = 1,
-                             history_variables = NULL,
-                             ...){
-
-  if (!is.numeric(which) || any(which < 1) || any(which > 2))
-    stop("'which' must be in 1:2")
-  show <- rep(FALSE, 2)
-  show[which] <- TRUE
-
-  if (!is.null(stage)){
-    if (!(is.numeric(stage) & (length(stage) == 1)))
-      stop("stage must be an integer greater than 0.")
-    if (!(stage %% 1 == 0))
-      stop("stage must be an integer greater than 0.")
-    if (stage<=0)
-      stop("stage must be an integer greater than 0.")
-  }
-  stage_ <- stage
-
-  if (show[1L]) {
+plot.policy_eval <- function(x, ...){
     ic <- IC(x)
     se <- sqrt(mean(ic^2))
     graphics::hist(ic,
@@ -311,63 +277,6 @@ plot.policy_eval <- function(x,
                     lwd = 2,
                     col = "red")
     grDevices::dev.flush()
-  }
-  if (show[2L]){
-    if (is.null(policy_data) | !inherits(policy_data, "policy_data"))
-      stop("For plot 2 please provide policy_data.")
-    K <- get_K(policy_data)
-    if (!(stage_ <= K))
-      stop("stage must be lower than or equal to the maximal number of stages.")
-    if (is.null(history_variables))
-      stop("For plot 2 please provide history_variables (character vector of length 2).")
-    if (!(is.character(history_variables) & length(history_variables)==2))
-      stop("For plot 2 please provide history_variables (character vector of length 2).")
-
-
-    if (!all.equal(x[["id"]], get_id(policy_data)))
-      stop("policy_eval and policy_data IDs does not match.")
-
-    plot_data <- data.table::merge.data.table(
-      get_policy_actions(x)[stage ==stage_],
-      get_history(policy_data)[["H"]][stage ==stage_]
-    )
-
-    if (!all(history_variables %in% colnames(plot_data)))
-      stop("Invalid history_variables.")
-
-    d <- as.factor(plot_data[["d"]])
-    main <- paste("Plot of policy actions at stage ", stage_, sep = "")
-    xx <- plot_data[[history_variables[1]]]
-    if (is.character(xx))
-      xx <- factor(xx, levels = sort(unique(xx)))
-    yy <- plot_data[[history_variables[2]]]
-    if (is.character(yy))
-      yy <- factor(yy, levels = sort(unique(yy)))
-    graphics::plot.default(
-      x = xx,
-      xlab = history_variables[1],
-      xaxt = 'n',
-      y = yy,
-      yaxt = 'n',
-      ylab = history_variables[2],
-      main = main,
-      col=d,
-      ...)
-    graphics::legend('topright', legend = levels(d), col = 1:8, cex = 0.8, pch = 1)
-    if (is.factor(xx)){
-      graphics::axis(1, at=(1:length(levels(xx))),labels=levels(xx))
-    } else {
-      graphics::axis(1)
-    }
-    if (is.factor(yy)){
-      graphics::axis(2, at=(1:length(levels(yy))),labels=levels(yy))
-    } else {
-      graphics::axis(2)
-    }
-
-
-    grDevices::dev.flush()
-  }
 
   invisible()
 }
