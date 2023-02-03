@@ -332,3 +332,88 @@ dynamic_policy <- function(fun){
   return(f)
 }
 
+get_cum_rewards <- function(policy_data, policy=NULL) {
+  K <- get_K(policy_data)
+  n <- get_n(policy_data)
+  A <- U <- id <- stage <- NULL  # R-check glob. var.
+  dt <- policy_data$stage_data[, c("id", "stage", "A", "U")]
+  setkeyv(dt, c("id", "stage"))
+  dt[, U:=cumsum(U), by=id]
+
+  count <- 0
+  dt[, policy_group:=0]
+  if (!is.null(policy)) {
+    if (!is.list(policy)) policy <- list(policy)
+    for (pol in policy) {
+      count <- count+1
+      d <- merge(dt, pol(policy_data), all.x = TRUE)
+      d[, pol_ind := all(d == A, na.rm = TRUE), by = "id"]
+      dt[d[["pol_ind"]] == TRUE,
+         policy_group:= count,
+         by=id]
+    }
+    dt <- subset(dt, policy_group>0)
+
+    default_lab <- paste("policy_", 1:length(policy), sep = "")
+    lab <- lapply(policy, function(pol) attributes(pol)[["name"]])
+    for (j in seq_along(lab)){
+      if(is.null(lab[[j]]))
+        lab[[j]] <- default_lab[[j]]
+    }
+    lab <- unlist(lab)
+    dt[,policy_group:=lab[policy_group]]
+  }
+  dt[, policy_group := as.character(policy_group)]
+  dt[policy_group == "0", policy_group := "all"]
+  return(dt)
+}
+
+plot2.policy_data <- function(x,
+                              policy=NULL,
+                              ...) {
+  dt <- get_cum_rewards(x, policy = policy)
+  lev <- unique(dt[["policy_group"]])
+  id <- stage <- NULL  # R-check glob. var.
+  dots <- list(...)
+  pargs <- c("col","lty","pch")
+  for (p in pargs) {
+    if (is.null(dots[[p]])) {
+      dots[[p]] <- seq_len(length(policy)+1)
+    }
+    dots[[p]] <- rep(dots[[p]], length.out=length(policy)+1)
+  }
+  ylab <- "Cumulative reward"
+  xlab <- "Stage"
+  legend <- "topleft"
+  for (p in c("xlab","ylab","legend")) {
+    if (!is.null(dots[[p]])) {
+      assign(p, dots[[p]])
+      dots[[p]] <- NULL
+    }
+  }
+  for (i in seq_along(lev)) {
+    wide <- t(dcast(subset(dt, policy_group==lev[i]),
+                    id ~ stage, value.var="U")[,-1])
+
+    args <- c(list(wide,
+                   xlab="",
+                   ylab="",
+                   axes=FALSE), dots)
+    for (p in pargs)
+      args[[p]] <- args[[p]][i]
+    do.call(graphics::matplot,
+            c(args, list(add=(i>1), type="p")))
+    do.call(graphics::matlines, args)
+  }
+  graphics::title(xlab=xlab, ylab=ylab)
+  if (length(lev)>0 && !is.null(legend)) {
+    graphics::legend(legend, legend=lev,
+                     col=dots$col,
+                     pch=dots$pch,
+                     lty=dots$lty)
+  }
+  graphics::box()
+  graphics::axis(2)
+  graphics::axis(1, at=1:get_K(x))
+  invisible(wide)
+}
