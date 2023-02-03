@@ -31,27 +31,27 @@ print.policy_data <- function(x, digits = 2, ...){
 get_regime <- function(x, regime=NULL) {
   K <- get_K(x)
   n <- get_n(x)
-  A <- U <- id <- stage <- NULL  # R-check glob. var.
+  reg_ <- A <- U <- id <- stage <- NULL  # R-check glob. var.
   dd <- x$stage_data
   dd <- dd[order(id, stage), ]
   dd[, U:=cumsum(U), by=id]
   dd[, U:=c(U[-1],NA), by=id]
   dd <- dd[stage<=K] # Last stage contains no action
   count <- 0
-  dd[,x:=0]
+  dd[,reg_:=0]
   if (!is.null(regime)) {
     if (!is.list(regime)) regime <- list(regime)
-    for (reg_ in regime) {
+    for (r_ in regime) {
       count <- count+1
-      dd[stage<=length(reg_) & x==0,
-         x:=(length(stage)==length(reg_)
+      dd[stage<=length(r_) & reg_==0,
+         reg_:=(length(stage)==length(r_)
            && any(!is.na(A))
-           && all(A==reg_))*count,
+           && all(A==r_))*count,
          by=id]
     }
-    dd <- subset(dd, x>0)
+    dd <- subset(dd, reg_>0)
     lab <- unlist(lapply(regime, function(x) paste0(x,collapse=",")))
-    dd[,x:=lab[x]]
+    dd[,reg_:=lab[reg_]]
   }
   return(dd)
 }
@@ -61,8 +61,8 @@ plot.policy_data <- function(x,
                     regime=NULL,
                     ...) {
   dd <- get_regime(x, regime)
-  lev <- unique(dd$x)
-  id <- stage <- NULL  # R-check glob. var.
+  lev <- unique(dd$reg_)
+  reg_ <- id <- stage <- NULL  # R-check glob. var.
   dots <- list(...)
   pargs <- c("col","lty","pch")
   for (p in pargs) {
@@ -81,7 +81,7 @@ plot.policy_data <- function(x,
     }
   }
     for (i in seq_along(lev)) {
-    wide <- t(dcast(subset(dd, x==lev[i]),
+    wide <- t(dcast(subset(dd, reg_==lev[i]),
                     id ~ stage, value.var="U")[,-1])
 
     args <- c(list(wide,
@@ -92,6 +92,7 @@ plot.policy_data <- function(x,
       args[[p]] <- args[[p]][i]
     do.call(graphics::matplot,
             c(args, list(add=(i>1), type="p")))
+    
     do.call(graphics::matlines, args)
   }
   graphics::title(xlab=xlab, ylab=ylab)
