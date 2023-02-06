@@ -25,9 +25,9 @@ z, x \sim Uniform([0,1])\\
 \tilde a \sim \mathcal{N}(0,1)\\
 a \mid \tilde a \sim
 \begin{cases}
-0 & if \quad \tilde a < -1\\
-1 & if \quad \tilde a -1 \leq a < 0.5\\
-2 & otherwise
+0 \quad if \quad \tilde a < -1\\
+1 \quad if \quad \tilde a -1 \leq a < 0.5\\
+2 \quad otherwise
 \end{cases}\\
 u \mid z, x \sim \mathcal{N}(x + z + I\{a=2\}(x-0.5) + I\{a=1\}(x^2 + z -0.5), 1)
 }

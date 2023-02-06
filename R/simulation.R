@@ -66,9 +66,9 @@ sim_single_stage <- function(n=1e4,
 #' \tilde a \sim \mathcal{N}(0,1)\\
 #' a \mid \tilde a \sim
 #' \begin{cases}
-#' 0 & if \quad \tilde a < -1\\
-#' 1 & if \quad \tilde a -1 \leq a < 0.5\\
-#' 2 & otherwise
+#' 0 \quad if \quad \tilde a < -1\\
+#' 1 \quad if \quad \tilde a -1 \leq a < 0.5\\
+#' 2 \quad otherwise
 #' \end{cases}\\
 #' u \mid z, x \sim \mathcal{N}(x + z + I\{a=2\}(x-0.5) + I\{a=1\}(x^2 + z -0.5), 1)
 #' }
@@ -402,18 +402,18 @@ sim_multi_stage_obs <- function(a,
 #' \deqn{
 #' (T_k - T_{k-1})| X_{k-1}, A_{k-1}, W \sim
 #' \begin{cases}
-#' Exp\Big\{\exp\left(\gamma^T [1, X_{k-1}, W] \right) \Big\} + \psi & A_{k-1} = 1\\
-#' \infty & A_{k-1} = 0
+#' Exp\Big\{\exp\left(\gamma^T [1, X_{k-1}, W] \right) \Big\} + \psi \quad A_{k-1} = 1\\
+#' \infty \quad A_{k-1} = 0
 #' \end{cases}\\
 #' X_{k}\mid T_k, X_{k-1}, B \sim
 #' \begin{cases}
-#' \mathcal{N}\left\{ \alpha^T [1, T_k, T^2_k, X_{k-1}, B], 1\right\} & T_k < \infty \\
-#' 0 & T_k = \infty
+#' \mathcal{N}\left\{ \alpha^T [1, T_k, T^2_k, X_{k-1}, B], 1\right\} \quad T_k < \infty \\
+#' 0 \quad T_k = \infty
 #' \end{cases}\\
 #' A_k \mid X_k, T_k \sim
 #' \begin{cases}
-#' Ber\left\{ expit\left(\beta^T[1, T_{k}^2, X_k] \right)\right\} & T_k < \infty\\
-#' 0 & T_k = \infty,
+#' Ber\left\{ expit\left(\beta^T[1, T_{k}^2, X_k] \right)\right\} \quad T_k < \infty\\
+#' 0 \quad T_k = \infty,
 #' \end{cases}
 #' }
 #' Note that \eqn{\psi} is the minimum increment.

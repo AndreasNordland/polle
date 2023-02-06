@@ -51,18 +51,18 @@ For \eqn{k\geq 1} let
 \deqn{
 (T_k - T_{k-1})| X_{k-1}, A_{k-1}, W \sim
 \begin{cases}
-Exp\Big\{\exp\left(\gamma^T [1, X_{k-1}, W] \right) \Big\} + \psi & A_{k-1} = 1\\
-\infty & A_{k-1} = 0
+Exp\Big\{\exp\left(\gamma^T [1, X_{k-1}, W] \right) \Big\} + \psi \quad A_{k-1} = 1\\
+\infty \quad A_{k-1} = 0
 \end{cases}\\
 X_{k}\mid T_k, X_{k-1}, B \sim
 \begin{cases}
-\mathcal{N}\left\{ \alpha^T [1, T_k, T^2_k, X_{k-1}, B], 1\right\} & T_k < \infty \\
-0 & T_k = \infty
+\mathcal{N}\left\{ \alpha^T [1, T_k, T^2_k, X_{k-1}, B], 1\right\} \quad T_k < \infty \\
+0 \quad T_k = \infty
 \end{cases}\\
 A_k \mid X_k, T_k \sim
 \begin{cases}
-Ber\left\{ expit\left(\beta^T[1, T_{k}^2, X_k] \right)\right\} & T_k < \infty\\
-0 & T_k = \infty,
+Ber\left\{ expit\left(\beta^T[1, T_{k}^2, X_k] \right)\right\} \quad T_k < \infty\\
+0 \quad T_k = \infty,
 \end{cases}
 }
 Note that \eqn{\psi} is the minimum increment.
