@@ -120,7 +120,6 @@ estimate.policy_eval <- function(x, ..., labels=x$name) {
 #'
 #' pe <- policy_eval(pd,
 #'                   policy = p)
-#' pe
 #'
 #' # conditional value for each group defined by B
 #' conditional(pe, pd, "B")

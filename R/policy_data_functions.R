@@ -71,7 +71,7 @@ summary.policy_data <- function(object, probs=seq(0, 1, .25), ...) {
 #' @param jitter numeric
 #' @param ... Additional arguments
 #' @examples
-#' d3 <- sim_multi_stage(5e2, seed = 1)
+#' d3 <- sim_multi_stage(2e2, seed = 1)
 #' pd3 <- policy_data(data = d3$stage_data,
 #'                    baseline_data = d3$baseline_data,
 #'                    type = "long",
@@ -80,7 +80,6 @@ summary.policy_data <- function(object, probs=seq(0, 1, .25), ...) {
 #'                    event = "event",
 #'                    action = "A",
 #'                    utility = "U")
-#' pd3
 #'
 #' # specifying two static policies:
 #' p0 <- policy_def(c(1,1,0,0), name = "p0")
