@@ -11,7 +11,7 @@ textver1 <- paste(author1, " (", year1, "). ",
 
 citHeader("To cite 'polle' in publications use:")
 
-citEntry(entry="Misc",
+bibentry(bibtype="Misc",
          title = title1,
          author = author1,
          year = year1,
