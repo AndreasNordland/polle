@@ -24,6 +24,8 @@ policy value for each group defined by a given baseline variable.
 }
 \examples{
 library("polle")
+library("data.table")
+setDTthreads(1)
 d <- sim_single_stage(n=2e3)
 pd <- policy_data(d,
                   action = "A",
@@ -36,7 +38,6 @@ p <- policy_def(1)
 
 pe <- policy_eval(pd,
                   policy = p)
-pe
 
 # conditional value for each group defined by B
 conditional(pe, pd, "B")

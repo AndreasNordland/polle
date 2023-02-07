@@ -71,6 +71,9 @@ summary.policy_data <- function(object, probs=seq(0, 1, .25), ...) {
 #' @param jitter numeric
 #' @param ... Additional arguments
 #' @examples
+#' library("polle")
+#' library("data.table")
+#' setDTthreads(1)
 #' d3 <- sim_multi_stage(2e2, seed = 1)
 #' pd3 <- policy_data(data = d3$stage_data,
 #'                    baseline_data = d3$baseline_data,

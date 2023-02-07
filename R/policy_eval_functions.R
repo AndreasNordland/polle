@@ -108,6 +108,8 @@ estimate.policy_eval <- function(x, ..., labels=x$name) {
 #' group) and 'IC' (influence curve estimate matrix).
 #' @examples
 #' library("polle")
+#' library("data.table")
+#' setDTthreads(1)
 #' d <- sim_single_stage(n=2e3)
 #' pd <- policy_data(d,
 #'                   action = "A",
