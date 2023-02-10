@@ -665,7 +665,7 @@ format_long_data <- function(long_data, baseline_data, id, action, stage, event,
   deterministic_reward_names <- paste("U_A", action_set, sep = "")
   drn <- names(long_data)[names(long_data) %in% deterministic_reward_names]
   if ((length(drn) > 0) & (verbose == TRUE)){
-    mes <- paste("The variables ", paste(drn, collapse = ", "), " in 'data' are considered deternistic rewards.", sep = "")
+    mes <- paste("The variables ", paste(drn, collapse = ", "), " in 'data' are considered deterministic rewards.", sep = "")
     message(mes)
   }
 
