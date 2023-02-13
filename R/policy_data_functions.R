@@ -11,13 +11,15 @@ print.policy_data <- function(x, digits = 2, ...){
   print(s$tab)
 
   cat("\n")
-  cat(
-    paste("Baseline covariates: ", s$baseline_covar, sep = "")
-  )
+
+  bas_var <- paste("Baseline covariates: ", s$baseline_covar, sep = "")
+  cat(paste(strwrap(bas_var, 60), collapse="\n"))
+
   cat("\n")
-  cat(
-    paste("State covariates: ", s$stage_covar, sep = "")
-  )
+
+  state_var <- paste("State covariates: ", s$stage_covar, sep = "")
+  cat(paste(strwrap(state_var, 60), collapse="\n"))
+
   cat("\n")
   mean_utility <- mean(get_utility(x)$U)
   mean_utility <- round(mean_utility, digits = digits)
