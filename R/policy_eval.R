@@ -104,9 +104,8 @@
 #' single model, it is assumed that \eqn{g_1(h_1, a_1) = ... = g_K(h_K, a_K)}.
 #'
 #' If \code{type = "or"} \code{policy_eval} returns the empirical estimates of
-#' the value (\code{value_estimate}) and score (\code{IC}):
+#' the value (\code{value_estimate}):
 #' \deqn{E[Q^d_1(H_1, d_1(...))]}
-#' \deqn{Q^d_1(H_1, d_1(...)) - E[Q^d_1(H_1, d_1(...))]}
 #' for an appropriate input \eqn{...} to the policy.
 #'
 #' If \code{type = "ipw"} \code{policy_eval} returns the empirical estimates of
