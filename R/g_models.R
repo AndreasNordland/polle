@@ -457,6 +457,8 @@ g_sl <- function(formula = ~ .,
                       dotdotdot)
     model <- do.call(SuperLearner::SuperLearner, sl_args)
     model$call <- NULL
+    if(all(model$coef == 0))
+      stop("In g_sl(): All metalearner coefficients are zero.")
     if(onlySL == TRUE){
       model$fitLibrary[model$coef == 0] <- NA
     }

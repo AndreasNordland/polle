@@ -322,6 +322,9 @@ q_sl <- function(formula = ~ .,
     args_SL <- append(args_SL, dotdotdot)
     model <- do.call(SuperLearner::SuperLearner, args = args_SL)
     model$call <- NULL
+    if(all(model$coef == 0))
+      stop("In q_sl(): All metalearner coefficients are zero.")
+
     if(onlySL == TRUE){
       model$fitLibrary[model$coef == 0] <- NA
     }
