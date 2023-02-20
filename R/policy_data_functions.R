@@ -94,7 +94,6 @@ summary.policy_data <- function(object, probs=seq(0, 1, .25), ...) {
 #' plot(pd3, policy = list(p0, p1))
 #'
 #' # learning and plotting a policy:
-#' suppressWarnings({
 #'  pe3 <- policy_eval(pd3,
 #'                     policy_learn = policy_learn(),
 #'                     q_models = q_glm(formula = ~t + X + X_lead))
@@ -105,7 +104,6 @@ summary.policy_data <- function(object, probs=seq(0, 1, .25), ...) {
 #'      which = 2,
 #'      stage = 2,
 #'      history_variables = c("t","X"))
-#' })
 #' @export
 plot.policy_data <- function(x,
                              policy=NULL,

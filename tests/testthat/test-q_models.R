@@ -92,14 +92,13 @@ test_that("q_sl formats data correctly via the formula",{
                      utility="U")
 
   expect_error(
-    suppressWarnings({
-      pe <- policy_eval(
-        policy_data = pd1,
-        policy_learn = policy_learn(type = "ql", alpha = 0.05),
-        g_models = g_glm(),
-        g_full_history = FALSE,
-        q_models = q_sl()
-      ) }),
+    pe <- policy_eval(
+      policy_data = pd1,
+      policy_learn = policy_learn(type = "ql", alpha = 0.05),
+      g_models = g_glm(),
+      g_full_history = FALSE,
+      q_models = q_sl()
+    ),
     NA
   )
 

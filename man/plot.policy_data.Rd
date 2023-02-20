@@ -58,7 +58,6 @@ plot(pd3)
 plot(pd3, policy = list(p0, p1))
 
 # learning and plotting a policy:
-suppressWarnings({
  pe3 <- policy_eval(pd3,
                     policy_learn = policy_learn(),
                     q_models = q_glm(formula = ~t + X + X_lead))
@@ -69,5 +68,4 @@ plot(pd3, get_policy(pe3),
      which = 2,
      stage = 2,
      history_variables = c("t","X"))
-})
 }

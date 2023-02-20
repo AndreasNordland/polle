@@ -169,14 +169,13 @@ test_that("g_sl formats data correctly via the formula",{
   library("SuperLearner")
   env <- as.environment("package:SuperLearner")
   expect_error(
-    suppressWarnings({
-      policy_eval(
-        policy_data = pd1,
-        policy_learn = policy_learn(type = "ql", alpha = 0.05),
-        g_models = g_sl(formula = ~., env = env),
-        g_full_history = FALSE,
-        q_models = q_glm()
-      ) }),
+    policy_eval(
+      policy_data = pd1,
+      policy_learn = policy_learn(type = "ql", alpha = 0.05),
+      g_models = g_sl(formula = ~., env = env),
+      g_full_history = FALSE,
+      q_models = q_glm()
+    ),
     NA
   )
 })

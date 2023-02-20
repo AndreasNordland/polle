@@ -323,7 +323,7 @@ test_that("policy_learn with type = 'drql' works with cross_fit_g_models.",{
 })
 
 test_that("policy_learn with type drql handles multiple stages with varying stage action sets",{
-  d <- sim_multi_stage(200, seed = 1)
+  d <- sim_multi_stage(300, seed = 1)
   # constructing policy_data object:
   pd <- policy_data(data = d$stage_data,
                     baseline_data = d$baseline_data,

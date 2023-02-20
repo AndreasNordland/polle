@@ -74,6 +74,21 @@ get_design <- function(formula, data) {
   return(list(terms=tt, xlevels=xlevels, x=x))
 }
 
+supp_warnings <- function(expr, mess, fun) {
+  eval.parent(
+    substitute(
+      withCallingHandlers(expr, warning = function (w) {
+        cm   <- conditionMessage(w)
+        ff <- conditionCall(w)
+        ff <- as.character(ff)[[1]]
+        cond_cm <- grepl(pattern = mess, cm)
+        cond_ff <- grepl(pattern = fun, ff)
+        if (cond_cm & cond_ff) invokeRestart("muffleWarning")
+      })
+    )
+  )
+}
+
 apply_design <- function(design, data){
   terms <- getElement(design, "terms")
   xlevels <- getElement(design, "xlevels")
@@ -297,7 +312,11 @@ g_glm <- function(formula = ~.,
 }
 predict.g_glm <- function(object, new_H){
   model <- getElement(object, "model")
-  fit <- predict.glm(object = model, newdata = new_H, type = "response")
+  supp_warnings(
+    {fit <- predict.glm(object = model, newdata = new_H, type = "response")},
+    mess = "\\<prediction from a rank-deficient fit may be misleading\\>",
+    fun = "\\<predict.lm\\>"
+  )
   probs <- cbind((1-fit), fit)
   return(probs)
 }
@@ -455,7 +474,12 @@ g_sl <- function(formula = ~ .,
                            SL.library=SL.library,
                            env = env),
                       dotdotdot)
-    model <- do.call(SuperLearner::SuperLearner, sl_args)
+    supp_warnings(
+      {model <- do.call(SuperLearner::SuperLearner, sl_args)},
+      mess = "\\<prediction from a rank-deficient fit may be misleading\\>",
+      fun = "\\<predict.lm\\>"
+    )
+
     model$call <- NULL
     if(all(model$coef == 0))
       stop("In g_sl(): All metalearner coefficients are zero.")
@@ -483,12 +507,15 @@ predict.g_sl <- function(object, new_H, ...) {
   model <- getElement(object, "model")
   design <- getElement(object, "design")
   onlySL <- getElement(object, "onlySL")
-
   newdata <- apply_design(design = design, data = new_H)
   newdata <- as.data.frame(newdata)
-  pr <- predict(model,
-                newdata=newdata,
-                onlySL = onlySL)$pred
+  supp_warnings(
+    {pr <- predict(model,
+                   newdata=newdata,
+                   onlySL = onlySL)$pred},
+    mess = "\\<prediction from a rank-deficient fit may be misleading\\>",
+    fun = "\\<predict.lm\\>"
+  )
   pr <- cbind((1-pr), pr)
   return(pr)
 }
