@@ -80,9 +80,13 @@ supp_warnings <- function(expr, mess, fun) {
       withCallingHandlers(expr, warning = function (w) {
         cm   <- conditionMessage(w)
         ff <- conditionCall(w)
-        ff <- as.character(ff)[[1]]
+        cond_ff <- TRUE
+        if (is.call(ff)){
+          ff <- as.character(ff)[[1]]
+          cond_ff <- grepl(pattern = fun, ff)
+        }
         cond_cm <- grepl(pattern = mess, cm)
-        cond_ff <- grepl(pattern = fun, ff)
+
         if (cond_cm & cond_ff) invokeRestart("muffleWarning")
       })
     )
