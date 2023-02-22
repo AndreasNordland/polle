@@ -75,19 +75,24 @@ get_design <- function(formula, data) {
 }
 
 supp_warnings <- function(expr, mess, fun) {
+  mess <- tolower(mess)
+  fun <- tolower(fun)
+
   eval.parent(
     substitute(
       withCallingHandlers(expr, warning = function (w) {
+        mess_ <- mess
+        fun_ <- fun
         cm   <- conditionMessage(w)
-        ff <- conditionCall(w)
-        cond_ff <- TRUE
-        if (is.call(ff)){
-          ff <- as.character(ff)[[1]]
-          cond_ff <- grepl(pattern = fun, ff)
+        cc <- conditionCall(w)
+        cond_cc <- FALSE
+        if (is.call(cc) & length(as.character(cc))>0){
+          cc <- as.character(cc)[[1]]
+          cond_cc <- (fun_ == cc)
         }
-        cond_cm <- grepl(pattern = mess, cm)
-
-        if (cond_cm & cond_ff) invokeRestart("muffleWarning")
+        cond_cm <- (mess_ == cm)
+        if (cond_cm & cond_cc)
+          tryInvokeRestart("muffleWarning")
       })
     )
   )
@@ -318,8 +323,8 @@ predict.g_glm <- function(object, new_H){
   model <- getElement(object, "model")
   supp_warnings(
     {fit <- predict.glm(object = model, newdata = new_H, type = "response")},
-    mess = "\\<prediction from a rank-deficient fit may be misleading\\>",
-    fun = "\\<predict.lm\\>"
+    mess = "prediction from a rank-deficient fit may be misleading",
+    fun = "predict.lm"
   )
   probs <- cbind((1-fit), fit)
   return(probs)
@@ -480,8 +485,8 @@ g_sl <- function(formula = ~ .,
                       dotdotdot)
     supp_warnings(
       {model <- do.call(SuperLearner::SuperLearner, sl_args)},
-      mess = "\\<prediction from a rank-deficient fit may be misleading\\>",
-      fun = "\\<predict.lm\\>"
+      mess = "prediction from a rank-deficient fit may be misleading",
+      fun = "predict.lm"
     )
 
     model$call <- NULL
@@ -517,8 +522,8 @@ predict.g_sl <- function(object, new_H, ...) {
     {pr <- predict(model,
                    newdata=newdata,
                    onlySL = onlySL)$pred},
-    mess = "\\<prediction from a rank-deficient fit may be misleading\\>",
-    fun = "\\<predict.lm\\>"
+    mess = "prediction from a rank-deficient fit may be misleading",
+    fun = "predict.lm"
   )
   pr <- cbind((1-pr), pr)
   return(pr)
