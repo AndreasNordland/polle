@@ -90,15 +90,13 @@ supp_warnings <- function(expr, mess, fun) {
         cm   <- conditionMessage(w)
         cc <- conditionCall(w)
         cond_cc <- FALSE
-        for (i in seq_along(mess_)){
-          if (is.call(cc) & length(as.character(cc))>0){
-            cc <- as.character(cc)[[1]]
-            cond_cc <- (fun_[i] == cc)
-          }
-          cond_cm <- (mess_[i] == cm)
-          if (cond_cm & cond_cc)
-            tryInvokeRestart("muffleWarning")
+        if (is.call(cc) & length(as.character(cc))>0){
+          cc <- as.character(cc)[[1]]
+          cond_cc <- (cc == fun_)
         }
+        cond_cm <- (cm == mess_)
+        if (any(cond_cm & cond_cc))
+          tryInvokeRestart("muffleWarning")
       })
     )
   )

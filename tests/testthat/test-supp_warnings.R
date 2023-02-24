@@ -38,16 +38,29 @@ test_that("supp_warnings blocks specific warnings from specific functions",{
     )
   )
 
+
+  test2 <- function(){
+    warning("warn2", call. = TRUE)
+  }
   test <- function(){
     warning("warn", call. = TRUE)
-    warning("warn2", call. = TRUE)
+    test2()
+
   }
 
   expect_no_warning(
     supp_warnings(
       expr = test(),
       mess = c("warn", "warn2"),
-      fun = c("test", "test")
+      fun = c("test", "test2")
+    )
+  )
+
+  expect_warning(
+    supp_warnings(
+      expr = test(),
+      mess = c("warn", "warn2"),
+      fun = c("test", "test3")
     )
   )
 
