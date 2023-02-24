@@ -1,7 +1,7 @@
 
 library(testthat)
 
-test_that("supp_warnings blocks a specific warning from a specific function",{
+test_that("supp_warnings blocks specific warnings from specific functions",{
 
   expect_warning(
     supp_warnings(
@@ -35,6 +35,19 @@ test_that("supp_warnings blocks a specific warning from a specific function",{
       expr = test(),
       mess = "warn",
       fun = "test"
+    )
+  )
+
+  test <- function(){
+    warning("warn", call. = TRUE)
+    warning("warn2", call. = TRUE)
+  }
+
+  expect_no_warning(
+    supp_warnings(
+      expr = test(),
+      mess = c("warn", "warn2"),
+      fun = c("test", "test")
     )
   )
 

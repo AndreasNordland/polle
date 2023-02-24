@@ -75,8 +75,12 @@ get_design <- function(formula, data) {
 }
 
 supp_warnings <- function(expr, mess, fun) {
-  mess <- tolower(mess)
-  fun <- tolower(fun)
+  if(!is.character(mess))
+    stop()
+  if(!is.character(fun))
+    stop()
+  if(length(mess) != length(fun))
+    stop()
 
   eval.parent(
     substitute(
@@ -86,13 +90,15 @@ supp_warnings <- function(expr, mess, fun) {
         cm   <- conditionMessage(w)
         cc <- conditionCall(w)
         cond_cc <- FALSE
-        if (is.call(cc) & length(as.character(cc))>0){
-          cc <- as.character(cc)[[1]]
-          cond_cc <- (fun_ == cc)
+        for (i in seq_along(mess_)){
+          if (is.call(cc) & length(as.character(cc))>0){
+            cc <- as.character(cc)[[1]]
+            cond_cc <- (fun_[i] == cc)
+          }
+          cond_cm <- (mess_[i] == cm)
+          if (cond_cm & cond_cc)
+            tryInvokeRestart("muffleWarning")
         }
-        cond_cm <- (mess_ == cm)
-        if (cond_cm & cond_cc)
-          tryInvokeRestart("muffleWarning")
       })
     )
   )
@@ -321,11 +327,7 @@ g_glm <- function(formula = ~.,
 }
 predict.g_glm <- function(object, new_H){
   model <- getElement(object, "model")
-  supp_warnings(
-    {fit <- predict.glm(object = model, newdata = new_H, type = "response")},
-    mess = "prediction from a rank-deficient fit may be misleading",
-    fun = "predict.lm"
-  )
+  fit <- predict.glm(object = model, newdata = new_H, type = "response")
   probs <- cbind((1-fit), fit)
   return(probs)
 }
@@ -483,12 +485,7 @@ g_sl <- function(formula = ~ .,
                            SL.library=SL.library,
                            env = env),
                       dotdotdot)
-    supp_warnings(
-      {model <- do.call(SuperLearner::SuperLearner, sl_args)},
-      mess = "prediction from a rank-deficient fit may be misleading",
-      fun = "predict.lm"
-    )
-
+    model <- do.call(SuperLearner::SuperLearner, sl_args)
     model$call <- NULL
     if(all(model$coef == 0))
       stop("In g_sl(): All metalearner coefficients are zero.")
@@ -518,13 +515,9 @@ predict.g_sl <- function(object, new_H, ...) {
   onlySL <- getElement(object, "onlySL")
   newdata <- apply_design(design = design, data = new_H)
   newdata <- as.data.frame(newdata)
-  supp_warnings(
-    {pr <- predict(model,
-                   newdata=newdata,
-                   onlySL = onlySL)$pred},
-    mess = "prediction from a rank-deficient fit may be misleading",
-    fun = "predict.lm"
-  )
+  pr <- predict(model,
+                newdata=newdata,
+                onlySL = onlySL)$pred
   pr <- cbind((1-pr), pr)
   return(pr)
 }

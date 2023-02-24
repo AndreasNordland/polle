@@ -172,12 +172,7 @@ q_glm <- function(formula = ~ A*.,
 
 predict.q_glm <- function(object, new_AH){
   model <- getElement(object, "model")
-  supp_warnings(
-    {pred <- predict(model, newdata = new_AH, type = "response")},
-    mess = "prediction from a rank-deficient fit may be misleading",
-    fun = "predict.lm"
-  )
-
+  pred <- predict(model, newdata = new_AH, type = "response")
   return(pred)
 }
 
@@ -325,11 +320,7 @@ q_sl <- function(formula = ~ .,
                     SL.library = SL.library,
                     env = env)
     args_SL <- append(args_SL, dotdotdot)
-    supp_warnings(
-      {model <- do.call(SuperLearner::SuperLearner, args = args_SL)},
-      mess = "prediction from a rank-deficient fit may be misleading",
-      fun = "predict.lm"
-    )
+    model <- do.call(SuperLearner::SuperLearner, args = args_SL)
     model$call <- NULL
     if(all(model$coef == 0))
       stop("In q_sl(): All metalearner coefficients are zero.")
@@ -355,13 +346,8 @@ predict.q_sl <- function(object, new_AH, ...) {
   onlySL <- getElement(object, "onlySL")
   newdata <- apply_design(design = design, data = new_AH)
   newdata <- as.data.frame(newdata)
-  supp_warnings(
-    {pred <- predict(model,
+  pred <- predict(model,
                      newdata = newdata,
-                     onlySL = onlySL)$pred[, 1]},
-    mess = "prediction from a rank-deficient fit may be misleading",
-    fun = "predict.lm"
-  )
-
+                     onlySL = onlySL)$pred[, 1]
   return(pred)
 }
