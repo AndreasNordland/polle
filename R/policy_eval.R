@@ -23,6 +23,8 @@
 #' @param g_full_history If TRUE, the full history is used to fit each g-model.
 #' If FALSE, the state/Markov type history is used to fit each g-model.
 #' @param q_full_history Similar to g_full_history.
+#' @param save_g_functions If TRUE, the fitted g-functions are saved.
+#' @param save_q_functions Similar to save_g_functions.
 #' @param M Number of folds for cross-fitting.
 #' @param type Type of evaluation (dr/doubly robust, ipw/inverse propensity
 #' weighting, or/outcome regression).
@@ -205,8 +207,8 @@
 #' head(get_policy_actions(pe2))
 policy_eval <- function(policy_data,
                         policy = NULL, policy_learn = NULL,
-                        g_functions = NULL, g_models = g_glm(), g_full_history = FALSE,
-                        q_functions = NULL, q_models = q_glm(), q_full_history = FALSE,
+                        g_functions = NULL, g_models = g_glm(), g_full_history = FALSE, save_g_functions = TRUE,
+                        q_functions = NULL, q_models = q_glm(), q_full_history = FALSE, save_q_functions = TRUE,
                         type = "dr",
                         M = 1, future_args = list(future.seed=TRUE),
                         name = NULL
@@ -283,8 +285,8 @@ policy_eval_type <- function(type,
                              train_policy_data,
                              valid_policy_data,
                              policy, policy_learn,
-                             g_models, g_functions, g_full_history,
-                             q_models, q_functions, q_full_history){
+                             g_models, g_functions, g_full_history, save_g_functions,
+                             q_models, q_functions, q_full_history, save_q_functions){
 
   type <- tolower(type)
   if (length(type) != 1)
@@ -323,6 +325,16 @@ policy_eval_type <- function(type,
                         policy = policy,
                         g_functions = getElement(fits, "g_functions"),
                         q_functions = getElement(fits, "q_functions"))
+
+  # setting output
+  g_functions <- NULL
+  if (save_g_functions == TRUE)
+    g_functions <- getElement(fits, "g_functions")
+
+  q_functions <- NULL
+  if(save_q_functions == TRUE)
+    q_functions <- getElement(fits, "q_functions")
+
   out <- list(
     value_estimate = getElement(value_object, "value_estimate"),
     type = type,
@@ -332,8 +344,8 @@ policy_eval_type <- function(type,
     id = get_id(valid_policy_data),
     policy_actions = policy_actions,
     policy_object = getElement(fits, "policy_object"),
-    g_functions = getElement(fits, "g_functions"),
-    q_functions = getElement(fits, "q_functions")
+    g_functions = g_functions,
+    q_functions = q_functions
   )
   out <- Filter(Negate(is.null), out)
 

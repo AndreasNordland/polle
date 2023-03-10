@@ -1,3 +1,28 @@
+test_that("policy_eval do not save g and Q-functions via the save_g_functions and save_q_functions arguments",{
+  d <- sim_single_stage(1e2, seed=1)
+  pd <- policy_data(d, action = "A", covariates = c("Z"), utility = "U")
+  p <- policy_def(1)
+
+  pe <- policy_eval(pd, policy=p)
+
+  expect_true(!is.null(pe$g_functions))
+  expect_true(!is.null(pe$q_functions))
+
+  pe <- policy_eval(pd, policy=p, save_g_functions = FALSE)
+  expect_true(is.null(pe$g_functions))
+  expect_true(!is.null(pe$q_functions))
+
+  pe <- policy_eval(pd, policy=p, save_q_functions = FALSE)
+  expect_true(!is.null(pe$g_functions))
+  expect_true(is.null(pe$q_functions))
+
+  pe <- policy_eval(pd, policy=p, save_g_functions = FALSE, M = 2)
+  expect_true(is.null(pe$cross_fits[[1]]$g_functions))
+
+  pe <- policy_eval(pd, policy=p, save_q_functions = FALSE, M = 2)
+  expect_true(is.null(pe$cross_fits[[1]]$q_functions))
+})
+
 test_that("policy_eval checks inputs",{
   d <- sim_single_stage(1e2, seed=1)
   pd <- policy_data(d, action = "A", covariates = c("Z"), utility = "U")

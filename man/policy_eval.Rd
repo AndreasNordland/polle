@@ -19,9 +19,11 @@ policy_eval(
   g_functions = NULL,
   g_models = g_glm(),
   g_full_history = FALSE,
+  save_g_functions = TRUE,
   q_functions = NULL,
   q_models = q_glm(),
   q_full_history = FALSE,
+  save_q_functions = TRUE,
   type = "dr",
   M = 1,
   future_args = list(future.seed = TRUE),
@@ -64,6 +66,8 @@ a single g-model is fitted across all stages. If \code{g_full_history} is
 \item{g_full_history}{If TRUE, the full history is used to fit each g-model.
 If FALSE, the state/Markov type history is used to fit each g-model.}
 
+\item{save_g_functions}{If TRUE, the fitted g-functions are saved.}
+
 \item{q_functions}{Fitted Q-model objects, see \link{nuisance_functions}.
 Only valid if the Q-functions are fitted using the same policy.
 Preferably, use \code{q_models}.}
@@ -74,6 +78,8 @@ Only used for evaluation if \code{q_functions} is \code{NULL}.
 If a single model is provided, the model is reused at every stage.}
 
 \item{q_full_history}{Similar to g_full_history.}
+
+\item{save_q_functions}{Similar to save_g_functions.}
 
 \item{type}{Type of evaluation (dr/doubly robust, ipw/inverse propensity
 weighting, or/outcome regression).}
