@@ -219,6 +219,7 @@ fit_g_functions <- function(policy_data, g_models, full_history = FALSE){
 #' @param policy_data Policy data object created by [policy_data()].
 #' @param g_models Propensity models/g-models created by [g_glm()], [g_rf()], [g_sl()] or similar functions.
 #' @param full_history If TRUE, the full history is used to fit each g-model. If FALSE, the single stage/"Markov type" history is used to fit each g-model.
+#' @param save_cross_fit_models Logical. Should the cross-fitted models be saved.
 #' @param future_args arguments passed to [future.apply::future_lapply].
 #' @examples
 #' #' library("polle")
@@ -239,14 +240,16 @@ fit_g_functions <- function(policy_data, g_models, full_history = FALSE){
 #' g_functions <- fit_g_functions_cf(folds = folds,
 #'                                   policy_data = pd,
 #'                                   g_models = g_glm(),
-#'                                   full_history = FALSE)
+#'                                   full_history = FALSE,
+#'                                   save_cross_fit_models = TRUE)
 #' g_functions
 #' # fitting a g-model for each stage for each fold (in parallel):
 #' future::plan("multisession")
 #' g_functions <- fit_g_functions_cf(folds = folds,
 #'                                   policy_data = pd,
 #'                                   g_models = list(g_glm(), g_glm()),
-#'                                   full_history = TRUE)
+#'                                   full_history = TRUE,
+#'                                   save_cross_fit_models = TRUE)
 #' future::plan("sequential")
 #' g_functions$functions
 #' @noRd
@@ -254,26 +257,37 @@ fit_g_functions_cf <- function(folds,
                                policy_data,
                                g_models,
                                full_history,
+                               save_cross_fit_models,
                                future_args = list(future.seed = TRUE)){
   id <- get_id(policy_data)
   K <- policy_data$dim$K
 
-  future_args <- append(future_args, list(X = folds,
-                                          FUN = function(f){
-                                            train_id <- id[-f]
-                                            train_policy_data <- subset_id(policy_data, train_id)
-                                            if (train_policy_data$dim$K != K) stop("The number of stages K varies across the training policy data folds.")
-                                            train_g_functions <- fit_g_functions(policy_data = train_policy_data, g_models = g_models, full_history = full_history)
+  future_args <- append(
+    future_args,
+    list(X = folds,
+         FUN = function(f){
+           train_id <- id[-f]
+           train_policy_data <- subset_id(policy_data, train_id)
+           if (train_policy_data$dim$K != K)
+             stop("The number of stages K varies across the training policy data folds.")
+           train_g_functions <- fit_g_functions(policy_data = train_policy_data,
+                                                g_models = g_models,
+                                                full_history = full_history)
 
-                                            valid_id <- id[f]
-                                            valid_policy_data <- subset_id(policy_data, valid_id)
-                                            valid_g_values <- predict(train_g_functions, valid_policy_data)
+           valid_id <- id[f]
+           valid_policy_data <- subset_id(policy_data, valid_id)
+           valid_g_values <- predict(train_g_functions, valid_policy_data)
 
-                                            list(
-                                              train_g_functions = train_g_functions,
-                                              valid_g_values = valid_g_values
-                                            )
-                                          }))
+           if (save_cross_fit_models == FALSE)
+             train_g_functions <- NULL
+
+           out <- list(
+             train_g_functions = train_g_functions,
+             valid_g_values = valid_g_values
+           )
+           return(out)
+         })
+  )
 
   fit_cf <- do.call(what = future.apply::future_lapply, future_args)
   fit_cf <- simplify2array(fit_cf)

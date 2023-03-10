@@ -98,11 +98,10 @@ dtrlearn2_owl <- function(policy_data,
       g_models = g_models,
       full_history = g_full_history,
       folds = folds,
+      save_cross_fit_models = save_cross_fit_models,
       future_args = future_args
     )
-    if (save_cross_fit_models == TRUE){
-      g_functions_cf <- getElement(g_cf, "functions")
-    }
+    g_functions_cf <- getElement(g_cf, "functions")
     g_values <- getElement(g_cf, "values")
     rm(g_cf)
   } else {
@@ -206,6 +205,7 @@ dtrlearn2_owl <- function(policy_data,
     X_scales = X_scales,
     X_designs = X_designs,
     g_functions = g_functions,
+    g_functions_cf = g_functions_cf,
     full_history = full_history,
     policy_vars = policy_vars,
     action_set = action_set,

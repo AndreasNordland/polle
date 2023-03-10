@@ -98,10 +98,52 @@ test_that("fit_g_functions handles varying stage-action sets", {
     gfit <- fit_g_functions_cf(folds,
                                policy_data = pd,
                                g_models = list(g_glm(), g_rf()),
-                               full_history = FALSE),
+                               full_history = FALSE,
+                               save_cross_fit_models = TRUE),
+    NA
+  )
+})
+
+test_that("fit_g_function_cf saves the cross-fitted models",{
+  d <- sim_two_stage_multi_actions(n = 1e2)
+  expect_error(
+    pd <- policy_data(data = d,
+                      action = c("A_1", "A_2"),
+                      baseline = c("B", "BB"),
+                      covariates = list(L = c("L_1", "L_2"),
+                                        C = c("C_1", "C_2")),
+                      utility = c("U_1", "U_2", "U_3")),
     NA
   )
 
+  set.seed(1)
+  folds <- list(c(1:30), 31:get_n(pd))
+  expect_error(
+    gfit <- fit_g_functions_cf(folds,
+                               policy_data = pd,
+                               g_models = list(g_glm(), g_rf()),
+                               full_history = FALSE,
+                               save_cross_fit_models = TRUE),
+    NA
+  )
+
+  expect_true(
+    all(!unlist(lapply(gfit$functions, is.null)))
+  )
+
+  set.seed(1)
+  folds <- list(c(1:30), 31:get_n(pd))
+  expect_error(
+    gfit <- fit_g_functions_cf(folds,
+                               policy_data = pd,
+                               g_models = list(g_glm(), g_rf()),
+                               full_history = FALSE,
+                               save_cross_fit_models = FALSE),
+    NA
+  )
+  expect_true(
+    all(unlist(lapply(gfit$functions, is.null)))
+  )
 
 })
 

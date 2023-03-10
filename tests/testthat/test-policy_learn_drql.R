@@ -309,7 +309,9 @@ test_that("policy_learn with type = 'drql' works with cross_fit_g_models.",{
                      alpha = 0.1,
                      control = control_drql())
 
-  gfun <- fit_g_functions(pd, list(g_empir(), g_empir()), full_history = FALSE)
+  gfun <- fit_g_functions(pd,
+                          list(g_empir(), g_empir()),
+                          full_history = FALSE)
 
   po <- pl(pd,
            g_models = list(g_empir(), g_empir()),
