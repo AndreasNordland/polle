@@ -324,6 +324,49 @@ test_that("policy_learn with type = 'drql' works with cross_fit_g_models.",{
 
 })
 
+
+test_that("policy_learn with type = 'drql' saves cross-fitted models.",{
+  d <- sim_two_stage(n = 1e2)
+  pd <- policy_data(data = d,
+                    action = c("A_1", "A_2"),
+                    baseline = c("B", "BB"),
+                    covariates = list(L = c("L_1", "L_2"),
+                                      C = c("C_1", "C_2")),
+                    utility = c("U_1", "U_2", "U_3"))
+
+  pl <- policy_learn(type = "drql",
+                     cross_fit_g_models = FALSE,
+                     L = 2,
+                     alpha = 0.1,
+                     save_cross_fit_models = FALSE,
+                     control = control_drql())
+
+  po <- pl(pd,
+           g_models = list(g_empir(), g_empir()),
+           q_models = q_glm())
+
+  expect_true(
+    is.null(unlist(po$q_functions_cf))
+  )
+
+  pl <- policy_learn(type = "drql",
+                     cross_fit_g_models = FALSE,
+                     L = 2,
+                     alpha = 0.1,
+                     save_cross_fit_models = TRUE,
+                     control = control_drql())
+
+  po <- pl(pd,
+           g_models = list(g_empir(), g_empir()),
+           q_models = q_glm())
+
+  expect_true(
+    !is.null(unlist(po$q_functions_cf))
+  )
+
+
+})
+
 test_that("policy_learn with type drql handles multiple stages with varying stage action sets",{
   d <- sim_multi_stage(300, seed = 1)
   # constructing policy_data object:
@@ -395,3 +438,6 @@ test_that("policy_learn with type drql handles multiple stages with varying stag
     pe2$IC
   )
 })
+
+
+
