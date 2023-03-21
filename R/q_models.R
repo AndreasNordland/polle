@@ -147,9 +147,8 @@ q_glm <- function(formula = ~ A*.,
 
   q_glm <- function(AH, V_res) {
     data <- AH
-    check_q_formula(formula = formula, data = data)
+    ## check_q_formula(formula = formula, data = data)
     formula <- update_q_formula(formula = formula, data = data, V_res = V_res)
-
     args_glm <- list(
       formula = formula,
       data = data,
@@ -158,9 +157,17 @@ q_glm <- function(formula = ~ A*.,
       na.action = na.action
     )
     args_glm <- append(args_glm, dotdotdot)
-    model <- do.call(what = "glm", args = args_glm)
-    model$call <- NULL
+    model <- tryCatch(do.call(what = "glm", args = args_glm),
+      error = function(e) e
+      )
+    if (inherits(model, "error")) {
+      model$message <-
+        paste0(model$message, " when calling 'q_glm' with formula:\n",
+               format(formula))
+      stop(model)
+    }
 
+    model$call <- NULL
     m <- list(model = model)
 
     class(m) <- c("q_glm")
@@ -351,3 +358,6 @@ predict.q_sl <- function(object, new_AH, ...) {
                      onlySL = onlySL)$pred[, 1]
   return(pred)
 }
+
+
+# SuperLearner interface --------------------------------------------------

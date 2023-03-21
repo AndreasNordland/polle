@@ -114,15 +114,13 @@ test_that("policy_learn with type drql works as intended",{
   qv <- policy_learn(type = "drql",
                      control = control_drql(qv_models = q_glm(formula = ~ X)))
   expect_error(
-    policy_eval(policy_data = pd,policy_learn = qv),
-    "The QV-model formula ~X is invalid."
+    policy_eval(policy_data = pd,policy_learn = qv)
   )
 
   qv <- policy_learn(type = "drql",
                      control = control_drql(qv_models = q_glm(formula = Y ~ X)))
   expect_error(
-    policy_eval(policy_data = pd,policy_learn = qv),
-    "The QV-model formula ~X is invalid."
+    policy_eval(policy_data = pd,policy_learn = qv)
   )
 
   # q_glm formula default is A * (.), and A is not used when fitting the
