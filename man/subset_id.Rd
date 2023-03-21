@@ -4,12 +4,14 @@
 \alias{subset_id}
 \title{Subset Policy Data on ID}
 \usage{
-subset_id(object, id)
+subset_id(object, id, preserve_action_set = TRUE)
 }
 \arguments{
 \item{object}{Object of class \link{policy_data}.}
 
 \item{id}{character vectors of IDs.}
+
+\item{preserve_action_set}{If TRUE, the action sets must be preserved.}
 }
 \value{
 Object of class \link{policy_data}.

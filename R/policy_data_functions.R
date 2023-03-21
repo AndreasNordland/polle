@@ -409,6 +409,7 @@ partial.policy_data <- function(object, K){
 #' \code{subset_id} returns a policy data object containing the given IDs.
 #' @param object Object of class [policy_data].
 #' @param id character vectors of IDs.
+#' @param preserve_action_set If TRUE, the action sets must be preserved.
 #' @returns Object of class [policy_data].
 #' @examples
 #' library("polle")
@@ -426,20 +427,27 @@ partial.policy_data <- function(object, K){
 #' pdsub
 #' get_id(pdsub)[1:10]
 #' @export
-subset_id <- function(object, id)
+subset_id <- function(object, id, preserve_action_set = TRUE)
   UseMethod("subset_id")
 
 #' @export
-subset_id.policy_data <- function(object, id){
+subset_id.policy_data <- function(object, id, preserve_action_set = TRUE){
   if (!all(id %in% get_id(object)))
     stop("Invalid subset of IDs.")
   id_ <- id; rm(id)
 
+  action_set <- NULL
+  stage_action_sets <- NULL
+  if (preserve_action_set == TRUE){
+    action_set <- object$action_set
+    stage_action_sets <- object$stage_action_sets
+  }
+
   spd <- new_policy_data(
     stage_data = object$stage_data[id %in% id_],
     baseline_data = object$baseline_data[id %in% id_],
-    action_set = object$action_set,
-    stage_action_sets = object$stage_action_sets
+    action_set = action_set,
+    stage_action_sets = stage_action_sets
   )
 
   return(spd)
