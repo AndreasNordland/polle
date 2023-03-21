@@ -118,8 +118,10 @@ associated with the policy for every observation and stage.}
 The policy object returned by \code{policy_learn}, see \link{policy_learn}.}
 \item{\code{g_functions}}{(only if \code{M = 1}) The
 fitted g-functions. Object of class "nuisance_functions".}
+\item{\code{g_values}}{The fitted g-function values.}
 \item{\code{q_functions}}{(only if \code{M = 1}) The
 fitted Q-functions. Object of class "nuisance_functions".}
+\item{\code{q_values}}{The fitted Q-function values.}
 \item{\code{cross_fits}}{(only if \code{M > 1}) List containing the
 "policy_eval" object for every (validation) fold.}
 \item{\code{folds}}{(only if \code{M > 1}) The (validation) folds used

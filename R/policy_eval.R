@@ -53,8 +53,10 @@
 #' The policy object returned by \code{policy_learn}, see [policy_learn].}
 #' \item{\code{g_functions}}{(only if \code{M = 1}) The
 #' fitted g-functions. Object of class "nuisance_functions".}
+#' \item{\code{g_values}}{The fitted g-function values.}
 #' \item{\code{q_functions}}{(only if \code{M = 1}) The
 #' fitted Q-functions. Object of class "nuisance_functions".}
+#' \item{\code{q_values}}{The fitted Q-function values.}
 #' \item{\code{cross_fits}}{(only if \code{M > 1}) List containing the
 #' "policy_eval" object for every (validation) fold.}
 #' \item{\code{folds}}{(only if \code{M > 1}) The (validation) folds used
@@ -320,20 +322,31 @@ policy_eval_type <- function(type,
                 policy_data = train_policy_data)
 
   # calculating the doubly robust score and value estimate:
+  g_functions <- getElement(fits, "g_functions")
+  q_functions <- getElement(fits, "q_functions")
   value_object <- value(type = type,
                         policy_data = valid_policy_data,
                         policy = policy,
-                        g_functions = getElement(fits, "g_functions"),
-                        q_functions = getElement(fits, "q_functions"))
+                        g_functions = g_functions,
+                        q_functions = q_functions)
 
-  # setting output
-  g_functions <- NULL
-  if (save_g_functions == TRUE)
-    g_functions <- getElement(fits, "g_functions")
+  # setting g-functions output:
+  g_values <- NULL
+  if (!is.null(g_functions)){
+    g_values <- predict(g_functions, valid_policy_data)
+  }
+  if (save_g_functions != TRUE){
+    g_functions <- NULL
+  }
 
-  q_functions <- NULL
-  if(save_q_functions == TRUE)
-    q_functions <- getElement(fits, "q_functions")
+  # setting Q-functions output:
+  q_values <- NULL
+  if (!is.null(q_functions)){
+    q_values <- predict(q_functions, valid_policy_data)
+  }
+  if(save_q_functions != TRUE){
+    q_functions <- NULL
+  }
 
   out <- list(
     value_estimate = getElement(value_object, "value_estimate"),
@@ -345,7 +358,9 @@ policy_eval_type <- function(type,
     policy_actions = policy_actions,
     policy_object = getElement(fits, "policy_object"),
     g_functions = g_functions,
-    q_functions = q_functions
+    g_values = g_values,
+    q_functions = q_functions,
+    q_values = q_values
   )
   out <- Filter(Negate(is.null), out)
 
@@ -404,6 +419,25 @@ policy_eval_cross <- function(args,
   policy_actions <- rbindlist(policy_actions)
   setkey(policy_actions, "id", "stage")
 
+  # collecting the g- and Q-values:
+  g_values <- lapply(cross_fits, function(x) getElement(x, "g_values"))
+  null_g_values <- unlist(lapply(g_values, is.null))
+  if (!all(null_g_values)){
+    g_values <- data.table::rbindlist(g_values)
+    setkey(g_values, "id", "stage")
+  } else {
+    g_values <- NULL
+  }
+
+  q_values <- lapply(cross_fits, function(x) getElement(x, "q_values"))
+  null_q_values <- unlist(lapply(q_values, is.null))
+  if (!all(null_q_values)){
+    q_values <- data.table::rbindlist(q_values)
+    setkey(q_values, "id", "stage")
+  } else {
+    q_values <- NULL
+  }
+
   # sorting via the IDs:
   IC <- IC[order(id)]
   id <- id[order(id)]
@@ -415,6 +449,8 @@ policy_eval_cross <- function(args,
               value_estimate_or = value_estimate_or,
               id = id,
               policy_actions = policy_actions,
+              g_values = g_values,
+              q_values = q_values,
               cross_fits = cross_fits,
               folds = folds
   )
