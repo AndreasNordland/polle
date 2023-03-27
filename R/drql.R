@@ -4,20 +4,6 @@ fit_QV_function <- function(history, Z, qv_model){
   stage <- getElement(history, "stage")
   H <- get_H(history)
 
-  # checking qv_model formula:
-  ## formula <- get("formula", environment(qv_model))
-  ## tt <- terms(formula, data = H)
-  ## if (length(attr(tt, "term.labels")) > 0){
-  ##   formula <- reformulate(attr(tt, "term.labels"), response = NULL)
-  ##   tt <- terms(formula, data = H)
-  ##   variables <- all.vars(tt) ## as.character(attr(tt, "variables"))[-1]
-  ##   if(!all(variables %in% colnames(H))){
-  ##     mes <- deparse(formula)
-  ##     mes <- paste("The QV-model formula", mes, "is invalid.")
-  ##     stop(mes)
-  ##   }
-  ## }
-
   # fitting the QV-model:
   qv_model <- apply(
     Z[, stage_action_set],
@@ -26,6 +12,7 @@ fit_QV_function <- function(history, Z, qv_model){
       qv_model(V_res = z, AH = H)
     }
   )
+  names(qv_model) <- paste("QV_", stage_action_set, sep = "")
 
   qv_function <- list(
     qv_model = qv_model,
@@ -50,6 +37,7 @@ predict.QV_function <- function(object, new_history){
 
   qv_values <- matrix(NA, nrow = nrow(new_H), ncol = length(action_set))
   colnames(qv_values) <- paste("QV_", action_set, sep = "")
+
   qv_values[, action_set %in% stage_action_set] <- sapply(
     qv_model,
     function(qvm){
