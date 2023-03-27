@@ -429,7 +429,7 @@ get_policy.drql <- function(object){
 plot_policy_object.drql <- function(
     policy_object,
     policy_data,
-    index,
+    id,
     continuous_variable_1,
     range_1,
     continuous_variable_2,
@@ -437,7 +437,7 @@ plot_policy_object.drql <- function(
     stage = NULL,
     granularity = 20
 ){
-  id_ <- get_id(policy_data)[index]
+  id_ <- id
   action_set <- get_action_set(policy_data)
   policy_data <- subset_id(policy_data,
                            id = id_,
@@ -501,7 +501,7 @@ plot_policy_object.drql <- function(
     H <- cbind(H, grid)
 
     # getting the policy actions
-    pf <- get_policy_functions(po,
+    pf <- get_policy_functions(policy_object,
                                stage = stage_[s_],
                                include_g_values = TRUE)
     d <- pf(H)
@@ -527,16 +527,16 @@ plot_policy_object.drql <- function(
 
   # plot of the policy actions:
   p1 <- ggplot2::ggplot(plot_data) +
-    ggplot2::geom_point(aes_string(x = {{continuous_variable_1}},
-                          y = {{continuous_variable_2}},
-                          color = "d",
-                          alpha = "realistic")) +
-    ggplot2::geom_point(data = plot_data_2, aes_string(x = {{continuous_variable_1}},
-                                              y = {{continuous_variable_2}},
-                                              fill = "A"),
-               size = 2,
-               color = "black",
-               pch=21) +
+    ggplot2::geom_point(ggplot2::aes_string(x = {{continuous_variable_1}},
+                                            y = {{continuous_variable_2}},
+                                            color = "d",
+                                            alpha = "realistic")) +
+    ggplot2::geom_point(data = plot_data_2, ggplot2::aes_string(x = {{continuous_variable_1}},
+                                                                y = {{continuous_variable_2}},
+                                                                fill = "A"),
+                        size = 2,
+                        color = "black",
+                        pch=21) +
     ggplot2::scale_alpha_discrete(range = c(0.35, 1)) +
     ggplot2::scale_fill_discrete(drop=FALSE) +
     ggplot2::facet_wrap(~stage, labeller = "label_both") +
