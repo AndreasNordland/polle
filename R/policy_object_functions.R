@@ -106,6 +106,7 @@ get_policy.policy_eval <- function(object){
 #' @param object Object of class "policy_object" or "policy_eval",
 #' see [policy_learn] and [policy_eval].
 #' @param stage Integer. Stage number.
+#' @param ... Additional arguments.
 #' @returns Functions with arguments:
 #' \item{\code{H}}{[data.table] containing the variables needed to evaluate the policy (and g-function).}
 #' @examples
@@ -148,7 +149,7 @@ get_policy.policy_eval <- function(object){
 #' d2 <- pf2(H = new_H)
 #' head(d2)
 #' @export
-get_policy_functions <- function(object, stage){
+get_policy_functions <- function(object, stage, ...){
   UseMethod("get_policy_functions")
 }
 

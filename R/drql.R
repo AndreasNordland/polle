@@ -310,7 +310,7 @@ drql <- function(policy_data,
 
 #' @rdname get_policy_functions
 #' @export
-get_policy_functions.drql <- function(object, stage){
+get_policy_functions.drql <- function(object, stage, include_g_values = FALSE){
   stage_action_sets <- getElement(object, "stage_action_sets")
   stage_action_set <- stage_action_sets[[stage]]; rm(stage_action_sets)
   K <- getElement(object, "K")
@@ -339,6 +339,7 @@ get_policy_functions.drql <- function(object, stage){
       }
     )
 
+    g_values <- NULL
     if (alpha == 0){
       dd <- apply(qv_values, MARGIN = 1, which.max)
       d <- stage_action_set[dd]
@@ -364,6 +365,10 @@ get_policy_functions.drql <- function(object, stage){
       dd <- apply(qv_values * realistic_actions, MARGIN = 1, which.max)
       d <- stage_action_set[dd]
     }
+
+    # including the g_values as attributes:
+    if (include_g_values == TRUE)
+      attr(d, "g_values") <- g_values
 
     return(d)
   }
@@ -430,4 +435,124 @@ get_policy.drql <- function(object){
   policy <- new_policy(policy, name = "drql")
 
   return(policy)
+}
+
+# plot function
+plot_policy_object.drql <- function(
+    policy_object,
+    policy_data,
+    index,
+    continuous_variable_1,
+    range_1,
+    continuous_variable_2,
+    range_2,
+    stage = NULL,
+    granularity = 20
+){
+  id_ <- get_id(policy_data)[index]
+  action_set <- get_action_set(policy_data)
+  policy_data <- subset_id(policy_data,
+                           id = id_,
+                           preserve_action_set = FALSE)
+  stage_ <- stage; rm(stage)
+
+  # constructing the grid for the continuous variables:
+  seq_variable_1 <- seq(from = range_1[1],
+                        to = range_1[2],
+                        length.out = granularity)
+  seq_variable_2 <- seq(from = range_2[1],
+                        to = range_2[2],
+                        length.out = granularity)
+  grid <- data.table::CJ(seq_variable_1, seq_variable_2)
+  names(grid) <- c(continuous_variable_1, continuous_variable_2)
+
+  # getting the number of stages for the given observation:
+  K <- get_K(policy_data)
+
+  # setting the default value of 'stage' (all stages):
+  if (is.null(stage_))
+    stage_ <- 1:K
+
+  # taking the intersection of the observed stages and the input stages:
+  stage_ <- intersect(1:K, stage_)
+  k <- length(stage_)
+
+  # getting the g-functions
+  g_functions <- get_g_functions(policy_object)
+  g_full_history <- attr(g_functions, "full_history")
+
+  plot_data <- list()
+  plot_data_2 <- list()
+  for (s_ in 1:k){
+
+    # full history:
+    qv_functions <- getElement(policy_object, "qv_functions")
+    full_history <- attr(qv_functions, "full_history")
+    stopifnot(full_history == g_full_history)
+
+    # geetting the history matrix
+    his <- get_history(policy_data,
+                       stage = stage_[s_],
+                       full_history = full_history)
+
+    H <- his[["H"]]
+
+    # getting the observed action
+    A <- his[["A"]]
+    A <- merge(A, H)
+
+    # checks
+    stopifnot(
+      continuous_variable_1 %in% names(H),
+      continuous_variable_2 %in% names(H)
+    )
+
+    H <- H[rep(1, each = granularity^2)]
+    H[,(continuous_variable_1) := NULL]
+    H[,(continuous_variable_2) := NULL]
+    H <- cbind(H, grid)
+
+    # getting the policy actions
+    pf <- get_policy_functions(po,
+                               stage = stage_[s_],
+                               include_g_values = TRUE)
+    d <- pf(H)
+
+    # getting the realistic actions
+    g_values <- attr(d, "g_values")
+    colnames(g_values) <- paste("g_", action_set, sep = "")
+    alpha <- getElement(policy_object, "alpha")
+    realistic_actions <- t(apply(g_values, MARGIN = 1, function(x) x >= alpha))
+    realistic <- apply(realistic_actions, 1, prod)
+
+    H <- cbind(H, d = d, realistic = realistic, g_values)
+
+    plot_data[[s_]] <- H
+    plot_data_2[[s_]] <- A
+  }
+  plot_data <- data.table::rbindlist(plot_data)
+  plot_data$realistic <- as.factor(as.logical(plot_data$realistic))
+  plot_data$d <- factor(plot_data$d, levels = action_set)
+
+  plot_data_2 <- data.table::rbindlist(plot_data_2)
+  plot_data_2$A <- factor(plot_data_2$A, levels = action_set)
+
+  # plot of the policy actions:
+  p1 <- ggplot2::ggplot(plot_data) +
+    ggplot2::geom_point(aes_string(x = {{continuous_variable_1}},
+                          y = {{continuous_variable_2}},
+                          color = "d",
+                          alpha = "realistic")) +
+    ggplot2::geom_point(data = plot_data_2, aes_string(x = {{continuous_variable_1}},
+                                              y = {{continuous_variable_2}},
+                                              fill = "A"),
+               size = 2,
+               color = "black",
+               pch=21) +
+    ggplot2::scale_alpha_discrete(range = c(0.35, 1)) +
+    ggplot2::scale_fill_discrete(drop=FALSE) +
+    ggplot2::facet_wrap(~stage, labeller = "label_both") +
+    ggplot2::theme_bw()
+
+  return(p1)
 }
