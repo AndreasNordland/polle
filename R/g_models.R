@@ -43,7 +43,7 @@ check_missing_regressor <- function(formula, data){
   cols_na <- names(which(colSums(is.na(data[,v, with = FALSE])) > 0))
   if (length(cols_na) > 0){
     mes <- paste(cols_na, collapse = ", ")
-    mes <- paste("The regression variables ", mes, " have missing NA values.", sep = "")
+    mes <- paste("The regression variables ", mes, " have missing (NA) values.", sep = "")
     warning(mes)
   }
 }
@@ -62,16 +62,46 @@ get_design <- function(formula, data) {
   attr(tt, "intercept") <- 1
   tt <- delete.response(tt)
   op <- options(na.action = "na.pass")
-  mf <- model.frame(tt, data=data, drop.unused.levels = TRUE)
+  mf <-
+
+  mf <- tryCatch(model.frame(tt, data=data, drop.unused.levels = TRUE),
+                    error = function(e) e
+  )
+  if (inherits(mf, "error")) {
+    mf$message <-
+      paste0(mf$message, " when calling model.frame with formula:\n",
+             format(formula))
+    stop(mf)
+  }
+
   xlevels <- .getXlevels(tt, mf)
   x <- model.matrix(mf, data=data)
   options(op)
   idx_inter <- which(colnames(x) == "(Intercept)")
   if (length(idx_inter)>0)
     x <- x[,-idx_inter, drop = FALSE]
-  attr(tt, ".Environment") <- NULL
   colnames(x) <- gsub("[^[:alnum:]]", "_", colnames(x))
   return(list(terms=tt, xlevels=xlevels, x=x))
+}
+
+apply_design <- function(design, data){
+  terms <- getElement(design, "terms")
+  xlevels <- getElement(design, "xlevels")
+
+  op <- options(na.action = "na.pass")
+  mf <- model.frame(terms,
+                    data=data,
+                    xlev = xlevels,
+                    drop.unused.levels=FALSE)
+  newx <- model.matrix(mf, data=data, xlev = xlevels)
+  options(op)
+
+  idx_inter <- which(colnames(newx) == "(Intercept)")
+  if (length(idx_inter)>0)
+    newx <- newx[,-idx_inter, drop = FALSE]
+
+  colnames(newx) <- gsub("[^[:alnum:]]", "_", colnames(newx))
+  return(newx)
 }
 
 supp_warnings <- function(expr, mess, fun) {
@@ -100,26 +130,6 @@ supp_warnings <- function(expr, mess, fun) {
       })
     )
   )
-}
-
-apply_design <- function(design, data){
-  terms <- getElement(design, "terms")
-  xlevels <- getElement(design, "xlevels")
-
-  op <- options(na.action = "na.pass")
-  mf <- model.frame(terms,
-                    data=data,
-                    xlev = xlevels,
-                    drop.unused.levels=FALSE)
-  newx <- model.matrix(mf, data=data, xlev = xlevels)
-  options(op)
-
-  idx_inter <- which(colnames(newx) == "(Intercept)")
-  if (length(idx_inter)>0)
-    newx <- newx[,-idx_inter, drop = FALSE]
-
-  colnames(newx) <- gsub("[^[:alnum:]]", "_", colnames(newx))
-  return(newx)
 }
 
 new_g_model <- function(g_model){
@@ -296,11 +306,9 @@ g_glm <- function(formula = ~.,
                   na.action = na.pass,
                   ...) {
   formula <- as.formula(formula)
-  environment(formula) <- NULL
   dotdotdot <- list(...)
 
   g_glm <- function(A, H, action_set){
-    check_g_formula(formula = formula, data = H)
     formula <- update_g_formula(formula, A, H)
 
     args_glm <- append(list(formula = formula,
@@ -310,7 +318,16 @@ g_glm <- function(formula = ~.,
                             na.action = na.action),
                        dotdotdot)
 
-    model <- do.call(what = "glm", args = args_glm)
+    model <- tryCatch(do.call(what = "glm", args = args_glm),
+                      error = function(e) e
+    )
+    if (inherits(model, "error")) {
+      model$message <-
+        paste0(model$message, " when calling 'g_glm' with formula:\n",
+               format(formula))
+      stop(model)
+    }
+
     model$call <- NULL
 
     m <- list(model = model)
@@ -341,11 +358,8 @@ g_glmnet <- function(formula = ~.,
                      s = "lambda.min", ...) {
   if (!requireNamespace("glmnet")) stop("Package 'glmnet' required")
   formula <- as.formula(formula)
-  environment(formula) <- NULL
   dotdotdot <- list(...)
   g_glmnet <- function(A, H, action_set){
-    check_g_formula(formula = formula, data = H)
-    check_missing_regressor(formula = formula, data = H)
     formula <- update_g_formula(formula, A, H)
     y <- get_response(formula, data=H)
     des <- get_design(formula, data=H)
@@ -354,10 +368,20 @@ g_glmnet <- function(formula = ~.,
 
     args_glmnet <- list(y = y,  x = des$x, family = family, alpha = alpha)
     args_glmnet <- append(args_glmnet, dotdotdot)
-    model <- do.call(glmnet::cv.glmnet, args = args_glmnet)
-    model$call <- NULL
 
+    model <- tryCatch(do.call(glmnet::cv.glmnet, args = args_glmnet),
+                      error = function(e) e
+    )
+    if (inherits(model, "error")) {
+      model$message <-
+        paste0(model$message, " when calling 'g_glmnet' with formula:\n",
+               format(formula))
+      stop(model)
+    }
+
+    model$call <- NULL
     des$x <- NULL
+
     m  <- list(model = model,
                s = s,
                design = des,
@@ -415,7 +439,6 @@ g_rf <- function(formula = ~.,
 
   g_rf <- function(A, H, action_set) {
     A <- factor(A, levels = action_set)
-    check_g_formula(formula = formula, data = H)
     des <- get_design(formula, data=H)
     data <- data.frame(A, des$x)
     res <- NULL; best <- 1
@@ -430,9 +453,10 @@ g_rf <- function(formula = ~.,
     } else {
       model <- ml[[best]](data)
     }
-    model$call <- NULL
 
+    model$call <- NULL
     des$x <- NULL
+
     m <- list(model = model,
               rf_args = rf_args(hyper_par[[best]]),
               num.trees=num.trees[best],
@@ -469,13 +493,11 @@ g_sl <- function(formula = ~ .,
   if (!requireNamespace("SuperLearner"))
     stop("Package 'SuperLearner' required.")
   formula <- as.formula(formula)
-  environment(formula) <- NULL
   force(SL.library)
   force(env)
   dotdotdot <- list(...)
   g_sl <- function(A, H, action_set) {
     A <- as.numeric(factor(A, levels=action_set))-1
-    check_g_formula(formula = formula, data = H)
     des <- get_design(formula, data=H)
     sl_args <- append(list(Y=A,
                            X=as.data.frame(des$x),
@@ -484,14 +506,15 @@ g_sl <- function(formula = ~ .,
                            env = env),
                       dotdotdot)
     model <- do.call(SuperLearner::SuperLearner, sl_args)
+
     model$call <- NULL
     if(all(model$coef == 0))
       stop("In g_sl(): All metalearner coefficients are zero.")
     if(onlySL == TRUE){
       model$fitLibrary[model$coef == 0] <- NA
     }
-
     des$x <- NULL
+
     m <- list(model = model,
               design = des,
               onlySL = onlySL,
@@ -536,7 +559,6 @@ predict.g_sl <- function(object, new_H, ...) {
 #   }
 #   g_sl3 <- function(A, H, action_set) {
 #     A <- factor(A, levels=action_set)
-#     check_g_formula(formula = formula, data = H)
 #     des <- get_design(formula, data=H)
 #     X <- data.frame(des$x)
 #     colnames(X) <- gsub("[^[:alnum:]]", "_", colnames(X))

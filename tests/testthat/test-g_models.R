@@ -164,16 +164,20 @@ test_that("g_models checks formula input", {
 
   expect_error(policy_eval(policy_data = pd,
                            policy = p_dynamic,
-                           g_models = g_glm(formula = A~X)), "The g-model formula ~X is invalid.")
+                           g_models = g_glm(formula = A~X)), "object 'X' not found when calling 'g_glm' with formula:
+AA ~ X")
   expect_error(policy_eval(policy_data = pd,
                            policy = p_dynamic,
-                           g_models = g_sl(formula = a~X)), "The g-model formula ~X is invalid.")
+                           g_models = g_sl(formula = a~X)), "object 'X' not found when calling model.frame with formula:
+a ~ X")
   expect_error(policy_eval(policy_data = pd,
                            policy = p_dynamic,
-                           g_models = g_rf(formula = ~X)), "The g-model formula ~X is invalid.")
+                           g_models = g_rf(formula = ~X)), "object 'X' not found when calling model.frame with formula:
+~X")
   expect_error(policy_eval(policy_data = pd,
                            policy = p_dynamic,
-                           g_models = g_glmnet(formula = ~X)), "The g-model formula ~X is invalid.")
+                           g_models = g_glmnet(formula = ~X)), "object 'X' not found when calling model.frame with formula:
+AA ~ X")
   expect_error(policy_eval(policy_data = pd,
                            policy = p_dynamic,
                            g_models = g_empir(formula = ~X)), "The g-model formula ~X is invalid.")

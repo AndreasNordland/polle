@@ -142,12 +142,10 @@ q_glm <- function(formula = ~ A*.,
                   na.action = na.pass,
                   ...){
   formula <- as.formula(formula)
-  environment(formula) <- NULL
   dotdotdot <- list(...)
 
   q_glm <- function(AH, V_res) {
     data <- AH
-    ## check_q_formula(formula = formula, data = data)
     formula <- update_q_formula(formula = formula, data = data, V_res = V_res)
     args_glm <- list(
       formula = formula,
@@ -195,20 +193,27 @@ q_glmnet <- function(formula = ~ A*.,
   if (!requireNamespace("glmnet"))
     stop("Package 'glmnet' required.")
   formula <- as.formula(formula)
-  environment(formula) <- NULL
   dotdotdot <- list(...)
 
   q_glmnet <- function(AH, V_res) {
-    check_q_formula(formula = formula, data = AH)
-    check_missing_regressor(formula = formula, data = AH)
     des <- get_design(formula, data=AH)
     y <- V_res
     args_glmnet <- c(list(y = y, x = des$x,
                         family = family, alpha = alpha), dotdotdot)
-    model <- do.call(glmnet::cv.glmnet, args = args_glmnet)
-    model$call <- NULL
 
+    model <- tryCatch(do.call(glmnet::cv.glmnet, args = args_glmnet),
+                      error = function(e) e
+    )
+    if (inherits(model, "error")) {
+      model$message <-
+        paste0(model$message, " when calling 'q_glmnet' with formula:\n",
+               format(formula))
+      stop(model)
+    }
+
+    model$call <- NULL
     des$x <- NULL
+
     m  <- list(model = model,
                s = s,
                design = des)
@@ -248,7 +253,6 @@ q_rf <- function(formula = ~.,
                  cv_args=list(K=3, rep=1), ...) {
   if (!requireNamespace("ranger")) stop("Package 'ranger' required.")
   formula <- as.formula(formula)
-  environment(formula) <- NULL
   dotdotdot <- list(...)
   hyper_par <- expand.list(num.trees=num.trees, mtry=mtry)
   rf_args <- function(p) {
@@ -263,7 +267,6 @@ q_rf <- function(formula = ~.,
     })
 
   q_rf <- function(AH, V_res) {
-    check_q_formula(formula = formula, data = AH)
     des <- get_design(formula, data=AH)
     data <- data.frame(V_res, des$x)
     res <- NULL; best <- 1
@@ -278,9 +281,10 @@ q_rf <- function(formula = ~.,
     } else {
       model <- ml[[best]](data)
     }
-    model$call <- NULL
 
+    model$call <- NULL
     des$x <- NULL
+
     m <- list(model = model,
               rf_args = rf_args(hyper_par[[best]]),
               num.trees=num.trees[best],
@@ -313,12 +317,10 @@ q_sl <- function(formula = ~ .,
   if (!requireNamespace("SuperLearner"))
     stop("Package 'SuperLearner' required.")
   formula <- as.formula(formula)
-  environment(formula) <- NULL
   force(SL.library)
   force(env)
   dotdotdot <- list(...)
   q_sl <- function(AH, V_res) {
-    check_q_formula(formula = formula, data = AH)
     des <- get_design(formula, data=AH)
     if (missing(V_res) || is.null(V_res))
       V_res <- get_response(formula, data=AH)
