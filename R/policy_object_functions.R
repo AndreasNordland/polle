@@ -106,6 +106,7 @@ get_policy.policy_eval <- function(object){
 #' @param object Object of class "policy_object" or "policy_eval",
 #' see [policy_learn] and [policy_eval].
 #' @param stage Integer. Stage number.
+#' @param include_g_values If TRUE, the g-values are included as an attribute.
 #' @param ... Additional arguments.
 #' @returns Functions with arguments:
 #' \item{\code{H}}{[data.table] containing the variables needed to evaluate the policy (and g-function).}

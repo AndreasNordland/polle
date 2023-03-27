@@ -6,9 +6,9 @@
 \alias{get_policy_functions.ptl}
 \title{Get Policy Functions}
 \usage{
-\method{get_policy_functions}{drql}(object, stage)
+\method{get_policy_functions}{drql}(object, stage, include_g_values = FALSE)
 
-get_policy_functions(object, stage)
+get_policy_functions(object, stage, ...)
 
 \method{get_policy_functions}{ptl}(object, stage)
 }
@@ -17,6 +17,10 @@ get_policy_functions(object, stage)
 see \link{policy_learn} and \link{policy_eval}.}
 
 \item{stage}{Integer. Stage number.}
+
+\item{include_g_values}{If TRUE, the g-values are included as an attribute.}
+
+\item{...}{Additional arguments.}
 }
 \value{
 Functions with arguments:
