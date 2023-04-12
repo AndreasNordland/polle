@@ -8,6 +8,7 @@
 \alias{g_glmnet}
 \alias{g_rf}
 \alias{g_sl}
+\alias{g_xgboost}
 \title{g_model class object}
 \usage{
 g_empir(formula = ~1, ...)
@@ -36,6 +37,16 @@ g_sl(
   family = binomial(),
   env = as.environment("package:SuperLearner"),
   onlySL = TRUE,
+  ...
+)
+
+g_xgboost(
+  formula = ~.,
+  objective = "binary:logistic",
+  params = list(),
+  nrounds,
+  max_depth = 6,
+  eta = 0.3,
   ...
 )
 }

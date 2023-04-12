@@ -543,7 +543,7 @@ predict.g_sl <- function(object, new_H, ...) {
   return(pr)
 }
 
-## sl3 (SuperLearner) interface ----
+# sl3 (SuperLearner) interface ----
 
 # g_sl3 <- function(formula = ~ ., learner, folds=5, ...) {
 #   if (!requireNamespace("sl3"))
@@ -588,3 +588,81 @@ predict.g_sl <- function(object, new_H, ...) {
 #   pr <- object$fit$predict(tsk)
 #   return(pr)
 # }
+
+
+# xgboost interface -----------------------------------------------------------------
+
+#' @rdname g_model
+#' @export
+g_xgboost <- function(formula = ~.,
+                      objective = "binary:logistic",
+                      params = list(),
+                      nrounds,
+                      max_depth = 6,
+                      eta = 0.3,
+                      verbose = 0,
+                      nthread = 1,
+                      ...) {
+  if (!requireNamespace("xgboost")) stop("Package 'xgboost' required")
+  formula <- as.formula(formula)
+  environment(formula) <- NULL
+  dotdotdot <- list(...)
+
+  g <- function(A, H, action_set) {
+    # checks:
+    if (length(action_set) != 2)
+      stop("g_xgboost in only implemented for a dichotomous action set.")
+
+    # formatting data:
+    A <- factor(A, levels = action_set)
+    A <- as.numeric(A) - 1
+    des <- get_design(formula, data=H)
+    xgboost_data = xgboost::xgb.DMatrix(data = des$x, label = A)
+
+    # setting model arguments:
+    model_args <- append(
+      list(data = xgboost_data,
+           objective = objective,
+           params = params,
+           nrounds = nrounds,
+           max_depth = max_depth,
+           eta = eta,
+           verbose = verbose,
+           nthread = nthread),
+      dotdotdot
+    )
+
+    model <- tryCatch(do.call(what = xgboost::xgboost, args = model_args),
+                      error = function(e) e)
+
+    if (inherits(model, "error")) {
+      model$message <-
+        paste0(model$message, " when calling 'g_xgboost' with formula:\n",
+               format(formula))
+      stop(model)
+    }
+
+    # setting model output
+    des$x <- NULL
+    m <- list(model = model,
+              design = des,
+              action_set = action_set)
+    class(m) <- c("g_xgboost")
+    return(m)
+  }
+  # setting class:
+  g <- new_g_model(g)
+
+  return(g)
+}
+
+predict.g_xgboost <- function(object, new_H, ...){
+  model <- getElement(object, "model")
+  design <- getElement(object, "design")
+  new_data <- apply_design(design = design, data = new_H)
+
+  fit <- predict(model, newdata = new_data)
+  probs <- cbind((1-fit), fit)
+
+  return(probs)
+}
