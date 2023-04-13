@@ -361,5 +361,72 @@ predict.q_sl <- function(object, new_AH, ...) {
   return(pred)
 }
 
+# xgboost interface -----------------------------------------------------------------
 
-# SuperLearner interface --------------------------------------------------
+#' @rdname g_model
+#' @export
+q_xgboost <- function(formula = ~.,
+                      objective = "reg:squarederror",
+                      params = list(),
+                      nrounds,
+                      max_depth = 6,
+                      eta = 0.3,
+                      verbose = 0,
+                      nthread = 1,
+                      ...) {
+  if (!requireNamespace("xgboost")) stop("Package 'xgboost' required")
+  formula <- as.formula(formula)
+  environment(formula) <- NULL
+  dotdotdot <- list(...)
+
+  q <- function(AH, V_res) {
+    # formatting data:
+    des <- get_design(formula, data=AH)
+    if (missing(V_res) || is.null(V_res))
+      V_res <- get_response(formula, data=AH)
+    xgboost_data = xgboost::xgb.DMatrix(data = des$x, label = V_res)
+
+    # setting model arguments:
+    model_args <- append(
+      list(data = xgboost_data,
+           objective = objective,
+           params = params,
+           nrounds = nrounds,
+           max_depth = max_depth,
+           eta = eta,
+           verbose = verbose,
+           nthread = nthread),
+      dotdotdot
+    )
+
+    model <- tryCatch(do.call(what = xgboost::xgboost, args = model_args),
+                      error = function(e) e)
+
+    if (inherits(model, "error")) {
+      model$message <-
+        paste0(model$message, " when calling 'q_xgboost' with formula:\n",
+               format(formula))
+      stop(model)
+    }
+
+    # setting model output
+    des$x <- NULL
+    m <- list(model = model,
+              design = des)
+    class(m) <- c("q_xgboost")
+    return(m)
+  }
+  # setting class:
+  q <- new_q_model(q)
+
+  return(q)
+}
+
+predict.q_xgboost <- function(object, new_AH, ...){
+  model <- getElement(object, "model")
+  design <- getElement(object, "design")
+  new_data <- apply_design(design = design, data = new_AH)
+
+  pred <- predict(model, newdata = new_data)
+  return(pred)
+}
