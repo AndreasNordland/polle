@@ -4,8 +4,11 @@ test_that("q_xgboost gives the same result as plain xgboost",{
   xgboost_data = xgboost::xgb.DMatrix(data = as.matrix(d[,c("Z", "L", "B", "A")]), label = d[["U"]])
 
   set.seed(1)
-  bst <- xgboost(data = xgboost_data,
-                 max_depth = 2, eta = 1, nrounds = 2)
+  bst <- xgboost::xgboost(data = xgboost_data,
+                          max_depth = 2,
+                          eta = 1,
+                          nrounds = 2,
+                          verbose = FALSE)
 
   pred <- predict(bst, xgboost_data)
 

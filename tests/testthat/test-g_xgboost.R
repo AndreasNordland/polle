@@ -4,9 +4,10 @@ test_that("g_xgboost gives the same result as plain xgboost",{
   xgboost_data = xgboost::xgb.DMatrix(data = as.matrix(d[,c("Z", "L", "B")]), label = d[["A"]])
 
   set.seed(1)
-  bst <- xgboost(data = xgboost_data,
+  bst <- xgboost::xgboost(data = xgboost_data,
                  max_depth = 2, eta = 1, nrounds = 2,
-                 objective = "binary:logistic")
+                 objective = "binary:logistic",
+                 verbose = FALSE)
 
   pred <- predict(bst, xgboost_data)
 
@@ -46,7 +47,7 @@ test_that("g_xgboost gives the same result as SL.xgboost",{
                          ntrees  = 1) # nrounds
   sl_learner <- create.Learner("SL.xgboost",tune = xgboost_tune)
   g_fun_sl <- fit_g_functions(pd,
-                              g_models = g_sl(SL.library = sl_learner$names, env = parent.frame()))
+                              g_models = g_sl(SL.library = sl_learner$names, env = environment()))
   pred_2 <- predict(g_fun_sl, pd)
 
   expect_equal(
