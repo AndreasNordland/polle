@@ -87,8 +87,7 @@ rql<- function(policy_data, alpha,
 
   # checking if deterministic rewards has been applied:
   deterministic_rewards <- policy_data[["colnames"]][["deterministic_rewards"]]
-  indicator_deterministic_rewards <- !all(policy_data[["stage_data"]][,deterministic_rewards, with = FALSE] == 0)
-
+  indicator_deterministic_rewards <- !all(policy_data[["stage_data"]][event == 0,deterministic_rewards, with = FALSE] == 0)
 
   out <- list(
     q_functions = q_functions,
