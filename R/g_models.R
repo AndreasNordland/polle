@@ -162,7 +162,7 @@ new_g_model <- function(g_model){
 #' @param num.trees (Only used by \code{g_rf}) Number of trees.
 #' @param mtry (Only used by \code{g_rf}) Number of variables to possibly split
 #'  at in each node.
-#' @param cv_args (Only used by \code{g_rf}) Cross-validation parameters.
+#' @param cv_args (Only used by \code{g_rf} and \code{g_xgboost}) Cross-validation parameters.
 #' Only used if multiple hyper-parameters are given. \code{K} is the number
 #' of folds and
 #' \code{rep} is the number of replications.
@@ -600,13 +600,45 @@ g_xgboost <- function(formula = ~.,
                       nrounds,
                       max_depth = 6,
                       eta = 0.3,
-                      verbose = 0,
                       nthread = 1,
-                      ...) {
+                      cv_args=list(K=3, rep=1)) {
   if (!requireNamespace("xgboost")) stop("Package 'xgboost' required")
   formula <- as.formula(formula)
   environment(formula) <- NULL
-  dotdotdot <- list(...)
+
+  ml <- function(formula = A~., objective,
+                 params, nrounds, max_depth,
+                 eta, nthread){
+    targeted::ml_model$new(formula,
+                           info = "xgBoost",
+                           fit = function(x, y) {
+                             xgboost::xgboost(
+                               data = x, label = y,
+                               objective = objective,
+                               params = params,
+                               nrounds = nrounds,
+                               max_depth = max_depth,
+                               eta = eta,
+                               nthread = nthread,
+                               verbose = 0, print_every = 0)
+                           })
+  }
+
+  ml_args <- expand.list(
+    nrounds = nrounds,
+    max_depth = max_depth,
+    eta = eta
+  )
+  ml_args <- lapply(ml_args, function(p){
+    p <- append(p,
+                list(
+                  objective = objective,
+                  params = params,
+                  nthread = nthread
+                ))
+    return(p)
+  })
+  ml_models <- lapply(ml_args, function(par) do.call(ml, par))
 
   g <- function(A, H, action_set) {
     # checks:
@@ -617,36 +649,33 @@ g_xgboost <- function(formula = ~.,
     A <- factor(A, levels = action_set)
     A <- as.numeric(A) - 1
     des <- get_design(formula, data=H)
-    xgboost_data = xgboost::xgb.DMatrix(data = des$x, label = A)
+    data <- data.frame(A, des$x)
 
-    # setting model arguments:
-    model_args <- append(
-      list(data = xgboost_data,
-           objective = objective,
-           params = params,
-           nrounds = nrounds,
-           max_depth = max_depth,
-           eta = eta,
-           verbose = verbose,
-           nthread = nthread),
-      dotdotdot
-    )
-
-    model <- tryCatch(do.call(what = xgboost::xgboost, args = model_args),
-                      error = function(e) e)
-
-    if (inherits(model, "error")) {
-      model$message <-
-        paste0(model$message, " when calling 'g_xgboost' with formula:\n",
-               format(formula))
-      stop(model)
+    # cross-validating models
+    cv_res <- NULL
+    if (length(ml_models)>1){
+      cv_res <- tryCatch(targeted::cv(ml_models, data, K=cv_args$K, rep = cv_args$rep),
+                         error = function(e) e)
+      if (inherits(cv_res, "error")) {
+        cv_res$message <-
+          paste0(cv_res$message, " when calling 'g_xgboost' with formula:\n",
+                 format(formula))
+        stop(cv_res)
+      }
+      ml_args_best <- ml_args[[which.min(coef(cv_res)[, 1])]]
+      model <- do.call(ml, ml_args_best)
+      model <- model$estimate(data)
+    } else {
+      model <- do.call(ml, ml_args[[1]])
+      model <- model$estimate(data)
     }
 
     # setting model output
     des$x <- NULL
     m <- list(model = model,
               design = des,
-              action_set = action_set)
+              action_set = action_set,
+              cv_res = cv_res)
     class(m) <- c("g_xgboost")
     return(m)
   }

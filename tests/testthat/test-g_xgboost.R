@@ -56,3 +56,23 @@ test_that("g_xgboost gives the same result as SL.xgboost",{
   )
 
 })
+
+test_that("g_xgboost tunes parameters",{
+  # data
+  d <- sim_single_stage(1000, seed=1)
+  # policy data
+  pd <- policy_data(d,
+                    action="A",
+                    covariates = list("Z", "B", "L"),
+                    utility="U")
+
+  set.seed(1)
+  g_fun <- fit_g_functions(pd,
+                           g_models = g_xgboost(max_depth = 2, eta = c(0.3,1), nrounds = c(2,4)))
+
+  expect_equal(
+    length(g_fun$all_stages$g_model$cv_res$cv),
+    3 * 2 * 2 * 2
+  )
+
+})

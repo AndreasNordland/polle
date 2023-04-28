@@ -48,9 +48,8 @@ g_xgboost(
   nrounds,
   max_depth = 6,
   eta = 0.3,
-  verbose = 0,
   nthread = 1,
-  ...
+  cv_args = list(K = 3, rep = 1)
 )
 
 q_xgboost(
@@ -60,9 +59,8 @@ q_xgboost(
   nrounds,
   max_depth = 6,
   eta = 0.3,
-  verbose = 0,
   nthread = 1,
-  ...
+  cv_args = list(K = 3, rep = 1)
 )
 }
 \arguments{
@@ -94,7 +92,7 @@ lambda at which predictions are required, see \code{\link[glmnet:predict.glmnet]
 \item{mtry}{(Only used by \code{g_rf}) Number of variables to possibly split
 at in each node.}
 
-\item{cv_args}{(Only used by \code{g_rf}) Cross-validation parameters.
+\item{cv_args}{(Only used by \code{g_rf} and \code{g_xgboost}) Cross-validation parameters.
 Only used if multiple hyper-parameters are given. \code{K} is the number
 of folds and
 \code{rep} is the number of replications.}

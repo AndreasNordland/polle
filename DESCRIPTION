@@ -32,6 +32,7 @@ Suggests:
     DTRlearn2,
     glmnet (>= 4.1-6),
     mgcv,
+    xgboost,
     knitr,
     ranger,
     rmarkdown,

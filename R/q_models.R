@@ -371,48 +371,76 @@ q_xgboost <- function(formula = ~.,
                       nrounds,
                       max_depth = 6,
                       eta = 0.3,
-                      verbose = 0,
                       nthread = 1,
-                      ...) {
+                      cv_args=list(K=3, rep=1)) {
   if (!requireNamespace("xgboost")) stop("Package 'xgboost' required")
   formula <- as.formula(formula)
   environment(formula) <- NULL
-  dotdotdot <- list(...)
+
+  ml <- function(formula = V_res~., objective,
+                 params, nrounds, max_depth,
+                 eta, nthread){
+    targeted::ml_model$new(formula,
+                           info = "xgBoost",
+                           fit = function(x, y) {
+                             xgboost::xgboost(
+                               data = x, label = y,
+                               objective = objective,
+                               params = params,
+                               nrounds = nrounds,
+                               max_depth = max_depth,
+                               eta = eta,
+                               nthread = nthread,
+                               verbose = 0, print_every = 0)
+                           })
+  }
+
+  ml_args <- expand.list(
+      nrounds = nrounds,
+      max_depth = max_depth,
+      eta = eta
+    )
+  ml_args <- lapply(ml_args, function(p){
+    p <- append(p,
+                list(
+                  objective = objective,
+                  params = params,
+                  nthread = nthread
+                ))
+    return(p)
+  })
+  ml_models <- lapply(ml_args, function(par) do.call(ml, par))
 
   q <- function(AH, V_res) {
     # formatting data:
     des <- get_design(formula, data=AH)
     if (missing(V_res) || is.null(V_res))
       V_res <- get_response(formula, data=AH)
-    xgboost_data = xgboost::xgb.DMatrix(data = des$x, label = V_res)
+    data <- data.frame(V_res, des$x)
 
-    # setting model arguments:
-    model_args <- append(
-      list(data = xgboost_data,
-           objective = objective,
-           params = params,
-           nrounds = nrounds,
-           max_depth = max_depth,
-           eta = eta,
-           verbose = verbose,
-           nthread = nthread),
-      dotdotdot
-    )
-
-    model <- tryCatch(do.call(what = xgboost::xgboost, args = model_args),
-                      error = function(e) e)
-
-    if (inherits(model, "error")) {
-      model$message <-
-        paste0(model$message, " when calling 'q_xgboost' with formula:\n",
-               format(formula))
-      stop(model)
+    cv_res <- NULL
+    if (length(ml_models)>1){
+      cv_res <- tryCatch(targeted::cv(ml_models, data, K=cv_args$K, rep = cv_args$rep),
+                         error = function(e) e)
+      if (inherits(cv_res, "error")) {
+        cv_res$message <-
+          paste0(cv_res$message, " when calling 'q_xgboost' with formula:\n",
+                 format(formula))
+        stop(cv_res)
+      }
+      ml_args_best <- ml_args[[which.min(coef(cv_res)[, 1])]]
+      model <- do.call(ml, ml_args_best)
+      model <- model$estimate(data)
+    } else {
+      model <- do.call(ml, ml_args[[1]])
+      model <- model$estimate(data)
     }
 
     # setting model output
     des$x <- NULL
     m <- list(model = model,
-              design = des)
+              design = des,
+              cv_res = cv_res)
     class(m) <- c("q_xgboost")
     return(m)
   }
