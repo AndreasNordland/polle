@@ -629,6 +629,7 @@ g_xgboost <- function(formula = ~.,
     max_depth = max_depth,
     eta = eta
   )
+  cv_par <- ml_args
   ml_args <- lapply(ml_args, function(p){
     p <- append(p,
                 list(
@@ -662,6 +663,7 @@ g_xgboost <- function(formula = ~.,
                  format(formula))
         stop(cv_res)
       }
+      cv_res$names <- unlist(lapply(cv_par, function(x) paste(paste(names(x), x, sep = ":"), collapse = ",")))
       ml_args_best <- ml_args[[which.min(coef(cv_res)[, 1])]]
       model <- do.call(ml, ml_args_best)
       model <- model$estimate(data)

@@ -400,6 +400,7 @@ q_xgboost <- function(formula = ~.,
       max_depth = max_depth,
       eta = eta
     )
+  cv_par <- ml_args
   ml_args <- lapply(ml_args, function(p){
     p <- append(p,
                 list(
@@ -428,19 +429,28 @@ q_xgboost <- function(formula = ~.,
                  format(formula))
         stop(cv_res)
       }
+      cv_res$names <- unlist(lapply(cv_par, function(x) paste(paste(names(x), x, sep = ":"), collapse = ",")))
       ml_args_best <- ml_args[[which.min(coef(cv_res)[, 1])]]
       model <- do.call(ml, ml_args_best)
       model <- model$estimate(data)
     } else {
       model <- do.call(ml, ml_args[[1]])
-      model <- model$estimate(data)
+      model <- tryCatch(model$estimate(data),
+                        error = function(e) e)
+      if (inherits(model, "error")) {
+        model$message <-
+          paste0(model$message, " when calling 'q_xgboost' with formula:\n",
+                 format(formula))
+        stop(model)
+      }
     }
 
     # setting model output
     des$x <- NULL
     m <- list(model = model,
               design = des,
-              cv_res = cv_res)
+              cv_res = cv_res,
+              cv_par = cv_par)
     class(m) <- c("q_xgboost")
     return(m)
   }
