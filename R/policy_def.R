@@ -368,3 +368,29 @@ get_cum_rewards <- function(policy_data, policy=NULL) {
   dt[policy_group == "0", policy_group := "all"]
   return(dt)
 }
+
+policy_g_functions <- function(g_functions, name = "pgf"){
+  force(g_functions)
+
+  policy <- function(policy_data){
+    action_set <- get_action_set(policy_data)
+    g_cols <- paste("g_", action_set, sep = "")
+    g_values <- predict.nuisance_functions(g_functions, policy_data)
+
+    dd <- apply(
+      g_values[ , g_cols, with = FALSE],
+      MARGIN = 1,
+      which.max
+    )
+    d <- action_set[dd]
+
+    policy_actions <- cbind(get_id_stage(policy_data), d = d)
+    setkeyv(policy_actions, c("id", "stage"))
+
+    return(policy_actions)
+  }
+
+  policy <- new_policy(fun = policy, name = name)
+
+  return(policy)
+}
