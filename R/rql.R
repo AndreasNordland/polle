@@ -196,6 +196,9 @@ get_policy_functions.ql <- function(object, stage, include_g_values = FALSE){
   indicator_deterministic_rewards <- getElement(object, "indicator_deterministic_rewards")
 
   stage_policy <- function(H){
+    if (is.data.frame(H))
+      H <- as.data.table(H)
+
     # adding zero valued deterministic reward columns if missing
     if (all(!(deterministic_rewards %in% colnames(H)))){
       if (indicator_deterministic_rewards == TRUE)
