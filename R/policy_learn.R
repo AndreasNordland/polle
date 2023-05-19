@@ -201,6 +201,8 @@ policy_learn <- function(type = "ql",
     call <- "dyntxregime_earl"
   } else if (type %in% c("rwl")){
     call <- "dyntxregime_rwl"
+  } else if (type %in% c("drb", "blip")){
+    call <- "drb"
   } else{
     stop("Unknown type of policy learner. Use 'ql', 'drql', 'ptl', 'owl', 'earl' or 'rwl'.")
   }
