@@ -105,7 +105,9 @@ dr_value <- function(policy_data,
     value_estimate_ipw = mean(Zd_ipw),
     value_estimate_or = mean(Zd_or),
     id = get_id(policy_data),
-    policy_actions = policy_actions
+    policy_actions = policy_actions,
+    g_values = g_values,
+    q_values = q_values
   )
 
   return(out)
@@ -157,7 +159,8 @@ or_value <- function(policy_data,
     value_estimate = mean(Zd_or),
     IC = NULL,
     id = get_id(policy_data),
-    policy_actions = policy_actions
+    policy_actions = policy_actions,
+    q_values = q_values
   )
   return(out)
 }
@@ -211,7 +214,8 @@ ipw_value <- function(policy_data,
     value_estimate = mean(Zd_ipw),
     IC = Zd_ipw - mean(Zd_ipw),
     id = get_id(policy_data),
-    policy_actions = policy_actions
+    policy_actions = policy_actions,
+    g_values = g_values
   )
   return(out)
 }
