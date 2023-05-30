@@ -35,6 +35,10 @@ dr_value <- function(policy_data,
   # getting the policy actions:
   policy_actions <- policy(policy_data)
 
+  # checking that the policy actions comply with the stage action sets:
+  check_actions(actions = policy_actions,
+                policy_data = policy_data)
+
   # getting the g-function values:
   g_values <- predict(g_functions, policy_data)
 
@@ -100,7 +104,10 @@ dr_value <- function(policy_data,
     IC=Zd-mean(Zd),
     value_estimate_ipw = mean(Zd_ipw),
     value_estimate_or = mean(Zd_or),
-    id = get_id(policy_data)
+    id = get_id(policy_data),
+    policy_actions = policy_actions,
+    g_values = g_values,
+    q_values = q_values
   )
 
   return(out)
@@ -122,6 +129,10 @@ or_value <- function(policy_data,
 
   # getting the policy actions:
   policy_actions <- policy(policy_data)
+
+  # checking that the policy actions comply with the stage action sets:
+  check_actions(actions = policy_actions,
+                policy_data = policy_data)
 
   # getting the Q-function values:
   q_values <- predict(q_functions, policy_data)
@@ -147,7 +158,9 @@ or_value <- function(policy_data,
   out <- list(
     value_estimate = mean(Zd_or),
     IC = NULL,
-    id = get_id(policy_data)
+    id = get_id(policy_data),
+    policy_actions = policy_actions,
+    q_values = q_values
   )
   return(out)
 }
@@ -168,6 +181,10 @@ ipw_value <- function(policy_data,
 
   # getting the policy actions:
   policy_actions <- policy(policy_data)
+
+  # checking that the policy actions comply with the stage action sets:
+  check_actions(actions = policy_actions,
+                policy_data = policy_data)
 
   # getting the g-function values:
   g_values <- predict(g_functions, policy_data)
@@ -196,7 +213,9 @@ ipw_value <- function(policy_data,
   out <- list(
     value_estimate = mean(Zd_ipw),
     IC = Zd_ipw - mean(Zd_ipw),
-    id = get_id(policy_data)
+    id = get_id(policy_data),
+    policy_actions = policy_actions,
+    g_values = g_values
   )
   return(out)
 }

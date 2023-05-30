@@ -62,7 +62,6 @@ get_design <- function(formula, data) {
   attr(tt, "intercept") <- 1
   tt <- delete.response(tt)
   op <- options(na.action = "na.pass")
-  mf <-
 
   mf <- tryCatch(model.frame(tt, data=data, drop.unused.levels = TRUE),
                     error = function(e) e

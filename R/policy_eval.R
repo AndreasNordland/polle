@@ -315,11 +315,6 @@ policy_eval_type <- function(type,
   if (is.null(policy)){
     policy <- get_policy(getElement(fits, "policy_object"))
   }
-  policy_actions <- policy(valid_policy_data)
-
-  # checking that the (fitted) policy actions comply with the stage action sets:
-  check_actions(actions = policy_actions,
-                policy_data = train_policy_data)
 
   # calculating the doubly robust score and value estimate:
   g_functions <- getElement(fits, "g_functions")
@@ -329,21 +324,14 @@ policy_eval_type <- function(type,
                         policy = policy,
                         g_functions = g_functions,
                         q_functions = q_functions)
+  g_values <- getElement(value_object, "g_values")
+  q_values <- getElement(value_object, "q_values")
 
   # setting g-functions output:
-  g_values <- NULL
-  if (!is.null(g_functions)){
-    g_values <- predict(g_functions, valid_policy_data)
-  }
   if (save_g_functions != TRUE){
     g_functions <- NULL
   }
-
   # setting Q-functions output:
-  q_values <- NULL
-  if (!is.null(q_functions)){
-    q_values <- predict(q_functions, valid_policy_data)
-  }
   if(save_q_functions != TRUE){
     q_functions <- NULL
   }
@@ -355,7 +343,7 @@ policy_eval_type <- function(type,
     value_estimate_ipw = getElement(value_object, "value_estimate_ipw"),
     value_estimate_or = getElement(value_object, "value_estimate_or"),
     id = get_id(valid_policy_data),
-    policy_actions = policy_actions,
+    policy_actions = getElement(value_object, "policy_actions"),
     policy_object = getElement(fits, "policy_object"),
     g_functions = g_functions,
     g_values = g_values,
