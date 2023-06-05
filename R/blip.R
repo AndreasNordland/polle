@@ -1,13 +1,33 @@
-fit_blip_function <- function(history, Z, blip_model){
+fit_blip_function <- function(history, Z, blip_model, valid_ids){
   action_set <- getElement(history, "action_set")
   stage_action_set <- getElement(history, "stage_action_set")
   stage <- getElement(history, "stage")
   H <- get_H(history)
+  stage_id <- unlist(get_id.history(history),
+                     use.names = FALSE)
+
+  folds <- NULL
+  if (!is.null(valid_ids)){
+    # adapting the validation ids to the current stage:
+    stage_valid_ids <- lapply(
+      valid_ids,
+      function(vi){
+        vi[vi %in% stage_id]
+      }
+    )
+    folds <-
+      lapply(
+        stage_valid_ids,
+        function(vi){
+          which(stage_id %in% vi)
+        }
+      )
+  }
 
   # fitting the blip-model:
   z <- Z[, stage_action_set]
   blip <- z[, 2] - z[,1]
-  blip_model <- blip_model(AH = H, V_res = blip)
+  blip_model <- blip_model(AH = H, V_res = blip, folds = folds)
 
   blip_function <- list(
     blip_model = blip_model,
@@ -80,11 +100,13 @@ blip <- function(policy_data,
   # constructing the folds for cross-fitting:
   if (L > 1){
     folds <- split(sample(1:n, n), rep(1:L, length.out = n))
+    folds <- lapply(folds, sort)
   } else{
     folds <- NULL
   }
 
   # (cross-)fitting the g-functions:
+  valid_ids <- NULL
   g_functions_cf <- NULL
   if (!is.null(folds) & cross_fit_g_models == TRUE){
     g_cf <- fit_g_functions_cf(
@@ -97,6 +119,7 @@ blip <- function(policy_data,
     )
     g_functions_cf <- getElement(g_cf, "functions")
     g_values <- getElement(g_cf, "values")
+    valid_ids <- getElement(g_cf, "valid_ids")
     rm(g_cf)
   } else {
     if (is.null(g_functions)){
@@ -202,7 +225,8 @@ blip <- function(policy_data,
     }
     blip_function_k <- fit_blip_function(blip_history_k,
                                          Z = Z,
-                                         blip_model = blip_model_k)
+                                         blip_model = blip_model_k,
+                                         valid_ids = valid_ids)
     blip_functions[[k]] <- blip_function_k
 
     # getting the blip-function values:

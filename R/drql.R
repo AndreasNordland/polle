@@ -1,15 +1,35 @@
-fit_QV_function <- function(history, Z, qv_model){
+fit_QV_function <- function(history, Z, qv_model, valid_ids){
   action_set <- getElement(history, "action_set")
   stage_action_set <- getElement(history, "stage_action_set")
   stage <- getElement(history, "stage")
   H <- get_H(history)
+  stage_id <- unlist(get_id.history(history),
+                     use.names = FALSE)
+
+  folds <- NULL
+  if (!is.null(valid_ids)){
+    # adapting the validation ids to the current stage:
+    stage_valid_ids <- lapply(
+      valid_ids,
+      function(vi){
+        vi[vi %in% stage_id]
+      }
+    )
+    folds <-
+      lapply(
+        stage_valid_ids,
+        function(vi){
+          which(stage_id %in% vi)
+        }
+      )
+  }
 
   # fitting the QV-model:
   qv_model <- apply(
     Z[, stage_action_set],
     MARGIN = 2,
     function(z){
-      qv_model(V_res = z, AH = H)
+      qv_model(V_res = z, AH = H, folds = folds)
     }
   )
   names(qv_model) <- paste("QV_", stage_action_set, sep = "")
@@ -104,12 +124,14 @@ drql <- function(policy_data,
   # constructing the folds for cross-fitting:
   if (L > 1){
     folds <- split(sample(1:n, n), rep(1:L, length.out = n))
+    folds <- lapply(folds, sort)
   } else{
     folds <- NULL
   }
 
   # (cross-)fitting the g-functions:
   g_functions_cf <- NULL
+  valid_ids <- NULL
   if (!is.null(folds) & cross_fit_g_models == TRUE){
     g_cf <- fit_g_functions_cf(
       policy_data = policy_data,
@@ -121,6 +143,7 @@ drql <- function(policy_data,
     )
     g_functions_cf <- getElement(g_cf, "functions")
     g_values <- getElement(g_cf, "values")
+    valid_ids <- getElement(g_cf, "valid_ids")
     rm(g_cf)
   } else {
     if (is.null(g_functions)){
@@ -229,7 +252,8 @@ drql <- function(policy_data,
     }
     qv_function_k <- fit_QV_function(qv_history_k,
                                      Z = Z,
-                                     qv_model = qv_model_k)
+                                     qv_model = qv_model_k,
+                                     valid_ids = valid_ids)
     qv_functions[[k]] <- qv_function_k
     # getting the QV-function values:
     qv_values_k <- predict(qv_function_k, new_history = qv_history_k)

@@ -144,7 +144,7 @@ q_glm <- function(formula = ~ A*.,
   formula <- as.formula(formula)
   dotdotdot <- list(...)
 
-  q_glm <- function(AH, V_res) {
+  q_glm <- function(AH, V_res, ...) {
     data <- AH
     formula <- update_q_formula(formula = formula, data = data, V_res = V_res)
     args_glm <- list(
@@ -195,7 +195,7 @@ q_glmnet <- function(formula = ~ A*.,
   formula <- as.formula(formula)
   dotdotdot <- list(...)
 
-  q_glmnet <- function(AH, V_res) {
+  q_glmnet <- function(AH, V_res, ...) {
     des <- get_design(formula, data=AH)
     y <- V_res
     args_glmnet <- c(list(y = y, x = des$x,
@@ -266,7 +266,7 @@ q_rf <- function(formula = ~.,
       do.call(ranger::ranger, args=rf_args)
     })
 
-  q_rf <- function(AH, V_res) {
+  q_rf <- function(AH, V_res, ...) {
     des <- get_design(formula, data=AH)
     data <- data.frame(V_res, des$x)
     res <- NULL; best <- 1
@@ -320,7 +320,7 @@ q_sl <- function(formula = ~ .,
   force(SL.library)
   force(env)
   dotdotdot <- list(...)
-  q_sl <- function(AH, V_res) {
+  q_sl <- function(AH, V_res, folds = NULL, ...) {
     des <- get_design(formula, data=AH)
     if (missing(V_res) || is.null(V_res))
       V_res <- get_response(formula, data=AH)
@@ -329,6 +329,15 @@ q_sl <- function(formula = ~ .,
                     SL.library = SL.library,
                     env = env)
     args_SL <- append(args_SL, dotdotdot)
+    if (!is.null(folds)){
+      # given folds, the cvControl argument is overwritten
+      cvControl <- SuperLearner.CV.control(
+        V = length(folds),
+        shuffle = FALSE,
+        validRows = folds
+      )
+      args_SL[["cvControl"]] <- cvControl
+    }
     model <- do.call(SuperLearner::SuperLearner, args = args_SL)
     model$call <- NULL
     if(all(model$coef == 0))
@@ -412,7 +421,7 @@ q_xgboost <- function(formula = ~.,
   })
   ml_models <- lapply(ml_args, function(par) do.call(ml, par))
 
-  q <- function(AH, V_res) {
+  q <- function(AH, V_res, ...) {
     # formatting data:
     des <- get_design(formula, data=AH)
     if (missing(V_res) || is.null(V_res))

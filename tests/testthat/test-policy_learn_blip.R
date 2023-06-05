@@ -9,6 +9,7 @@ test_that("policy_learn with type blip works as intended",{
                     utility = c("U_1", "U_2", "U_3"))
 
 
+  # default settings:
   pl <- policy_learn(type = "blip",
                      control = control_blip())
   expect_true({
@@ -21,7 +22,7 @@ test_that("policy_learn with type blip works as intended",{
     inherits(po, "policy_object")
   })
 
-
+  # realistic policy:
   pl <- policy_learn(type = "blip",
                      control = control_blip(),
                      alpha = 0.2)
@@ -35,12 +36,32 @@ test_that("policy_learn with type blip works as intended",{
     inherits(po, "policy_object")
   })
 
+  # predictions from the blip model:
   expect_true({
     blip <-predict(po$blip_functions, pd)
     !any(is.na(blip$blip))
   })
   expect_true({
     all(is.numeric(blip$blip))
+  })
+
+  # folds passed to the blip model:
+  pl <- policy_learn(type = "blip",
+                     L = 2,
+                     control = control_blip(
+                       blip_models = q_sl()
+                     ))
+  expect_true({
+    po <- pl(
+      policy_data = pd,
+      g_models = g_glm(),
+      q_models = q_glm()
+    )
+    t1 <- inherits(po, "policy_object")
+    t2 <- po$blip_functions$stage_1$blip_model$model$cvControl$V == 2
+    t3 <- all.equal(po$folds, po$blip_functions$stage_1$blip_model$model$cvControl$validRows)
+
+    all(c(t1, t2, t3))
   })
 })
 
@@ -157,8 +178,7 @@ test_that("get_policy.blip returns a policy", {
   expect_true(all(key(pa) == c("id", "stage")))
   expect_true(inherits(pa$d, "character"))
 
-  # comparing get_policy_function and get_policy
-
+  # comparing get_policy_function and get_policy:
   pf1 <- get_policy_functions(po, stage = 1)
   his1 <- get_history(pd, stage = 1)
   H1 <- get_H(his1)

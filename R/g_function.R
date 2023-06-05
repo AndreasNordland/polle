@@ -283,7 +283,8 @@ fit_g_functions_cf <- function(folds,
 
            out <- list(
              train_g_functions = train_g_functions,
-             valid_g_values = valid_g_values
+             valid_g_values = valid_g_values,
+             valid_id = valid_id
            )
            return(out)
          })
@@ -294,13 +295,15 @@ fit_g_functions_cf <- function(folds,
 
   functions <- fit_cf["train_g_functions", ]
   values <- fit_cf["valid_g_values", ]
+  valid_ids <- fit_cf["valid_id", ]
 
   values <- rbindlist(values)
   setkeyv(values, c("id", "stage"))
 
   out <- list(
     functions = functions,
-    values = values
+    values = values,
+    valid_ids = valid_ids
   )
   return(out)
 }

@@ -19,6 +19,23 @@ test_that("get_policy.drql returns a policy", {
   expect_true(
     is.data.table(p(pd))
   )
+
+  pl <- policy_learn(type = "drql",
+                     control = control_drql(
+                       qv_models = q_sl()
+                     ))
+  expect_error({
+    p <- get_policy(pl(pd, q_models = q_glm(), g_models = g_glm()))
+  },
+  NA
+  )
+  expect_true(
+    inherits(p, what = "policy")
+  )
+  expect_true(
+    is.data.table(p(pd))
+  )
+
 })
 
 test_that("policy_learn with type = 'drql' checks input",{
@@ -388,7 +405,9 @@ test_that("policy_learn with type drql handles multiple stages with varying stag
   pd3 <- partial(pd, 3)
 
   pl <- policy_learn(type = "drql",
-                     control = control_drql(),
+                     control = control_drql(
+                       qv_models = q_sl(cvControl = SuperLearner.CV.control(V = 10L))
+                     ),
                      alpha = 0.1,
                      L = 2)
 
