@@ -87,8 +87,8 @@ predict.g_function <- function(object, new_history){
   # checks
   if(!all(stage_action_set %in% action_set))
     stop("The fitted stage action set is not a subset of the new action set.")
-  if (!all(names(new_H) %in% H_names))
-    stop("new_history does not have the same column names as the original history.")
+  if (!all(H_names %in% names(new_H)))
+    stop("new_history does not contain the same column names as the original history.")
 
   g_values <- predict(g_model, new_H = new_H)
   if (!all(g_values >= 0) |

@@ -63,12 +63,13 @@ predict.Q_function <- function(object, new_history){
 
   id_stage <- get_id_stage(new_history)
   new_H <- get_H(new_history)
+  new_AH_names <- c("A", names(new_H))
 
   # checks
   if(!all(stage_action_set %in% action_set))
     stop("The fitted stage action set is not a subset of the new action set.")
-  if (!all(names(new_H) %in% AH_names))
-    stop("new_history does not have the same column names as the original history.")
+  if (!all(AH_names %in% new_AH_names))
+    stop("new_history does not contain the same column names as the original history.")
 
   # getting the historic rewards
   U <- new_history$U
