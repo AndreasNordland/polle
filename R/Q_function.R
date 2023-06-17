@@ -8,6 +8,9 @@ fit_Q_function <- function(history, Q, q_model){
   A <- get_A(history)
   H <- get_H(history)
   AH <- cbind(A, H)
+  # checking that the dimensions fit:
+  if (nrow(AH) != length(Q))
+    stop("Unable to fit Q-function.")
 
   # checking that all actions in the stage action set occur:
   if (!all(stage_action_set == sort(unique(A)))){
