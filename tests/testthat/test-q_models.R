@@ -134,23 +134,11 @@ test_that("q_sl can find user-defined learners",{
     }
   })
 
-  # with(env,{
-  #   predict.SL.test <- function (object, newdata, ...){
-  #     if (is.matrix(newdata)) {
-  #       newdata = as.data.frame(newdata)
-  #     }
-  #     pred <- predict(object = object$object, newdata = newdata,
-  #                     type = "response")
-  #     pred
-  #   }
-  # })
-
   expect_error(
     qfun <- polle:::fit_Q_functions(pd,
                                     p(pd),
                                     q_sl(SL.library = "SL.test", env = env)),
     NA)
-
 
 })
 

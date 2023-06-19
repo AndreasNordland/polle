@@ -313,6 +313,7 @@ q_sl <- function(formula = ~ .,
                  SL.library=c("SL.mean", "SL.glm"),
                  env = as.environment("package:SuperLearner"),
                  onlySL = TRUE,
+                 discreteSL = FALSE,
                  ...){
   if (!requireNamespace("SuperLearner"))
     stop("Package 'SuperLearner' required.")
@@ -340,9 +341,20 @@ q_sl <- function(formula = ~ .,
     }
     model <- do.call(SuperLearner::SuperLearner, args = args_SL)
     model$call <- NULL
-    if(all(model$coef == 0))
-      stop("In q_sl(): All metalearner coefficients are zero.")
+    if(all(model$coef == 0)){
+      warning("In q_sl(): All metalearner coefficients are zero. Selecting the learner with the lowest cvrisk.")
+      min_idx <- which.min(model$cvRisk)
+      coef_ <- model$coef * 0
+      coef_[min_idx] <- 1
+      model$coef <- coef_
+    }
 
+    if (discreteSL == TRUE){
+      min_idx <- which.min(model$cvRisk)
+      coef_ <- model$coef * 0
+      coef_[min_idx] <- 1
+      model$coef <- coef_
+    }
     if(onlySL == TRUE){
       model$fitLibrary[model$coef == 0] <- NA
     }
