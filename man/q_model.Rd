@@ -7,6 +7,7 @@
 \alias{q_glmnet}
 \alias{q_rf}
 \alias{q_sl}
+\alias{q_xgboost}
 \title{q_model class object}
 \usage{
 q_glm(
@@ -38,7 +39,19 @@ q_sl(
   SL.library = c("SL.mean", "SL.glm"),
   env = as.environment("package:SuperLearner"),
   onlySL = TRUE,
+  discreteSL = FALSE,
   ...
+)
+
+q_xgboost(
+  formula = ~.,
+  objective = "reg:squarederror",
+  params = list(),
+  nrounds,
+  max_depth = 6,
+  eta = 0.3,
+  nthread = 1,
+  cv_args = list(K = 3, rep = 1)
 )
 }
 \arguments{
@@ -86,6 +99,22 @@ functions. Defaults to the calling environment.}
 
 \item{onlySL}{(Only used by \code{q_sl}) Logical. If TRUE, only saves and computes predictions
 for algorithms with non-zero coefficients in the super learner object.}
+
+\item{discreteSL}{(Only used by \code{q_sl}) If TRUE, select the model with
+the lowest cross-validated risk.}
+
+\item{objective}{(Only used by \code{q_xgboost}) specify the learning
+task and the corresponding learning objective, see \link[xgboost:xgb.train]{xgboost::xgboost}.}
+
+\item{params}{(Only used by \code{q_xgboost}) list of parameters.}
+
+\item{nrounds}{(Only used by \code{q_xgboost}) max number of boosting iterations.}
+
+\item{max_depth}{(Only used by \code{q_xgboost}) maximum depth of a tree.}
+
+\item{eta}{(Only used by \code{q_xgboost}) learning rate.}
+
+\item{nthread}{(Only used by \code{q_xgboost}) number of threads.}
 }
 \value{
 q_model object: function with arguments 'AH'
@@ -105,6 +134,7 @@ penalized maximum likelihood).\cr
 When multiple hyper-parameters are given, the
 model with the lowest cross-validation error is selected.\cr
 \code{q_sl()} is a wrapper of \link[SuperLearner:SuperLearner]{SuperLearner::SuperLearner} (ensemble model).
+\code{q_xgboost()} is a wrapper of \link[xgboost:xgb.train]{xgboost::xgboost}.
 }
 \examples{
 library("polle")

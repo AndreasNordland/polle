@@ -28,6 +28,7 @@ policy_learn(
 \itemize{
 \item{} \code{"ql"}: Quality/Q-learning.
 \item{} \code{"drql"}: Doubly Robust Q-learning.
+\item{} \code{"blip"}: Doubly Robust blip-learning (only for dichotomous actions).
 \item{} \code{"ptl"}: Policy Tree Learning.
 \item{} \code{"owl"}: Outcome Weighted Learning.
 \item{} \code{"earl"}: Efficient Augmentation and Relaxation Learning (only single stage).
@@ -39,6 +40,11 @@ policy_learn(
 \code{\link[=control_drql]{control_drql()}}:\cr
 \itemize{
 \item{} \code{qv_models}: Single element or list of V-restricted Q-models created
+by \code{\link[=q_glm]{q_glm()}}, \code{\link[=q_rf]{q_rf()}}, \code{\link[=q_sl]{q_sl()}} or similar functions.
+}
+\code{\link[=control_blip]{control_blip()}}:\cr
+\itemize{
+\item{} \code{blip_models}: Single element or list of V-restricted blip-models created
 by \code{\link[=q_glm]{q_glm()}}, \code{\link[=q_rf]{q_rf()}}, \code{\link[=q_sl]{q_sl()}} or similar functions.
 }
 \code{\link[=control_ptl]{control_ptl()}}: \cr

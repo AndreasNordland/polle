@@ -322,7 +322,7 @@ drql <- function(policy_data,
 
 #' @rdname get_policy_functions
 #' @export
-get_policy_functions.drql <- function(object, stage, include_g_values = FALSE){
+get_policy_functions.drql <- function(object, stage, include_g_values = FALSE, ...){
   stage_action_sets <- getElement(object, "stage_action_sets")
   stage_action_set <- stage_action_sets[[stage]]; rm(stage_action_sets)
   K <- getElement(object, "K")

@@ -397,7 +397,7 @@ get_policy.ptl <- function(object){
 
 #' @rdname get_policy_functions
 #' @export
-get_policy_functions.ptl <- function(object, stage){
+get_policy_functions.ptl <- function(object, stage, ...){
   stage_action_sets <- getElement(object, "stage_action_sets")
   K <- getElement(object, "K")
   g_functions <- getElement(object, "g_functions")

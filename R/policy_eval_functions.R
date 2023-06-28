@@ -237,13 +237,13 @@ get_policy_actions.policy_eval <- function(object){
 }
 
 #' @export
-get_policy_functions.policy_eval <- function(object, stage){
+get_policy_functions.policy_eval <- function(object, stage, ...){
   po <- getElement(object, "policy_object")
   if (is.null(po)){
     mes <- "Learned policy is not available."
     stop(mes)
   }
-  pf <- get_policy_functions(po, stage = stage)
+  pf <- get_policy_functions(po, stage = stage, ...)
   return(pf)
 }
 

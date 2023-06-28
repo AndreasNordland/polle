@@ -52,6 +52,12 @@ predict.blip_function <- function(object, new_history){
 }
 
 
+#' @title Control arguments for doubly robust blip-learning
+#' @description \code{control_blip} sets the default control arguments
+#' for doubly robust blip-learning, \code{type = "blip"}.
+#' @param blip_models Single element or list of V-restricted blip-models created
+#' by [q_glm()], [q_rf()], [q_sl()] or similar functions.
+#' @returns list of (default) control arguments.
 #' @export
 control_blip <- function(blip_models = q_glm(~.)){
   control <- as.list(environment())
@@ -300,7 +306,7 @@ blip <- function(policy_data,
 
 #' @rdname get_policy_functions
 #' @export
-get_policy_functions.blip <- function(object, stage, include_g_values = FALSE){
+get_policy_functions.blip <- function(object, stage, include_g_values = FALSE, ...){
   stage_action_sets <- getElement(object, "stage_action_sets")
   stage_action_set <- stage_action_sets[[stage]]; rm(stage_action_sets)
   K <- getElement(object, "K")
@@ -405,6 +411,7 @@ get_policy.blip <- function(object){
       # getting the optimal stage action:
       blip_values <- merge(blip_values, sa, by = "stage")
       setkeyv(blip_values, c("id", "stage"))
+      alt_action <- ref_action <- ri <- d <- r <- NULL
       blip_values[, 'd' := ifelse(blip > 0, alt_action, ref_action)]
       blip_values[, 'ri' := realistic_indicator]
       blip_values[, 'r' := realistic]

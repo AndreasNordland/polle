@@ -65,6 +65,15 @@ new_q_model <- function(q_model){
 #' functions. Defaults to the calling environment.
 #' @param onlySL (Only used by \code{q_sl}) Logical. If TRUE, only saves and computes predictions
 #' for algorithms with non-zero coefficients in the super learner object.
+#' @param discreteSL (Only used by \code{q_sl}) If TRUE, select the model with
+#' the lowest cross-validated risk.
+#' @param objective (Only used by \code{q_xgboost}) specify the learning
+#' task and the corresponding learning objective, see [xgboost::xgboost].
+#' @param nrounds (Only used by \code{q_xgboost}) max number of boosting iterations.
+#' @param max_depth (Only used by \code{q_xgboost}) maximum depth of a tree.
+#' @param eta (Only used by \code{q_xgboost}) learning rate.
+#' @param nthread (Only used by \code{q_xgboost}) number of threads.
+#' @param params (Only used by \code{q_xgboost}) list of parameters.
 #' @param ... Additional arguments passed to [glm()], [glmnet::glmnet],
 #' [ranger::ranger] or [SuperLearner::SuperLearner].
 #' @details
@@ -75,6 +84,7 @@ new_q_model <- function(q_model){
 #' When multiple hyper-parameters are given, the
 #' model with the lowest cross-validation error is selected.\cr
 #' \code{q_sl()} is a wrapper of [SuperLearner::SuperLearner] (ensemble model).
+#' \code{q_xgboost()} is a wrapper of [xgboost::xgboost].
 #' @returns q_model object: function with arguments 'AH'
 #' (combined action and history matrix) and 'V_res' (residual value/expected
 #' utility).
@@ -384,7 +394,7 @@ predict.q_sl <- function(object, new_AH, ...) {
 
 # xgboost interface -----------------------------------------------------------------
 
-#' @rdname g_model
+#' @rdname q_model
 #' @export
 q_xgboost <- function(formula = ~.,
                       objective = "reg:squarederror",

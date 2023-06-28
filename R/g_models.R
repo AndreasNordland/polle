@@ -140,7 +140,8 @@ new_g_model <- function(g_model){
 
 #' @title g_model class object
 #'
-#' @description  Use \code{g_glm()}, \code{g_empir()}, \code{g_glmnet()}, \code{g_rf()}, and \code{g_sl()} to construct
+#' @description  Use \code{g_glm()}, \code{g_empir()},
+#' \code{g_glmnet()}, \code{g_rf()}, \code{g_sl()}, \code{g_xgboost} to construct
 #' an action probability model/g-model object.
 #' The constructors are used as input for [policy_eval()] and [policy_learn()].
 #'
@@ -170,6 +171,13 @@ new_g_model <- function(g_model){
 #' @param env (Only used by \code{g_sl}) Environment containing the learner functions. Defaults to the calling environment.
 #' @param onlySL (Only used by \code{g_sl}) Logical. If TRUE, only saves and computes predictions
 #' for algorithms with non-zero coefficients in the super learner object.
+#' @param objective (Only used by \code{g_xgboost}) specify the learning
+#' task and the corresponding learning objective, see [xgboost::xgboost].
+#' @param nrounds (Only used by \code{g_xgboost}) max number of boosting iterations.
+#' @param max_depth (Only used by \code{g_xgboost}) maximum depth of a tree.
+#' @param eta (Only used by \code{g_xgboost}) learning rate.
+#' @param nthread (Only used by \code{g_xgboost}) number of threads.
+#' @param params (Only used by \code{g_xgboost}) list of parameters.
 #' @param ... Additional arguments passed to [glm()], [glmnet::glmnet],
 #' [ranger::ranger] or [SuperLearner::SuperLearner].
 #' @details
@@ -181,7 +189,8 @@ new_g_model <- function(g_model){
 #' \code{g_rf()} is a wrapper of [ranger::ranger()] (random forest).
 #' When multiple hyper-parameters are given, the
 #' model with the lowest cross-validation error is selected.\cr
-#' \code{g_sl()} is a wrapper of [SuperLearner::SuperLearner] (ensemble model).
+#' \code{g_sl()} is a wrapper of [SuperLearner::SuperLearner] (ensemble model).\cr
+#' \code{g_xgboost()} is a wrapper of [xgboost::xgboost].
 #' @returns g-model object: function with arguments 'A'
 #' (action vector), 'H' (history matrix) and 'action_set'.
 #' @seealso [get_history_names()], [get_g_functions()].

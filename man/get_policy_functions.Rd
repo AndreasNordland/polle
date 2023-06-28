@@ -9,15 +9,15 @@
 \alias{get_policy_functions.ql}
 \title{Get Policy Functions}
 \usage{
-\method{get_policy_functions}{blip}(object, stage, include_g_values = FALSE)
+\method{get_policy_functions}{blip}(object, stage, include_g_values = FALSE, ...)
 
-\method{get_policy_functions}{drql}(object, stage, include_g_values = FALSE)
+\method{get_policy_functions}{drql}(object, stage, include_g_values = FALSE, ...)
 
 get_policy_functions(object, stage, ...)
 
-\method{get_policy_functions}{ptl}(object, stage)
+\method{get_policy_functions}{ptl}(object, stage, ...)
 
-\method{get_policy_functions}{ql}(object, stage, include_g_values = FALSE)
+\method{get_policy_functions}{ql}(object, stage, include_g_values = FALSE, ...)
 }
 \arguments{
 \item{object}{Object of class "policy_object" or "policy_eval",
