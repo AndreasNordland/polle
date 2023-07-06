@@ -53,7 +53,7 @@ print.Q_function <- function(x, ...){
   print(y)
 }
 
-predict.Q_function <- function(object, new_history){
+predict.Q_function <- function(object, new_history, ...){
   q_model <- getElement(object, "q_model")
   AH_names <- getElement(object, "AH_names")
   # action set of the new history object

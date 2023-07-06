@@ -881,7 +881,7 @@ get_actions.policy_data <- function(object){
 #' Get IDs
 #'
 #' \code{get_id} returns the ID for every observation in the policy data object.
-#' @param object Object of class [policy_data].
+#' @param object Object of class [policy_data] or [history].
 #' @returns Character vector.
 #' @examples
 #' ### Two stages:
@@ -910,7 +910,7 @@ get_id.policy_data <- function(object){
 #' Get IDs and Stages
 #'
 #' \code{get_id} returns the stages for every ID for every observation in the policy data object.
-#' @param object Object of class [policy_data].
+#' @param object Object of class [policy_data] or [history].
 #' @returns [data.table] with keys id and stage.
 #' @examples
 #' ### Two stages:

@@ -43,24 +43,7 @@ get_A <- function(history){
   return(A)
 }
 
-#' Get the ID vector from a history object
-#'
-#' @param history Object of class "history".
-#' @return Character vector.
-#' @noRd
-#' @examples
-#' library("polle")
-#' ### Single stage: Wide data
-#' d <- sim_single_stage(5e2, seed=1)
-#' head(d, 5)
-#' # constructing policy_data object:
-#' pd <- policy_data(d,
-#'                    action="A",
-#'                    covariates=c("Z", "B", "L"),
-#'                    utility="U")
-#' pd
-#'
-#' polle:::get_id.history(get_history(pd))
+#' @export
 get_id.history <- function(object){
   H <- getElement(object, "H")
   stopifnot(!is.null(H))
@@ -69,11 +52,7 @@ get_id.history <- function(object){
   return(id)
 }
 
-#' Get the IDs of the history object
-#'
-#' @param object Object of class "history".
-#' @return [data.table] with variables id and stage.
-#' @noRd
+#' @export
 get_id_stage.history <- function(object){
   H <- getElement(object, "H")
   stopifnot(!is.null(H))

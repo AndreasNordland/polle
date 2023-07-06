@@ -7,7 +7,7 @@
 get_id_stage(object)
 }
 \arguments{
-\item{object}{Object of class \link{policy_data}.}
+\item{object}{Object of class \link{policy_data} or \link{history}.}
 }
 \value{
 \link{data.table} with keys id and stage.

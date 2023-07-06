@@ -7,7 +7,7 @@
 get_id(object)
 }
 \arguments{
-\item{object}{Object of class \link{policy_data}.}
+\item{object}{Object of class \link{policy_data} or \link{history}.}
 }
 \value{
 Character vector.

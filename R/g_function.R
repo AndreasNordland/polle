@@ -72,7 +72,7 @@ print.g_function <- function(x, ...){
   print(y)
 }
 
-predict.g_function <- function(object, new_history){
+predict.g_function <- function(object, new_history, ...){
   g_model <- getElement(object, "g_model")
   H_names <- getElement(object, "H_names")
   # action set of the new history object:

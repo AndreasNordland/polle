@@ -185,7 +185,7 @@ q_glm <- function(formula = ~ A*.,
   return(q_glm)
 }
 
-predict.q_glm <- function(object, new_AH){
+predict.q_glm <- function(object, new_AH, ...){
   model <- getElement(object, "model")
   pred <- predict(model, newdata = new_AH, type = "response")
   return(pred)

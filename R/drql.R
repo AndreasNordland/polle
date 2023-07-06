@@ -45,7 +45,7 @@ fit_QV_function <- function(history, Z, qv_model, valid_ids){
   return(qv_function)
 }
 
-predict.QV_function <- function(object, new_history){
+predict.QV_function <- function(object, new_history, ...){
   id_stage <- get_id_stage(new_history)
   new_H <- get_H(new_history)
   # action set of the new history object

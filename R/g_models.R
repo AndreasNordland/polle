@@ -274,7 +274,7 @@ g_empir <- function(formula = ~1, ...) {
   g_empir <- new_g_model(g_empir)
   return(g_empir)
 }
-predict.g_empir <- function(object, new_H){
+predict.g_empir <- function(object, new_H, ...){
   tab <- object[["tab"]]
   action_set <- object[["action_set"]]
   v <- object[["v"]]
@@ -348,7 +348,7 @@ g_glm <- function(formula = ~.,
 
   return(g_glm)
 }
-predict.g_glm <- function(object, new_H){
+predict.g_glm <- function(object, new_H, ...){
   model <- getElement(object, "model")
   fit <- predict.glm(object = model, newdata = new_H, type = "response")
   probs <- cbind((1-fit), fit)
@@ -403,7 +403,7 @@ g_glmnet <- function(formula = ~.,
   return(g_glmnet)
 }
 
-predict.g_glmnet <- function(object, new_H) {
+predict.g_glmnet <- function(object, new_H, ...) {
   design <- getElement(object, "design")
   model <- getElement(object, "model")
   s <- getElement(object, "s")
