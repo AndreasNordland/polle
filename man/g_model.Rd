@@ -27,7 +27,7 @@ g_rf(
   formula = ~.,
   num.trees = c(500),
   mtry = NULL,
-  cv_args = list(K = 5, rep = 1),
+  cv_args = list(nfolds = 5, rep = 1),
   ...
 )
 
@@ -48,7 +48,7 @@ g_xgboost(
   max_depth = 6,
   eta = 0.3,
   nthread = 1,
-  cv_args = list(K = 3, rep = 1)
+  cv_args = list(nfolds = 3, rep = 1)
 )
 }
 \arguments{
