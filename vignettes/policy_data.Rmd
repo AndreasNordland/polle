@@ -62,7 +62,7 @@ rm(list = ls())
 
 # Two-stage: wide data
 
-Consider a two-stage problem with observations $O = (B, BB, L_{1}, C_{1}, U_{1}, A_1, L_2, C_{2}, U_{2}, A_2, U_{3})$. Following the general notation introduced in the associated paper, $(B,BB)$ are the baseline covariates, $S_k =(L_{k, C_{k}})$ are the
+Consider a two-stage problem with observations $O = (B, BB, L_{1}, C_{1}, U_{1}, A_1, L_2, C_{2}, U_{2}, A_2, U_{3})$. Following the general notation introduced in Section 3.1 of the associated paper, $(B,BB)$ are the baseline covariates, $S_k =(L_{k, C_{k}})$ are the
 state covariates at stage k, $A_{k}$ is the action at stage k, and $U_k$ is the reward at stage $k$.
 The utility is the sum of the rewards $U=U_{1}+U_{2}+U_{3}$.
 
@@ -135,7 +135,7 @@ get_utility(pd) |> head()
 # Multi-stage: long data
 
 In this example we illustrate how `polle` handles decision
-processes with a stochastic number of stages.
+processes with a stochastic number of stages, see Section 3.5 of the associated paper.
 The data is simulated using `sim_multi_stage()`.
 Detailed information on the simulation is available in `?sim_multi_stage`.
 We simulate data from 2000 iid subjects:

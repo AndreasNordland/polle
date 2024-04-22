@@ -13,6 +13,7 @@ library(polle)
 
 This vignette is a guide to `policy_eval()` and some of the associated S3 functions.
 The purpose of `policy_eval` is to estimate (evaluate) the value of a user-defined policy or a policy learning algorithm.
+For details on the methodology, see the associated paper on [arxiv](https://arxiv.org/abs/2212.02335).
 
 We consider a fixed two-stage problem as a general setup and simulate data using `sim_two_stage()` and create a `policy_data` object using `policy_data()`:
 
@@ -38,7 +39,7 @@ p1 <- policy_def(policy_functions = '1', reuse = TRUE, name = "A=1")
 
 As we want to apply the same policy function at both stages we set `reuse = TRUE`.
 
-`policy_eval()` implements three types of policy evaluations: Inverse probability weighting estimation, outcome regression estimation, and doubly robust (DR) estimation. As doubly robust estimation is a combination of the two other types, we focus on this approach.
+`policy_eval()` implements three types of policy evaluations: Inverse probability weighting estimation, outcome regression estimation, and doubly robust (DR) estimation. As doubly robust estimation is a combination of the two other types, we focus on this approach. For details on the implementation see Algorithm 1 of the associated paper. 
 
 ```{r polevalp1}
 (pe1 <- policy_eval(policy_data = pd,
@@ -143,7 +144,7 @@ Remember that the action variable at the current stage is always named `A`. Some
 ## Evaluating a policy learning algorithm
 
 The value of a learned policy is an important performance measure, and `policy_eval()` allow for
-direct evaluation of a given policy learning algorithm.
+direct evaluation of a given policy learning algorithm. For details, see Algorithm 4 in the associated paper.
 
 In `polle`, policy learning algorithms are specified using `policy_learn()`, see the associated vignette. These functions can be directly evaluated in `policy_eval()`:
 
