@@ -2,10 +2,16 @@
 #' @export
 print.policy_object <- function(x, ...){
   cat("Policy object with list elements:")
-  cat("\n")
+
   cp <- paste(names(x), collapse = ", ")
-  cat(cp)
+  cp <- paste(cp, collapse = "")
+  cp <- gsub(" ", "", cp, fixed = TRUE)
+  cp <- gsub(",", ", ", cp, fixed = TRUE)
+
   cat("\n")
+  cat(paste(strwrap(cp, 60), collapse="\n"))
+
+    cat("\n")
   cat("Use 'get_policy' to get the associated policy.")
   cat("\n")
 }

@@ -253,7 +253,7 @@ print.policy_learn <- function(x, ...) {
   cp <- substr(cp,n_start, n_end-1)
 
   cat("\n")
-  cat(cp)
+  cat(paste(strwrap(cp, 60), collapse="\n"))
   cat("\n")
 
 }
