@@ -1,0 +1,183 @@
+---
+title: "policy_data"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{policy_data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup, message = FALSE}
+library(polle)
+```
+
+This vignette is a guide to `policy_data()`. As the name suggests, the function creates a `policy_data` object with
+a specific data structure making it easy to use in combination with `policy_def()`, `policy_learn()`, and `policy_eval()`.
+The vignette is also a guide to some of the associated S3 functions
+which transform or access parts of the data, see `?policy_data` and `methods(class="policy_data")`.
+
+We will start by looking at a simple single-stage example, then consider a fixed two-stage example with varying actions sets and data in wide format, and
+finally we will look at an example with a stochastic number of stages and data in long format.
+
+# Single-stage: wide data
+
+Consider a simple single-stage problem with covariates/state variables $(Z, L, B)$, binary action variable $A$, and
+utility outcome $U$. We use `sim_single_stage()` to simulate data:
+
+```{r single stage data}
+(d <- sim_single_stage(n = 5e2, seed=1)) |> head()
+```
+
+We give instructions to `policy_data()` which variables define the `action`, the state `covariates`, and the `utility` variable: 
+
+```{r pdss}
+pd <- policy_data(d, action="A", covariates=list("Z", "B", "L"), utility="U")
+pd
+```
+
+In the single-stage case the history $H$ is just $(B, Z, L)$. We access the history and actions using
+`get_history()`:
+
+```{r gethistoryss}
+get_history(pd)$H |> head()
+get_history(pd)$A |> head()
+```
+
+Similarly, we  access the utility outcomes $U$:
+
+```{r get}
+get_utility(pd) |> head()
+```
+
+```{r cleanup, include=FALSE}
+rm(list = ls())
+```
+
+# Two-stage: wide data
+
+Consider a two-stage problem with observations $O = (B, BB, L_{1}, C_{1}, U_{1}, A_1, L_2, C_{2}, U_{2}, A_2, U_{3})$. Following the general notation introduced in the associated paper, $(B,BB)$ are the baseline covariates, $S_k =(L_{k, C_{k}})$ are the
+state covariates at stage k, $A_{k}$ is the action at stage k, and $U_k$ is the reward at stage $k$.
+The utility is the sum of the rewards $U=U_{1}+U_{2}+U_{3}$.
+
+We use `sim_two_stage_multi_actions()` to simulate data:
+```{r simtwostage}
+d <- sim_two_stage_multi_actions(n=2e3, seed = 1)
+colnames(d)
+```
+Note that the data is in wide format.
+The data is transformed using `policy_data()` with instructions on which
+variables define the actions, baseline covariates, state covariates, and the rewards:
+
+```{r pdtwostage}
+pd <- policy_data(d,
+                  action = c("A_1", "A_2"),
+                  baseline = c("B", "BB"),
+                  covariates = list(L = c("L_1", "L_2"),
+                                    C = c("C_1", "C_2")),
+                  utility = c("U_1", "U_2", "U_3"))
+pd
+```
+
+The length of the character vector `action` determines the number of stages `K` (in this case 2).
+If the number of stages is 2 or more, the `covariates` argument must be a named list. Each element must be
+a character vector with length equal to the number of stages. If a covariate is not available at a
+given stage we insert an `NA` value, e.g., `L = c(NA, "L_2")`.
+
+Finally, the `utility` argument must
+be a single character string (the utility is observed after stage K) or a character vector
+of length K+1 with the names of the rewards.
+
+In this example, the observed action sets vary for each stage. `get_action_set()` returns the
+global action set and `get_stage_action_sets()` returns the action set for each stage:
+
+```{r getactionsets}
+get_action_set(pd)
+get_stage_action_sets(pd)
+```
+
+The full histories $H_1 = (B, BB, L_{1}, C_{1})$ and $H_2=(B, BB, L_{1}, C_{1}, A_{1}, L_{2}, C_{2})$ are available using `get_history()` and `full_history = TRUE`:
+
+```{r gethistwostage}
+get_history(pd, stage = 1, full_history = TRUE)$H |> head()
+get_history(pd, stage = 2, full_history = TRUE)$H |> head()
+```
+Similarly, we access the associated actions at each stage via list element `A`:
+
+```{r}
+get_history(pd, stage = 1, full_history = TRUE)$A |> head()
+get_history(pd, stage = 2, full_history = TRUE)$A |> head()
+```
+
+Alternatively, the state/Markov type history and actions are available using `full_history = FALSE`:
+
+```{r gethisstate}
+get_history(pd, full_history = FALSE)$H |> head()
+get_history(pd, full_history = FALSE)$A |> head()
+```
+
+Note that `policy_data()` overrides the action variable names to `A_1`, `A_2`, ... in the full history case and
+`A` in the state/Markov history case.
+
+As in the single-stage case we access the utility, i.e. the sum of the rewards, using
+`get_utility()`:
+
+```{r getutiltwo}
+get_utility(pd) |> head()
+```
+
+# Multi-stage: long data
+
+In this example we illustrate how `polle` handles decision
+processes with a stochastic number of stages.
+The data is simulated using `sim_multi_stage()`.
+Detailed information on the simulation is available in `?sim_multi_stage`.
+We simulate data from 2000 iid subjects:
+
+```{r sim_data}
+d <- sim_multi_stage(2e3, seed = 1)
+```
+As described, the stage data is in long format:
+
+```{r view_data}
+d$stage_data[, -(9:10)] |> head()
+```
+
+The `id` variable is important for identifying which rows belong
+to each subjects. The baseline data uses the same `id` variable:
+
+```{r view_b_data}
+d$baseline_data |> head()
+```
+
+The data is transformed using `policy_data()` with `type = "long"`.
+The names of the `id`, `stage`, `event`, `action`,
+and `utility` variables must be specified. The event variable, inspired by
+the event variable in `survival::Surv()`, is `0` whenever an
+action occur and `1` for a terminal event.
+
+```{r pd}
+pd <- policy_data(data = d$stage_data,
+                  baseline_data = d$baseline_data,
+                  type = "long",
+                  id = "id",
+                  stage = "stage",
+                  event = "event",
+                  action = "A",
+                  utility = "U")
+pd
+```
+
+In some cases we are only interested in analyzing a subset of the decision stages.
+`partial()` trims the maximum number of decision stages:
+
+```{r partial}
+pd3 <- partial(pd, K = 3)
+pd3
+```
