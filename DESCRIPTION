@@ -26,7 +26,7 @@ Imports:
     methods,
     policytree (>= 1.2.0),
     survival,
-    targeted,
+    targeted (>= 0.4),
     DynTxRegime
 Suggests:
     DTRlearn2,
