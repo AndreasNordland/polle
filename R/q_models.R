@@ -260,7 +260,7 @@ perf_ranger <- function(fit, data,  ...) {
 #' @export
 q_rf <- function(formula = ~.,
                  num.trees=c(250, 500, 750), mtry=NULL,
-                 cv_args=list(K=3, rep=1), ...) {
+                 cv_args=list(nfolds=3, rep=1), ...) {
   if (!requireNamespace("ranger")) stop("Package 'ranger' required.")
   formula <- as.formula(formula)
   dotdotdot <- list(...)
@@ -282,7 +282,7 @@ q_rf <- function(formula = ~.,
     res <- NULL; best <- 1
     if (length(ml)>1) {
       res <- tryCatch(targeted::cv(ml, data=data, perf=perf_ranger,
-                               K=cv_args$K, rep=cv_args$rep),
+                               nfolds=cv_args$nfolds, rep=cv_args$rep),
                       error=function(...) NULL)
       best <- if (is.null(res)) 1 else which.min(summary(res))
     }
@@ -403,7 +403,7 @@ q_xgboost <- function(formula = ~.,
                       max_depth = 6,
                       eta = 0.3,
                       nthread = 1,
-                      cv_args=list(K=3, rep=1)) {
+                      cv_args=list(nfolds=3, rep=1)) {
   if (!requireNamespace("xgboost")) stop("Package 'xgboost' required")
   formula <- as.formula(formula)
   environment(formula) <- NULL
@@ -413,7 +413,7 @@ q_xgboost <- function(formula = ~.,
                  eta, nthread){
     targeted::ml_model$new(formula,
                            info = "xgBoost",
-                           fit = function(x, y) {
+                           estimate = function(x, y) {
                              xgboost::xgboost(
                                data = x, label = y,
                                objective = objective,
@@ -452,7 +452,7 @@ q_xgboost <- function(formula = ~.,
 
     cv_res <- NULL
     if (length(ml_models)>1){
-      cv_res <- tryCatch(targeted::cv(ml_models, data, K=cv_args$K, rep = cv_args$rep),
+      cv_res <- tryCatch(targeted::cv(ml_models, data, nfolds=cv_args$nfolds, rep = cv_args$rep),
                          error = function(e) e)
       if (inherits(cv_res, "error")) {
         cv_res$message <-

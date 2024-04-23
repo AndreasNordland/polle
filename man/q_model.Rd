@@ -30,7 +30,7 @@ q_rf(
   formula = ~.,
   num.trees = c(250, 500, 750),
   mtry = NULL,
-  cv_args = list(K = 3, rep = 1),
+  cv_args = list(nfolds = 3, rep = 1),
   ...
 )
 
@@ -51,7 +51,7 @@ q_xgboost(
   max_depth = 6,
   eta = 0.3,
   nthread = 1,
-  cv_args = list(K = 3, rep = 1)
+  cv_args = list(nfolds = 3, rep = 1)
 )
 }
 \arguments{

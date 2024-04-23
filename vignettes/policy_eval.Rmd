@@ -1,0 +1,222 @@
+---
+title: "policy_eval"
+output:
+  rmarkdown::html_vignette:
+    fig_caption: true
+    toc: true    
+    toc_depth: 2
+vignette: >
+  %\VignetteIndexEntry{policy_eval}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+bibliography: ref.bib  
+---
+
+```{r lib}
+library(polle)
+```
+
+This vignette is a guide to `policy_eval()` and some of the associated S3 methods.
+The purpose of `policy_eval` is to estimate (evaluate) the value of a user-defined policy or a policy learning algorithm.
+For details on the methodology, see the associated paper [@nordland2023policy].
+
+We consider a fixed two-stage problem as a general setup and simulate data using `sim_two_stage()` and create a `policy_data` object using `policy_data()`:
+
+```{r simdata}
+d <- sim_two_stage(n = 2e3, seed = 1)
+pd <- policy_data(d,
+                  action = c("A_1", "A_2"),
+                  baseline = c("B", "BB"),
+                  covariates = list(L = c("L_1", "L_2"),
+                                    C = c("C_1", "C_2")),
+                  utility = c("U_1", "U_2", "U_3"))
+pd
+```
+
+## Evaluating a user-defined policy
+
+User-defined policies are created using `policy_def()`. In this case we define a simple static policy always
+selecting action `'1'`:
+
+```{r poldef}
+p1 <- policy_def(policy_functions = '1', reuse = TRUE, name = "A=1")
+```
+
+As we want to apply the same policy function at both stages we set `reuse = TRUE`.
+
+`policy_eval()` implements three types of policy evaluations: Inverse
+probability weighting estimation, outcome regression estimation, and doubly
+robust (DR) estimation. As doubly robust estimation is a combination of the two
+other types, we focus on this approach. For details on the implementation see
+Algorithm 1 in [@nordland2023policy]. 
+
+```{r polevalp1}
+(pe1 <- policy_eval(policy_data = pd,
+                    policy = p1,
+                    type = "dr"))
+```
+
+`policy_eval()` returns an object of type `policy_eval` which prints like a `lava::estimate` object. The policy value estimate and variance are available via `coef()` and `vcov()`:
+
+```{r coef}
+coef(pe1)
+vcov(pe1)
+```
+
+### Working with `policy_eval` objects
+
+The `policy_eval` object behaves like an `lava::estimate` object, which can also be directly accessed using `estimate()`. 
+
+`estimate` objects makes it easy to work with estimates with an iid decomposition given by the influence curve/function, see the [estimate vignette](https://cran.r-project.org/web/packages/lava/vignettes/influencefunction.html).
+
+The influence curve is available via `IC()`:
+
+```{r ic}
+IC(pe1) |> head()
+```
+
+Merging `estimate` objects allow the user to get inference for transformations of the estimates via the Delta method.
+Here we get inference for the average treatment effect, both as a difference and as a ratio:
+
+```{r estimate_merge}
+p0 <- policy_def(policy_functions = 0, reuse = TRUE, name = "A=0")
+pe0 <- policy_eval(policy_data = pd,
+                   policy = p0,
+                   type = "dr")
+
+(est <- merge(pe0, pe1))
+estimate(est, function(x) x[2]-x[1], labels="ATE-difference")
+estimate(est, function(x) x[2]/x[1], labels="ATE-ratio")
+```
+
+### Nuisance models
+
+So far we have relied on the default generalized linear models for the nuisance g-models and Q-models.
+As default, a single g-model trained across all stages using the state/Markov type history, see the
+`policy_data` vignette. Use `get_g_functions()` to get access to the
+fitted model:
+
+```{r get_nuisance}
+(gf <- get_g_functions(pe1))
+```
+
+The g-functions can be used as input to a new policy evaluation:
+```{r pe_pol}
+policy_eval(policy_data = pd,
+            g_functions = gf,
+            policy = p0,
+            type = "dr")
+```
+
+or we can get the associated predicted values:
+
+```{r pred_gfun}
+predict(gf, new_policy_data = pd) |> head(6)
+```
+
+Similarly, we can inspect the Q-functions using `get_q_functions()`:
+
+```{r get_qfun}
+get_q_functions(pe1)
+```
+Note that a model is trained for each stage. Again, we can predict from the Q-models using `predict()`.
+
+
+Usually, we want to specify the nuisance models ourselves using the `g_models` and `q_models` arguments:
+
+```{r gq_models, cache = TRUE}
+pe1 <- policy_eval(pd,
+            policy = p1,
+            g_models = list(
+              g_sl(formula = ~ BB + L_1, SL.library = c("SL.glm", "SL.ranger")),
+              g_sl(formula = ~ BB + L_1 + C_2, SL.library = c("SL.glm", "SL.ranger"))
+            ),
+            g_full_history = TRUE,
+            q_models = list(
+              q_glm(formula = ~ A * (B + C_1)), # including action interactions
+              q_glm(formula = ~ A * (B + C_1 + C_2)) # including action interactions
+            ),
+            q_full_history = TRUE)
+```
+
+Here we train a super learner g-model for each stage using the full available history and a generalized linear model for the Q-models. The `formula` argument is used to construct the model frame passed to the model for training (and prediction).
+The valid formula terms depending on `g_full_history` and `q_full_history` are available via `get_history_names()`:
+
+```{r history_names}
+get_history_names(pd) # state/Markov history
+get_history_names(pd, stage = 1) # full history
+get_history_names(pd, stage = 2) # full history
+```
+
+Remember that the action variable at the current stage is always named `A`. Some models like `glm` require interactions to be specified via the model frame. Thus, for some models, it is important to include action interaction terms for the Q-models.
+
+## Evaluating a policy learning algorithm
+
+The value of a learned policy is an important performance measure, and `policy_eval()` allow for
+direct evaluation of a given policy learning algorithm. For details, see Algorithm 4 in [@nordland2023policy].
+
+In `polle`, policy learning algorithms are specified using `policy_learn()`, see the associated vignette. These functions can be directly evaluated in `policy_eval()`:
+
+```{r pe_pl}
+policy_eval(pd,
+            policy_learn = policy_learn(type = "ql"))
+```
+
+In the above example we evaluate the policy estimated via Q-learning. Alternatively,
+we can first learn the policy and then pass it to `policy_eval()`:
+
+```{r pe_manual_pol_eval}
+p_ql <- policy_learn(type = "ql")(pd, q_models = q_glm())
+policy_eval(pd,
+            policy = get_policy(p_ql))
+```
+
+## Cross-fitting
+
+A key feature of `policy_eval()` is that it allows for easy cross-fitting of the nuisance models as well the learned policy.
+Here we specify two-fold cross-fitting via the `M` argument:
+
+```{r crossfits}
+pe_cf <- policy_eval(pd,
+                     policy_learn = policy_learn(type = "ql"),
+                     M = 2)
+```
+
+Specifically, both the nuisance models and the optimal policy are fitted on each training fold.
+Subsequently, the doubly robust value score is calculated on the validation folds.
+
+The `policy_eval` object now consists of a list of `policy_eval` objects associated with each fold:
+
+```{r pe_crossfits}
+pe_cf$folds$fold_1 |> head()
+pe_cf$cross_fits$fold_1
+```
+
+In order to save memory, particularly when cross-fitting, it is possible not to save the nuisance models via the
+`save_g_functions` and `save_q_functions` arguments.
+
+## Parallel processing via `future.apply`
+
+It is easy to parallelize the cross-fitting procedure via the `future.apply` package:
+
+```{r demo_future, eval = FALSE}
+library(future.apply)
+plan("multisession") # local parallel procession
+library("progressr") # progress bar
+handlers(global = TRUE)
+
+policy_eval(pd,
+            policy_learn = policy_learn(type = "ql"),
+            q_models = q_rf(),
+            M = 20)
+
+plan("sequential") # resetting to sequential processing
+```
+
+# SessionInfo
+
+```{r sessionInfo}
+sessionInfo()
+```
+
+# References

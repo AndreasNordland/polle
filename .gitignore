@@ -8,3 +8,6 @@ tests/*.Rdata
 tests/*.Rds
 inst/examples/*Rds
 master_test/
+inst/doc
+/doc/
+/Meta/

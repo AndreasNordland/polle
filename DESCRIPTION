@@ -1,6 +1,6 @@
 Package: polle
 Title: Policy Learning
-Version: 1.3
+Version: 1.4
 Authors@R: c(person(given = "Andreas",
                     family = "Nordland",
                     role = c("aut", "cre"),
@@ -26,7 +26,7 @@ Imports:
     methods,
     policytree (>= 1.2.0),
     survival,
-    targeted,
+    targeted (>= 0.4),
     DynTxRegime
 Suggests:
     DTRlearn2,
@@ -41,3 +41,4 @@ Suggests:
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
 BugReports: https://github.com/AndreasNordland/polle/issues
+VignetteBuilder: knitr
