@@ -1,19 +1,24 @@
 ---
 title: "policy_eval"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    fig_caption: true
+    toc: true    
+    toc_depth: 2
 vignette: >
   %\VignetteIndexEntry{policy_eval}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+bibliography: ref.bib  
 ---
 
 ```{r lib}
 library(polle)
 ```
 
-This vignette is a guide to `policy_eval()` and some of the associated S3 functions.
+This vignette is a guide to `policy_eval()` and some of the associated S3 methods.
 The purpose of `policy_eval` is to estimate (evaluate) the value of a user-defined policy or a policy learning algorithm.
-For details on the methodology, see the associated paper on [arxiv](https://arxiv.org/abs/2212.02335).
+For details on the methodology, see the associated paper [@nordland2023policy].
 
 We consider a fixed two-stage problem as a general setup and simulate data using `sim_two_stage()` and create a `policy_data` object using `policy_data()`:
 
@@ -39,7 +44,11 @@ p1 <- policy_def(policy_functions = '1', reuse = TRUE, name = "A=1")
 
 As we want to apply the same policy function at both stages we set `reuse = TRUE`.
 
-`policy_eval()` implements three types of policy evaluations: Inverse probability weighting estimation, outcome regression estimation, and doubly robust (DR) estimation. As doubly robust estimation is a combination of the two other types, we focus on this approach. For details on the implementation see Algorithm 1 of the associated paper. 
+`policy_eval()` implements three types of policy evaluations: Inverse
+probability weighting estimation, outcome regression estimation, and doubly
+robust (DR) estimation. As doubly robust estimation is a combination of the two
+other types, we focus on this approach. For details on the implementation see
+Algorithm 1 in [@nordland2023policy]. 
 
 ```{r polevalp1}
 (pe1 <- policy_eval(policy_data = pd,
@@ -54,7 +63,7 @@ coef(pe1)
 vcov(pe1)
 ```
 
-### `estimate()`
+### Working with `policy_eval` objects
 
 The `policy_eval` object behaves like an `lava::estimate` object, which can also be directly accessed using `estimate()`. 
 
@@ -144,7 +153,7 @@ Remember that the action variable at the current stage is always named `A`. Some
 ## Evaluating a policy learning algorithm
 
 The value of a learned policy is an important performance measure, and `policy_eval()` allow for
-direct evaluation of a given policy learning algorithm. For details, see Algorithm 4 in the associated paper.
+direct evaluation of a given policy learning algorithm. For details, see Algorithm 4 in [@nordland2023policy].
 
 In `polle`, policy learning algorithms are specified using `policy_learn()`, see the associated vignette. These functions can be directly evaluated in `policy_eval()`:
 
@@ -173,7 +182,7 @@ pe_cf <- policy_eval(pd,
                      M = 2)
 ```
 
-Specifically, both the nuisance models and the optimal policy is fitted on each training fold.
+Specifically, both the nuisance models and the optimal policy are fitted on each training fold.
 Subsequently, the doubly robust value score is calculated on the validation folds.
 
 The `policy_eval` object now consists of a list of `policy_eval` objects associated with each fold:
@@ -203,3 +212,11 @@ policy_eval(pd,
 
 plan("sequential") # resetting to sequential processing
 ```
+
+# SessionInfo
+
+```{r sessionInfo}
+sessionInfo()
+```
+
+# References

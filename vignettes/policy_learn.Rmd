@@ -1,10 +1,15 @@
 ---
 title: "policy_learn"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    fig_caption: true
+    toc: true    
+    toc_depth: 2
 vignette: >
   %\VignetteIndexEntry{policy_learn}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+bibliography: ref.bib  
 ---
 
 
@@ -20,9 +25,10 @@ library("data.table")
 library("polle")
 ```
 
-This vignette is a guide to `policy_learn()` and some of the associated S3 generic functions.
+This vignette is a guide to `policy_learn()` and some of the associated S3 methods.
 The purpose of `policy_learn` is to specify a policy learning algorithm and estimate an optimal
-policy. For details on the methodology, see the associated paper on [arxiv](https://arxiv.org/abs/2212.02335).
+policy. For details on the methodology, see the associated paper
+[@nordland2023policy].
 
 We consider a fixed two-stage problem as a general setup and simulate data using `sim_two_stage()` and create a `policy_data` object using `policy_data()`:
 
@@ -61,7 +67,7 @@ pl_blip <- policy_learn(
 )
 ```
 
-For details on the implementation, see Algorithm 3 in the associated paper.
+For details on the implementation, see Algorithm 3 in [@nordland2023policy].
 The only required control argument for blip learning is a model input.
 The `blip_models` argument expects a `q_model`. In this case we input a
 simple linear model as implemented in `q_glm`.
@@ -117,7 +123,7 @@ po_blip_cross$g_functions_cf
 
 Realistic policy learning is implemented for types `ql`, `drql`, `blip` and `ptl` (for a binary action set).
 The `alpha` argument sets the probability threshold for defining the realistic action set. For implementation details,
-see Algorithm 5 in the associated paper. Here we set a 5\% restriction:
+see Algorithm 5 in [@nordland2023policy]. Here we set a 5\% restriction:
 
 ```{r pl_alpha}
 pl_blip_alpha <- policy_learn(
@@ -180,3 +186,10 @@ as a `policy` meaning that we can apply to any (suitable) `policy_data` object t
 get_policy(po_blip)(pd) |> head(4)
 ```
 
+# SessionInfo
+
+```{r sessionInfo}
+sessionInfo()
+```
+
+# References
