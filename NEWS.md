@@ -14,3 +14,6 @@
     - new policy_learn type: "blip". Similar to "drql", but only a single model is fitted using the doubly robust score for the blip.
     - q_sl now uses the folds from policy_learn when it is used a policy model for "blip" and "drql".
     - g_xgboost and q_xgboost.
+
+# polle 1.4
+    - vignettes added for policy_data, policy_learn and policy_eval
