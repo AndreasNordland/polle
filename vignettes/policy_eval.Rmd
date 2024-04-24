@@ -67,7 +67,7 @@ vcov(pe1)
 
 The `policy_eval` object behaves like an `lava::estimate` object, which can also be directly accessed using `estimate()`. 
 
-`estimate` objects makes it easy to work with estimates with an iid decomposition given by the influence curve/function, see the [estimate vignette](https://cran.r-project.org/web/packages/lava/vignettes/influencefunction.html).
+`estimate` objects makes it easy to work with estimates with an iid decomposition given by the influence curve/function, see the [estimate vignette](https://CRAN.R-project.org/package=lava/vignettes/influencefunction.html).
 
 The influence curve is available via `IC()`:
 
