@@ -136,10 +136,10 @@ Each observation has the sequential form
 \deqn{O= {B, U_1, X_1, A_1, ..., U_K, X_K, A_K, U_{K+1}},}
 for a possibly stochastic number of stages K.
 \itemize{
-\item{} \eqn{B} is a vector of baseline covariates.
-\item{} \eqn{U_k} is the reward at stage k (not influenced by the action \eqn{A_k}).
-\item{} \eqn{X_k} is a vector of state covariates summarizing the state at stage k.
-\item{} \eqn{A_k} is the categorical action within the action set \eqn{\mathcal{A}} at stage k.
+\item \eqn{B} is a vector of baseline covariates.
+\item \eqn{U_k} is the reward at stage k (not influenced by the action \eqn{A_k}).
+\item \eqn{X_k} is a vector of state covariates summarizing the state at stage k.
+\item \eqn{A_k} is the categorical action within the action set \eqn{\mathcal{A}} at stage k.
 }
 The utility is given by the sum of the rewards, i.e.,
 \eqn{U = \sum_{k = 1}^{K+1} U_k}.
@@ -189,13 +189,13 @@ Z^d_1 = Q^d_1(H_1 , d_1(...)) + \sum_{r = 1}^K \prod_{j = 1}^{r}
 
 The following S3 generic functions are available for an object of
 class \code{policy_eval}:
-\itemize{
+\describe{
 \item{\code{\link[=get_g_functions]{get_g_functions()}}}{ Extract the fitted g-functions.}
 \item{\code{\link[=get_q_functions]{get_q_functions()}}}{ Extract the fitted Q-functions.}
 \item{\code{\link[=get_policy]{get_policy()}}}{ Extract the fitted policy object.}
 \item{\code{\link[=get_policy_functions]{get_policy_functions()}}}{ Extract the fitted policy function for
 a given stage.}
-\item{\code{\link[=get_policy_actions]{get_policy_actions()}}}{ Extract the (fitted) policy actions.}
+\item{\code{\link[=get_policy_actions]{get_policy_actions()}}}{ Extract the (fitted) policy actions.}ps
 \item{\code{\link[=plot.policy_eval]{plot.policy_eval()}}}{Plot diagnostics.}
 }
 }

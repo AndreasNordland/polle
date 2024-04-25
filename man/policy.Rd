@@ -23,7 +23,7 @@ the policy can be extracted using \link{get_policy}.
 
 The following S3 generic functions are available for an object of class
 \code{policy}:
-\itemize{
+\describe{
 \item{\code{print}}{Baisc print function}
 }
 }

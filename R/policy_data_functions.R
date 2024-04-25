@@ -631,6 +631,7 @@ state_history <- function(object){
 get_stage_data <- function(object)
   UseMethod("get_stage_data")
 
+#' @export
 get_stage_data.policy_data <- function(object){
   out <- getElement(object, "stage_data")
   return(out)

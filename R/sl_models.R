@@ -8,7 +8,7 @@ SL.glm.formula <- function(Y, X, newX, obsWeights, family, id, formula=Y~., ...)
   out <- list(pred = pred, fit = obj)
   return(out)
 }
-
+#' @export
 predict.SL.glm.formula <- function(object, newdata, family, X = NULL, Y = NULL,...) {
 	pred <- predict(object=object$fit, newdata=newdata, type="response")
 	return(pred)
@@ -24,7 +24,7 @@ SL.nls <- function(Y, X, newX, obsWeights, family, id, formula, start,  ...) {
   out <- list(pred = pred, fit = obj)
   return(out)
 }
-
+#' @export
 predict.SL.nls <- function(object, newdata, family,
                            X = NULL, Y = NULL, ...) {
 	pred <- predict(object=object$fit, newdata=newdata)

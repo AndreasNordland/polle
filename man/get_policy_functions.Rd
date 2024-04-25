@@ -31,7 +31,9 @@ see \link{policy_learn} and \link{policy_eval}.}
 }
 \value{
 Functions with arguments:
+\describe{
 \item{\code{H}}{\link{data.table} containing the variables needed to evaluate the policy (and g-function).}
+}
 }
 \description{
 \code{get_policy_functions()} returns a function defining the policy at

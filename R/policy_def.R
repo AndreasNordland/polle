@@ -14,7 +14,7 @@ new_policy <- function(fun, name){
 #' @section S3 generics:
 #' The following S3 generic functions are available for an object of class
 #' \code{policy}:
-#' \itemize{
+#' \describe{
 #'   \item{\code{print}}{Baisc print function}
 #' }
 #' @details A policy can either be defined directly by the user using
