@@ -26,13 +26,13 @@ policy_learn(
 \arguments{
 \item{type}{Type of policy learner method:
 \itemize{
-\item{} \code{"ql"}: Quality/Q-learning.
-\item{} \code{"drql"}: Doubly Robust Q-learning.
-\item{} \code{"blip"}: Doubly Robust blip-learning (only for dichotomous actions).
-\item{} \code{"ptl"}: Policy Tree Learning.
-\item{} \code{"owl"}: Outcome Weighted Learning.
-\item{} \code{"earl"}: Efficient Augmentation and Relaxation Learning (only single stage).
-\item{} \code{"rwl"}: Residual Weighted Learning (only single stage).
+\item \code{"ql"}: Quality/Q-learning.
+\item \code{"drql"}: Doubly Robust Q-learning.
+\item \code{"blip"}: Doubly Robust blip-learning (only for dichotomous actions).
+\item \code{"ptl"}: Policy Tree Learning.
+\item \code{"owl"}: Outcome Weighted Learning.
+\item \code{"earl"}: Efficient Augmentation and Relaxation Learning (only single stage).
+\item \code{"rwl"}: Residual Weighted Learning (only single stage).
 }}
 
 \item{control}{List of control arguments. Values (and default values) are set using
@@ -125,7 +125,7 @@ learning and outcome weighted learning). Evaluating the policy learner returns a
 
 The following S3 generic functions are available for an object of
 class "policy_object":
-\itemize{
+\describe{
 \item{\code{\link[=get_g_functions]{get_g_functions()}}}{ Extract the fitted g-functions.}
 \item{\code{\link[=get_q_functions]{get_q_functions()}}}{ Extract the fitted Q-functions.}
 \item{\code{\link[=get_policy]{get_policy()}}}{ Extract the fitted policy object.}

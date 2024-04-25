@@ -5,13 +5,13 @@
 #' learning and outcome weighted learning). Evaluating the policy learner returns a policy object.
 #' @param type Type of policy learner method:
 #' \itemize{
-#'   \item{} \code{"ql"}: Quality/Q-learning.
-#'   \item{} \code{"drql"}: Doubly Robust Q-learning.
-#'   \item{} \code{"blip"}: Doubly Robust blip-learning (only for dichotomous actions).
-#'   \item{} \code{"ptl"}: Policy Tree Learning.
-#'   \item{} \code{"owl"}: Outcome Weighted Learning.
-#'   \item{} \code{"earl"}: Efficient Augmentation and Relaxation Learning (only single stage).
-#'   \item{} \code{"rwl"}: Residual Weighted Learning (only single stage).
+#'   \item \code{"ql"}: Quality/Q-learning.
+#'   \item \code{"drql"}: Doubly Robust Q-learning.
+#'   \item \code{"blip"}: Doubly Robust blip-learning (only for dichotomous actions).
+#'   \item \code{"ptl"}: Policy Tree Learning.
+#'   \item \code{"owl"}: Outcome Weighted Learning.
+#'   \item \code{"earl"}: Efficient Augmentation and Relaxation Learning (only single stage).
+#'   \item \code{"rwl"}: Residual Weighted Learning (only single stage).
 #' }
 #' @param control List of control arguments. Values (and default values) are set using
 #' \code{control_{type}()}. Key arguments include:\cr
@@ -85,7 +85,7 @@
 #' @section S3 generics:
 #' The following S3 generic functions are available for an object of
 #' class "policy_object":
-#' \itemize{
+#' \describe{
 #' \item{[get_g_functions()]}{ Extract the fitted g-functions.}
 #' \item{[get_q_functions()]}{ Extract the fitted Q-functions.}
 #' \item{[get_policy()]}{ Extract the fitted policy object.}
