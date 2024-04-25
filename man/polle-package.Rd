@@ -6,7 +6,7 @@
 \alias{polle-package}
 \title{polle: Policy Learning}
 \description{
-Framework for evaluating user-specified finite stage policies and learning realistic policies via doubly robust loss functions. Policy learning methods include doubly robust Q-learning, sequential policy tree learning, and outcome weighted learning. See Nordland and Holst (2022) \doi{10.48550/arXiv:2212.02335} for documentation and references.
+Framework for evaluating user-specified finite stage policies and learning realistic policies via doubly robust loss functions. Policy learning methods include doubly robust Q-learning, sequential policy tree learning, and outcome weighted learning. See Nordland and Holst (2022) \doi{10.48550/arXiv.2212.02335} for documentation and references.
 }
 \seealso{
 Useful links:
