@@ -9,7 +9,7 @@
 #' @section S3 generics:
 #' The following S3 generic functions are available for an object of class
 #' \code{nuisance_functions}:
-#' \itemize{
+#' \describe{
 #'   \item{\code{predict}}{ Predict the values of the g- or Q-functions based
 #'   on a [policy_data] object.}
 #'  }

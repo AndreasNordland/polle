@@ -1,7 +1,7 @@
+#' @keywords internal
+"_PACKAGE"
 
-##' Policy Learning
-##'
-##' @name polle-package
+## usethis namespace: start
 ##' @importFrom lava IC estimate
 ##' @importFrom SuperLearner All
 ##' @importFrom stats predict gaussian binomial glm as.formula nls model.frame
@@ -12,15 +12,7 @@
 ##' @importFrom survival survfit
 ##' @importFrom progressr progressor
 ##' @import data.table SuperLearner
-##' @aliases polle-package polle
-##' @docType package
-##' @keywords package
-##' @author Andreas Nordland (Maintainer) <andreas.nordland@@gmail.com>, Klaus Holst.
-##' @description Framework for evaluating user-specified finite stage policies
-##' and learning realistic policies via doubly robust loss functions. Policy
-##' learning methods include doubly robust restricted Q-learning,
-##' sequential policy tree learning and outcome weighted learning.
-##' See Nordland and Holst (20222) <https://arxiv.org/abs/2212.02335> for documentation and references.
+## usethis namespace: end
 NULL
 
 ##' @export

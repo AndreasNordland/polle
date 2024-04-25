@@ -43,7 +43,7 @@ fit_g_function <- function(history, g_model){
       mes <- paste(mes, paste(stage, collapse = ", "))
       mes <- paste(mes, ". Unable to fit g-function.", sep = "")
     } else{
-      mes <- "Not all actions in the action set occur. Unable to fit g-function."
+      ## mes <- "Not all actions in the action set occur. Unable to fit g-function."
     }
     stop(mes)
   }
@@ -72,6 +72,7 @@ print.g_function <- function(x, ...){
   print(y)
 }
 
+#' @export
 predict.g_function <- function(object, new_history, ...){
   g_model <- getElement(object, "g_model")
   H_names <- getElement(object, "H_names")

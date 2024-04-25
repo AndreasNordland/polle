@@ -2,17 +2,26 @@
 % Please edit documentation in R/polle-package.R
 \docType{package}
 \name{polle-package}
-\alias{polle-package}
 \alias{polle}
-\title{Policy Learning}
+\alias{polle-package}
+\title{polle: Policy Learning}
 \description{
-Framework for evaluating user-specified finite stage policies
-and learning realistic policies via doubly robust loss functions. Policy
-learning methods include doubly robust restricted Q-learning,
-sequential policy tree learning and outcome weighted learning.
-See Nordland and Holst (20222) \url{https://arxiv.org/abs/2212.02335} for documentation and references.
+Framework for evaluating user-specified finite stage policies and learning realistic policies via doubly robust loss functions. Policy learning methods include doubly robust Q-learning, sequential policy tree learning, and outcome weighted learning. See Nordland and Holst (2022) \doi{10.48550/arXiv:2212.02335} for documentation and references.
+}
+\seealso{
+Useful links:
+\itemize{
+  \item Report bugs at \url{https://github.com/AndreasNordland/polle/issues}
+}
+
 }
 \author{
-Andreas Nordland (Maintainer) \href{mailto:andreas.nordland@gmail.com}{andreas.nordland@gmail.com}, Klaus Holst.
+\strong{Maintainer}: Andreas Nordland \email{andreasnordland@gmail.com}
+
+Authors:
+\itemize{
+  \item Klaus Holst \email{klaus@holst.it} (\href{https://orcid.org/0000-0002-1364-6789}{ORCID})
 }
-\keyword{package}
+
+}
+\keyword{internal}

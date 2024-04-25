@@ -53,6 +53,7 @@ print.Q_function <- function(x, ...){
   print(y)
 }
 
+#' @export
 predict.Q_function <- function(object, new_history, ...){
   q_model <- getElement(object, "q_model")
   AH_names <- getElement(object, "AH_names")

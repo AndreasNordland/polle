@@ -14,7 +14,7 @@ state/Markov-type history is stored as an attribute ("full_history").
 
 The following S3 generic functions are available for an object of class
 \code{nuisance_functions}:
-\itemize{
+\describe{
 \item{\code{predict}}{ Predict the values of the g- or Q-functions based
 on a \link{policy_data} object.}
 }

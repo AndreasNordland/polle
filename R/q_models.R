@@ -184,7 +184,7 @@ q_glm <- function(formula = ~ A*.,
   q_glm <- new_q_model(q_glm)
   return(q_glm)
 }
-
+#' @export
 predict.q_glm <- function(object, new_AH, ...){
   model <- getElement(object, "model")
   pred <- predict(model, newdata = new_AH, type = "response")
@@ -234,7 +234,7 @@ q_glmnet <- function(formula = ~ A*.,
   q_glmnet <- new_q_model(q_glmnet)
   return(q_glmnet)
 }
-
+#' @export
 predict.q_glmnet <- function(object, new_AH, ...) {
   design <- getElement(object, "design")
   model <- getElement(object, "model")
@@ -305,7 +305,7 @@ q_rf <- function(formula = ~.,
   q_rf <- new_q_model(q_rf)
   return(q_rf)
 }
-
+#' @export
 predict.q_rf <- function(object, new_AH, ...) {
   model <- getElement(object, "model")
   design <- getElement(object, "design")
@@ -379,7 +379,7 @@ q_sl <- function(formula = ~ .,
   q_sl <- new_q_model(q_sl)
   return(q_sl)
 }
-
+#' @export
 predict.q_sl <- function(object, new_AH, ...) {
   model <- getElement(object, "model")
   design <- getElement(object, "design")
@@ -490,7 +490,7 @@ q_xgboost <- function(formula = ~.,
 
   return(q)
 }
-
+#' @export
 predict.q_xgboost <- function(object, new_AH, ...){
   model <- getElement(object, "model")
   design <- getElement(object, "design")

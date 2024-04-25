@@ -184,20 +184,20 @@ new_policy_data <- function(stage_data, baseline_data = NULL, action_set = NULL,
 #' If "long", \code{data} is considered to be on long format; see Examples.
 #' @param action Action variable name(s). Character vector or character string.
 #' \itemize{
-#'   \item{} A vector is valid for wide data. The length of the vector determines the number of stages (K).
-#'   \item{} A string is valid for single stage wide data or long data.
+#'   \item A vector is valid for wide data. The length of the vector determines the number of stages (K).
+#'   \item A string is valid for single stage wide data or long data.
 #' }
 #' @param covariates Stage specific covariate name(s). Character vector or named list of character vectors.
 #' \itemize{
-#'   \item{} A vector is valid for single stage wide data or long data.
-#'   \item{} A named list is valid for multiple stages wide data. Each element
+#'   \item A vector is valid for single stage wide data or long data.
+#'   \item A named list is valid for multiple stages wide data. Each element
 #'   must be a character vector with length K. Each vector can contain NA
 #'   elements, if a covariate is not available for the given stage(s).
 #' }
 #' @param utility  Utility/Reward variable name(s). Character string or vector.
 #' \itemize{
-  #'   \item{} A string is valid for long data and wide data with a single final utility.
-  #'   \item{} A vector is valid for wide data with incremental rewards. Must have length K+1; see Examples.
+  #'   \item A string is valid for long data and wide data with a single final utility.
+  #'   \item A vector is valid for wide data with incremental rewards. Must have length K+1; see Examples.
 #' }
 #' @param baseline Baseline covariate name(s). Character vector.
 #' @param deterministic_rewards Deterministic reward variable name(s). Named list of character vectors of length K.
@@ -217,10 +217,10 @@ new_policy_data <- function(stage_data, baseline_data = NULL, action_set = NULL,
 #' \deqn{O= {B, U_1, X_1, A_1, ..., U_K, X_K, A_K, U_{K+1}},}
 #' for a possibly stochastic number of stages K.
 #' \itemize{
-#'  \item{} \eqn{B} is a vector of baseline covariates.
-#'  \item{} \eqn{U_k} is the reward at stage k (not influenced by the action \eqn{A_k}).
-#'  \item{} \eqn{X_k} is a vector of state covariates summarizing the state at stage k.
-#'  \item{} \eqn{A_k} is the categorical action at stage k.
+#'  \item \eqn{B} is a vector of baseline covariates.
+#'  \item \eqn{U_k} is the reward at stage k (not influenced by the action \eqn{A_k}).
+#'  \item \eqn{X_k} is a vector of state covariates summarizing the state at stage k.
+#'  \item \eqn{A_k} is the categorical action at stage k.
 #' }
 #' The utility is given by the sum of the rewards, i.e.,
 #' \eqn{U = \sum_{k = 1}^{K+1} U_k}.
@@ -245,7 +245,7 @@ new_policy_data <- function(stage_data, baseline_data = NULL, action_set = NULL,
 #' @section S3 generics:
 #' The following S3 generic functions are available for an object of
 #' class \code{policy_data}:
-#' \itemize{
+#' \describe{
 #' \item{[partial()]}{ Trim the maximum number
 #'                              of stages in a \code{policy_data} object.}
 #' \item{[subset_id()]}{ Subset a a \code{policy_data} object on ID.}

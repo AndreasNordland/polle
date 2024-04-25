@@ -39,7 +39,7 @@ fit_blip_function <- function(history, Z, blip_model, valid_ids){
 
   return(blip_function)
 }
-
+#' @export
 predict.blip_function <- function(object, new_history, ...){
   id_stage <- get_id_stage(new_history)
   new_H <- get_H(new_history)
@@ -554,4 +554,3 @@ plot_policy_object.blip <- function(
 
   return(p1)
 }
-

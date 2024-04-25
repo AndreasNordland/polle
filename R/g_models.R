@@ -274,6 +274,7 @@ g_empir <- function(formula = ~1, ...) {
   g_empir <- new_g_model(g_empir)
   return(g_empir)
 }
+#' @export
 predict.g_empir <- function(object, new_H, ...){
   tab <- object[["tab"]]
   action_set <- object[["action_set"]]
@@ -348,6 +349,7 @@ g_glm <- function(formula = ~.,
 
   return(g_glm)
 }
+#' @export
 predict.g_glm <- function(object, new_H, ...){
   model <- getElement(object, "model")
   fit <- predict.glm(object = model, newdata = new_H, type = "response")
@@ -403,6 +405,7 @@ g_glmnet <- function(formula = ~.,
   return(g_glmnet)
 }
 
+#' @export
 predict.g_glmnet <- function(object, new_H, ...) {
   design <- getElement(object, "design")
   model <- getElement(object, "model")
@@ -479,6 +482,7 @@ g_rf <- function(formula = ~.,
   return(g_rf)
 }
 
+#' @export
 predict.g_rf <- function(object, new_H, ...){
   model <- getElement(object, "model")
   design <- getElement(object, "design")
@@ -696,6 +700,7 @@ g_xgboost <- function(formula = ~.,
   return(g)
 }
 
+#' @export
 predict.g_xgboost <- function(object, new_H, ...){
   model <- getElement(object, "model")
   design <- getElement(object, "design")
