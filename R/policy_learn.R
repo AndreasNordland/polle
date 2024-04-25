@@ -17,42 +17,42 @@
 #' \code{control_{type}()}. Key arguments include:\cr
 #' [control_drql()]:\cr
 #' \itemize{
-#'   \item{} \code{qv_models}: Single element or list of V-restricted Q-models created
+#'   \item \code{qv_models}: Single element or list of V-restricted Q-models created
 #'           by [q_glm()], [q_rf()], [q_sl()] or similar functions.
 #' }
 #' [control_blip()]:\cr
 #' \itemize{
-#'   \item{} \code{blip_models}: Single element or list of V-restricted blip-models created
+#'   \item \code{blip_models}: Single element or list of V-restricted blip-models created
 #'           by [q_glm()], [q_rf()], [q_sl()] or similar functions.
 #' }
 #' [control_ptl()]: \cr
 #' \itemize{
-#'   \item{} \code{policy_vars}: Character vector/string or list of character
+#'   \item \code{policy_vars}: Character vector/string or list of character
 #' vectors/strings. Variable names used to construct the V-restricted policy tree.
 #' The names must be a subset of the history names, see get_history_names().
-#'   \item{} \code{hybrid}: If \code{TRUE}, [policytree::hybrid_policy_tree()] is used to
+#'   \item \code{hybrid}: If \code{TRUE}, [policytree::hybrid_policy_tree()] is used to
 #' fit a policy tree.
-#'   \item{} \code{depth}: Integer or integer vector. The depth of the fitted policy
+#'   \item \code{depth}: Integer or integer vector. The depth of the fitted policy
 #' tree for each stage.
 #' }
 #' [control_owl()]: \cr
 #' \itemize{
-#'   \item{} \code{policy_vars}: As in \code{control_ptl()}.
-#'   \item{} \code{loss}: Loss function. The options are \code{"hinge"}, \code{"ramp"},
+#'   \item \code{policy_vars}: As in \code{control_ptl()}.
+#'   \item \code{loss}: Loss function. The options are \code{"hinge"}, \code{"ramp"},
 #' \code{"logit"}, \code{"logit.lasso"}, \code{"l2"}, \code{"l2.lasso"}.
-#'   \item{} \code{kernel}: Type of kernel used by the support vector machine. The
+#'   \item \code{kernel}: Type of kernel used by the support vector machine. The
 #' options are \code{"linear"}, \code{"rbf"}.
-#'    \item{} \code{augment}:  If \code{TRUE} the outcomes are augmented.
+#'    \item \code{augment}:  If \code{TRUE} the outcomes are augmented.
 #' }
 #' [control_earl()]/[control_rwl()]: \cr
 #' \itemize{
-#'   \item{} \code{moPropen}: Propensity model of class "ModelObj", see [modelObj::modelObj].
-#'   \item{} \code{moMain}: Main effects outcome model of class "ModelObj".
-#'   \item{} \code{moCont} Contrast outcome model of class "ModelObj".
-#'   \item{} \code{regime}: An object of class [formula] specifying the design of the policy.
-#'   \item{} \code{surrogate}: The surrogate 0-1 loss function. The options are
+#'   \item \code{moPropen}: Propensity model of class "ModelObj", see [modelObj::modelObj].
+#'   \item \code{moMain}: Main effects outcome model of class "ModelObj".
+#'   \item \code{moCont} Contrast outcome model of class "ModelObj".
+#'   \item \code{regime}: An object of class [formula] specifying the design of the policy.
+#'   \item \code{surrogate}: The surrogate 0-1 loss function. The options are
 #' \code{"logit"}, \code{"exp"}, \code{"hinge"}, \code{"sqhinge"}, \code{"huber"}.
-#'   \item{} \code{kernel}: The options are \code{"linear"}, \code{"poly"}, \code{"radial"}.
+#'   \item \code{kernel}: The options are \code{"linear"}, \code{"poly"}, \code{"radial"}.
 #' }
 #' @param alpha Probability threshold for determining realistic actions.
 #' @param L Number of folds for cross-fitting nuisance models.
