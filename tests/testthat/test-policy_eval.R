@@ -1,4 +1,5 @@
-test_that("policy_eval returns g and Q-function values",{
+test_that("policy_eval returns g and Q-function values", {
+
   d <- sim_single_stage(1e2, seed=1)
   pd <- policy_data(d, action = "A", covariates = c("Z"), utility = "U")
   p <- policy_def(1)

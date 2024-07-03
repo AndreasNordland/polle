@@ -1,33 +1,40 @@
 #' Policy Evaluation
 #'
 #' \code{policy_eval()} is used to estimate the value of a given fixed policy
-#' or a data adaptive policy (e.g. a policy learned from the data).
+#' or a data adaptive policy (e.g. a policy learned from the data). \code{policy_eval()}
+#' is also used to estimate the average treatment effect among the subjects who would
+#' get the treatment under the policy.
 #' @param policy_data Policy data object created by [policy_data()].
 #' @param policy Policy object created by [policy_def()].
 #' @param policy_learn Policy learner object created by [policy_learn()].
+#' @param g_functions Fitted g-model objects, see [nuisance_functions].
+#' Preferably, use \code{g_models}.
 #' @param g_models List of action probability models/g-models for each stage
 #' created by [g_empir()], [g_glm()], [g_rf()], [g_sl()] or similar functions.
 #' Only used for evaluation if \code{g_functions} is \code{NULL}.
 #' If a single model is provided and \code{g_full_history} is \code{FALSE},
 #' a single g-model is fitted across all stages. If \code{g_full_history} is
 #' \code{TRUE} the model is reused at every stage.
+#' @param g_full_history If TRUE, the full history is used to fit each g-model.
+#' If FALSE, the state/Markov type history is used to fit each g-model.
+#' @param save_g_functions If TRUE, the fitted g-functions are saved.
+#' @param q_functions Fitted Q-model objects, see [nuisance_functions].
+#' Only valid if the Q-functions are fitted using the same policy.
+#' Preferably, use \code{q_models}.
 #' @param q_models Outcome regression models/Q-models created by
 #' [q_glm()], [q_rf()], [q_sl()] or similar functions.
 #' Only used for evaluation if \code{q_functions} is \code{NULL}.
 #' If a single model is provided, the model is reused at every stage.
-#' @param g_functions Fitted g-model objects, see [nuisance_functions].
-#' Preferably, use \code{g_models}.
-#' @param q_functions Fitted Q-model objects, see [nuisance_functions].
-#' Only valid if the Q-functions are fitted using the same policy.
-#' Preferably, use \code{q_models}.
-#' @param g_full_history If TRUE, the full history is used to fit each g-model.
-#' If FALSE, the state/Markov type history is used to fit each g-model.
 #' @param q_full_history Similar to g_full_history.
-#' @param save_g_functions If TRUE, the fitted g-functions are saved.
 #' @param save_q_functions Similar to save_g_functions.
-#' @param M Number of folds for cross-fitting.
+#' @param target Character string. Either "value" or "sub_effect". If "value",
+#' the target parameter is the policy value. If "sub_effect", the target parameter
+#' is the average treatement effect among the subgroup of subjects that would receive
+#' treatment under the policy, see details. "sub_effect" is only implemented for \code{type = "dr"}
+#' in the single-stage case with a dichotomous action set.
 #' @param type Type of evaluation (dr/doubly robust, ipw/inverse propensity
 #' weighting, or/outcome regression).
+#' @param M Number of folds for cross-fitting.
 #' @param future_args Arguments passed to [future.apply::future_apply()].
 #' @param name Character string.
 #' @param object,x,y Objects of class "policy_eval".
@@ -68,9 +75,8 @@
 #' \item{[get_g_functions()]}{ Extract the fitted g-functions.}
 #' \item{[get_q_functions()]}{ Extract the fitted Q-functions.}
 #' \item{[get_policy()]}{ Extract the fitted policy object.}
-#' \item{[get_policy_functions()]}{ Extract the fitted policy function for
-#'                                 a given stage.}
-#' \item{[get_policy_actions()]}{ Extract the (fitted) policy actions.}ps
+#' \item{[get_policy_functions()]}{ Extract the fitted policy function for a given stage.}
+#' \item{[get_policy_actions()]}{ Extract the (fitted) policy actions.}
 #' \item{[plot.policy_eval()]}{Plot diagnostics.}
 #' }
 #' @seealso [lava::IC], [lava::estimate.default].
@@ -107,26 +113,34 @@
 #' Furthermore, if \code{g_full_history = FALSE} and \code{g_models} is a
 #' single model, it is assumed that \eqn{g_1(h_1, a_1) = ... = g_K(h_K, a_K)}.
 #'
-#' If \code{type = "or"} \code{policy_eval} returns the empirical estimates of
+#' If \code{target = "value"} and \code{type = "or"}
+#' \code{policy_eval()} returns the empirical estimate of
 #' the value (\code{value_estimate}):
-#' \deqn{E[Q^d_1(H_1, d_1(...))]}
-#' for an appropriate input \eqn{...} to the policy.
+#' \deqn{E\left[Q^d_1(H_1, d_1(\cdot))\right]}
 #'
-#' If \code{type = "ipw"} \code{policy_eval} returns the empirical estimates of
-#' the value (\code{value_estimate}) and score (\code{IC}):
-#' \deqn{E[(\prod_{k=1}^K I\{A_k = d_k(...)\} g_k(H_k, A_k)^{-1}) U].}
-#' \deqn{(\prod_{k=1}^K I\{A_k = d_k(...)\} g_k(H_k, A_k)^{-1}) U - E[(\prod_{k=1}^K I\{A_k = d_k(...)\} g_k(H_k, A_k)^{-1}) U].}
+#' If \code{target = "value"} and \code{type = "ipw"} \code{policy_eval()}
+#' returns the empirical estimates of
+#' the value (\code{value_estimate}) and influence curve (\code{IC}):
+#' \deqn{E\left[\left(\prod_{k=1}^K I\{A_k = d_k(\cdot)\} g_k(H_k, A_k)^{-1}\right) U\right].}
+#' \deqn{\left(\prod_{k=1}^K I\{A_k = d_k(\cdot)\} g_k(H_k, A_k)^{-1}\right) U - E\left[\left(\prod_{k=1}^K I\{A_k = d_k(\cdot)\} g_k(H_k, A_k)^{-1}\right) U\right].}
 #'
-#' If \code{type = "dr"} \code{policy_eval} returns the empirical estimates of
+#' If \code{target = "value"} and \code{type = "dr"} \code{policy_eval} returns the empirical estimates of
 #' the value (\code{value_estimate}) and influence curve (\code{IC}):
 #' \deqn{E[Z^d_1],}
 #' \deqn{Z^d_1 - E[Z^d_1],}
 #' where
 #' \deqn{
-#' Z^d_1 = Q^d_1(H_1 , d_1(...)) + \sum_{r = 1}^K \prod_{j = 1}^{r}
-#' \frac{I\{A_j = d_j(...)\}}{g_{j}(H_j, A_j)}
-#' \{Q_{r+1}^d(H_{r+1} , d_{r+1}(...)) - Q_{r}^d(H_r , d_r(...))\}.
+#' Z^d_1 = Q^d_1(H_1 , d_1(\cdot)) + \sum_{r = 1}^K \prod_{j = 1}^{r}
+#' \frac{I\{A_j = d_j(\cdot)\}}{g_{j}(H_j, A_j)}
+#' \{Q_{r+1}^d(H_{r+1} , d_{r+1}(\cdot)) - Q_{r}^d(H_r , d_r(\cdot))\}.
 #' }
+#'
+#' If \code{target = "sub_effect"}, \code{type = "dr"}, \code{K = 1},
+#' and \eqn{\mathcal{A} = \{0,1\}} \code{policy_eval()}
+#' returns the empirical estimates of the subgroup average
+#' treatment effect (\code{value_estimate}) and influence curve (\code{IC})
+#' \deqn{E[Z^1_1 - Z^0_1 | d(\cdot) = 1]}
+#' \deqn{P(d(\cdot) = 1)^{-1} I\{d(\cdot) = 1\}\left\{Z^1_1 - Z^0_1 - E[Z^1_1 - Z^0_1 | d(\cdot) = 1]\right\}}
 #' @references
 #' van der Laan, Mark J., and Alexander R. Luedtke. "Targeted learning of the
 #' mean outcome under an optimal dynamic treatment rule." Journal of causal
@@ -209,8 +223,11 @@
 #' head(get_policy_actions(pe2))
 policy_eval <- function(policy_data,
                         policy = NULL, policy_learn = NULL,
-                        g_functions = NULL, g_models = g_glm(), g_full_history = FALSE, save_g_functions = TRUE,
-                        q_functions = NULL, q_models = q_glm(), q_full_history = FALSE, save_q_functions = TRUE,
+                        g_functions = NULL, g_models = g_glm(),
+                        g_full_history = FALSE, save_g_functions = TRUE,
+                        q_functions = NULL, q_models = q_glm(),
+                        q_full_history = FALSE, save_q_functions = TRUE,
+                        target = "value",
                         type = "dr",
                         M = 1, future_args = list(future.seed=TRUE),
                         name = NULL
@@ -224,122 +241,169 @@ policy_eval <- function(policy_data,
   # input checks:
   if (!inherits(policy_data, what = "policy_data"))
     stop("policy_data must be of inherited class 'policy_data'.")
-  if (!is.null(policy)){
-    if (!inherits(policy, what = "policy"))
+  if (!is.null(policy)) {
+    if (!inherits(policy, what = "policy")) {
       stop("policy must be of inherited class 'policy'.")
+    }
   }
-  if ((is.null(policy) & is.null(policy_learn)) |
-      (!is.null(policy_learn) & !is.null(policy)))
+  if ((is.null(policy) && is.null(policy_learn)) ||
+    (!is.null(policy_learn) && !is.null(policy))) {
     stop("Provide either policy or policy_learn.")
-  if (is.null(policy) & !is.null(policy_learn)){
-    if (!inherits(policy_learn, what = "policy_learn"))
+  }
+  if (is.null(policy) && !is.null(policy_learn)) {
+    if (!inherits(policy_learn, what = "policy_learn")) {
       stop("policy_learn must be of inherited class 'policy_learn'.")
+    }
   }
-  if (!is.null(g_functions)){
-    if(!(inherits(g_functions, "g_functions")))
+  if (!is.null(g_functions)) {
+    if (!(inherits(g_functions, "g_functions"))) {
       stop("g_functions must be of class 'g_functions'.")
+    }
   }
-  if (!(is.logical(g_full_history) & (length(g_full_history) == 1)))
+  if (!(is.logical(g_full_history) && (length(g_full_history) == 1))) {
     stop("g_full_history must be TRUE or FALSE")
-  if (!is.null(q_functions)){
-    if(!(inherits(q_functions, "q_functions")))
+  }
+  if (!is.null(q_functions)) {
+    if (!(inherits(q_functions, "q_functions"))) {
       stop("q-functions must be of class 'q_functions'.")
+    }
   }
-  if (!(is.logical(q_full_history) & (length(q_full_history) == 1)))
+  if (!(is.logical(q_full_history) && (length(q_full_history) == 1))) {
     stop("q_full_history must be TRUE or FALSE")
-  if (!(is.numeric(M) & (length(M) == 1)))
+  }
+  if (!(is.numeric(M) && (length(M) == 1))) {
     stop("M must be an integer greater than 0.")
-  if (!(M %% 1 == 0))
+  }
+  if (!(M %% 1 == 0)) {
     stop("M must be an integer greater than 0.")
-  if (M<=0)
+  }
+  if (M <= 0) {
     stop("M must be an integer greater than 0.")
-  if (!is.list(future_args))
+  }
+  if (!is.list(future_args)) {
     stop("future_args must be a list.")
-  if (!is.null(name)){
+  }
+  if (!is.null(name)) {
     name <- as.character(name)
-    if (length(name) != 1)
+    if (length(name) != 1) {
       stop("name must be a character string.")
+    }
   }
 
-
-  if (M > 1){
-    val <- policy_eval_cross(args = args,
-                                    policy_data = policy_data,
-                                    M = M,
-                                    future_args = future_args)
+  if (M > 1) {
+    val <- policy_eval_cross(
+      args = args,
+      policy_data = policy_data,
+      M = M,
+      future_args = future_args
+    )
   } else {
     args[["train_policy_data"]] <- policy_data
     args[["valid_policy_data"]] <- policy_data
     val <- do.call(what = policy_eval_type, args = args)
   }
-  if (is.null(name)){
-    if (!is.null(policy))
+  if (is.null(name)) {
+    if (!is.null(policy)) {
       val$name <- attr(policy, "name")
-    else
+    } else {
       val$name <- attr(policy_learn, "name")
-  } else
+    }
+  } else {
     val$name <- name
+  }
 
   return(val)
 }
 
-policy_eval_type <- function(type,
+policy_eval_type <- function(target,
+                             type,
                              train_policy_data,
                              valid_policy_data,
                              policy, policy_learn,
-                             g_models, g_functions, g_full_history, save_g_functions,
-                             q_models, q_functions, q_full_history, save_q_functions){
+                             g_models, g_functions,
+                             g_full_history, save_g_functions,
+                             q_models, q_functions,
+                             q_full_history, save_q_functions) {
+  ## check target input:
+  target <- tolower(target)
+  if (length(target) != 1) {
+    stop("target must be a character string.")
+  }
+  if (target %in% c(
+    "value",
+    "policy_value"
+  )) {
+    target <- "value"
+  } else if (target %in% c(
+    "sub_effect",
+    "subeffect",
+    "subvalue",
+    "sub_value"
+  )) {
+    target <- "sub_effect"
+  } else {
+    stop("target must be either 'value' or 'sub_effect'.")
+  }
 
+  ## check type input:
   type <- tolower(type)
-  if (length(type) != 1)
+  if (length(type) != 1) {
     stop("type must be a character string.")
-
-  if (type %in% c("dr", "aipw")){
+  }
+  if (type %in% c("dr", "aipw")) {
     type <- "dr"
-  } else if (type %in% c("ipw")){
+  } else if (type %in% c("ipw")) {
     type <- "ipw"
   } else if (type %in% c("or", "q")) {
     type <- "or"
-  } else{
+  } else {
     stop("type must be either 'dr', 'ipw' or  'or'.")
   }
 
   # fitting the g-functions, the q-functions and the policy (functions):
-  fits <- fit_functions(policy_data = train_policy_data,
-                        type = type,
-                        policy = policy, policy_learn = policy_learn,
-                        g_models = g_models, g_functions = g_functions, g_full_history = g_full_history,
-                        q_models = q_models, q_functions = q_functions, q_full_history = q_full_history)
+  fits <- fit_functions(
+    policy_data = train_policy_data,
+    type = type,
+    policy = policy, policy_learn = policy_learn,
+    g_models = g_models, g_functions = g_functions,
+    g_full_history = g_full_history,
+    q_models = q_models, q_functions = q_functions,
+    q_full_history = q_full_history
+  )
 
   # getting the fitted policy and associated actions:
-  if (is.null(policy)){
+  if (is.null(policy)) {
     policy <- get_policy(getElement(fits, "policy_object"))
   }
 
   # calculating the doubly robust score and value estimate:
   g_functions <- getElement(fits, "g_functions")
   q_functions <- getElement(fits, "q_functions")
-  value_object <- value(type = type,
-                        policy_data = valid_policy_data,
-                        policy = policy,
-                        g_functions = g_functions,
-                        q_functions = q_functions)
+  value_object <- value(
+    target = target,
+    type = type,
+    policy_data = valid_policy_data,
+    policy = policy,
+    g_functions = g_functions,
+    q_functions = q_functions
+  )
   g_values <- getElement(value_object, "g_values")
   q_values <- getElement(value_object, "q_values")
 
   # setting g-functions output:
-  if (save_g_functions != TRUE){
+  if (save_g_functions != TRUE) {
     g_functions <- NULL
   }
   # setting Q-functions output:
-  if(save_q_functions != TRUE){
+  if (save_q_functions != TRUE) {
     q_functions <- NULL
   }
 
   out <- list(
     value_estimate = getElement(value_object, "value_estimate"),
-    type = type,
     IC = getElement(value_object, "IC"),
+    type = type,
+    target = target,
     value_estimate_ipw = getElement(value_object, "value_estimate_ipw"),
     value_estimate_or = getElement(value_object, "value_estimate_or"),
     id = get_id(valid_policy_data),
@@ -359,7 +423,7 @@ policy_eval_type <- function(type,
 policy_eval_cross <- function(args,
                               policy_data,
                               M,
-                              future_args){
+                              future_args) {
   n <- get_n(policy_data)
   id <- get_id(policy_data)
 
@@ -368,49 +432,68 @@ policy_eval_cross <- function(args,
   folds <- lapply(folds, sort)
   names(folds) <- paste("fold_", 1:M, sep = "")
 
+  ## cross fitting the policy evaluation using the folds:
   prog <- progressor(along = folds)
-  cross_args <- append(list(X = folds,
-                            FUN = policy_eval_fold,
-                            policy_data = policy_data,
-                            args = args,
-                            prog = prog),
-                       future_args)
-
-  # cross fitting the policy evaluation using the folds:
+  cross_args <- append(
+    list(
+      X = folds,
+      FUN = policy_eval_fold,
+      policy_data = policy_data,
+      args = args,
+      prog = prog
+    ),
+    future_args
+  )
   cross_fits <- do.call(what = future.apply::future_lapply, cross_args)
 
   # collecting ids:
-  id <- unlist(lapply(cross_fits, function(x) getElement(x, "id")), use.names = FALSE)
+  id <- unlist(lapply(
+    cross_fits,
+    function(x) getElement(x, "id")
+  ), use.names = FALSE)
 
   # collecting the value estimates:
-  n <- unlist(lapply(cross_fits, function(x) length(getElement(x, "id"))))
-  value_estimate <- unlist(lapply(cross_fits, function(x) getElement(x, "value_estimate")))
+  n <- unlist(lapply(
+    cross_fits,
+    function(x) length(getElement(x, "id"))
+  ))
+  value_estimate <- unlist(lapply(
+    cross_fits, function(x) getElement(x, "value_estimate")
+  ))
   value_estimate <- sum((n / sum(n)) * value_estimate)
 
   # collecting the IC decompositions:
-  IC <- unlist(lapply(cross_fits, function(x) getElement(x, "IC")), use.names = FALSE)
+  IC <- unlist(lapply(
+    cross_fits, function(x) getElement(x, "IC")
+  ), use.names = FALSE)
 
   # collecting the IPW value estimates (only if type == "dr")
-  value_estimate_ipw <- unlist(lapply(cross_fits, function(x) getElement(x, "value_estimate_ipw")))
-  if (!is.null(value_estimate_ipw)){
+  value_estimate_ipw <- unlist(lapply(
+    cross_fits, function(x) getElement(x, "value_estimate_ipw")
+  ))
+  if (!is.null(value_estimate_ipw)) {
     value_estimate_ipw <- sum((n / sum(n)) * value_estimate_ipw)
   }
 
   # collecting the OR value estimates (only if type = "dr")
-  value_estimate_or <- unlist(lapply(cross_fits, function(x) getElement(x, "value_estimate_or")))
-  if (!is.null(value_estimate_or)){
+  value_estimate_or <- unlist(lapply(
+    cross_fits, function(x) getElement(x, "value_estimate_or")
+  ))
+  if (!is.null(value_estimate_or)) {
     value_estimate_or <- sum((n / sum(n)) * value_estimate_or)
   }
 
   # collecting the policy actions
-  policy_actions <- lapply(cross_fits, function(x) getElement(x, "policy_actions"))
+  policy_actions <- lapply(
+    cross_fits, function(x) getElement(x, "policy_actions")
+  )
   policy_actions <- rbindlist(policy_actions)
   setkey(policy_actions, "id", "stage")
 
   # collecting the g- and Q-values:
   g_values <- lapply(cross_fits, function(x) getElement(x, "g_values"))
   null_g_values <- unlist(lapply(g_values, is.null))
-  if (!all(null_g_values)){
+  if (!all(null_g_values)) {
     g_values <- data.table::rbindlist(g_values)
     setkey(g_values, "id", "stage")
   } else {
@@ -419,7 +502,7 @@ policy_eval_cross <- function(args,
 
   q_values <- lapply(cross_fits, function(x) getElement(x, "q_values"))
   null_q_values <- unlist(lapply(q_values, is.null))
-  if (!all(null_q_values)){
+  if (!all(null_q_values)) {
     q_values <- data.table::rbindlist(q_values)
     setkey(q_values, "id", "stage")
   } else {
@@ -430,17 +513,19 @@ policy_eval_cross <- function(args,
   IC <- IC[order(id)]
   id <- id[order(id)]
 
-  out <- list(value_estimate = value_estimate,
-              type = getElement(args, "type"),
-              IC = IC,
-              value_estimate_ipw = value_estimate_ipw,
-              value_estimate_or = value_estimate_or,
-              id = id,
-              policy_actions = policy_actions,
-              g_values = g_values,
-              q_values = q_values,
-              cross_fits = cross_fits,
-              folds = folds
+  out <- list(
+    value_estimate = value_estimate,
+    IC = IC,
+    type = getElement(args, "type"),
+    target = getElement(args, "target"),
+    value_estimate_ipw = value_estimate_ipw,
+    value_estimate_or = value_estimate_or,
+    id = id,
+    policy_actions = policy_actions,
+    g_values = g_values,
+    q_values = q_values,
+    cross_fits = cross_fits,
+    folds = folds
   )
 
   out <- Filter(Negate(is.null), out)
@@ -452,9 +537,7 @@ policy_eval_cross <- function(args,
 policy_eval_fold <- function(fold,
                              policy_data,
                              args,
-                             prog
-){
-
+                             prog) {
   K <- get_K(policy_data)
   id <- get_id(policy_data)
 
@@ -463,14 +546,20 @@ policy_eval_fold <- function(fold,
 
   # training data:
   train_policy_data <- subset_id(policy_data, train_id)
-  if (get_K(train_policy_data) != K) stop("The number of stages varies accross the training folds.")
+  if (get_K(train_policy_data) != K) {
+    stop("The number of stages varies accross the training folds.")
+  }
 
   # validation data:
   valid_policy_data <- subset_id(policy_data, validation_id)
-  if (get_K(valid_policy_data) != K) stop("The number of stages varies accross the validation folds.")
+  if (get_K(valid_policy_data) != K) {
+    stop("The number of stages varies accross the validation folds.")
+  }
 
-  eval_args <- append(args, list(valid_policy_data = valid_policy_data,
-                                 train_policy_data = train_policy_data))
+  eval_args <- append(args, list(
+    valid_policy_data = valid_policy_data,
+    train_policy_data = train_policy_data
+  ))
 
   out <- do.call(what = "policy_eval_type", args = eval_args)
 
@@ -479,5 +568,3 @@ policy_eval_fold <- function(fold,
 
   return(out)
 }
-
-

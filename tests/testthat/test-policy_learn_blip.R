@@ -130,18 +130,23 @@ test_that("get_policy_functions.blip returns a list of policy functions", {
 })
 
 test_that("get_policy.blip returns a policy", {
-  d <- sim_two_stage(200, seed=1)
+  d <- sim_two_stage(200, seed = 1)
   d$A_2 <- paste(d$A_2, "test", sep = "")
   d$A_1 <- as.character(d$A_1)
   pd <- policy_data(d,
-                    action = c("A_1", "A_2"),
-                    baseline = c("BB", "B"),
-                    covariates = list(L = c("L_1", "L_2"),
-                                      C = c("C_1", "C_2")),
-                    utility = c("U_1", "U_2", "U_3"))
+    action = c("A_1", "A_2"),
+    baseline = c("BB", "B"),
+    covariates = list(
+      L = c("L_1", "L_2"),
+      C = c("C_1", "C_2")
+    ),
+    utility = c("U_1", "U_2", "U_3")
+  )
 
-  pl <- policy_learn(type = "blip",
-                     control = control_blip())
+  pl <- policy_learn(
+    type = "blip",
+    control = control_blip()
+  )
   po <- pl(
     policy_data = pd,
     g_models = list(g_glm(), g_glm()),
@@ -158,9 +163,11 @@ test_that("get_policy.blip returns a policy", {
   )
 
   # realistic action set at level alpha:
-  pl <- policy_learn(type = "blip",
-                     control = control_blip(),
-                     alpha = 0.2)
+  pl <- policy_learn(
+    type = "blip",
+    control = control_blip(),
+    alpha = 0.2
+  )
   po <- pl(
     policy_data = pd,
     g_models = list(g_glm(), g_glm()),
@@ -185,7 +192,7 @@ test_that("get_policy.blip returns a policy", {
 
   expect_equal(
     pf1(H1),
-    pa[stage == 1,]$d
+    pa[stage == 1, ]$d
   )
 
   pf2 <- get_policy_functions(po, stage = 2)
@@ -194,7 +201,96 @@ test_that("get_policy.blip returns a policy", {
 
   expect_equal(
     pf2(H2),
-    pa[stage == 2,]$d
+    pa[stage == 2, ]$d
+  )
+})
+
+test_that("policy_learn with type blip is persistent", {
+  d <- sim_single_stage(200, seed = 1)
+  pd <- policy_data(d,
+    action = "A",
+    covariates = list("Z", "B", "L"),
+    utility = "U"
   )
 
+  pl <- policy_learn(
+    type = "blip",
+    control = control_blip()
+  )
+  po <- pl(pd, q_models = q_glm(), g_models = g_glm())
+
+  ## his <- get_history(pd)
+  ## pred <- predict.blip_function(po$blip_functions$stage_1, new_history = his)
+  ## hist(x = pred$blip, breaks = 100)
+
+  d <- get_policy(po)(pd)$d
+
+  fix <- c(1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0)
+  fix <- as.character(fix)
+
+  expect_equal(
+    d,
+    fix
+  )
+})
+
+test_that("policy_learn with type blip uses the threshold argument,", {
+  d <- sim_single_stage(200, seed = 1)
+  pd <- policy_data(d,
+    action = "A",
+    covariates = list("Z", "B", "L"),
+    utility = "U"
+  )
+
+  pl <- policy_learn(
+    type = "blip",
+    threshold = 1,
+    control = control_blip()
+  )
+  po <- pl(pd, q_models = q_glm(), g_models = g_glm())
+
+  his <- get_history(pd)
+  pred <- predict.blip_function(po$blip_functions$stage_1, new_history = his)
+  ## hist(x = pred$blip, breaks = 100)
+
+  d <- get_policy(po)(pd)$d
+
+  dd <- c("0", "1")[(pred$blip > 1) + 1]
+
+  expect_equal(
+    d,
+    dd
+  )
+})
+
+test_that("get_policy and get_policy_functions agree with type blip and a non-zero threshold argument,", {
+  d <- sim_single_stage(200, seed = 1)
+  pd <- policy_data(d,
+    action = "A",
+    covariates = list("Z", "B", "L"),
+    utility = "U"
+  )
+
+  pl <- policy_learn(
+    type = "blip",
+    threshold = 1,
+    control = control_blip()
+  )
+  po <- pl(pd, q_models = q_glm(), g_models = g_glm())
+
+
+  ## pred <- predict.blip_function(po$blip_functions$stage_1, new_history = his)
+  ## hist(x = pred$blip, breaks = 100)
+
+  d <- get_policy(po)(pd)$d
+
+  pf <- get_policy_functions(po, stage = 1)
+  his <- get_history(pd)
+  H <- get_H(his)
+  dd <- pf(H)
+
+  expect_equal(
+    d,
+    dd
+  )
 })

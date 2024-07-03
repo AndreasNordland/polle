@@ -24,6 +24,7 @@ policy_eval(
   q_models = q_glm(),
   q_full_history = FALSE,
   save_q_functions = TRUE,
+  target = "value",
   type = "dr",
   M = 1,
   future_args = list(future.seed = TRUE),
@@ -81,6 +82,12 @@ If a single model is provided, the model is reused at every stage.}
 
 \item{save_q_functions}{Similar to save_g_functions.}
 
+\item{target}{Character string. Either "value" or "sub_effect". If "value",
+the target parameter is the policy value. If "sub_effect", the target parameter
+is the average treatement effect among the subgroup of subjects that would receive
+treatment under the policy, see details. "sub_effect" is only implemented for \code{type = "dr"}
+in the single-stage case with a dichotomous action set.}
+
 \item{type}{Type of evaluation (dr/doubly robust, ipw/inverse propensity
 weighting, or/outcome regression).}
 
@@ -129,7 +136,9 @@ for cross-fitting.}
 }
 \description{
 \code{policy_eval()} is used to estimate the value of a given fixed policy
-or a data adaptive policy (e.g. a policy learned from the data).
+or a data adaptive policy (e.g. a policy learned from the data). \code{policy_eval()}
+is also used to estimate the average treatment effect among the subjects who would
+get the treatment under the policy.
 }
 \details{
 Each observation has the sequential form
@@ -164,26 +173,34 @@ If \code{g_full_history = TRUE},
 Furthermore, if \code{g_full_history = FALSE} and \code{g_models} is a
 single model, it is assumed that \eqn{g_1(h_1, a_1) = ... = g_K(h_K, a_K)}.
 
-If \code{type = "or"} \code{policy_eval} returns the empirical estimates of
+If \code{target = "value"} and \code{type = "or"}
+\code{policy_eval()} returns the empirical estimate of
 the value (\code{value_estimate}):
-\deqn{E[Q^d_1(H_1, d_1(...))]}
-for an appropriate input \eqn{...} to the policy.
+\deqn{E\left[Q^d_1(H_1, d_1(\cdot))\right]}
 
-If \code{type = "ipw"} \code{policy_eval} returns the empirical estimates of
-the value (\code{value_estimate}) and score (\code{IC}):
-\deqn{E[(\prod_{k=1}^K I\{A_k = d_k(...)\} g_k(H_k, A_k)^{-1}) U].}
-\deqn{(\prod_{k=1}^K I\{A_k = d_k(...)\} g_k(H_k, A_k)^{-1}) U - E[(\prod_{k=1}^K I\{A_k = d_k(...)\} g_k(H_k, A_k)^{-1}) U].}
+If \code{target = "value"} and \code{type = "ipw"} \code{policy_eval()}
+returns the empirical estimates of
+the value (\code{value_estimate}) and influence curve (\code{IC}):
+\deqn{E\left[\left(\prod_{k=1}^K I\{A_k = d_k(\cdot)\} g_k(H_k, A_k)^{-1}\right) U\right].}
+\deqn{\left(\prod_{k=1}^K I\{A_k = d_k(\cdot)\} g_k(H_k, A_k)^{-1}\right) U - E\left[\left(\prod_{k=1}^K I\{A_k = d_k(\cdot)\} g_k(H_k, A_k)^{-1}\right) U\right].}
 
-If \code{type = "dr"} \code{policy_eval} returns the empirical estimates of
+If \code{target = "value"} and \code{type = "dr"} \code{policy_eval} returns the empirical estimates of
 the value (\code{value_estimate}) and influence curve (\code{IC}):
 \deqn{E[Z^d_1],}
 \deqn{Z^d_1 - E[Z^d_1],}
 where
 \deqn{
-Z^d_1 = Q^d_1(H_1 , d_1(...)) + \sum_{r = 1}^K \prod_{j = 1}^{r}
-\frac{I\{A_j = d_j(...)\}}{g_{j}(H_j, A_j)}
-\{Q_{r+1}^d(H_{r+1} , d_{r+1}(...)) - Q_{r}^d(H_r , d_r(...))\}.
+Z^d_1 = Q^d_1(H_1 , d_1(\cdot)) + \sum_{r = 1}^K \prod_{j = 1}^{r}
+\frac{I\{A_j = d_j(\cdot)\}}{g_{j}(H_j, A_j)}
+\{Q_{r+1}^d(H_{r+1} , d_{r+1}(\cdot)) - Q_{r}^d(H_r , d_r(\cdot))\}.
 }
+
+If \code{target = "sub_effect"}, \code{type = "dr"}, \code{K = 1},
+and \eqn{\mathcal{A} = \{0,1\}} \code{policy_eval()}
+returns the empirical estimates of the subgroup average
+treatment effect (\code{value_estimate}) and influence curve (\code{IC})
+\deqn{E[Z^1_1 - Z^0_1 | d(\cdot) = 1]}
+\deqn{P(d(\cdot) = 1)^{-1} I\{d(\cdot) = 1\}\left\{Z^1_1 - Z^0_1 - E[Z^1_1 - Z^0_1 | d(\cdot) = 1]\right\}}
 }
 \section{S3 generics}{
 
@@ -193,9 +210,8 @@ class \code{policy_eval}:
 \item{\code{\link[=get_g_functions]{get_g_functions()}}}{ Extract the fitted g-functions.}
 \item{\code{\link[=get_q_functions]{get_q_functions()}}}{ Extract the fitted Q-functions.}
 \item{\code{\link[=get_policy]{get_policy()}}}{ Extract the fitted policy object.}
-\item{\code{\link[=get_policy_functions]{get_policy_functions()}}}{ Extract the fitted policy function for
-a given stage.}
-\item{\code{\link[=get_policy_actions]{get_policy_actions()}}}{ Extract the (fitted) policy actions.}ps
+\item{\code{\link[=get_policy_functions]{get_policy_functions()}}}{ Extract the fitted policy function for a given stage.}
+\item{\code{\link[=get_policy_actions]{get_policy_actions()}}}{ Extract the (fitted) policy actions.}
 \item{\code{\link[=plot.policy_eval]{plot.policy_eval()}}}{Plot diagnostics.}
 }
 }
