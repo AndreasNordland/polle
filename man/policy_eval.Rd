@@ -83,9 +83,12 @@ If a single model is provided, the model is reused at every stage.}
 \item{save_q_functions}{Similar to save_g_functions.}
 
 \item{target}{Character string. Either "value" or "sub_effect". If "value",
-the target parameter is the policy value. If "sub_effect", the target parameter
-is the average treatement effect among the subgroup of subjects that would receive
-treatment under the policy, see details. "sub_effect" is only implemented for \code{type = "dr"}
+the target parameter is the policy value.
+If "sub_effect", the target parameter
+is the average treatement effect among
+the subgroup of subjects that would receive
+treatment under the policy, see details.
+"sub_effect" is only implemented for \code{type = "dr"}
 in the single-stage case with a dichotomous action set.}
 
 \item{type}{Type of evaluation (dr/doubly robust, ipw/inverse propensity
@@ -135,9 +138,12 @@ fitted Q-functions. Object of class "nuisance_functions".}
 for cross-fitting.}
 }
 \description{
-\code{policy_eval()} is used to estimate the value of a given fixed policy
-or a data adaptive policy (e.g. a policy learned from the data). \code{policy_eval()}
-is also used to estimate the average treatment effect among the subjects who would
+\code{policy_eval()} is used to estimate
+the value of a given fixed policy
+or a data adaptive policy (e.g. a policy
+learned from the data). \code{policy_eval()}
+is also used to estimate the averag
+treatment effect among the subjects who would
 get the treatment under the policy.
 }
 \details{
@@ -146,21 +152,26 @@ Each observation has the sequential form
 for a possibly stochastic number of stages K.
 \itemize{
 \item \eqn{B} is a vector of baseline covariates.
-\item \eqn{U_k} is the reward at stage k (not influenced by the action \eqn{A_k}).
-\item \eqn{X_k} is a vector of state covariates summarizing the state at stage k.
-\item \eqn{A_k} is the categorical action within the action set \eqn{\mathcal{A}} at stage k.
+\item \eqn{U_k} is the reward at stage k
+(not influenced by the action \eqn{A_k}).
+\item \eqn{X_k} is a vector of state
+covariates summarizing the state at stage k.
+\item \eqn{A_k} is the categorical action
+within the action set \eqn{\mathcal{A}} at stage k.
 }
 The utility is given by the sum of the rewards, i.e.,
 \eqn{U = \sum_{k = 1}^{K+1} U_k}.
 
 A policy is a set of functions
 \deqn{d = \{d_1, ..., d_K\},}
-where \eqn{d_k} for \eqn{k\in \{1, ..., K\}} maps \eqn{\{B, X_1, A_1, ..., A_{k-1}, X_k\}} into the
+where \eqn{d_k} for \eqn{k\in \{1, ..., K\}}
+maps \eqn{\{B, X_1, A_1, ..., A_{k-1}, X_k\}} into the
 action set.
 
 Recursively define the Q-models (\code{q_models}):
 \deqn{Q^d_K(h_K, a_K) = E[U|H_K = h_K, A_K = a_K]}
-\deqn{Q^d_k(h_k, a_k) = E[Q_{k+1}(H_{k+1}, d_{k+1}(B,X_1, A_1,...,X_{k+1}))|H_k = h_k, A_k = a_k].}
+\deqn{Q^d_k(h_k, a_k) = E[Q_{k+1}(H_{k+1},
+d_{k+1}(B,X_1, A_1,...,X_{k+1}))|H_k = h_k, A_k = a_k].}
 If \code{q_full_history = TRUE},
 \eqn{H_k = \{B, X_1, A_1, ..., A_{k-1}, X_k\}}, and if
 \code{q_full_history = FALSE}, \eqn{H_k = \{B, X_k\}}.
@@ -181,10 +192,15 @@ the value (\code{value_estimate}):
 If \code{target = "value"} and \code{type = "ipw"} \code{policy_eval()}
 returns the empirical estimates of
 the value (\code{value_estimate}) and influence curve (\code{IC}):
-\deqn{E\left[\left(\prod_{k=1}^K I\{A_k = d_k(\cdot)\} g_k(H_k, A_k)^{-1}\right) U\right].}
-\deqn{\left(\prod_{k=1}^K I\{A_k = d_k(\cdot)\} g_k(H_k, A_k)^{-1}\right) U - E\left[\left(\prod_{k=1}^K I\{A_k = d_k(\cdot)\} g_k(H_k, A_k)^{-1}\right) U\right].}
+\deqn{E\left[\left(\prod_{k=1}^K I\{A_k = d_k(\cdot)\}
+g_k(H_k, A_k)^{-1}\right) U\right].}
+\deqn{\left(\prod_{k=1}^K I\{A_k =
+d_k(\cdot)\} g_k(H_k, A_k)^{-1}\right) U -
+E\left[\left(\prod_{k=1}^K
+I\{A_k = d_k(\cdot)\} g_k(H_k, A_k)^{-1}\right) U\right].}
 
-If \code{target = "value"} and \code{type = "dr"} \code{policy_eval} returns the empirical estimates of
+If \code{target = "value"} and
+\code{type = "dr"} \code{policy_eval} returns the empirical estimates of
 the value (\code{value_estimate}) and influence curve (\code{IC}):
 \deqn{E[Z^d_1],}
 \deqn{Z^d_1 - E[Z^d_1],}
@@ -200,7 +216,8 @@ and \eqn{\mathcal{A} = \{0,1\}} \code{policy_eval()}
 returns the empirical estimates of the subgroup average
 treatment effect (\code{value_estimate}) and influence curve (\code{IC})
 \deqn{E[Z^1_1 - Z^0_1 | d(\cdot) = 1]}
-\deqn{P(d(\cdot) = 1)^{-1} I\{d(\cdot) = 1\}\left\{Z^1_1 - Z^0_1 - E[Z^1_1 - Z^0_1 | d(\cdot) = 1]\right\}}
+\deqn{P(d(\cdot) = 1)^{-1} I\{d(\cdot) = 1\}
+\left\{Z^1_1 - Z^0_1 - E[Z^1_1 - Z^0_1 | d(\cdot) = 1]\right\}}
 }
 \section{S3 generics}{
 
@@ -210,7 +227,8 @@ class \code{policy_eval}:
 \item{\code{\link[=get_g_functions]{get_g_functions()}}}{ Extract the fitted g-functions.}
 \item{\code{\link[=get_q_functions]{get_q_functions()}}}{ Extract the fitted Q-functions.}
 \item{\code{\link[=get_policy]{get_policy()}}}{ Extract the fitted policy object.}
-\item{\code{\link[=get_policy_functions]{get_policy_functions()}}}{ Extract the fitted policy function for a given stage.}
+\item{\code{\link[=get_policy_functions]{get_policy_functions()}}}
+{ Extract the fitted policy function for a given stage.}
 \item{\code{\link[=get_policy_actions]{get_policy_actions()}}}{ Extract the (fitted) policy actions.}
 \item{\code{\link[=plot.policy_eval]{plot.policy_eval()}}}{Plot diagnostics.}
 }
@@ -294,8 +312,10 @@ van der Laan, Mark J., and Alexander R. Luedtke. "Targeted learning of the
 mean outcome under an optimal dynamic treatment rule." Journal of causal
 inference 3.1 (2015): 61-95. \doi{10.1515/jci-2013-0022}\cr
 \cr
-Tsiatis, Anastasios A., et al. Dynamic treatment regimes: Statistical methods
-for precision medicine. Chapman and Hall/CRC, 2019. \doi{10.1201/9780429192692}.
+Tsiatis, Anastasios A., et al. Dynamic
+treatment regimes: Statistical methods
+for precision medicine. Chapman
+and Hall/CRC, 2019. \doi{10.1201/9780429192692}.
 }
 \seealso{
 \link[lava:IC]{lava::IC}, \link[lava:estimate.default]{lava::estimate.default}.

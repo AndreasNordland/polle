@@ -32,9 +32,9 @@ value <- function(target = "value",
 }
 
 dr_sub_effect <- function(policy_data,
-                        policy,
-                        g_functions,
-                        q_functions) {
+                          policy,
+                          g_functions,
+                          q_functions) {
   # getting the number of stages:
   K <- get_K(policy_data)
   if (K != 1) {
@@ -44,7 +44,11 @@ dr_sub_effect <- function(policy_data,
   # getting the action set and stage action set:
   action_set <- get_action_set(policy_data)
   if (length(action_set) != 2) {
-    stop("subgroup effect evaluation is not implemented for more than two actions.")
+    mes <- paste0(
+      "subgroup effect evaluation is not ",
+      "implemented for more than two actions."
+    )
+    stop(mes)
   }
   # getting the observed actions:
   actions <- get_actions(policy_data)
@@ -75,10 +79,10 @@ dr_sub_effect <- function(policy_data,
   rm(IIA)
 
   ## (n X action_set) matrix with entries  g(a)
-  G <- g_values[, -c("id", "stage"), with = FALSE]
+  G <- as.matrix(g_values[, -c("id", "stage"), with = FALSE])
 
   ## (n X #actions) matrix with entries  Q(a)
-  Q <- q_values[, -c("id", "stage"), with = FALSE]
+  Q <- as.matrix(q_values[, -c("id", "stage"), with = FALSE])
 
   # (n) vector with entries U:
   U <- get_utility(policy_data)$U
@@ -93,7 +97,7 @@ dr_sub_effect <- function(policy_data,
   )
 
   ## calculating the doubly robust blip score:
-  blip <- Z[[2]] - Z[[1]]
+  blip <- Z[, 2] - Z[, 1]
 
   ## calculating the subgroup indicator:
   subgroup_indicator <- (policy_actions[["d"]] == action_set[2])

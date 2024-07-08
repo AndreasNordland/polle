@@ -1,8 +1,11 @@
 #' Policy Evaluation
 #'
-#' \code{policy_eval()} is used to estimate the value of a given fixed policy
-#' or a data adaptive policy (e.g. a policy learned from the data). \code{policy_eval()}
-#' is also used to estimate the average treatment effect among the subjects who would
+#' \code{policy_eval()} is used to estimate
+#' the value of a given fixed policy
+#' or a data adaptive policy (e.g. a policy
+#' learned from the data). \code{policy_eval()}
+#' is also used to estimate the averag
+#' treatment effect among the subjects who would
 #' get the treatment under the policy.
 #' @param policy_data Policy data object created by [policy_data()].
 #' @param policy Policy object created by [policy_def()].
@@ -28,12 +31,21 @@
 #' @param q_full_history Similar to g_full_history.
 #' @param save_q_functions Similar to save_g_functions.
 #' @param target Character string. Either "value" or "sub_effect". If "value",
-#' the target parameter is the policy value. If "sub_effect", the target parameter
-#' is the average treatement effect among the subgroup of subjects that would receive
-#' treatment under the policy, see details. "sub_effect" is only implemented for \code{type = "dr"}
+#' the target parameter is the policy value.
+#' If "sub_effect", the target parameter
+#' is the average treatement effect among
+#' the subgroup of subjects that would receive
+#' treatment under the policy, see details.
+#' "sub_effect" is only implemented for \code{type = "dr"}
 #' in the single-stage case with a dichotomous action set.
-#' @param type Type of evaluation (dr/doubly robust, ipw/inverse propensity
-#' weighting, or/outcome regression).
+#' @param type Character string. Type of evaluation. Either \code{"dr"}
+#' (doubly robust),
+#' \code{"ipw"} (inverse propensity weighting),
+#' or \code{"or"} (outcome regression).
+#' @param crossfit_type Character string.
+#' Either "stacked", or "pooled", see details.
+#' @param variance_type Character string. Either "pooled" (default),
+#' "stacked" or "complete", see details. (Only used if \code{M > 1})
 #' @param M Number of folds for cross-fitting.
 #' @param future_args Arguments passed to [future.apply::future_apply()].
 #' @param name Character string.
@@ -75,7 +87,8 @@
 #' \item{[get_g_functions()]}{ Extract the fitted g-functions.}
 #' \item{[get_q_functions()]}{ Extract the fitted Q-functions.}
 #' \item{[get_policy()]}{ Extract the fitted policy object.}
-#' \item{[get_policy_functions()]}{ Extract the fitted policy function for a given stage.}
+#' \item{[get_policy_functions()]}
+#' { Extract the fitted policy function for a given stage.}
 #' \item{[get_policy_actions()]}{ Extract the (fitted) policy actions.}
 #' \item{[plot.policy_eval()]}{Plot diagnostics.}
 #' }
@@ -86,21 +99,26 @@
 #' for a possibly stochastic number of stages K.
 #' \itemize{
 #'  \item \eqn{B} is a vector of baseline covariates.
-#'  \item \eqn{U_k} is the reward at stage k (not influenced by the action \eqn{A_k}).
-#'  \item \eqn{X_k} is a vector of state covariates summarizing the state at stage k.
-#'  \item \eqn{A_k} is the categorical action within the action set \eqn{\mathcal{A}} at stage k.
+#'  \item \eqn{U_k} is the reward at stage k
+#' (not influenced by the action \eqn{A_k}).
+#'  \item \eqn{X_k} is a vector of state
+#' covariates summarizing the state at stage k.
+#'  \item \eqn{A_k} is the categorical action
+#' within the action set \eqn{\mathcal{A}} at stage k.
 #' }
 #' The utility is given by the sum of the rewards, i.e.,
 #' \eqn{U = \sum_{k = 1}^{K+1} U_k}.
 #'
 #' A policy is a set of functions
 #' \deqn{d = \{d_1, ..., d_K\},}
-#' where \eqn{d_k} for \eqn{k\in \{1, ..., K\}} maps \eqn{\{B, X_1, A_1, ..., A_{k-1}, X_k\}} into the
+#' where \eqn{d_k} for \eqn{k\in \{1, ..., K\}}
+#' maps \eqn{\{B, X_1, A_1, ..., A_{k-1}, X_k\}} into the
 #' action set.
 #'
 #' Recursively define the Q-models (\code{q_models}):
 #' \deqn{Q^d_K(h_K, a_K) = E[U|H_K = h_K, A_K = a_K]}
-#' \deqn{Q^d_k(h_k, a_k) = E[Q_{k+1}(H_{k+1}, d_{k+1}(B,X_1, A_1,...,X_{k+1}))|H_k = h_k, A_k = a_k].}
+#' \deqn{Q^d_k(h_k, a_k) = E[Q_{k+1}(H_{k+1},
+#' d_{k+1}(B,X_1, A_1,...,X_{k+1}))|H_k = h_k, A_k = a_k].}
 #' If \code{q_full_history = TRUE},
 #' \eqn{H_k = \{B, X_1, A_1, ..., A_{k-1}, X_k\}}, and if
 #' \code{q_full_history = FALSE}, \eqn{H_k = \{B, X_k\}}.
@@ -121,10 +139,15 @@
 #' If \code{target = "value"} and \code{type = "ipw"} \code{policy_eval()}
 #' returns the empirical estimates of
 #' the value (\code{value_estimate}) and influence curve (\code{IC}):
-#' \deqn{E\left[\left(\prod_{k=1}^K I\{A_k = d_k(\cdot)\} g_k(H_k, A_k)^{-1}\right) U\right].}
-#' \deqn{\left(\prod_{k=1}^K I\{A_k = d_k(\cdot)\} g_k(H_k, A_k)^{-1}\right) U - E\left[\left(\prod_{k=1}^K I\{A_k = d_k(\cdot)\} g_k(H_k, A_k)^{-1}\right) U\right].}
+#' \deqn{E\left[\left(\prod_{k=1}^K I\{A_k = d_k(\cdot)\}
+#' g_k(H_k, A_k)^{-1}\right) U\right].}
+#' \deqn{\left(\prod_{k=1}^K I\{A_k =
+#' d_k(\cdot)\} g_k(H_k, A_k)^{-1}\right) U -
+#' E\left[\left(\prod_{k=1}^K
+#' I\{A_k = d_k(\cdot)\} g_k(H_k, A_k)^{-1}\right) U\right].}
 #'
-#' If \code{target = "value"} and \code{type = "dr"} \code{policy_eval} returns the empirical estimates of
+#' If \code{target = "value"} and
+#' \code{type = "dr"} \code{policy_eval} returns the empirical estimates of
 #' the value (\code{value_estimate}) and influence curve (\code{IC}):
 #' \deqn{E[Z^d_1],}
 #' \deqn{Z^d_1 - E[Z^d_1],}
@@ -140,20 +163,26 @@
 #' returns the empirical estimates of the subgroup average
 #' treatment effect (\code{value_estimate}) and influence curve (\code{IC})
 #' \deqn{E[Z^1_1 - Z^0_1 | d(\cdot) = 1]}
-#' \deqn{P(d(\cdot) = 1)^{-1} I\{d(\cdot) = 1\}\left\{Z^1_1 - Z^0_1 - E[Z^1_1 - Z^0_1 | d(\cdot) = 1]\right\}}
+#' \deqn{P(d(\cdot) = 1)^{-1} I\{d(\cdot) = 1\}
+#' \left\{Z^1_1 - Z^0_1 - E[Z^1_1 - Z^0_1 | d(\cdot) = 1]\right\}}
 #' @references
 #' van der Laan, Mark J., and Alexander R. Luedtke. "Targeted learning of the
 #' mean outcome under an optimal dynamic treatment rule." Journal of causal
 #' inference 3.1 (2015): 61-95. \doi{10.1515/jci-2013-0022}\cr
 #' \cr
-#' Tsiatis, Anastasios A., et al. Dynamic treatment regimes: Statistical methods
-#'for precision medicine. Chapman and Hall/CRC, 2019. \doi{10.1201/9780429192692}.
+#' Tsiatis, Anastasios A., et al. Dynamic
+#' treatment regimes: Statistical methods
+#' for precision medicine. Chapman
+#' and Hall/CRC, 2019. \doi{10.1201/9780429192692}.
 #' @export
 #' @examples
 #' library("polle")
 #' ### Single stage:
 #' d1 <- sim_single_stage(5e2, seed=1)
-#' pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
+#' pd1 <- policy_data(d1,
+#'                    action = "A",
+#'                    covariates = list("Z", "B", "L"),
+#'                    utility = "U")
 #' pd1
 #'
 #' # defining a static policy (A=1):
@@ -202,11 +231,12 @@
 #' pd2
 #'
 #' # defining a policy learner based on cross-fitted doubly robust Q-learning:
-#' pl2 <- policy_learn(type = "drql",
-#'                     control = control_drql(qv_models = list(q_glm(~C_1),
-#'                                                             q_glm(~C_1+C_2))),
-#'                     full_history = TRUE,
-#'                     L = 2) # number of folds for cross-fitting
+#' pl2 <- policy_learn(
+#'    type = "drql",
+#'    control = control_drql(qv_models = list(q_glm(~C_1),
+#'                                            q_glm(~C_1+C_2))),
+#'    full_history = TRUE,
+#'    L = 2) # number of folds for cross-fitting
 #'
 #' # evaluating the policy learner using 2-fold cross fitting:
 #' pe2 <- policy_eval(type = "dr",
@@ -229,6 +259,8 @@ policy_eval <- function(policy_data,
                         q_full_history = FALSE, save_q_functions = TRUE,
                         target = "value",
                         type = "dr",
+                        crossfit_type = "pooled",
+                        variance_type = "pooled",
                         M = 1, future_args = list(future.seed=TRUE),
                         name = NULL
                         ) {
@@ -237,6 +269,8 @@ policy_eval <- function(policy_data,
   args[["M"]] <- NULL
   args[["future_args"]] <- NULL
   args[["name"]] <- NULL
+  args[["variance_type"]] <- NULL
+  args[["crossfit_type"]] <- NULL
 
   # input checks:
   if (!inherits(policy_data, what = "policy_data"))
@@ -295,6 +329,8 @@ policy_eval <- function(policy_data,
       args = args,
       policy_data = policy_data,
       M = M,
+      crossfit_type = crossfit_type,
+      variance_type = variance_type,
       future_args = future_args
     )
   } else {
@@ -399,6 +435,13 @@ policy_eval_type <- function(target,
     q_functions <- NULL
   }
 
+  ## getting the doubly robust score(s) for each treatment level (if available):
+  ## matrix with dimensions (n X length(action_set))
+  Z <- getElement(value_object, "Z")
+
+  ## getting the subgroup indicator (if available)
+  subgroup_indicator <- getElement(value_object, "subgroup_indicator")
+
   out <- list(
     value_estimate = getElement(value_object, "value_estimate"),
     IC = getElement(value_object, "IC"),
@@ -412,7 +455,9 @@ policy_eval_type <- function(target,
     g_functions = g_functions,
     g_values = g_values,
     q_functions = q_functions,
-    q_values = q_values
+    q_values = q_values,
+    Z = Z,
+    subgroup_indicator = subgroup_indicator
   )
   out <- Filter(Negate(is.null), out)
 
@@ -423,16 +468,38 @@ policy_eval_type <- function(target,
 policy_eval_cross <- function(args,
                               policy_data,
                               M,
+                              crossfit_type,
+                              variance_type,
                               future_args) {
+
+  ## check crossfit_type input:
+  crossfit_type <- tolower(crossfit_type)
+  if (length(crossfit_type) != 1) {
+    stop("crossfit_type must be a character string.")
+  }
+  if (!(crossfit_type %in% c("pooled", "stacked"))) {
+    stop("crossfit_type must be either 'pooled' or 'stacked'.")
+  }
+
+  ## check varince_type input:
+  variance_type <- tolower(variance_type)
+  if (length(variance_type) != 1) {
+    stop("variance_type must be a character string.")
+  }
+  if (!(variance_type %in% c("pooled", "stacked", "complete"))) {
+    stop("variance_type must be either 'pooled', 'stacked' or 'complete'.")
+  }
+
+  target <- args[["target"]]
   n <- get_n(policy_data)
   id <- get_id(policy_data)
 
-  # setting up the folds
+  ## setting up the folds:
   folds <- split(sample(1:n, n), rep(1:M, length.out = n))
   folds <- lapply(folds, sort)
   names(folds) <- paste("fold_", 1:M, sep = "")
 
-  ## cross fitting the policy evaluation using the folds:
+  ## cross-fitting the policy evaluation:
   prog <- progressor(along = folds)
   cross_args <- append(
     list(
@@ -446,51 +513,149 @@ policy_eval_cross <- function(args,
   )
   cross_fits <- do.call(what = future.apply::future_lapply, cross_args)
 
-  # collecting ids:
+  ## collecting the ids from each fold (unsorted):
   id <- unlist(lapply(
     cross_fits,
     function(x) getElement(x, "id")
   ), use.names = FALSE)
 
-  # collecting the value estimates:
-  n <- unlist(lapply(
+  ## getting the number of observations in each (training) fold (unsorted):
+  n_folds <- unlist(lapply(
     cross_fits,
     function(x) length(getElement(x, "id"))
   ))
-  value_estimate <- unlist(lapply(
-    cross_fits, function(x) getElement(x, "value_estimate")
-  ))
-  value_estimate <- sum((n / sum(n)) * value_estimate)
 
-  # collecting the IC decompositions:
-  IC <- unlist(lapply(
-    cross_fits, function(x) getElement(x, "IC")
-  ), use.names = FALSE)
-
-  # collecting the IPW value estimates (only if type == "dr")
-  value_estimate_ipw <- unlist(lapply(
-    cross_fits, function(x) getElement(x, "value_estimate_ipw")
-  ))
-  if (!is.null(value_estimate_ipw)) {
-    value_estimate_ipw <- sum((n / sum(n)) * value_estimate_ipw)
-  }
-
-  # collecting the OR value estimates (only if type = "dr")
-  value_estimate_or <- unlist(lapply(
-    cross_fits, function(x) getElement(x, "value_estimate_or")
-  ))
-  if (!is.null(value_estimate_or)) {
-    value_estimate_or <- sum((n / sum(n)) * value_estimate_or)
-  }
-
-  # collecting the policy actions
+  # collecting the cross-fitted policy actions (sorted):
   policy_actions <- lapply(
     cross_fits, function(x) getElement(x, "policy_actions")
   )
   policy_actions <- rbindlist(policy_actions)
   setkey(policy_actions, "id", "stage")
 
-  # collecting the g- and Q-values:
+  ## collecting the subgroup indicator (sorted):
+  subgroup_indicator <- unlist(lapply(
+    cross_fits, function(x) getElement(x, "subgroup_indicator")
+  ))
+  subgroup_indicator <- subgroup_indicator[order(id)]
+
+  ##
+  ## collecting the cross-fitted doubly robust scores (sorted):
+  ##
+
+  ## target parameter: policy value
+  if (target == "value") {
+    ## vector of length n with elements Z_1^d:
+    Zd <- unlist(lapply(
+      cross_fits,
+      function(x) {
+        getElement(x, "IC") + getElement(x, "value_estimate")
+      }
+    ), use.names = FALSE)
+    Zd <- Zd[order(id)]
+  }
+
+  ## target parameter: subgroup average treatment effect
+  if (target == "sub_effect") {
+    Z <- lapply(
+      cross_fits,
+      function(x) {
+        getElement(x, "Z")
+      }
+    )
+    Z <- do.call(what = "rbind", Z)
+    Z <- Z[order(id), ]
+  }
+
+  ##
+  ## calculating the cross-fitted estimate:
+  ##
+
+  ## target parameter: policy value
+  if (target == "value") {
+    value_estimate <- mean(Zd)
+  }
+
+  ## target parameter: subgroup average treatment effect
+  if (target == "sub_effect") {
+    if (crossfit_type == "stacked") {
+      value_estimate <- unlist(lapply(
+        cross_fits, function(x) getElement(x, "value_estimate")
+      ))
+      value_estimate <- sum((n_folds / sum(n_folds)) * value_estimate)
+    }
+    if (crossfit_type == "pooled") {
+      ## calculating the subgroup average treatment effect estimate:
+      value_estimate <- mean((Z[, 2] - Z[, 1])[subgroup_indicator])
+    }
+  }
+
+  ##
+  ## calculating the influence curve for the cross-fitted estimator (sorted):
+  ##
+
+  ## target parameter: policy value
+  if (target == "value") {
+    if (variance_type == "stacked") {
+      IC <- unlist(lapply(
+        cross_fits, function(x) getElement(x, "IC")
+      ), use.names = FALSE)
+      IC <- IC[order(id)]
+    }
+    if (variance_type == "pooled") {
+      IC <- Zd - value_estimate
+    }
+    if (variance_type == "complete") {
+      args[["train_policy_data"]] <- policy_data
+      args[["valid_policy_data"]] <- policy_data
+      pe <- do.call(what = policy_eval_type, args = args)
+      IC <- as.vector(IC(pe))
+      rm(pe)
+    }
+  }
+
+  ## target parameter: subgroup average treatment effect
+  if (target == "sub_effect") {
+    if (variance_type == "stacked") {
+      IC <- unlist(lapply(
+        cross_fits, function(x) getElement(x, "IC")
+      ), use.names = FALSE)
+      IC <- IC[order(id)]
+    }
+    if (variance_type == "pooled") {
+      est <- mean((Z[, 2] - Z[, 1])[subgroup_indicator])
+      IC <- 1 / mean(subgroup_indicator) *
+        subgroup_indicator * ((Z[, 2] - Z[, 1]) - est)
+      IC <- unname(IC)
+      rm(est)
+    }
+    if (variance_type == "complete") {
+      args[["train_policy_data"]] <- policy_data
+      args[["valid_policy_data"]] <- policy_data
+      pe <- do.call(what = policy_eval_type, args = args)
+      IC <- as.vector(IC(pe))
+      rm(pe)
+    }
+  }
+
+  ## calculating the cross-fitted ipw value estimate
+  ## (only if target = "value" and type = "dr"):
+  value_estimate_ipw <- unlist(lapply(
+    cross_fits, function(x) getElement(x, "value_estimate_ipw")
+  ))
+  if (!is.null(value_estimate_ipw)) {
+    value_estimate_ipw <- sum((n_folds / sum(n_folds)) * value_estimate_ipw)
+  }
+
+  ## calculating the cross-fitted outcome regression value estimate
+  ## (only if target = "value" and type = "dr"):
+  value_estimate_or <- unlist(lapply(
+    cross_fits, function(x) getElement(x, "value_estimate_or")
+  ))
+  if (!is.null(value_estimate_or)) {
+    value_estimate_or <- sum((n_folds / sum(n_folds)) * value_estimate_or)
+  }
+
+  # collecting the cross-fitted g- and Q-values (sorted):
   g_values <- lapply(cross_fits, function(x) getElement(x, "g_values"))
   null_g_values <- unlist(lapply(g_values, is.null))
   if (!all(null_g_values)) {
@@ -499,7 +664,6 @@ policy_eval_cross <- function(args,
   } else {
     g_values <- NULL
   }
-
   q_values <- lapply(cross_fits, function(x) getElement(x, "q_values"))
   null_q_values <- unlist(lapply(q_values, is.null))
   if (!all(null_q_values)) {
@@ -509,8 +673,7 @@ policy_eval_cross <- function(args,
     q_values <- NULL
   }
 
-  # sorting via the IDs:
-  IC <- IC[order(id)]
+  ## sorting id:
   id <- id[order(id)]
 
   out <- list(
@@ -528,6 +691,7 @@ policy_eval_cross <- function(args,
     folds = folds
   )
 
+  ## removing null elements:
   out <- Filter(Negate(is.null), out)
 
   class(out) <- c("policy_eval")
