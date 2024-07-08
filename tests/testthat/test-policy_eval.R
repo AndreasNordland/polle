@@ -349,7 +349,7 @@ test_that("policy_eval handles varying stage action sets.", {
 test_that("policy_eval with target = 'value' runs when cross-fitting.", {
   d <- sim_single_stage(1e2, seed = 1)
   pd <- policy_data(d, action = "A", covariates = c("Z"), utility = "U")
-  p <- policy_def(1)
+  p <- policy_def(1, name = 1)
 
   set.seed(1)
   expect_no_error(
@@ -451,22 +451,6 @@ test_that("policy_eval with target = 'value' agrees with targeted::lava", {
 })
 
 test_that("policy_eval with target 'value' has the correct outputs.", {
-  q_degen <- function(var) {
-    force(var)
-    q_degen <- function(AH, V_res, ...) {
-      m <- list(var = var)
-      class(m) <- "q_degen"
-      return(m)
-    }
-    q_degen <- new_q_model(q_degen)
-    return(q_degen)
-  }
-  predict.q_degen <- function(object, new_AH, ...) {
-    var <- getElement(object, "var")
-    pred <- unname(unlist(new_AH[, var, with = FALSE]))
-    return(pred)
-  }
-
   z <- 1:1e2
   a <- c(rep(1, 50), rep(2, 50))
   y <- a * 2
@@ -597,6 +581,46 @@ test_that("policy_eval with target 'value' has the correct outputs.", {
     ref_pe
   )
 
+  expect_equal(
+    pe$IC,
+    ref_IC
+  )
+})
+
+test_that("policy_eval using the policy_learn has the correct output", {
+  z <- 1:1e2
+  a <- c(rep(1, 50), rep(2, 50))
+  y <- a * 2
+  p <- (z > 75) + 1
+  d <- data.table(z = z, a = a, y = y, p = p)
+  rm(a, z, y)
+  pd <- policy_data(
+    data = d,
+    action = "a",
+    covariates = c("z", "p"),
+    utility = c("y")
+  )
+
+  ref_pe <- mean((d$a == d$p) / 0.5 * (d$y - d$z) + d$z)
+  ref_IC <- (d$a == d$p) / 0.5 * (d$y - d$z) + d$z - ref_pe
+
+  pl <- policy_learn(
+    type = "blip",
+    threshold = 75,
+    control = control_blip(blip_models = q_degen(var = "z"))
+  )
+
+  pe <- policy_eval(
+    policy_data = pd,
+    policy_learn = pl,
+    q_models = q_degen(var = "z"),
+    g_models = g_glm(~1)
+  )
+
+  expect_equal(
+    ref_pe,
+    coef(pe)
+  )
   expect_equal(
     pe$IC,
     ref_IC

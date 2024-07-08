@@ -499,3 +499,22 @@ predict.q_xgboost <- function(object, new_AH, ...){
   pred <- predict(model, newdata = new_data)
   return(pred)
 }
+
+## used for testing:
+q_degen <- function(var) {
+  force(var)
+  q_degen <- function(AH, V_res, ...) {
+    m <- list(var = var)
+    class(m) <- "q_degen"
+    return(m)
+  }
+  q_degen <- new_q_model(q_degen)
+  return(q_degen)
+}
+
+#' @export
+predict.q_degen <- function(object, new_AH, ...) {
+  var <- getElement(object, "var")
+  pred <- unname(unlist(new_AH[, var, with = FALSE]))
+  return(pred)
+}

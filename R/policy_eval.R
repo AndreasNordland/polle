@@ -87,8 +87,7 @@
 #' \item{[get_g_functions()]}{ Extract the fitted g-functions.}
 #' \item{[get_q_functions()]}{ Extract the fitted Q-functions.}
 #' \item{[get_policy()]}{ Extract the fitted policy object.}
-#' \item{[get_policy_functions()]}
-#' { Extract the fitted policy function for a given stage.}
+#' \item{[get_policy_functions()]}{Extract the fitted policy function for a given stage.}
 #' \item{[get_policy_actions()]}{ Extract the (fitted) policy actions.}
 #' \item{[plot.policy_eval()]}{Plot diagnostics.}
 #' }
@@ -339,15 +338,31 @@ policy_eval <- function(policy_data,
     val <- do.call(what = policy_eval_type, args = args)
   }
   if (is.null(name)) {
-    if (!is.null(policy)) {
-      val$name <- attr(policy, "name")
-    } else {
-      val$name <- attr(policy_learn, "name")
+    if (val[["target"]] == "value") {
+      if (!is.null(policy)) {
+        pol_name <- attr(policy, "name")
+      } else {
+        pol_name <- attr(policy_learn, "name")
+      }
+      name <- "E[Z(d)]"
+      if (!is.null(pol_name)) {
+          name <- paste0(name, ": d=", pol_name)
+        }
+      val$name <- name
+    }
+    if (val[["target"]] == "sub_effect") {
+       if (!is.null(policy)) {
+         pol_name <- attr(policy, "name")
+       } else {
+         pol_name <- attr(policy_learn, "name")
+       }
+       as <- get_action_set(policy_data)
+       name <- paste0("E[Z(", as[2], ")-Z(", as[1], ")|d(V)=", as[2], "]")
+       val$name <- name
     }
   } else {
     val$name <- name
   }
-
   return(val)
 }
 

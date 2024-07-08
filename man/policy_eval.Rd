@@ -26,6 +26,8 @@ policy_eval(
   save_q_functions = TRUE,
   target = "value",
   type = "dr",
+  crossfit_type = "pooled",
+  variance_type = "pooled",
   M = 1,
   future_args = list(future.seed = TRUE),
   name = NULL
@@ -91,8 +93,16 @@ treatment under the policy, see details.
 "sub_effect" is only implemented for \code{type = "dr"}
 in the single-stage case with a dichotomous action set.}
 
-\item{type}{Type of evaluation (dr/doubly robust, ipw/inverse propensity
-weighting, or/outcome regression).}
+\item{type}{Character string. Type of evaluation. Either \code{"dr"}
+(doubly robust),
+\code{"ipw"} (inverse propensity weighting),
+or \code{"or"} (outcome regression).}
+
+\item{crossfit_type}{Character string.
+Either "stacked", or "pooled", see details.}
+
+\item{variance_type}{Character string. Either "pooled" (default),
+"stacked" or "complete", see details. (Only used if \code{M > 1})}
 
 \item{M}{Number of folds for cross-fitting.}
 
@@ -227,8 +237,7 @@ class \code{policy_eval}:
 \item{\code{\link[=get_g_functions]{get_g_functions()}}}{ Extract the fitted g-functions.}
 \item{\code{\link[=get_q_functions]{get_q_functions()}}}{ Extract the fitted Q-functions.}
 \item{\code{\link[=get_policy]{get_policy()}}}{ Extract the fitted policy object.}
-\item{\code{\link[=get_policy_functions]{get_policy_functions()}}}
-{ Extract the fitted policy function for a given stage.}
+\item{\code{\link[=get_policy_functions]{get_policy_functions()}}}{Extract the fitted policy function for a given stage.}
 \item{\code{\link[=get_policy_actions]{get_policy_actions()}}}{ Extract the (fitted) policy actions.}
 \item{\code{\link[=plot.policy_eval]{plot.policy_eval()}}}{Plot diagnostics.}
 }
@@ -238,7 +247,10 @@ class \code{policy_eval}:
 library("polle")
 ### Single stage:
 d1 <- sim_single_stage(5e2, seed=1)
-pd1 <- policy_data(d1, action="A", covariates=list("Z", "B", "L"), utility="U")
+pd1 <- policy_data(d1,
+                   action = "A",
+                   covariates = list("Z", "B", "L"),
+                   utility = "U")
 pd1
 
 # defining a static policy (A=1):
@@ -287,11 +299,12 @@ pd2 <- policy_data(d2,
 pd2
 
 # defining a policy learner based on cross-fitted doubly robust Q-learning:
-pl2 <- policy_learn(type = "drql",
-                    control = control_drql(qv_models = list(q_glm(~C_1),
-                                                            q_glm(~C_1+C_2))),
-                    full_history = TRUE,
-                    L = 2) # number of folds for cross-fitting
+pl2 <- policy_learn(
+   type = "drql",
+   control = control_drql(qv_models = list(q_glm(~C_1),
+                                           q_glm(~C_1+C_2))),
+   full_history = TRUE,
+   L = 2) # number of folds for cross-fitting
 
 # evaluating the policy learner using 2-fold cross fitting:
 pe2 <- policy_eval(type = "dr",

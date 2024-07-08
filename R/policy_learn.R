@@ -7,68 +7,68 @@
 #' Evaluating the policy learner returns a policy object.
 #' @param type Type of policy learner method:
 #' \itemize{
-#'   \item{} \code{"ql"}: Quality/Q-learning.
-#'   \item{} \code{"drql"}: Doubly Robust Q-learning.
-#'   \item{} \code{"blip"}:
+#'   \item \code{"ql"}: Quality/Q-learning.
+#'   \item \code{"drql"}: Doubly Robust Q-learning.
+#'   \item \code{"blip"}:
 #' Doubly Robust blip-learning (only for dichotomous actions).
-#'   \item{} \code{"ptl"}: Policy Tree Learning.
-#'   \item{} \code{"owl"}: Outcome Weighted Learning.
-#'   \item{} \code{"earl"}:
+#'   \item \code{"ptl"}: Policy Tree Learning.
+#'   \item \code{"owl"}: Outcome Weighted Learning.
+#'   \item \code{"earl"}:
 #' Efficient Augmentation and Relaxation Learning (only single stage).
-#'   \item{} \code{"rwl"}: Residual Weighted Learning (only single stage).
+#'   \item \code{"rwl"}: Residual Weighted Learning (only single stage).
 #' }
 #' @param control List of control arguments.
 #' Values (and default values) are set using
 #' \code{control_{type}()}. Key arguments include:\cr
 #' [control_drql()]:\cr
 #' \itemize{
-#'   \item{} \code{qv_models}:
+#'   \item \code{qv_models}:
 #' Single element or list of V-restricted Q-models created
 #' by [q_glm()], [q_rf()], [q_sl()] or similar functions.
 #' }
 #' [control_blip()]:\cr
 #' \itemize{
-#'   \item{} \code{blip_models}:
+#'   \item \code{blip_models}:
 #' Single element or list of V-restricted blip-models created
 #' by [q_glm()], [q_rf()], [q_sl()] or similar functions.
 #' }
 #' [control_ptl()]: \cr
 #' \itemize{
-#'   \item{} \code{policy_vars}: Character vector/string or list of character
+#'   \item \code{policy_vars}: Character vector/string or list of character
 #' vectors/strings. Variable names used to construct
 #' the V-restricted policy tree.
 #' The names must be a subset of the history names, see get_history_names().
-#'   \item{} \code{hybrid}: If \code{TRUE},
+#'   \item \code{hybrid}: If \code{TRUE},
 #' [policytree::hybrid_policy_tree()] is used to
 #' fit a policy tree.
-#'   \item{} \code{depth}:
+#'   \item \code{depth}:
 #' Integer or integer vector. The depth of the fitted policy
 #' tree for each stage.
 #' }
 #' [control_owl()]: \cr
 #' \itemize{
-#'   \item{} \code{policy_vars}: As in \code{control_ptl()}.
-#'   \item{} \code{loss}: Loss function.
+#'   \item \code{policy_vars}: As in \code{control_ptl()}.
+#'   \item \code{loss}: Loss function.
 #' The options are \code{"hinge"}, \code{"ramp"},
 #' \code{"logit"}, \code{"logit.lasso"}, \code{"l2"}, \code{"l2.lasso"}.
-#'   \item{} \code{kernel}: Type of kernel
+#'   \item \code{kernel}: Type of kernel
 #' used by the support vector machine. The
 #' options are \code{"linear"}, \code{"rbf"}.
-#'    \item{} \code{augment}:  If \code{TRUE} the outcomes are augmented.
+#'    \item \code{augment}:  If \code{TRUE} the outcomes are augmented.
 #' }
 #' [control_earl()]/[control_rwl()]: \cr
 #' \itemize{
-#'   \item{} \code{moPropen}:
+#'   \item \code{moPropen}:
 #' Propensity model of class "ModelObj", see [modelObj::modelObj].
-#'   \item{} \code{moMain}: Main effects outcome model of class "ModelObj".
-#'   \item{} \code{moCont} Contrast outcome model of class "ModelObj".
-#'   \item{} \code{regime}:
+#'   \item \code{moMain}: Main effects outcome model of class "ModelObj".
+#'   \item \code{moCont} Contrast outcome model of class "ModelObj".
+#'   \item \code{regime}:
 #' An object of class [formula] specifying the design of the policy.
-#'   \item{} \code{surrogate}:
+#'   \item \code{surrogate}:
 #' The surrogate 0-1 loss function. The options are
 #' \code{"logit"}, \code{"exp"},
 #' \code{"hinge"}, \code{"sqhinge"}, \code{"huber"}.
-#'   \item{} \code{kernel}: The options are
+#'   \item \code{kernel}: The options are
 #' \code{"linear"}, \code{"poly"}, \code{"radial"}.
 #' }
 #' @param alpha Probability threshold for determining realistic actions.
@@ -90,32 +90,34 @@
 #' Evaluating the function on a [policy_data] object returns an object of
 #' class [policy_object]. A policy object is a list containing all or
 #' some of the following elements:
-#' \item{\code{q_functions}}
-#' {Fitted Q-functions. Object of class "nuisance_functions".}
-#' \item{\code{g_functions}}
-#' {Fitted g-functions. Object of class "nuisance_functions".}
-#' \item{\code{action_set}}
-#' {Sorted character vector describing the action set, i.e.,
+#' \describe{
+#' \item{\code{q_functions}}{Fitted Q-functions. Object
+#'                           of class "nuisance_functions".}
+#' \item{\code{g_functions}}{Fitted g-functions. Object
+#'                           of class "nuisance_functions".}
+#' \item{\code{action_set}}{Sorted character vector describing
+#'                          the action set, i.e.,
 #'                          the possible actions at each stage.}
-#' \item{\code{alpha}}
-#' {Numeric. Probability threshold to determine realistic actions.}
+#' \item{\code{alpha}}{Numeric. Probability threshold to determine
+#'                     realistic actions.}
 #' \item{\code{K}}{Integer. Maximal number of stages.}
-#' \item{\code{qv_functions}}{(only if \code{type = "drql"}) Fitted V-restricted
-#' Q-functions. Contains a fitted model for each stage and action.}
+#' \item{\code{qv_functions}}{(only if \code{type = "drql"}) Fitted
+#' V-restricted Q-functions. Contains a fitted model for each stage and action.}
 #' \item{\code{ptl_objects}}{(only if \code{type = "ptl"}) Fitted V-restricted
 #' policy trees. Contains a [policy_tree] for each stage.}
 #' \item{\code{ptl_designs}}{(only if \code{type = "ptl"}) Specification of the
 #' V-restricted design matrix for each stage}
+#' }
 #' @section S3 generics:
 #' The following S3 generic functions are available for an object of
 #' class "policy_object":
-#' \itemize{
-#' \item{[get_g_functions()]}{ Extract the fitted g-functions.}
-#' \item{[get_q_functions()]}{ Extract the fitted Q-functions.}
-#' \item{[get_policy()]}{ Extract the fitted policy object.}
-#' \item{[get_policy_functions()]}{ Extract the fitted policy function for
+#' \describe{
+#' \item{[get_g_functions()]}{Extract the fitted g-functions.}
+#' \item{[get_q_functions()]}{Extract the fitted Q-functions.}
+#' \item{[get_policy()]}{Extract the fitted policy object.}
+#' \item{[get_policy_functions()]}{Extract the fitted policy function for
 #'                                 a given stage.}
-#' \item{[get_policy_actions()]}{ Extract the (fitted) policy actions.}
+#' \item{[get_policy_actions()]}{Extract the (fitted) policy actions.}
 #' }
 #' @references
 #' Doubly Robust Q-learning (\code{type = "drql"}): Luedtke, Alexander R., and

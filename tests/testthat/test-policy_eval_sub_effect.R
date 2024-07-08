@@ -253,22 +253,6 @@ test_that("policy_eval with target 'sub_effect' has the correct outputs: test1."
 })
 
 test_that("policy_eval with target 'sub_effect' has the correct outputs: test2.", {
-    q_degen <- function(var) {
-        force(var)
-        q_degen <- function(AH, V_res, ...) {
-            m <- list(var = var)
-            class(m) <- "q_degen"
-            return(m)
-        }
-        q_degen <- new_q_model(q_degen)
-        return(q_degen)
-    }
-    predict.q_degen <- function(object, new_AH, ...) {
-        var <- getElement(object, "var")
-        pred <- unname(unlist(new_AH[, var, with = FALSE]))
-        return(pred)
-    }
-
     z <- 1:1e2
     a <- c(rep(1, 50), rep(2, 50))
     y <- a * 2
