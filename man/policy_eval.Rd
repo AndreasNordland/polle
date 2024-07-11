@@ -84,13 +84,13 @@ If a single model is provided, the model is reused at every stage.}
 
 \item{save_q_functions}{Similar to save_g_functions.}
 
-\item{target}{Character string. Either "value" or "sub_effect". If "value",
+\item{target}{Character string. Either "value" or "subgroup". If "value",
 the target parameter is the policy value.
-If "sub_effect", the target parameter
+If "subgroup", the target parameter
 is the average treatement effect among
 the subgroup of subjects that would receive
 treatment under the policy, see details.
-"sub_effect" is only implemented for \code{type = "dr"}
+"subgroup" is only implemented for \code{type = "dr"}
 in the single-stage case with a dichotomous action set.}
 
 \item{type}{Character string. Type of evaluation. Either \code{"dr"}
@@ -152,7 +152,7 @@ for cross-fitting.}
 the value of a given fixed policy
 or a data adaptive policy (e.g. a policy
 learned from the data). \code{policy_eval()}
-is also used to estimate the averag
+is also used to estimate the average
 treatment effect among the subjects who would
 get the treatment under the policy.
 }
@@ -212,22 +212,22 @@ I\{A_k = d_k(\cdot)\} g_k(H_k, A_k)^{-1}\right) U\right].}
 If \code{target = "value"} and
 \code{type = "dr"} \code{policy_eval} returns the empirical estimates of
 the value (\code{value_estimate}) and influence curve (\code{IC}):
-\deqn{E[Z^d_1],}
-\deqn{Z^d_1 - E[Z^d_1],}
+\deqn{E[Z_1(d,g,Q^d)(O)],}
+\deqn{Z_1(d, g, Q^d)(O) - E[Z_1(d,g, Q^d)(O)],}
 where
 \deqn{
-Z^d_1 = Q^d_1(H_1 , d_1(\cdot)) + \sum_{r = 1}^K \prod_{j = 1}^{r}
+Z_1(d, g, Q^d)(O) = Q^d_1(H_1 , d_1(\cdot)) + \sum_{r = 1}^K \prod_{j = 1}^{r}
 \frac{I\{A_j = d_j(\cdot)\}}{g_{j}(H_j, A_j)}
 \{Q_{r+1}^d(H_{r+1} , d_{r+1}(\cdot)) - Q_{r}^d(H_r , d_r(\cdot))\}.
 }
 
-If \code{target = "sub_effect"}, \code{type = "dr"}, \code{K = 1},
+If \code{target = "subgroup"}, \code{type = "dr"}, \code{K = 1},
 and \eqn{\mathcal{A} = \{0,1\}} \code{policy_eval()}
 returns the empirical estimates of the subgroup average
-treatment effect (\code{value_estimate}) and influence curve (\code{IC})
-\deqn{E[Z^1_1 - Z^0_1 | d(\cdot) = 1]}
-\deqn{P(d(\cdot) = 1)^{-1} I\{d(\cdot) = 1\}
-\left\{Z^1_1 - Z^0_1 - E[Z^1_1 - Z^0_1 | d(\cdot) = 1]\right\}}
+treatment effect (\code{value_estimate}) and influence curve (\code{IC}):
+\deqn{E[Z_1(1,g,Q)(O) - Z_1(0,g,Q)(O) | d(\cdot) = 1],}
+\deqn{\frac{1}{P(d(\cdot) = 1)} I\{d(\cdot) = 1\}
+\Big\{Z_1(1,g,Q)(O) - Z_1(0,g,Q)(O) - E[Z_1(1,g,Q)(O) - Z_1(0,g,Q)(O) | d(\cdot) = 1]\Big\}.}
 }
 \section{S3 generics}{
 

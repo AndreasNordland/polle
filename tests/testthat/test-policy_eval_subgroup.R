@@ -10,7 +10,7 @@ test_that("policy_eval with target = 'sub_effect' checks inputs.", {
             policy = p,
             target = "test"
         ),
-        "target must be either 'value' or 'sub_effect'."
+        "target must be either 'value' or 'subgroup'."
     )
 
     d <- sim_single_stage_multi_actions(1e2, seed = 1)
@@ -24,7 +24,7 @@ test_that("policy_eval with target = 'sub_effect' checks inputs.", {
             g_models = g_empir(),
             target = "sub_effect"
         ),
-        "subgroup effect evaluation is not implemented for more than two actions."
+        "subgroup average treatment effect evaluation is not implemented for more than two actions."
     )
 
     d <- sim_two_stage(1e2, seed = 1)
@@ -43,11 +43,11 @@ test_that("policy_eval with target = 'sub_effect' checks inputs.", {
             g_models = g_empir(),
             target = "sub_effect"
         ),
-        "subgroup effect evaluation is not implemeted for multiple stages."
+        "subgroup average treatment effect evaluation is not implemeted for multiple stages."
     )
 })
 
-test_that("policy_eval with target sub_effect agrees with targeted::cate.", {
+test_that("policy_eval with target 'subgroup' agrees with targeted::cate.", {
     n <- 1e3
     Z <- rnorm(n = n)
     A <- rbinom(size = 1, n = n, prob = 0.5)
@@ -194,7 +194,7 @@ test_that("policy_eval with target 'sub_effect' has the correct outputs: test1."
         ## target
         expect_equal(
             pe$target,
-            "sub_effect"
+            "subgroup"
         )
     }
 
@@ -207,7 +207,7 @@ test_that("policy_eval with target 'sub_effect' has the correct outputs: test1."
         pe <- policy_eval(
             policy_data = pd,
             policy = p,
-            target = "sub_effect"
+            target = "subgroup"
         )
     )
     test_output(pe)
@@ -217,7 +217,7 @@ test_that("policy_eval with target 'sub_effect' has the correct outputs: test1."
         pe <- policy_eval(
             policy_data = pd,
             policy = p,
-            target = "sub_effect",
+            target = "subgroup",
             M = 2,
             crossfit_type = "stacked",
             variance_type = "stacked"
@@ -243,7 +243,7 @@ test_that("policy_eval with target 'sub_effect' has the correct outputs: test1."
         pe <- policy_eval(
             policy_data = pd,
             policy = p,
-            target = "sub_effect",
+            target = "subgroup",
             M = 2,
             crossfit_type = "pooled",
             variance_type = "complete"
@@ -252,8 +252,9 @@ test_that("policy_eval with target 'sub_effect' has the correct outputs: test1."
     test_output(pe)
 })
 
-test_that("policy_eval with target 'sub_effect' has the correct outputs: test2.", {
-    z <- 1:1e2
+test_that("policy_eval with target 'subgroup' has the correct outputs: test2.", {
+
+  z <- 1:1e2
     a <- c(rep(1, 50), rep(2, 50))
     y <- a * 2
     p <- c(rep(1, 25), rep(2, 25), rep(1, 25), rep(2, 25))
@@ -285,7 +286,7 @@ test_that("policy_eval with target 'sub_effect' has the correct outputs: test2."
     ##
 
     sub <- policy_eval(
-        target = "sub_effect",
+        target = "subgroup",
         policy_data = pd,
         policy = p,
         q_models = q_degen(var = "z"),

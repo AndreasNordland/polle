@@ -4,7 +4,7 @@
 #' the value of a given fixed policy
 #' or a data adaptive policy (e.g. a policy
 #' learned from the data). \code{policy_eval()}
-#' is also used to estimate the averag
+#' is also used to estimate the average
 #' treatment effect among the subjects who would
 #' get the treatment under the policy.
 #' @param policy_data Policy data object created by [policy_data()].
@@ -30,13 +30,13 @@
 #' If a single model is provided, the model is reused at every stage.
 #' @param q_full_history Similar to g_full_history.
 #' @param save_q_functions Similar to save_g_functions.
-#' @param target Character string. Either "value" or "sub_effect". If "value",
+#' @param target Character string. Either "value" or "subgroup". If "value",
 #' the target parameter is the policy value.
-#' If "sub_effect", the target parameter
+#' If "subgroup", the target parameter
 #' is the average treatement effect among
 #' the subgroup of subjects that would receive
 #' treatment under the policy, see details.
-#' "sub_effect" is only implemented for \code{type = "dr"}
+#' "subgroup" is only implemented for \code{type = "dr"}
 #' in the single-stage case with a dichotomous action set.
 #' @param type Character string. Type of evaluation. Either \code{"dr"}
 #' (doubly robust),
@@ -148,22 +148,22 @@
 #' If \code{target = "value"} and
 #' \code{type = "dr"} \code{policy_eval} returns the empirical estimates of
 #' the value (\code{value_estimate}) and influence curve (\code{IC}):
-#' \deqn{E[Z^d_1],}
-#' \deqn{Z^d_1 - E[Z^d_1],}
+#' \deqn{E[Z_1(d,g,Q^d)(O)],}
+#' \deqn{Z_1(d, g, Q^d)(O) - E[Z_1(d,g, Q^d)(O)],}
 #' where
 #' \deqn{
-#' Z^d_1 = Q^d_1(H_1 , d_1(\cdot)) + \sum_{r = 1}^K \prod_{j = 1}^{r}
+#' Z_1(d, g, Q^d)(O) = Q^d_1(H_1 , d_1(\cdot)) + \sum_{r = 1}^K \prod_{j = 1}^{r}
 #' \frac{I\{A_j = d_j(\cdot)\}}{g_{j}(H_j, A_j)}
 #' \{Q_{r+1}^d(H_{r+1} , d_{r+1}(\cdot)) - Q_{r}^d(H_r , d_r(\cdot))\}.
 #' }
 #'
-#' If \code{target = "sub_effect"}, \code{type = "dr"}, \code{K = 1},
+#' If \code{target = "subgroup"}, \code{type = "dr"}, \code{K = 1},
 #' and \eqn{\mathcal{A} = \{0,1\}} \code{policy_eval()}
 #' returns the empirical estimates of the subgroup average
-#' treatment effect (\code{value_estimate}) and influence curve (\code{IC})
-#' \deqn{E[Z^1_1 - Z^0_1 | d(\cdot) = 1]}
-#' \deqn{P(d(\cdot) = 1)^{-1} I\{d(\cdot) = 1\}
-#' \left\{Z^1_1 - Z^0_1 - E[Z^1_1 - Z^0_1 | d(\cdot) = 1]\right\}}
+#' treatment effect (\code{value_estimate}) and influence curve (\code{IC}):
+#' \deqn{E[Z_1(1,g,Q)(O) - Z_1(0,g,Q)(O) | d(\cdot) = 1],}
+#' \deqn{\frac{1}{P(d(\cdot) = 1)} I\{d(\cdot) = 1\}
+#' \Big\{Z_1(1,g,Q)(O) - Z_1(0,g,Q)(O) - E[Z_1(1,g,Q)(O) - Z_1(0,g,Q)(O) | d(\cdot) = 1]\Big\}.}
 #' @references
 #' van der Laan, Mark J., and Alexander R. Luedtke. "Targeted learning of the
 #' mean outcome under an optimal dynamic treatment rule." Journal of causal
@@ -263,14 +263,6 @@ policy_eval <- function(policy_data,
                         M = 1, future_args = list(future.seed=TRUE),
                         name = NULL
                         ) {
-  args <- as.list(environment())
-  args[["policy_data"]] <- NULL
-  args[["M"]] <- NULL
-  args[["future_args"]] <- NULL
-  args[["name"]] <- NULL
-  args[["variance_type"]] <- NULL
-  args[["crossfit_type"]] <- NULL
-
   # input checks:
   if (!inherits(policy_data, what = "policy_data"))
     stop("policy_data must be of inherited class 'policy_data'.")
@@ -322,6 +314,48 @@ policy_eval <- function(policy_data,
       stop("name must be a character string.")
     }
   }
+  target <- tolower(target)
+  if (length(target) != 1) {
+    stop("target must be a character string.")
+  }
+  if (target %in% c(
+    "value",
+    "policy_value"
+  )) {
+    target <- "value"
+  } else if (target %in% c(
+    "subgroup",
+    "sub_effect",
+    "subeffect",
+    "subvalue",
+    "sub_value"
+  )) {
+    target <- "subgroup"
+  } else {
+    stop("target must be either 'value' or 'subgroup'.")
+  }
+  type <- tolower(type)
+  if (length(type) != 1) {
+    stop("type must be a character string.")
+  }
+  if (type %in% c("dr", "aipw")) {
+    type <- "dr"
+  } else if (type %in% c("ipw")) {
+    type <- "ipw"
+  } else if (type %in% c("or", "q")) {
+    type <- "or"
+  } else {
+    stop("type must be either 'dr', 'ipw' or  'or'.")
+  }
+
+  ## collecting the arguments to be passed on:
+  args <- as.list(environment())
+  args[["policy_data"]] <- NULL
+  args[["M"]] <- NULL
+  args[["future_args"]] <- NULL
+  args[["name"]] <- NULL
+  args[["variance_type"]] <- NULL
+  args[["crossfit_type"]] <- NULL
 
   if (M > 1) {
     val <- policy_eval_cross(
@@ -350,7 +384,7 @@ policy_eval <- function(policy_data,
         }
       val$name <- name
     }
-    if (val[["target"]] == "sub_effect") {
+    if (val[["target"]] == "subgroup") {
        if (!is.null(policy)) {
          pol_name <- attr(policy, "name")
        } else {
@@ -375,42 +409,6 @@ policy_eval_type <- function(target,
                              g_full_history, save_g_functions,
                              q_models, q_functions,
                              q_full_history, save_q_functions) {
-  ## check target input:
-  target <- tolower(target)
-  if (length(target) != 1) {
-    stop("target must be a character string.")
-  }
-  if (target %in% c(
-    "value",
-    "policy_value"
-  )) {
-    target <- "value"
-  } else if (target %in% c(
-    "sub_effect",
-    "subeffect",
-    "subvalue",
-    "sub_value"
-  )) {
-    target <- "sub_effect"
-  } else {
-    stop("target must be either 'value' or 'sub_effect'.")
-  }
-
-  ## check type input:
-  type <- tolower(type)
-  if (length(type) != 1) {
-    stop("type must be a character string.")
-  }
-  if (type %in% c("dr", "aipw")) {
-    type <- "dr"
-  } else if (type %in% c("ipw")) {
-    type <- "ipw"
-  } else if (type %in% c("or", "q")) {
-    type <- "or"
-  } else {
-    stop("type must be either 'dr', 'ipw' or  'or'.")
-  }
-
   # fitting the g-functions, the q-functions and the policy (functions):
   fits <- fit_functions(
     policy_data = train_policy_data,
@@ -570,7 +568,7 @@ policy_eval_cross <- function(args,
   }
 
   ## target parameter: subgroup average treatment effect
-  if (target == "sub_effect") {
+  if (target == "subgroup") {
     Z <- lapply(
       cross_fits,
       function(x) {
@@ -591,7 +589,7 @@ policy_eval_cross <- function(args,
   }
 
   ## target parameter: subgroup average treatment effect
-  if (target == "sub_effect") {
+  if (target == "subgroup") {
     if (crossfit_type == "stacked") {
       value_estimate <- unlist(lapply(
         cross_fits, function(x) getElement(x, "value_estimate")
@@ -629,7 +627,7 @@ policy_eval_cross <- function(args,
   }
 
   ## target parameter: subgroup average treatment effect
-  if (target == "sub_effect") {
+  if (target == "subgroup") {
     if (variance_type == "stacked") {
       IC <- unlist(lapply(
         cross_fits, function(x) getElement(x, "IC")

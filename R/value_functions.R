@@ -20,32 +20,38 @@ value <- function(target = "value",
     } else {
       stop()
     }
-  } else if (target == "sub_effect") {
+  } else if (target == "subgroup") {
     if (type == "dr") {
-      out <- do.call(what = "dr_sub_effect", args)
+      out <- do.call(what = "dr_subgroup", args)
     } else {
-      stop()
+      stop("target = 'subgroup' only implemented for type = 'dr'.")
     }
+  } else {
+    stop("unknown target argument.")
   }
 
   return(out)
 }
 
-dr_sub_effect <- function(policy_data,
+dr_subgroup <- function(policy_data,
                           policy,
                           g_functions,
                           q_functions) {
   # getting the number of stages:
   K <- get_K(policy_data)
   if (K != 1) {
-    stop("subgroup effect evaluation is not implemeted for multiple stages.")
+    mes <- paste0(
+      "subgroup average treatment effect evaluation",
+      " is not implemeted for multiple stages."
+    )
+    stop(mes)
   }
 
   # getting the action set and stage action set:
   action_set <- get_action_set(policy_data)
   if (length(action_set) != 2) {
     mes <- paste0(
-      "subgroup effect evaluation is not ",
+      "subgroup average treatment effect evaluation is not ",
       "implemented for more than two actions."
     )
     stop(mes)
@@ -106,7 +112,8 @@ dr_sub_effect <- function(policy_data,
   subgroup_blip_estimate <- mean(blip[subgroup_indicator])
 
   ## calculating the influence curve for the subgroup blip estimate:
-  IC <- 1 / mean(subgroup_indicator) * subgroup_indicator * (blip - subgroup_blip_estimate)
+  IC <- 1 / mean(subgroup_indicator) * subgroup_indicator *
+    (blip - subgroup_blip_estimate)
 
   out <- list(
     value_estimate = subgroup_blip_estimate,
