@@ -1,3 +1,8 @@
+# polle 1.5
+    - added target argument in policy_eval for estimating the subgroup average treatment effect.
+    - added threshold argument in policy_learn for learning the optimal subgroup.
+    - added vignette for learning and evaluating the optimal subgroup.
+
 # polle 1.4
     - vignettes added for policy_data, policy_learn and policy_eval.
 
