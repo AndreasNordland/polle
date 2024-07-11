@@ -334,13 +334,11 @@ get_policy_functions.blip <- function(object,
                                       stage,
                                       include_g_values = FALSE,
                                       ...) {
+  K <- getElement(object, "K")
+  check_stage(stage = stage, K = K)
   stage_action_sets <- getElement(object, "stage_action_sets")
   stage_action_set <- stage_action_sets[[stage]]
   rm(stage_action_sets)
-  K <- getElement(object, "K")
-  if (!((stage >= 0) && (stage <= K))) {
-    stop("stage must be smaller than or equal to K.")
-  }
   alpha <- getElement(object, "alpha")
   threshold <- getElement(object, "threshold")
   g_functions <- getElement(object, "g_functions")

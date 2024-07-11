@@ -66,18 +66,23 @@ test_that("policy_learn with type blip works as intended",{
 })
 
 test_that("get_policy_functions.blip returns a list of policy functions", {
-  d <- sim_two_stage(200, seed=1)
+  d <- sim_two_stage(200, seed = 1)
   d$A_2 <- paste(d$A_2, "test", sep = "")
   d$A_1 <- as.character(d$A_1)
   pd <- policy_data(d,
-                    action = c("A_1", "A_2"),
-                    baseline = c("BB", "B"),
-                    covariates = list(L = c("L_1", "L_2"),
-                                      C = c("C_1", "C_2")),
-                    utility = c("U_1", "U_2", "U_3"))
+    action = c("A_1", "A_2"),
+    baseline = c("BB", "B"),
+    covariates = list(
+      L = c("L_1", "L_2"),
+      C = c("C_1", "C_2")
+    ),
+    utility = c("U_1", "U_2", "U_3")
+  )
 
-  pl <- policy_learn(type = "blip",
-                     control = control_blip())
+  pl <- policy_learn(
+    type = "blip",
+    control = control_blip()
+  )
   po <- pl(
     policy_data = pd,
     g_models = list(g_glm(), g_glm()),
@@ -96,9 +101,11 @@ test_that("get_policy_functions.blip returns a list of policy functions", {
   )
 
   # realistic action set at level alpha:
-  pl <- policy_learn(type = "blip",
-                     control = control_blip(),
-                     alpha = 0.2)
+  pl <- policy_learn(
+    type = "blip",
+    control = control_blip(),
+    alpha = 0.2
+  )
   po <- pl(
     policy_data = pd,
     g_models = list(g_glm(), g_glm()),
@@ -127,7 +134,12 @@ test_that("get_policy_functions.blip returns a list of policy functions", {
     all(pf2(H) %in% get_stage_action_sets(pd)[[2]])
   )
 
+  expect_error(
+    get_policy_functions(po),
+    "stage argument is missing"
+  )
 })
+
 
 test_that("get_policy.blip returns a policy", {
   d <- sim_two_stage(200, seed = 1)

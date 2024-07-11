@@ -158,16 +158,26 @@ get_policy.policy_eval <- function(object){
 #' d2 <- pf2(H = new_H)
 #' head(d2)
 #' @export
-get_policy_functions <- function(object, stage, ...){
+get_policy_functions <- function(object, stage, ...) {
   UseMethod("get_policy_functions")
 }
 
 #' @export
-get_g_functions.policy_object <- function(object){
+get_g_functions.policy_object <- function(object) {
   getElement(object, "g_functions")
 }
 
 #' @export
-get_q_functions.policy_object <- function(object){
+get_q_functions.policy_object <- function(object) {
   getElement(object, "q_functions")
+}
+
+check_stage <- function(stage, K) {
+  if (missing(stage)) {
+    stop("stage argument is missing.")
+  }
+  is_int <- stage %% 1 == 0
+  if (!(is_int && (length(stage) == 1) && (stage >= 1) && (stage <= K))) {
+    stop("stage must be a positive integer less than or equal to K.")
+  }
 }

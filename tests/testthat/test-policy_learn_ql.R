@@ -1,15 +1,17 @@
 test_that("get_policy.ql returns a policy", {
-  d <- sim_single_stage(200, seed=1)
+  d <- sim_single_stage(200, seed = 1)
   pd <- policy_data(d,
-                    action="A",
-                    covariates = list("Z", "B", "L"),
-                    utility="U")
+    action = "A",
+    covariates = list("Z", "B", "L"),
+    utility = "U"
+  )
 
   pl <- policy_learn()
-  expect_error({
-    p <- get_policy(pl(pd, q_models = q_glm()))
-  },
-  NA
+  expect_error(
+    {
+      p <- get_policy(pl(pd, q_models = q_glm()))
+    },
+    NA
   )
   expect_true(
     inherits(p, what = "policy")
@@ -18,7 +20,6 @@ test_that("get_policy.ql returns a policy", {
     p(pd),
     NA
   )
-
 })
 
 test_that("get_policy_functions.ql agrees with get_policy.ql", {
@@ -33,6 +34,11 @@ test_that("get_policy_functions.ql agrees with get_policy.ql", {
   # not full history:
   pl <- policy_learn()
   po <- pl(pd, q_models = q_glm())
+
+  expect_error(
+    get_policy_functions(po),
+    "stage argument is missing."
+  )
 
   pf_1 <- get_policy_functions(po, stage = 1)
   his_1 <- get_history(pd, stage = 1,
@@ -389,14 +395,18 @@ test_that("policy_learn with type = 'ql' works as intended",{
   expect_s3_class(p(pd), class = "data.table")
 })
 
-test_that("policy_learn with type ql handles varying action sets",{
+test_that("policy_learn with type ql handles varying action sets", {
   d <- sim_two_stage_multi_actions(n = 1e2)
-  pd <- policy_data(data = d,
-                    action = c("A_1", "A_2"),
-                    baseline = c("B", "BB"),
-                    covariates = list(L = c("L_1", "L_2"),
-                                      C = c("C_1", "C_2")),
-                    utility = c("U_1", "U_2", "U_3"))
+  pd <- policy_data(
+    data = d,
+    action = c("A_1", "A_2"),
+    baseline = c("B", "BB"),
+    covariates = list(
+      L = c("L_1", "L_2"),
+      C = c("C_1", "C_2")
+    ),
+    utility = c("U_1", "U_2", "U_3")
+  )
   pl <- policy_learn()
 
   expect_error(
@@ -408,9 +418,10 @@ test_that("policy_learn with type ql handles varying action sets",{
     NA
   )
   expect_error(
-    pe <- policy_eval(pd, policy = get_policy(po),
-                      g_models = list(g_glm(), g_rf())),
+    pe <- policy_eval(pd,
+      policy = get_policy(po),
+      g_models = list(g_glm(), g_rf())
+    ),
     NA
   )
-
 })

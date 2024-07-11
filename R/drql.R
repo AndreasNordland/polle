@@ -1,24 +1,25 @@
-fit_QV_function <- function(history, Z, qv_model, valid_ids){
+fit_QV_function <- function(history, Z, qv_model, valid_ids) {
   action_set <- getElement(history, "action_set")
   stage_action_set <- getElement(history, "stage_action_set")
   stage <- getElement(history, "stage")
   H <- get_H(history)
   stage_id <- unlist(get_id.history(history),
-                     use.names = FALSE)
+    use.names = FALSE
+  )
 
   folds <- NULL
-  if (!is.null(valid_ids)){
+  if (!is.null(valid_ids)) {
     # adapting the validation ids to the current stage:
     stage_valid_ids <- lapply(
       valid_ids,
-      function(vi){
+      function(vi) {
         vi[vi %in% stage_id]
       }
     )
     folds <-
       lapply(
         stage_valid_ids,
-        function(vi){
+        function(vi) {
           which(stage_id %in% vi)
         }
       )
@@ -28,7 +29,7 @@ fit_QV_function <- function(history, Z, qv_model, valid_ids){
   qv_model <- apply(
     Z[, stage_action_set],
     MARGIN = 2,
-    function(z){
+    function(z) {
       qv_model(V_res = z, AH = H, folds = folds)
     }
   )
@@ -44,15 +45,15 @@ fit_QV_function <- function(history, Z, qv_model, valid_ids){
 
   return(qv_function)
 }
+
 #' @export
-predict.QV_function <- function(object, new_history, ...){
+predict.QV_function <- function(object, new_history, ...) {
   id_stage <- get_id_stage(new_history)
   new_H <- get_H(new_history)
   # action set of the new history object
   action_set <- getElement(new_history, "action_set")
   # stage action set of the fitted QV-function
   stage_action_set <- getElement(object, "stage_action_set")
-  stage <- getElement(object, "stage")
   qv_model <- getElement(object, "qv_model")
 
   qv_values <- matrix(NA, nrow = nrow(new_H), ncol = length(action_set))
@@ -60,7 +61,7 @@ predict.QV_function <- function(object, new_history, ...){
 
   qv_values[, action_set %in% stage_action_set] <- sapply(
     qv_model,
-    function(qvm){
+    function(qvm) {
       predict(qvm, new_H)
     }
   )
@@ -77,7 +78,7 @@ predict.QV_function <- function(object, new_history, ...){
 #' by [q_glm()], [q_rf()], [q_sl()] or similar functions.
 #' @returns list of (default) control arguments.
 #' @export
-control_drql <- function(qv_models = q_glm(~.)){
+control_drql <- function(qv_models = q_glm(~.)) {
   control <- as.list(environment())
   return(control)
 }
@@ -91,48 +92,50 @@ drql <- function(policy_data,
                  qv_models, full_history,
                  L, cross_fit_g_models,
                  save_cross_fit_models, future_args,
-                 ...){
+                 ...) {
   K <- get_K(policy_data)
   n <- get_n(policy_data)
   action_set <- get_action_set(policy_data)
   stage_action_sets <- get_stage_action_sets(policy_data)
 
   # input checks:
-  if (!is.null(g_functions)){
-    if(!inherits(g_functions, what = "g_functions"))
+  if (!is.null(g_functions)) {
+    if (!inherits(g_functions, what = "g_functions")) {
       stop("g-functions must be of class 'g_functions'.")
+    }
   }
-  if (is.list(q_models)){
-    if (length(q_models) != K)
+  if (is.list(q_models)) {
+    if (length(q_models) != K) {
       stop("q_models must either be a list of length K or a single Q-model.")
+    }
   }
-  if(is.null(qv_models))
+  if (is.null(qv_models)) {
     stop("qv_models are missing.")
-  if (is.list(qv_models)){
-    if (length(qv_models) != K) stop("qv_models must either be a list of length K or a single QV-model.")
+  }
+  if (is.list(qv_models)) {
+    if (length(qv_models) != K) {
+      stop("qv_models must either be a list of length K or a single QV-model.")
+    }
   }
 
   # getting the observed actions:
   actions <- get_actions(policy_data)
 
-  # getting the IDs:
-  id <- get_id(policy_data)
-
   # getting the observed (complete) utilities:
   utility <- get_utility(policy_data)
 
   # constructing the folds for cross-fitting:
-  if (L > 1){
+  if (L > 1) {
     folds <- split(sample(1:n, n), rep(1:L, length.out = n))
     folds <- lapply(folds, sort)
-  } else{
+  } else {
     folds <- NULL
   }
 
   # (cross-)fitting the g-functions:
   g_functions_cf <- NULL
   valid_ids <- NULL
-  if (!is.null(folds) & cross_fit_g_models == TRUE){
+  if (!is.null(folds) && cross_fit_g_models == TRUE) {
     g_cf <- fit_g_functions_cf(
       policy_data = policy_data,
       g_models = g_models,
@@ -146,22 +149,24 @@ drql <- function(policy_data,
     valid_ids <- getElement(g_cf, "valid_ids")
     rm(g_cf)
   } else {
-    if (is.null(g_functions)){
+    if (is.null(g_functions)) {
       g_functions <- fit_g_functions(policy_data,
-                                     g_models = g_models,
-                                     full_history = g_full_history)
+        g_models = g_models,
+        full_history = g_full_history
+      )
     }
     g_values <- predict(g_functions, policy_data)
   }
 
   # fitting g-functions for determining new realistic actions:
-  if (alpha > 0){
-    if (is.null(g_functions)){
+  if (alpha > 0) {
+    if (is.null(g_functions)) {
       g_functions <- fit_g_functions(policy_data,
-                                     g_models = g_models,
-                                     full_history = g_full_history)
+        g_models = g_models,
+        full_history = g_full_history
+      )
     }
-  } else{
+  } else {
     # g-functions are not saved if alpha == 0:
     g_functions <- NULL
   }
@@ -190,26 +195,26 @@ drql <- function(policy_data,
   q_functions_cf <- list()
   qv_functions <- list()
 
-  for (k in K:1){
-    if (is.null(folds)){
+  for (k in K:1) {
+    if (is.null(folds)) {
       q_step_k <- q_step(
         policy_data = policy_data,
         k = k,
         full_history = q_full_history,
-        Q = Q[, k+1],
+        Q = Q[, k + 1],
         q_models = q_models
       )
       # getting the Q-function, Q-function values and the ID-index:
       q_functions[[k]] <- q_step_k$q_function
       q_values_k <- q_step_k$q_values
       idx_k <- q_step_k$idx_k
-    } else{
+    } else {
       q_step_cf_k <- q_step_cf(
         folds = folds,
         policy_data = policy_data,
         k = k,
         full_history = q_full_history,
-        Q = Q[, k+1],
+        Q = Q[, k + 1],
         q_models = q_models,
         save_cross_fit_models = save_cross_fit_models,
         future_args = future_args
@@ -228,12 +233,12 @@ drql <- function(policy_data,
 
     # calculating the Z-matrix
     Z_1 <- Q_k <- as.matrix(q_values_k[, q_cols, with = FALSE])
-    Z_2 <- (IA_k / G[idx_k, k]) * (Q[idx_k, k+1] - Q_k)
+    Z_2 <- (IA_k / G[idx_k, k]) * (Q[idx_k, k + 1] - Q_k)
     Z_3 <- 0
-    if (k != K){
-      for (r in (k+1):K){
-        Z_3 <- Z_3 + ipw_weight(II[idx_k,(k+1):r], G[idx_k,(k+1):r]) *
-          (Q[idx_k, r+1] - Q[idx_k, r])
+    if (k != K) {
+      for (r in (k + 1):K) {
+        Z_3 <- Z_3 + ipw_weight(II[idx_k, (k + 1):r], G[idx_k, (k + 1):r]) *
+          (Q[idx_k, r + 1] - Q[idx_k, r])
       }
       Z_3 <- (IA_k / G[idx_k, k]) * Z_3
     }
@@ -242,37 +247,49 @@ drql <- function(policy_data,
 
     # getting the history for the QV model:
     qv_history_k <- get_history(policy_data,
-                                stage = k,
-                                full_history = full_history)
+      stage = k,
+      full_history = full_history
+    )
     # fitting the QV-function:
-    if (is.list(qv_models)){
+    if (is.list(qv_models)) {
       qv_model_k <- qv_models[[k]]
-    } else{
+    } else {
       qv_model_k <- qv_models
     }
     qv_function_k <- fit_QV_function(qv_history_k,
-                                     Z = Z,
-                                     qv_model = qv_model_k,
-                                     valid_ids = valid_ids)
+      Z = Z,
+      qv_model = qv_model_k,
+      valid_ids = valid_ids
+    )
     qv_functions[[k]] <- qv_function_k
     # getting the QV-function values:
     qv_values_k <- predict(qv_function_k, new_history = qv_history_k)
 
-    if (alpha != 0){
+    if (alpha != 0) {
       # getting the g-function values for each action:
       g_values_k <- g_values[stage == k, ]
 
       # calculating the realistic actions:
       realistic_actions <- t(apply(g_values_k[, g_cols, with = FALSE],
-                                   MARGIN = 1,
-                                   function(x) x >= alpha))
+        MARGIN = 1,
+        function(x) x >= alpha
+      ))
       # checking that a realistic action exists:
-      if (any(apply(realistic_actions, MARGIN = 1, sum) == 0))
-        stop("Cases with no realistic actions occur. Consider resetting the alpha level.")
+      if (any(apply(realistic_actions, MARGIN = 1, sum) == 0)) {
+        mes <- paste0(
+          "Cases with no realistic actions occur.",
+          " Consider resetting the alpha level."
+        )
+        stop(mes)
+      }
       realistic_actions[which(realistic_actions == FALSE)] <- NA
 
       # getting the action with the maximal realistic QV-function value:
-      dd <- apply(qv_values_k[, qv_cols, with = FALSE] * realistic_actions, MARGIN = 1, which.max)
+      dd <- apply(
+        qv_values_k[, qv_cols, with = FALSE] * realistic_actions,
+        MARGIN = 1,
+        which.max
+      )
     } else {
       dd <- apply(qv_values_k[, qv_cols, with = FALSE], MARGIN = 1, which.max)
     }
@@ -281,21 +298,21 @@ drql <- function(policy_data,
 
     q_d_k <- get_a_values(a = d, action_set = action_set, q_values_k)$P
     Q[idx_k, k] <- q_d_k
-    Q[!idx_k, k] <- Q[!idx_k, k+1]
+    Q[!idx_k, k] <- Q[!idx_k, k + 1]
     II[idx_k, k] <- (A_k == d)
     II[!idx_k, k] <- TRUE
     D[idx_k, k] <- d
-    G[!idx_k,k] <- TRUE
+    G[!idx_k, k] <- TRUE
   }
 
-  if (length(q_functions) > 0){
+  if (length(q_functions) > 0) {
     class(q_functions) <- "nuisance_functions"
     attr(q_functions, "full_history") <- q_full_history
     names(q_functions) <- paste("stage_", 1:K, sep = "")
-  } else{
+  } else {
     q_functions <- NULL
   }
-  if (length(q_functions_cf) == 0){
+  if (length(q_functions_cf) == 0) {
     q_functions_cf <- NULL
   }
   class(qv_functions) <- "nuisance_functions"
@@ -315,49 +332,49 @@ drql <- function(policy_data,
     folds = folds
   )
   out <- remove_null_elements(out)
-  class(out) <- c("drql","policy_object","list")
+  class(out) <- c("drql", "policy_object", "list")
 
   return(out)
 }
 
 #' @rdname get_policy_functions
 #' @export
-get_policy_functions.drql <- function(object, stage, include_g_values = FALSE, ...){
-  stage_action_sets <- getElement(object, "stage_action_sets")
-  stage_action_set <- stage_action_sets[[stage]]; rm(stage_action_sets)
+get_policy_functions.drql <- function(object,
+                                      stage,
+                                      include_g_values = FALSE,
+                                      ...) {
   K <- getElement(object, "K")
-  if(!((stage >= 0) & (stage <= K)))
-    stop("stage must be smaller than or equal to K.")
+  check_stage(stage = stage, K = K)
+  stage_action_sets <- getElement(object, "stage_action_sets")
+  stage_action_set <- stage_action_sets[[stage]]
+  rm(stage_action_sets)
   alpha <- getElement(object, "alpha")
   g_functions <- getElement(object, "g_functions")
-  if (!is.null(g_functions)){
-    g_full_history <- attr(g_functions, "full_history")
-    if (length(g_functions) == K){
+  if (!is.null(g_functions)) {
+    if (length(g_functions) == K) {
       g_function <- g_functions[[stage]]
-    }
-    else{
+    } else {
       g_function <- g_functions[[1]]
     }
   }
   qv_functions <- getElement(object, "qv_functions")
   qv_model <- getElement(qv_functions[[stage]], "qv_model")
-  full_history <- attr(qv_functions, "full_history")
 
-  stage_policy <- function(H){
+  stage_policy <- function(H) {
     qv_values <- sapply(
       qv_model,
-      function(qvm){
+      function(qvm) {
         predict(qvm, H)
       }
     )
 
     g_values <- NULL
-    if (alpha == 0){
+    if (alpha == 0) {
       dd <- apply(qv_values, MARGIN = 1, which.max)
       d <- stage_action_set[dd]
     } else{
       # evaluating the g-function:
-      if (!all(g_function$H_names %in% names(H))){
+      if (!all(g_function$H_names %in% names(H))) {
         mes <- paste(
           "H must contain the columns",
           paste(g_function$H_names, collapse = ","),
@@ -368,9 +385,13 @@ get_policy_functions.drql <- function(object, stage, include_g_values = FALSE, .
       g_values <- predict(g_function$g_model, new_H = H)
 
       # calculating the realistic actions:
-      realistic_actions <- t(apply(g_values, MARGIN = 1, function(x) x >= alpha))
-      if (any(apply(realistic_actions, MARGIN = 1, sum) == 0))
+      realistic_actions <- t(apply(
+        g_values,
+        MARGIN = 1, function(x) x >= alpha
+      ))
+      if (any(apply(realistic_actions, MARGIN = 1, sum) == 0)) {
         stop("Cases with no realistic actions occur. Consider resetting the alpha level.")
+      }
       realistic_actions[which(realistic_actions == FALSE)] <- NA
 
       # getting the action with the maximal realistic Q-function value:

@@ -107,26 +107,25 @@ rql<- function(policy_data, alpha,
 }
 
 #' @export
-get_policy.ql <- function(object){
+get_policy.ql <- function(object) {
   g_functions <- get_g_functions(object)
   q_functions <- get_q_functions(object)
   action_set <- getElement(object, "action_set")
-  K <- getElement(object, "K")
   alpha <- getElement(object, "alpha")
 
   g_cols <- paste("g_", action_set, sep = "")
   q_cols <- paste("Q_", action_set, sep = "")
 
-  policy <- function(policy_data){
+  policy <- function(policy_data) {
     # evaluating the Q-functions:
     q_values <- predict(q_functions, policy_data)
 
-    if (alpha != 0){
+    if (alpha != 0) {
       # evaluating the g-functions:
       g_values <- predict(g_functions, policy_data)
       # calculating the realistic actions:
       realistic_actions <- t(apply(
-        g_values[ , g_cols, with = FALSE],
+        g_values[, g_cols, with = FALSE],
         MARGIN = 1,
         function(x) x >= alpha
       ))
@@ -134,7 +133,7 @@ get_policy.ql <- function(object){
 
       # getting the action with the maximal realistic Q-function value:
       idx <- apply(
-        q_values[ , q_cols, with = FALSE] * realistic_actions,
+        q_values[, q_cols, with = FALSE] * realistic_actions,
         MARGIN = 1,
         which.max
       )
@@ -142,7 +141,7 @@ get_policy.ql <- function(object){
     } else{
       # getting the action with the maximal Q-function value:
       idx <- apply(
-        q_values[ , q_cols, with = FALSE],
+        q_values[, q_cols, with = FALSE],
         MARGIN = 1,
         which.max
       )
@@ -164,23 +163,24 @@ get_policy.ql <- function(object){
 
 #' @rdname get_policy_functions
 #' @export
-get_policy_functions.ql <- function(object, stage, include_g_values = FALSE, ...){
+get_policy_functions.ql <- function(object,
+                                    stage,
+                                    include_g_values = FALSE,
+                                    ...) {
+  K <- getElement(object, "K")
+  check_stage(stage = stage, K = K)
   action_set <- getElement(object, "action_set")
   stage_action_sets <- getElement(object, "stage_action_sets")
-  stage_action_set <- stage_action_sets[[stage]]; rm(stage_action_sets)
-  K <- getElement(object, "K")
-  if(!((stage >= 0) & (stage <= K)))
-    stop("stage must be smaller than or equal to K.")
+  stage_action_set <- stage_action_sets[[stage]]
+  rm(stage_action_sets)
   alpha <- getElement(object, "alpha")
 
   # getting the g-functions:
   g_functions <- getElement(object, "g_functions")
-  if (!is.null(g_functions)){
-    g_full_history <- attr(g_functions, "full_history")
-    if (length(g_functions) == K){
+  if (!is.null(g_functions)) {
+    if (length(g_functions) == K) {
       g_function <- g_functions[[stage]]
-    }
-    else{
+    } else {
       g_function <- g_functions[[1]]
     }
   }
@@ -188,24 +188,31 @@ get_policy_functions.ql <- function(object, stage, include_g_values = FALSE, ...
   # getting the (residual) Q-functions:
   q_functions <- getElement(object, "q_functions")
   q_model <- getElement(q_functions[[stage]], "q_model")
-  AH_names <- getElement(q_functions[[stage]], "AH_names")
-  full_history <- attr(q_functions, "full_history")
 
   # getting the names of the deterministic reward variables:
   deterministic_rewards <- getElement(object, "deterministic_rewards")
-  indicator_deterministic_rewards <- getElement(object, "indicator_deterministic_rewards")
+  indicator_deterministic_rewards <- getElement(
+    object,
+    "indicator_deterministic_rewards"
+  )
 
-  stage_policy <- function(H){
-    if (is.data.frame(H))
+  stage_policy <- function(H) {
+    if (is.data.frame(H)) {
       H <- as.data.table(H)
+    }
 
     # adding zero valued deterministic reward columns if missing
-    if (all(!(deterministic_rewards %in% colnames(H)))){
-      if (indicator_deterministic_rewards == TRUE)
-        warning("deterministic reward variables are missing in 'H' - the default value is set to zero.")
+    if (all(!(deterministic_rewards %in% colnames(H)))) {
+      if (indicator_deterministic_rewards == TRUE) {
+        mes <- paste0(
+          "deterministic reward variables are missing in 'H' - the",
+          " default value is set to zero."
+        )
+        warning(mes)
+      }
       H[, deterministic_rewards] <- 0
     }
-    if (!all(deterministic_rewards %in% colnames(H))){
+    if (!all(deterministic_rewards %in% colnames(H))) {
       tmp <- deterministic_rewards[!(deterministic_rewards %in% colnames(H))]
       H[, tmp] <- 0
       rm(tmp)
@@ -218,19 +225,23 @@ get_policy_functions.ql <- function(object, stage, include_g_values = FALSE, ...
     )
 
     # adding the deterministic rewards
-    q_values <- H[, deterministic_rewards[action_set %in% stage_action_set], with = FALSE] + q_values
+    q_values <- H[
+      , deterministic_rewards[action_set %in% stage_action_set],
+      with = FALSE
+    ] + q_values
     colnames(q_values) <- stage_action_set
 
     # getting
     g_values <- NULL
-    if (alpha == 0){
+    if (alpha == 0) {
       dd <- apply(q_values,
-                  MARGIN = 1,
-                  which.max)
+        MARGIN = 1,
+        which.max
+      )
       d <- stage_action_set[dd]
-    } else{
+    } else {
       # evaluating the g-function:
-      if (!all(g_function$H_names %in% names(H))){
+      if (!all(g_function$H_names %in% names(H))) {
         mes <- paste(
           "H must contain the columns",
           paste(g_function$H_names, collapse = ","),
@@ -241,9 +252,17 @@ get_policy_functions.ql <- function(object, stage, include_g_values = FALSE, ...
       g_values <- predict(g_function$g_model, new_H = H)
 
       # calculating the realistic actions:
-      realistic_actions <- t(apply(g_values, MARGIN = 1, function(x) x >= alpha))
-      if (any(apply(realistic_actions, MARGIN = 1, sum) == 0))
-        stop("Cases with no realistic actions occur. Consider resetting the alpha level.")
+      realistic_actions <- t(apply(
+        g_values,
+        MARGIN = 1, function(x) x >= alpha
+      ))
+      if (any(apply(realistic_actions, MARGIN = 1, sum) == 0)) {
+        mes <- paste0(
+          "Cases with no realistic actions occur.",
+          " Consider resetting the alpha level."
+        )
+        stop(mes)
+      }
       realistic_actions[which(realistic_actions == FALSE)] <- NA
 
       # getting the action with the maximal realistic Q-function value:
@@ -252,8 +271,9 @@ get_policy_functions.ql <- function(object, stage, include_g_values = FALSE, ...
     }
 
     # including the g_values as attributes:
-    if (include_g_values == TRUE)
+    if (include_g_values == TRUE) {
       attr(d, "g_values") <- g_values
+    }
 
     return(d)
   }
