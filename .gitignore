@@ -11,3 +11,5 @@ master_test/
 inst/doc
 /doc/
 /Meta/
+
+inst/misc/subgroup_simulation_toy_example_cache/
