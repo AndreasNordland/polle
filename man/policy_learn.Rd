@@ -11,7 +11,7 @@ policy_learn(
   type = "ql",
   control = list(),
   alpha = 0,
-  threshold = 0,
+  threshold = NULL,
   full_history = FALSE,
   L = 1,
   cross_fit_g_models = TRUE,
@@ -95,7 +95,8 @@ The surrogate 0-1 loss function. The options are
 
 \item{alpha}{Probability threshold for determining realistic actions.}
 
-\item{threshold}{Numeric, threshold for not choosing the reference action.}
+\item{threshold}{Numeric vector, thresholds for not
+choosing the reference action at stage 1.}
 
 \item{full_history}{If \code{TRUE}, the full
 history is used to fit each policy function (e.g. QV-model,

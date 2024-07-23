@@ -26,7 +26,7 @@ policy_eval(
   save_q_functions = TRUE,
   target = "value",
   type = "dr",
-  crossfit_type = "pooled",
+  cross_fit_type = "pooled",
   variance_type = "pooled",
   M = 1,
   future_args = list(future.seed = TRUE),
@@ -43,7 +43,7 @@ policy_eval(
 
 \method{summary}{policy_eval}(object, ...)
 
-\method{estimate}{policy_eval}(x, ..., labels = x$name)
+\method{estimate}{policy_eval}(x, labels = get_element(x, "name", check_name = FALSE), ...)
 
 \method{merge}{policy_eval}(x, y, ..., paired = TRUE)
 
@@ -98,7 +98,7 @@ in the single-stage case with a dichotomous action set.}
 \code{"ipw"} (inverse propensity weighting),
 or \code{"or"} (outcome regression).}
 
-\item{crossfit_type}{Character string.
+\item{cross_fit_type}{Character string.
 Either "stacked", or "pooled", see details.}
 
 \item{variance_type}{Character string. Either "pooled" (default),

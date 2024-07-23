@@ -15,7 +15,8 @@ control_ptl(
 }
 \arguments{
 \item{policy_vars}{Character vector/string or list of character
-vectors/strings. Variable names used to construct the V-restricted policy tree.
+vectors/strings. Variable names used to
+construct the V-restricted policy tree.
 The names must be a subset of the history names, see get_history_names().
 Not passed to \code{policy_tree()}.}
 

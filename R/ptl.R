@@ -340,7 +340,10 @@ ptl <- function(policy_data,
 }
 
 #' @export
-get_policy.ptl <- function(object){
+get_policy.ptl <- function(object, threshold = NULL) {
+  if (!(is.null(threshold) || identical(threshold, 0))) {
+    stop("threshold is not implemented for ptl.")
+  }
   stage_action_sets <- getElement(object, "stage_action_sets")
   K <- getElement(object, "K")
   full_history <- getElement(object, "full_history")

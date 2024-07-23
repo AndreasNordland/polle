@@ -1,4 +1,4 @@
-fit_Q_function <- function(history, Q, q_model){
+fit_Q_function <- function(history, Q, q_model) {
   action_set <- getElement(history, "action_set")
   stage_action_set <- getElement(history, "stage_action_set")
   stage <- getElement(history, "stage")
@@ -13,7 +13,7 @@ fit_Q_function <- function(history, Q, q_model){
     stop("Unable to fit Q-function.")
 
   # checking that all actions in the stage action set occur:
-  if (!all(stage_action_set == sort(unique(A)))){
+  if (!all(stage_action_set == sort(unique(A)))) {
     mes <- "Not all stage actions occur at stage"
     mes <- paste(mes, paste(stage, collapse = ", "))
     mes <- paste(mes, ". Unable to fit Q-function.", sep = "")
@@ -46,15 +46,14 @@ fit_Q_function <- function(history, Q, q_model){
 }
 
 #' @export
-print.Q_function <- function(x, ...){
+print.Q_function <- function(x, ...) {
   y <- x$q_model
-  attr(y,"class") <- NULL
-
+  attr(y, "class") <- NULL
   print(y)
 }
 
 #' @export
-predict.Q_function <- function(object, new_history, ...){
+predict.Q_function <- function(object, new_history, ...) {
   q_model <- getElement(object, "q_model")
   AH_names <- getElement(object, "AH_names")
   # action set of the new history object
@@ -111,7 +110,7 @@ predict.Q_function <- function(object, new_history, ...){
   return(q_values)
 }
 
-q_step <- function(policy_data, k, full_history, Q, q_models){
+q_step <- function(policy_data, k, full_history, Q, q_models) {
 
   if (is.null(q_models))
     stop("Please provide q_models.")
@@ -150,44 +149,51 @@ q_step_cf <- function(folds,
                       Q,
                       q_models,
                       save_cross_fit_models,
-                      future_args){
+                      future_args) {
   stage <- NULL
   id <- get_id(policy_data)
   id_k <- get_id_stage(policy_data)[stage == k]$id
   idx_k <- (id %in% id_k)
   rm(stage)
   K <- get_K(policy_data)
-  future_args <- append(future_args,
-                        list(X = folds,
-                             FUN = function(f){
-                               train_id <- id[-f]
-                               train_policy_data <- subset_id(policy_data, train_id)
-                               train_Q <- Q[-f]
-                               if (train_policy_data$dim$K != K)
-                                 stop("The number of stages varies accross the training folds.")
-                               train_q_step <- q_step(train_policy_data,
-                                                      k = k,
-                                                      full_history = full_history,
-                                                      Q = train_Q,
-                                                      q_models = q_models)
-                               train_q_function <- train_q_step$q_function
+  future_args <- append(
+    future_args,
+    list(
+      X = folds,
+      FUN = function(f) {
+        train_id <- id[-f]
+        train_policy_data <- subset_id(policy_data, train_id)
+        train_Q <- Q[-f]
+        if (train_policy_data$dim$K != K) {
+          stop("The number of stages varies accross the training folds.")
+        }
+        train_q_step <- q_step(train_policy_data,
+          k = k,
+          full_history = full_history,
+          Q = train_Q,
+          q_models = q_models
+        )
+        train_q_function <- train_q_step$q_function
 
-                               valid_id <- id[f]
-                               valid_policy_data <- subset_id(policy_data, valid_id)
-                               valid_history <- get_history(valid_policy_data,
-                                                            stage = k,
-                                                            full_history = full_history)
-                               valid_values <- predict(train_q_function, valid_history)
+        valid_id <- id[f]
+        valid_policy_data <- subset_id(policy_data, valid_id)
+        valid_history <- get_history(valid_policy_data,
+          stage = k,
+          full_history = full_history
+        )
+        valid_values <- predict(train_q_function, valid_history)
 
-                               if (save_cross_fit_models == FALSE)
-                                 train_q_function <- NULL
+        if (save_cross_fit_models == FALSE) {
+          train_q_function <- NULL
+        }
 
-                               out <- list(
-                                 train_q_function = train_q_function,
-                                 valid_values = valid_values
-                               )
-                               return(out)
-                             })
+        out <- list(
+          train_q_function = train_q_function,
+          valid_values = valid_values
+        )
+        return(out)
+      }
+    )
   )
   q_step_cf <- do.call(what = future.apply::future_lapply, future_args)
   q_step_cf <- simplify2array(q_step_cf)
@@ -217,48 +223,58 @@ q_step_cf <- function(folds,
 #' @examples
 #' library("polle")
 #' ### Simulating two-stage policy data
-#' d <- sim_two_stage(2e3, seed=1)
+#' d <- sim_two_stage(2e3, seed = 1)
 #' pd <- policy_data(d,
-#'                   action = c("A_1", "A_2"),
-#'                   covariates = list(L = c("L_1", "L_2"),
-#'                                     C = c("C_1", "C_2")),
-#'                   utility = c("U_1", "U_2", "U_3"))
+#'   action = c("A_1", "A_2"),
+#'   covariates = list(
+#'     L = c("L_1", "L_2"),
+#'     C = c("C_1", "C_2")
+#'   ),
+#'   utility = c("U_1", "U_2", "U_3")
+#' )
 #' pd
 #'
 #' # Defining a static policy (A=1)
 #' pl <- policy_def(1, reuse = TRUE)
 #'
 #' # fitting a Q-model for each stage:
-#' q_functions <- fit_Q_functions(policy_data = pd,
-#'                                policy_actions = pl(pd),
-#'                                q_models = list(q_glm(), q_glm()),
-#'                                full_history = TRUE)
+#' q_functions <- fit_Q_functions(
+#'   policy_data = pd,
+#'   policy_actions = pl(pd),
+#'   q_models = list(q_glm(), q_glm()),
+#'   full_history = TRUE
+#' )
 #' q_functions
 fit_Q_functions <- function(policy_data,
                             policy_actions,
                             q_models,
-                            full_history = FALSE){
+                            full_history = FALSE) {
   K <- get_K(policy_data)
   n <- get_n(policy_data)
   action_set <- get_action_set(policy_data)
 
   # input checks:
-  if (is.null(q_models))
+  if (is.null(q_models)) {
     stop("Please provide q_models.")
+  }
 
   mes <- "q_models must be a single q_models or a list of K q_models's."
-  if (is.list(q_models)){
-    tmp <- all(unlist(lapply(q_models, function(gm) inherits(gm, "q_model"))))
-    if (!tmp)
+  if (is.list(q_models)) {
+    tmp <- all(unlist(lapply(q_models, function(qm) inherits(qm, "q_model"))))
+    if (!tmp) {
       stop(mes)
+    }
     rm(tmp)
-    if (length(q_models) != K)
+    if (length(q_models) != K) {
       stop(mes)
-  } else{
-    if (!inherits(q_models, "q_model"))
+    }
+  } else {
+    if (!inherits(q_models, "q_model")) {
       stop(mes)
-    if (full_history == TRUE)
+    }
+    if (full_history == TRUE) {
       stop("full_history must be FALSE when a single q-model is provided.")
+    }
   }
 
   # getting the IDs:
@@ -270,17 +286,17 @@ fit_Q_functions <- function(policy_data,
   # (n) vector with entries U_i:
   U <- utility$U
   # (n X K+1) matrix with entries Q_k(H_{k,i}, d_k(H_{k,i})), Q_{K+1} = U:
-  Q <- matrix(nrow = n, ncol = K+1)
-  Q[, K+1] <- U
+  Q <- matrix(nrow = n, ncol = K + 1)
+  Q[, K + 1] <- U
 
   # fitting the Q-functions:
   q_functions <- list()
-  for (k in K:1){
+  for (k in K:1) {
     q_step_k <- q_step(
       policy_data = policy_data,
       k = k,
       full_history = full_history,
-      Q = Q[, k+1],
+      Q = Q[, k + 1],
       q_models = q_models
     )
     # getting the Q-function, Q-function values and the ID-index
@@ -295,7 +311,7 @@ fit_Q_functions <- function(policy_data,
 
     # inserting the Q-function values under the policy in Q
     Q[idx_k, k] <- q_d_values_k
-    Q[!idx_k, k] <- Q[!idx_k, k+1]
+    Q[!idx_k, k] <- Q[!idx_k, k + 1]
   }
 
   # setting names, classes and attributes:

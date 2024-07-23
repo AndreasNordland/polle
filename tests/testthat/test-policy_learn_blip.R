@@ -1,4 +1,4 @@
-test_that("policy_learn with type blip works as intended",{
+test_that("policy_learn with type blip works as intended", {
   d <- sim_two_stage(200, seed=1)
 
   pd <- policy_data(d,
@@ -142,6 +142,7 @@ test_that("get_policy_functions.blip returns a list of policy functions", {
 
 
 test_that("get_policy.blip returns a policy", {
+
   d <- sim_two_stage(200, seed = 1)
   d$A_2 <- paste(d$A_2, "test", sep = "")
   d$A_1 <- as.character(d$A_1)
@@ -237,7 +238,17 @@ test_that("policy_learn with type blip is persistent", {
 
   d <- get_policy(po)(pd)$d
 
-  fix <- c(1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0)
+  fix <- c(
+    1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0,
+    0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0,
+    1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,
+    0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1,
+    0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1,
+    1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0,
+    1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0,
+    0, 0
+  )
   fix <- as.character(fix)
 
   expect_equal(
@@ -246,7 +257,41 @@ test_that("policy_learn with type blip is persistent", {
   )
 })
 
-test_that("policy_learn with type blip uses the threshold argument,", {
+test_that("policy_learn with type blip passes the threshold argument in the single-stage case,", {
+  d <- sim_single_stage(200, seed = 1)
+  pd <- policy_data(d,
+    action = "A",
+    covariates = list("Z", "B", "L"),
+    utility = "U"
+  )
+
+  pl <- policy_learn(
+    type = "blip",
+    threshold = c(1, 0.5),
+    control = control_blip()
+  )
+  po <- pl(pd, q_models = q_glm(), g_models = g_glm())
+
+  expect_equal(
+    po$threshold,
+    c(0.5, 1)
+  )
+
+  pl <- policy_learn(
+    type = "blip",
+    threshold = c(3),
+    control = control_blip()
+  )
+  po2 <- pl(pd, q_models = q_glm(), g_models = g_glm())
+
+  ## the choosen treshold(s) should not influence the blip-function:
+  expect_equal(
+    po$blip_functions,
+    po2$blip_functions
+  )
+})
+
+test_that("get_policy.blip uses the threshold argument", {
   d <- sim_single_stage(200, seed = 1)
   pd <- policy_data(d,
     action = "A",
@@ -268,6 +313,79 @@ test_that("policy_learn with type blip uses the threshold argument,", {
   d <- get_policy(po)(pd)$d
 
   dd <- c("0", "1")[(pred$blip > 1) + 1]
+  dd0 <- c("0", "1")[(pred$blip > 0) + 1]
+
+  expect_equal(
+    d,
+    dd
+  )
+
+  d <- get_policy(po, threshold = 1)(pd)$d
+
+  expect_equal(
+    d,
+    dd
+  )
+
+  d <- get_policy(po, threshold = 0)(pd)$d
+
+  expect_true(
+    any(!(d == dd))
+  )
+
+  d <- get_policy(po, threshold = c(0, 1))[[2]](pd)$d
+
+  expect_equal(
+    d,
+    dd
+  )
+
+  d <- get_policy(po, threshold = c(0, 1))[[1]](pd)$d
+
+  expect_equal(
+    d,
+    dd0
+  )
+})
+
+
+test_that("policy_learn with type blip uses the threshold argument in the two-stage case,", {
+  d <- sim_two_stage(n = 1e2, seed = 1)
+  d$U <- d$U_1 + d$U_2 + d$U_3 - 2 * d$A_2
+  pd <- policy_data(d,
+    action = c("A_1", "A_2"),
+    covariates = list(
+      L = c("L_1", "L_2"),
+      C = c("C_1", "C_2")
+    ),
+    utility = "U"
+  )
+
+  pl <- policy_learn(
+    type = "blip",
+    threshold = 1,
+    control = control_blip()
+  )
+  po <- pl(pd, q_models = q_glm(), g_models = g_glm())
+
+  ## first stage:
+  his <- get_history(pd, stage = 1)
+  pred <- predict.blip_function(po$blip_functions$stage_1, new_history = his)
+  ## hist(x = pred$blip, breaks = 100)
+  dd <- c("0", "1")[(pred$blip > 1) + 1] # use the threshold in the first stage
+  d <- get_policy(po)(pd)[stage == 1]$d
+
+  expect_equal(
+    d,
+    dd
+  )
+
+  ## second stage:
+  his <- get_history(pd, stage = 2)
+  pred <- predict.blip_function(po$blip_functions$stage_2, new_history = his)
+  ## hist(x = pred$blip, breaks = 100)
+  dd <- c("0", "1")[(pred$blip > 0) + 1] # usual optimal policy in the second stage
+  d <- get_policy(po)(pd)[stage == 2]$d
 
   expect_equal(
     d,
@@ -300,6 +418,54 @@ test_that("get_policy and get_policy_functions agree with type blip and a non-ze
   his <- get_history(pd)
   H <- get_H(his)
   dd <- pf(H)
+
+  expect_equal(
+    d,
+    dd
+  )
+})
+
+test_that("get_policy.blip() returns multiple policies when given multiple thresholds.", {
+
+  d <- sim_single_stage(200, seed = 1)
+  pd <- policy_data(d,
+    action = "A",
+    covariates = list("Z", "B", "L"),
+    utility = "U"
+  )
+
+  pl <- policy_learn(
+    type = "blip",
+    threshold = c(0, 1, 2),
+    control = control_blip()
+  )
+  po <- pl(pd, q_models = q_glm(), g_models = g_glm())
+
+  pol_list <- get_policy(po)
+
+  expect_true(
+    is.list(pol_list),
+    length(pol_list) == 3,
+    all(unlist(lapply(pol_list, function(x) inherits(x, what = "policy"))))
+  )
+
+  expect_no_error(
+    pol_list[[1]](pd)
+  )
+  expect_no_error(
+    pol_list[[2]](pd)
+  )
+  expect_no_error(
+    pol_list[[3]](pd)
+  )
+
+
+  his <- get_history(pd)
+  pred <- predict.blip_function(po$blip_functions$stage_1, new_history = his)
+  ## hist(x = pred$blip, breaks = 100)
+
+  d <- pol_list[[2]](pd)$d
+  dd <- c("0", "1")[(pred$blip > 1) + 1]
 
   expect_equal(
     d,

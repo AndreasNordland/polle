@@ -190,15 +190,47 @@ test_that("policy_learn returns an error if type != 'blip' and threshold != 0.",
   )
 
   expect_no_error(
-    policy_learn(type = "ptl", control = control_ptl(), threshold = 0)
+    policy_learn(type = "ptl", control = control_ptl(), threshold = NULL)
   )
 
   expect_error(
     policy_learn(type = "ptl", control = control_ptl(), threshold = 1),
-    "The threshold argument is only implemented for type = 'blip'. Please set threshold = 0."
+    "The threshold argument is only implemented for type = 'blip'. Please set threshold = NULL."
   )
 
   expect_no_error(
     policy_learn(type = "blip", control = control_blip(), threshold = 1)
+  )
+})
+
+test_that("set_threshold", {
+  expect_equal(
+    set_threshold(selection = c(1, 2, 3)),
+    c(1, 2, 3)
+  )
+
+  expect_equal(
+    set_threshold(threshold = c(1, 3), selection = c(1, 2, 3)),
+    c(1, 3)
+  )
+
+  expect_equal(
+    set_threshold(threshold = c(3, 1), selection = c(1, 2, 3)),
+    c(1, 3)
+  )
+
+  expect_equal(
+    set_threshold(threshold = c(), selection = c(1, 2, 3)),
+    c(1, 2, 3)
+  )
+
+  expect_error(
+    set_threshold(threshold = c(1.5, 3), selection = c(1, 2, 3)),
+    "Invalid threshold. Choose between 1, 2, 3."
+  )
+
+  expect_equal(
+    set_threshold(threshold = c(3, 1.5), selection = c(1, 2, 3), overwrite = TRUE),
+    c(1.5, 3)
   )
 })

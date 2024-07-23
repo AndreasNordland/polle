@@ -410,7 +410,10 @@ get_policy_functions.drql <- function(object,
 }
 
 #' @export
-get_policy.drql <- function(object){
+get_policy.drql <- function(object, threshold = NULL) {
+  if (!(is.null(threshold) || identical(threshold, 0))) {
+    stop("threshold is not implemented for drql.")
+  }
   g_functions <- get_g_functions(object)
   qv_functions <- getElement(object, "qv_functions")
 
@@ -421,36 +424,38 @@ get_policy.drql <- function(object){
   g_cols <- paste("g_", action_set, sep = "")
   qv_cols <- paste("QV_", action_set, sep = "")
 
-  policy <- function(policy_data){
-    if (get_K(policy_data) != K)
+  policy <- function(policy_data) {
+    if (get_K(policy_data) != K) {
       stop("The policy do not have the same number of stages as the policy data object.")
+    }
     # evaluating the Q-functions:
     qv_values <- predict(qv_functions, policy_data)
 
-    if (alpha != 0){
+    if (alpha != 0) {
       # evaluating the g-functions:
       g_values <- predict(g_functions, policy_data)
       # calculating the realistic actions:
       realistic_actions <- t(apply(
-        g_values[ , g_cols, with = FALSE],
+        g_values[, g_cols, with = FALSE],
         MARGIN = 1,
         function(x) x >= alpha
       ))
-      if (any(apply(realistic_actions, MARGIN = 1, sum) == 0))
+      if (any(apply(realistic_actions, MARGIN = 1, sum) == 0)) {
         stop("Cases with no realistic actions occur. Consider resetting the alpha level.")
+      }
       realistic_actions[which(realistic_actions == FALSE)] <- NA
 
       # getting the action with the maximal realistic Q-function value:
       dd <- apply(
-        qv_values[ , qv_cols, with = FALSE] * realistic_actions,
+        qv_values[, qv_cols, with = FALSE] * realistic_actions,
         MARGIN = 1,
         which.max
       )
       d <- action_set[dd]
-    } else{
+    } else {
       # getting the action with the maximal Q-function value:
       dd <- apply(
-        qv_values[ , qv_cols, with = FALSE],
+        qv_values[, qv_cols, with = FALSE],
         MARGIN = 1,
         which.max
       )
@@ -459,7 +464,7 @@ get_policy.drql <- function(object){
 
     # collecting the policy actions
     policy_actions <- get_id_stage(policy_data)
-    policy_actions[, d:= d]
+    policy_actions[, d := d]
 
     return(policy_actions)
   }

@@ -22,13 +22,13 @@ check_actions <- function(actions, policy_data){
 #' @rdname policy_eval
 #' @export
 coef.policy_eval <- function(object, ...) {
-  return(object$value_estimate)
+  return(get_element(object, "coef"))
 }
 
 #' @rdname policy_eval
 #' @export
 IC.policy_eval <- function(x, ...) {
-  res <- cbind(getElement(x, "IC"))
+  res <- cbind(get_element(x, "IC", check_name = FALSE))
   return(res)
 }
 
@@ -57,21 +57,33 @@ summary.policy_eval <- function(object, ...){
 
 #' @rdname policy_eval
 #' @export
-estimate.policy_eval <- function(x, ..., labels=x$name) {
+estimate.policy_eval <- function(x,
+                                 labels = get_element(x,
+                                   "name",
+                                   check_name = FALSE
+                                 ),
+                                 ...) {
   p <- length(coef(x))
   if (is.null(labels)) {
-    if (p==1) {
-      "value"
+    target <- get_element(x, "target")
+    if (p == 1) {
+      labels <- target
     } else {
-      labels <- paste0("value", seq(p))
+      labels <- paste0(target, seq(p))
     }
   }
   ic <- IC(x)
-  if (is.null(ic)){
-    est <- lava::estimate(NULL, coef=coef(x), vcov=NULL, ...) # labels=labels
+  if (is.null(ic)) {
+    est <- lava::estimate(
+      NULL,
+      coef = coef(x),
+      vcov = NULL,
+      labels = labels,
+      ...
+    )
+  } else {
+    est <- lava::estimate(NULL, coef = coef(x), IC = ic, labels = labels, ...)
   }
-  else
-    est <- lava::estimate(NULL, coef=coef(x), IC=ic, labels=labels, ...)
   return(est)
 }
 

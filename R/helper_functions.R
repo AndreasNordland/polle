@@ -1,28 +1,27 @@
 am <- Vectorize(
-  function(a, action_set){
+  function(a, action_set) {
     am <- action_set %in% a
     return(am)
   },
   vectorize.args = "a"
 )
-action_matrix <- function(a, action_set){
+action_matrix <- function(a, action_set) {
   t(am(a = a, action_set = action_set))
 }
 
-get_a_values <- function(a, action_set, values){
+get_a_values <- function(a, action_set, values) {
   stopifnot(
     is.data.table(values),
     all(key(values) == c("id", "stage")),
-    length(action_set) == ncol(values[ ,-c("id", "stage"), with = FALSE]),
+    length(action_set) == ncol(values[, -c("id", "stage"), with = FALSE]),
     length(a) == nrow(values)
   )
-  P <- action_matrix(a = a, action_set = action_set) * values[ ,-c("id", "stage"), with = FALSE]
+  P <- action_matrix(a = a, action_set = action_set) * values[, -c("id", "stage"), with = FALSE]
   P <- apply(P, 1, sum, na.rm = TRUE)
-  out <- data.table(values[ , c("id", "stage"), with = FALSE], P = P)
+  out <- data.table(values[, c("id", "stage"), with = FALSE], P = P)
 
   return(out)
 }
-
 
 ipw_weight <- function(D, G){
   stopifnot(
@@ -31,13 +30,13 @@ ipw_weight <- function(D, G){
     all(dim(G) == dim(D))
   )
 
-  if(is.vector(D)){
+  if (is.vector(D)) {
     out <- D / G
-  } else{
+  } else {
     out <- apply(D / G, 1, prod, na.rm = TRUE)
   }
 
-  if(any(is.na(out))){
+  if (any(is.na(out))) {
     mes <- "The policy dictates actions with fitted probability 0. Unable to calculate inverse probability weights."
     stop(mes)
   }
@@ -45,13 +44,30 @@ ipw_weight <- function(D, G){
   return(out)
 }
 
-colprod <- function(M){
-  if(is.vector(M)){
+colprod <- function(M) {
+  if (is.vector(M)) {
     out <- M
-  } else{
+  } else {
     out <- apply(M, 1, prod, na.rm = TRUE)
   }
   return(out)
 }
 
-remove_null_elements <- function(x)  x[!sapply(x, is.null)]
+remove_null_elements <- function(x) {
+  Filter(Negate(is.null), x)
+}
+
+get_element <- function(x, name, check_name = TRUE) {
+  if (!is.character(name) || length(name) != 1) {
+    stop("'name' must be a character string.")
+  }
+  if (check_name == TRUE) {
+    if (!(name %in% names(x))) {
+      stop("named element does not exist.")
+    }
+  }
+  ## element with exact match:
+  y <- getElement(x, name = name)
+
+  return(y)
+}

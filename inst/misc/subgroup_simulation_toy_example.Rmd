@@ -85,6 +85,7 @@ sim_d <- function(n,
   if (potential_outcomes == TRUE) {
     out$U0 <- U0
     out$U1 <- U1
+
   }
   return(out)
 }

@@ -4,10 +4,13 @@
 \alias{get_policy}
 \title{Get Policy}
 \usage{
-get_policy(object)
+get_policy(object, threshold = NULL)
 }
 \arguments{
 \item{object}{Object of class \link{policy_object} or \link{policy_eval}.}
+
+\item{threshold}{Numeric vector.
+Thresholds for the first stage policy function.}
 }
 \value{
 function of class \link{policy}.
@@ -20,34 +23,43 @@ policy data object as input and returns the policy actions.
 \examples{
 library("polle")
 ### Two stages:
-d <- sim_two_stage(5e2, seed=1)
+d <- sim_two_stage(5e2, seed = 1)
 pd <- policy_data(d,
-                  action = c("A_1", "A_2"),
-                  baseline = c("BB"),
-                  covariates = list(L = c("L_1", "L_2"),
-                                    C = c("C_1", "C_2")),
-                  utility = c("U_1", "U_2", "U_3"))
+  action = c("A_1", "A_2"),
+  baseline = c("BB"),
+  covariates = list(
+    L = c("L_1", "L_2"),
+    C = c("C_1", "C_2")
+  ),
+  utility = c("U_1", "U_2", "U_3")
+)
 pd
 
 ### V-restricted (Doubly Robust) Q-learning
 
 # specifying the learner:
-pl <- policy_learn(type = "drql",
-                   control = control_drql(qv_models = q_glm(formula = ~ C)))
+pl <- policy_learn(
+  type = "drql",
+  control = control_drql(qv_models = q_glm(formula = ~C))
+)
 
 # fitting the policy (object):
-po <- pl(policy_data = pd,
-         q_models = q_glm(),
-         g_models = g_glm())
+po <- pl(
+  policy_data = pd,
+  q_models = q_glm(),
+  g_models = g_glm()
+)
 
 # getting and applying the policy:
 head(get_policy(po)(pd))
 
 # the policy learner can also be evaluated directly:
-pe <- policy_eval(policy_data = pd,
-                  policy_learn = pl,
-                  q_models = q_glm(),
-                  g_models = g_glm())
+pe <- policy_eval(
+  policy_data = pd,
+  policy_learn = pl,
+  q_models = q_glm(),
+  g_models = g_glm()
+)
 
 # getting and applying the policy again:
 head(get_policy(pe)(pd))
