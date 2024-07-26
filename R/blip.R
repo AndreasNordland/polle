@@ -47,7 +47,7 @@ predict.blip_function <- function(object, new_history, ...) {
   new_H <- get_H(new_history)
   blip_model <- getElement(object, "blip_model")
   blip <- predict(blip_model, new_H)
-  blip <- data.table(id_stage, blip = blip)
+  blip <- data.table(id_stage, blip = as.vector(unlist(blip)))
   setkeyv(blip, c("id", "stage"))
 
   return(blip)
