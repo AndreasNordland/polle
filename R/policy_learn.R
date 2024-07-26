@@ -222,7 +222,7 @@ policy_learn <- function(type = "ql",
     if (length(name) != 1) {
       stop("name must be a character string.")
     }
-    if (length(threshold) > 1) {
+    if (length(threshold) > 1 || any(threshold != 0)) {
       name <- paste(name, "(eta=", threshold, ")", sep = "")
     }
   }

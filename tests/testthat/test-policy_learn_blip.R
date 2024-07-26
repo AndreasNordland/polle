@@ -348,7 +348,6 @@ test_that("get_policy.blip uses the threshold argument", {
   )
 })
 
-
 test_that("policy_learn with type blip uses the threshold argument in the two-stage case,", {
   d <- sim_two_stage(n = 1e2, seed = 1)
   d$U <- d$U_1 + d$U_2 + d$U_3 - 2 * d$A_2
@@ -426,7 +425,6 @@ test_that("get_policy and get_policy_functions agree with type blip and a non-ze
 })
 
 test_that("get_policy.blip() returns multiple policies when given multiple thresholds.", {
-
   d <- sim_single_stage(200, seed = 1)
   pd <- policy_data(d,
     action = "A",

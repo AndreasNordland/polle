@@ -39,7 +39,7 @@ User-defined policies are created using `policy_def()`. In this case we define a
 selecting action `'1'`:
 
 ```{r poldef}
-p1 <- policy_def(policy_functions = '1', reuse = TRUE, name = "A=1")
+p1 <- policy_def(policy_functions = '1', reuse = TRUE, name = "(A=1)")
 ```
 
 As we want to apply the same policy function at both stages we set `reuse = TRUE`.
@@ -79,7 +79,7 @@ Merging `estimate` objects allow the user to get inference for transformations o
 Here we get inference for the average treatment effect, both as a difference and as a ratio:
 
 ```{r estimate_merge}
-p0 <- policy_def(policy_functions = 0, reuse = TRUE, name = "A=0")
+p0 <- policy_def(policy_functions = 0, reuse = TRUE, name = "(A=0)")
 pe0 <- policy_eval(policy_data = pd,
                    policy = p0,
                    type = "dr")

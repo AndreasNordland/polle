@@ -39,11 +39,24 @@ policy_eval(
 
 \method{vcov}{policy_eval}(object, ...)
 
-\method{print}{policy_eval}(x, ...)
+\method{print}{policy_eval}(
+  x,
+  digits = 4L,
+  width = 35L,
+  std.error = TRUE,
+  level = 0.95,
+  p.value = TRUE,
+  ...
+)
 
 \method{summary}{policy_eval}(object, ...)
 
-\method{estimate}{policy_eval}(x, labels = get_element(x, "name", check_name = FALSE), ...)
+\method{estimate}{policy_eval}(
+  x,
+  labels = get_element(x, "name", check_name = FALSE),
+  level = 0.95,
+  ...
+)
 
 \method{merge}{policy_eval}(x, y, ..., paired = TRUE)
 
@@ -99,7 +112,7 @@ in the single-stage case with a dichotomous action set.}
 or \code{"or"} (outcome regression).}
 
 \item{cross_fit_type}{Character string.
-Either "stacked", or "pooled", see details.}
+Either "stacked", or "pooled", see details. (Only used if \code{M > 1} and target = "subgroup")}
 
 \item{variance_type}{Character string. Either "pooled" (default),
 "stacked" or "complete", see details. (Only used if \code{M > 1})}
@@ -114,6 +127,16 @@ Either "stacked", or "pooled", see details.}
 
 \item{...}{Additional arguments.}
 
+\item{digits}{Integer. Number of printed digits.}
+
+\item{width}{Integer. Width of printed parameter name.}
+
+\item{std.error}{Logical. Should the std.error be printed.}
+
+\item{level}{Numeric. Level of confidence limits.}
+
+\item{p.value}{Logical. Should the p.value for associated confidence level be printed.}
+
 \item{labels}{Name(s) of the estimate(s).}
 
 \item{paired}{\code{TRUE} indicates that the estimates are based on
@@ -122,16 +145,19 @@ the same data sample.}
 \value{
 \code{policy_eval()} returns an object of class "policy_eval".
 The object is a list containing the following elements:
-\item{\code{value_estimate}}{Numeric. The estimated value of the policy.}
+\item{\code{coef}}{Numeric vector. The estimated target parameter:
+policy value or subgroup average treatment effect.}
+\item{\code{IC}}{Numeric matrix. Estimated influence curve associated with
+\code{coef}.}
 \item{\code{type}}{Character string. The type of evaluation ("dr", "ipw",
 "or").}
-\item{\code{IC}}{Numeric vector. Estimated influence curve associated with
-the value estimate.}
-\item{\code{value_estimate_ipw}}{(only if \code{type = "dr"}) Numeric.
-The estimated value of the policy based on inverse probability weighting.}
-\item{\code{value_estimate_or}}{(only if \code{type = "dr"}) Numeric.
-The estimated value of the policy based on outcome regression.}
+\item{\code{target}}{Character string. The target parameter ("value" or "subgroup")}
 \item{\code{id}}{Character vector. The IDs of the observations.}
+\item{\code{name}}{Character vector. Names for the each element in \code{coef}.}
+\item{\code{coef_ipw}}{(only if \code{type = "dr"}) Numeric vector.
+Estimate of \code{coef} based solely on inverse probability weighting.}
+\item{\code{coef_or}}{(only if \code{type = "dr"}) Numeric vector.
+Estimate of \code{coef} based solely on outcome regression.}
 \item{\code{policy_actions}}{\link{data.table} with keys id and stage. Actions
 associated with the policy for every observation and stage.}
 \item{\code{policy_object}}{(only if \code{policy = NULL} and \code{M = 1})
@@ -142,10 +168,17 @@ fitted g-functions. Object of class "nuisance_functions".}
 \item{\code{q_functions}}{(only if \code{M = 1}) The
 fitted Q-functions. Object of class "nuisance_functions".}
 \item{\code{q_values}}{The fitted Q-function values.}
+\item{\code{Z}}{(only if \code{target = "subgroup"})
+Matrix with the doubly robust stage 1 scores for each action.}
+\item{\code{subgroup_indicator}}{(only if \code{target = "subgroup"})
+Logical matrix identifying subjects in the subgroup.
+Each column represents a different subgroup threshold.}
 \item{\code{cross_fits}}{(only if \code{M > 1}) List containing the
 "policy_eval" object for every (validation) fold.}
 \item{\code{folds}}{(only if \code{M > 1}) The (validation) folds used
 for cross-fitting.}
+\item{\code{cross_fit_type}}{Character string.}
+\item{\code{variance_type}}{Character string.}
 }
 \description{
 \code{policy_eval()} is used to estimate
@@ -196,12 +229,12 @@ single model, it is assumed that \eqn{g_1(h_1, a_1) = ... = g_K(h_K, a_K)}.
 
 If \code{target = "value"} and \code{type = "or"}
 \code{policy_eval()} returns the empirical estimate of
-the value (\code{value_estimate}):
+the value (\code{coef}):
 \deqn{E\left[Q^d_1(H_1, d_1(\cdot))\right]}
 
 If \code{target = "value"} and \code{type = "ipw"} \code{policy_eval()}
 returns the empirical estimates of
-the value (\code{value_estimate}) and influence curve (\code{IC}):
+the value (\code{coef}) and influence curve (\code{IC}):
 \deqn{E\left[\left(\prod_{k=1}^K I\{A_k = d_k(\cdot)\}
 g_k(H_k, A_k)^{-1}\right) U\right].}
 \deqn{\left(\prod_{k=1}^K I\{A_k =
@@ -211,23 +244,39 @@ I\{A_k = d_k(\cdot)\} g_k(H_k, A_k)^{-1}\right) U\right].}
 
 If \code{target = "value"} and
 \code{type = "dr"} \code{policy_eval} returns the empirical estimates of
-the value (\code{value_estimate}) and influence curve (\code{IC}):
+the value (\code{coef}) and influence curve (\code{IC}):
 \deqn{E[Z_1(d,g,Q^d)(O)],}
 \deqn{Z_1(d, g, Q^d)(O) - E[Z_1(d,g, Q^d)(O)],}
 where
 \deqn{
-Z_1(d, g, Q^d)(O) = Q^d_1(H_1 , d_1(\cdot)) + \sum_{r = 1}^K \prod_{j = 1}^{r}
+Z_1(d, g, Q^d)(O) = Q^d_1(H_1 , d_1(\cdot)) +
+\sum_{r = 1}^K \prod_{j = 1}^{r}
 \frac{I\{A_j = d_j(\cdot)\}}{g_{j}(H_j, A_j)}
 \{Q_{r+1}^d(H_{r+1} , d_{r+1}(\cdot)) - Q_{r}^d(H_r , d_r(\cdot))\}.
 }
 
 If \code{target = "subgroup"}, \code{type = "dr"}, \code{K = 1},
-and \eqn{\mathcal{A} = \{0,1\}} \code{policy_eval()}
+and \eqn{\mathcal{A} = \{0,1\}}, \code{policy_eval()}
 returns the empirical estimates of the subgroup average
-treatment effect (\code{value_estimate}) and influence curve (\code{IC}):
-\deqn{E[Z_1(1,g,Q)(O) - Z_1(0,g,Q)(O) | d(\cdot) = 1],}
-\deqn{\frac{1}{P(d(\cdot) = 1)} I\{d(\cdot) = 1\}
-\Big\{Z_1(1,g,Q)(O) - Z_1(0,g,Q)(O) - E[Z_1(1,g,Q)(O) - Z_1(0,g,Q)(O) | d(\cdot) = 1]\Big\}.}
+treatment effect (\code{coef}) and influence curve (\code{IC}):
+\deqn{E[Z_1(1,g,Q)(O) - Z_1(0,g,Q)(O) | d_1(\cdot) = 1],}
+\deqn{\frac{1}{P(d_1(\cdot) = 1)} I\{d_1(\cdot) = 1\}
+\Big\{Z_1(1,g,Q)(O) - Z_1(0,g,Q)(O) - E[Z_1(1,g,Q)(O)
+- Z_1(0,g,Q)(O) | d_1(\cdot) = 1]\Big\}.}
+
+Applying \eqn{M}-fold cross-fitting using the \{M\} argument, let
+\deqn{\mathcal{Z}_{1,m}(a) = \{Z_1(a, g_m, Q_m^d)(O): O\in \mathcal{O}_m \}.}
+
+If \code{target = "subgroup"}, \code{type = "dr"}, \code{K = 1},
+\eqn{\mathcal{A} = \{0,1\}}, and \code{cross_fit_type = "pooled"},
+\code{policy_eval()} returns the estimate \deqn{\frac{1}{{N^{-1} \sum_{i =
+1}^N I\{d(H_i) = 1\}}} N^{-1} \sum_{m=1}^M \sum_{(Z, H) \in \mathcal{Z}_{1,m}
+\times \mathcal{H}_{1,m}} I\{d_1(H) = 1\} \left\{Z(1)-Z(0)\right\}} If
+\code{cross_fit_type = "stacked"} the returned estimate is \deqn{M^{-1}
+\sum_{m = 1}^M \frac{1}{{n^{-1} \sum_{h \in \mathcal{H}_{1,m}} I\{d(h) =
+1\}}} n^{-1} \sum_{(Z, H) \in \mathcal{Z}_{1,m} \times \mathcal{H}_{1,m}}
+I\{d_1(H) = 1\} \left\{Z(1)-Z(0)\right\},} where for ease of notation we let
+the integer \eqn{n} be the number of oberservations in each fold.
 }
 \section{S3 generics}{
 
@@ -321,14 +370,20 @@ pe2
 head(get_policy_actions(pe2))
 }
 \references{
-van der Laan, Mark J., and Alexander R. Luedtke. "Targeted learning of the
-mean outcome under an optimal dynamic treatment rule." Journal of causal
-inference 3.1 (2015): 61-95. \doi{10.1515/jci-2013-0022}\cr
-\cr
+van der Laan, Mark J., and Alexander R. Luedtke.
+"Targeted learning of the mean outcome under an optimal dynamic treatment rule."
+Journal of causal inference 3.1 (2015): 61-95.
+\doi{10.1515/jci-2013-0022}
+\cr \cr
 Tsiatis, Anastasios A., et al. Dynamic
-treatment regimes: Statistical methods
-for precision medicine. Chapman
-and Hall/CRC, 2019. \doi{10.1201/9780429192692}.
+treatment regimes: Statistical methods for precision medicine. Chapman and
+Hall/CRC, 2019. \doi{10.1201/9780429192692}.
+\cr \cr
+Victor Chernozhukov, Denis
+Chetverikov, Mert Demirer, Esther Duflo, Christian Hansen, Whitney Newey,
+James Robins, Double/debiased machine learning for treatment and structural
+parameters, The Econometrics Journal, Volume 21, Issue 1, 1 February 2018,
+Pages C1–C68, \doi{10.1111/ectj.12097}.
 }
 \seealso{
 \link[lava:IC]{lava::IC}, \link[lava:estimate.default]{lava::estimate.default}.

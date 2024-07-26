@@ -199,6 +199,7 @@ test_that("policy_eval with target 'sub_effect' has the correct outputs: test1."
     }
 
     d <- sim_single_stage(1e2, seed = 1)
+    d$A <- c(rep(0, 50), rep(1, 50))
     pd <- policy_data(d, action = "A", covariates = c("Z"), utility = "U")
     p <- policy_def(function(Z) (Z > 0) * 1)
 
@@ -213,6 +214,7 @@ test_that("policy_eval with target 'sub_effect' has the correct outputs: test1."
     test_output(pe)
 
     ## cross-fitting: stacked estimator
+    set.seed(1)
     expect_no_error(
         pe <- policy_eval(
             policy_data = pd,
@@ -226,6 +228,7 @@ test_that("policy_eval with target 'sub_effect' has the correct outputs: test1."
     test_output(pe)
 
     ## cross-fitting: pooled estimator
+    set.seed(1)
     expect_no_error(
         pe <- policy_eval(
             policy_data = pd,

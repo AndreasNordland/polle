@@ -218,7 +218,10 @@ dtrlearn2_owl <- function(policy_data,
 }
 
 #' @export
-get_policy.owl <- function(object){
+get_policy.owl <- function(object, threshold = NULL){
+  if (!(is.null(threshold) || identical(threshold, 0))) {
+    stop("threshold is not implemented for owl.")
+  }
   owl_object <- getElement(object, "owl_object")
   reuse_scales <- getElement(object, "reuse_scales")
   X_scales <- getElement(object, "X_scales")

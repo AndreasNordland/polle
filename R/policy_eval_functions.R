@@ -44,14 +44,28 @@ vcov.policy_eval <- function(object, ...) {
 
 #' @rdname policy_eval
 #' @export
-print.policy_eval <- function(x, ...) {
-  print(summary(x, ...))
+print.policy_eval <- function(x,
+                              digits = 4L,
+                              width = 35L,
+                              std.error = TRUE,
+                              level = 0.95,
+                              p.value = TRUE,
+                              ...) {
+  est <- estimate(x, level = level, ...)
+  print(
+    est,
+    digits = digits,
+    width = width,
+    std.error = std.error,
+    p.value = p.value,
+    ...
+  )
 }
 
 
 #' @rdname policy_eval
 #' @export
-summary.policy_eval <- function(object, ...){
+summary.policy_eval <- function(object, ...) {
   lava::estimate(object, ...)
 }
 
@@ -62,6 +76,7 @@ estimate.policy_eval <- function(x,
                                    "name",
                                    check_name = FALSE
                                  ),
+                                 level = 0.95,
                                  ...) {
   p <- length(coef(x))
   if (is.null(labels)) {
@@ -82,7 +97,14 @@ estimate.policy_eval <- function(x,
       ...
     )
   } else {
-    est <- lava::estimate(NULL, coef = coef(x), IC = ic, labels = labels, ...)
+    est <- lava::estimate(
+      NULL,
+      coef = coef(x),
+      IC = ic,
+      labels = labels,
+      level = level,
+      ...
+    )
   }
   return(est)
 }
