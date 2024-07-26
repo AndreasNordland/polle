@@ -148,69 +148,86 @@ test_that("fit_g_function_cf saves the cross-fitted models",{
 })
 
 test_that("g_models checks formula input", {
-  d <- sim_two_stage(1e2, seed=1)
+  d <- sim_two_stage(1e2, seed = 1)
   pd <- policy_data(d,
-                    action = c("A_1", "A_2"),
-                    baseline = c("BB", "B"),
-                    covariates = list(L = c("L_1", "L_2"),
-                                      C = c("C_1", "C_2")),
-                    utility = c("U_1", "U_2", "U_3"))
+    action = c("A_1", "A_2"),
+    baseline = c("BB", "B"),
+    covariates = list(
+      L = c("L_1", "L_2"),
+      C = c("C_1", "C_2")
+    ),
+    utility = c("U_1", "U_2", "U_3")
+  )
 
   p_dynamic <- policy_def(
-    policy_functions = list(function(L_1) (L_1>0)*1,
-                            function(C_2) (C_2>0)*1),
+    policy_functions = list(
+      function(L_1) (L_1 > 0) * 1,
+      function(C_2) (C_2 > 0) * 1
+    ),
     reuse = FALSE
   )
 
-  expect_error(policy_eval(policy_data = pd,
-                           policy = p_dynamic,
-                           g_models = g_glm(formula = A~X)), "object 'X' not found when calling 'g_glm' with formula:
+  expect_error(policy_eval(
+    policy_data = pd,
+    policy = p_dynamic,
+    g_models = g_glm(formula = A ~ X)
+  ), "object 'X' not found when calling 'g_glm' with formula:
 AA ~ X")
-  expect_error(policy_eval(policy_data = pd,
-                           policy = p_dynamic,
-                           g_models = g_sl(formula = a~X)), "object 'X' not found when calling model.frame with formula:
+  expect_error(policy_eval(
+    policy_data = pd,
+    policy = p_dynamic,
+    g_models = g_sl(formula = a ~ X)
+  ), "object 'X' not found when calling model.frame with formula:
 a ~ X")
-  expect_error(policy_eval(policy_data = pd,
-                           policy = p_dynamic,
-                           g_models = g_rf(formula = ~X)), "object 'X' not found when calling model.frame with formula:
+  expect_error(policy_eval(
+    policy_data = pd,
+    policy = p_dynamic,
+    g_models = g_rf(formula = ~X)
+  ), "object 'X' not found when calling model.frame with formula:
 ~X")
-  expect_error(policy_eval(policy_data = pd,
-                           policy = p_dynamic,
-                           g_models = g_glmnet(formula = ~X)), "object 'X' not found when calling model.frame with formula:
+  expect_error(policy_eval(
+    policy_data = pd,
+    policy = p_dynamic,
+    g_models = g_glmnet(formula = ~X)
+  ), "object 'X' not found when calling model.frame with formula:
 AA ~ X")
-  expect_error(policy_eval(policy_data = pd,
-                           policy = p_dynamic,
-                           g_models = g_empir(formula = ~X)), "The g-model formula ~X is invalid.")
+  expect_error(policy_eval(
+    policy_data = pd,
+    policy = p_dynamic,
+    g_models = g_empir(formula = ~X)
+  ), "The g-model formula ~X is invalid.")
 })
 
-test_that("g_rf runs:",{
-  d1 <- sim_single_stage(200, seed=1)
+
+test_that("g_rf runs:", {
+  d1 <- sim_single_stage(200, seed = 1)
   d1$BB <- sample(c("group 1", "group & 2", "group & 3"), size = 200, replace = TRUE)
   pd1 <- policy_data(d1,
-                     action="A",
-                     covariates = list("Z", "B", "L", "BB"),
-                     utility="U")
+    action = "A",
+    covariates = list("Z", "B", "L", "BB"),
+    utility = "U"
+  )
 
-  expect_error(
+  expect_no_error(
     pe <- policy_eval(
       policy_data = pd1,
       policy_learn = policy_learn(type = "ql", alpha = 0.05),
       g_models = g_rf(formula = ~.),
       g_full_history = FALSE,
       type = "ipw"
-    ),
-    NA
+    )
   )
-
 })
 
-test_that("g_sl formats data correctly via the formula",{
-  d1 <- sim_single_stage(200, seed=1)
+
+test_that("g_sl formats data correctly via the formula", {
+  d1 <- sim_single_stage(200, seed = 1)
   d1$BB <- sample(c("group 1", "group & 2", "group & 3"), size = 200, replace = TRUE)
   pd1 <- policy_data(d1,
-                     action="A",
-                     covariates = list("Z", "B", "L", "BB"),
-                     utility="U")
+    action = "A",
+    covariates = list("Z", "B", "L", "BB"),
+    utility = "U"
+  )
 
   library("SuperLearner")
   env <- as.environment("package:SuperLearner")
@@ -226,24 +243,26 @@ test_that("g_sl formats data correctly via the formula",{
   )
 })
 
-test_that("g_sl can find user-defined learners",{
-  d1 <- sim_single_stage(200, seed=1)
+test_that("g_sl can find user-defined learners", {
+  d1 <- sim_single_stage(200, seed = 1)
   d1$BB <- sample(c("group 1", "group & 2", "group & 3"), size = 200, replace = TRUE)
   pd1 <- policy_data(d1,
-                     action="A",
-                     covariates = list("Z", "B", "L", "BB"),
-                     utility="U")
+    action = "A",
+    covariates = list("Z", "B", "L", "BB"),
+    utility = "U"
+  )
 
   library("SuperLearner")
   env <- as.environment("package:SuperLearner")
   env <- new.env(parent = env)
-  env$SL.test <- function (Y, X, newX, family, obsWeights, model = TRUE, ...)
-  {
+  env$SL.test <- function(Y, X, newX, family, obsWeights, model = TRUE, ...) {
     if (is.matrix(X)) {
       X = as.data.frame(X)
     }
-    fit.glm <- glm(Y ~ ., data = X, family = family, weights = obsWeights,
-                   model = model)
+    fit.glm <- glm(Y ~ .,
+      data = X, family = family, weights = obsWeights,
+      model = model
+    )
     if (is.matrix(newX)) {
       newX = as.data.frame(newX)
     }
@@ -253,28 +272,34 @@ test_that("g_sl can find user-defined learners",{
     out <- list(pred = pred, fit = fit)
     return(out)
   }
-  env$predict.SL.test <- function (object, newdata, ...)
-  {
+  env$predict.SL.test <- function(object, newdata, ...) {
     if (is.matrix(newdata)) {
       newdata = as.data.frame(newdata)
     }
-    pred <- predict(object = object$object, newdata = newdata,
-                    type = "response")
+    pred <- predict(
+      object = object$object, newdata = newdata,
+      type = "response"
+    )
     pred
   }
 
-  g_model <- g_sl(formula = ~.,
-                  SL.library = "SL.test",
-                  env = env)
+  g_model <- g_sl(
+    formula = ~.,
+    SL.library = "SL.test",
+    env = env
+  )
   his <- get_history(pd1)
 
-  expect_error({
-
-      g_model(H = polle:::get_H(his),
-              A = polle:::get_A(his),
-              action_set = pd1$action_set)
-
-  },NA)
+  expect_error(
+    {
+      g_model(
+        H = polle:::get_H(his),
+        A = polle:::get_A(his),
+        action_set = pd1$action_set
+      )
+    },
+    NA
+  )
 })
 
 test_that("g_glmnet formats data correctly via the formula",{

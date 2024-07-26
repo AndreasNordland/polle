@@ -72,7 +72,8 @@
 #' \code{"linear"}, \code{"poly"}, \code{"radial"}.
 #' }
 #' @param alpha Probability threshold for determining realistic actions.
-#' @param threshold Numeric, threshold for not choosing the reference action.
+#' @param threshold Numeric vector, thresholds for not
+#' choosing the reference action at stage 1.
 #' @param full_history If \code{TRUE}, the full
 #' history is used to fit each policy function (e.g. QV-model,
 #' policy tree). If FALSE, the single stage/
@@ -170,7 +171,7 @@
 policy_learn <- function(type = "ql",
                          control = list(),
                          alpha = 0,
-                         threshold = 0,
+                         threshold = NULL,
                          full_history = FALSE,
                          L = 1,
                          cross_fit_g_models = TRUE,
@@ -187,8 +188,15 @@ policy_learn <- function(type = "ql",
   if (!(alpha >= 0 && alpha < 0.5)) {
     stop("alpha must be numeric and in [0, 0.5).")
   }
-  if (!(is.numeric(threshold) && (length(threshold) == 1))) {
-    stop("threshold must be numeric.")
+  threshold_indicator <- !is.null(threshold)
+  if (threshold_indicator == TRUE) {
+    if (!(is.numeric(threshold) && (length(threshold) >= 1))) {
+      stop("threshold must be numeric (vector).")
+    }
+    threshold <- unique(sort(threshold))
+  }
+  if (threshold_indicator == FALSE) {
+    threshold <- 0
   }
   if (!(is.logical(full_history) && (length(full_history) == 1))) {
     stop("full_history must be TRUE or FALSE")
@@ -213,6 +221,9 @@ policy_learn <- function(type = "ql",
     name <- as.character(name)
     if (length(name) != 1) {
       stop("name must be a character string.")
+    }
+    if (length(threshold) > 1 || any(threshold != 0)) {
+      name <- paste(name, "(eta=", threshold, ")", sep = "")
     }
   }
 
@@ -267,10 +278,10 @@ policy_learn <- function(type = "ql",
     stop(mes)
   }
 
-  if ((threshold != 0) && (call != "blip")) {
+  if ((threshold_indicator == TRUE) && (call != "blip")) {
     mes <- paste0(
       "The threshold argument is only implemented for type = 'blip'. ",
-      "Please set threshold = 0."
+      "Please set threshold = NULL."
     )
     stop(mes)
   }

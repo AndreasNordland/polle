@@ -5,6 +5,7 @@ output:
     fig_caption: true
     toc: true    
     toc_depth: 2
+    mathjax: "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML.js"
 vignette: >
   %\VignetteIndexEntry{optimal_subgroup}
   %\VignetteEngine{knitr::rmarkdown}
@@ -43,14 +44,14 @@ E\left[U^{(1)} - U^{(0)} \big | d^\eta_0(V) = 1 \right],
 which under consistency, positivity and randomization is identified as
 
 \begin{align*}
-E\left[Z_0(1,g,Q)(O) - Z_0(0,g,Q)(O) \big | d^\eta_0(V) = 1 \right],
+E\left[Z(1,g_0,Q_0)(O) - Z(0,g_0,Q_0)(O) \big | d^\eta_0(V) = 1 \right],
 \end{align*}
 
-where $Z_0(a,g,Q)(O)$ is the doubly robust score for treatment $a$ and
+where $Z(a,g,Q)(O)$ is the doubly robust score for treatment $a$ and
 
 \begin{align*}
 d^\eta_0(v) &= I\{B_0(v) > \eta\}\\
-B_0(v) &= E\left[Z_0(1,g,Q)(O) - Z_0(0,g,Q)(O) \big | V = v \right]
+B_0(v) &= E\left[Z(1,g_0,Q_0)(O) - Z(0,g_0,Q_0)(O) \big | V = v \right]
 \end{align*}
 
 
@@ -106,7 +107,7 @@ pl1 <- policy_learn(
 
 When then apply the policy learner based on the correctly
 specified nuisance models. Furthermore, we extract
-the corresponding policy actions, where $\hat d(Z,L) = 1$
+the corresponding policy actions, where $d_N(Z,L) = 1$
 identifies the optimal subgroup for $\eta = 1$:
 
 ```{r}
@@ -157,7 +158,25 @@ can be directly estimated using `policy_eval()` via the `target` argument:
   policy_data = pd,
   policy_learn = pl1,
   target = "subgroup"
-))
+ ))
+```
+
+We can also estimate the subgroup average treatment effect for a set of thresholds at once:
+
+```{r}
+pl_set <- policy_learn(
+  type = "blip",
+  control = control_blip(blip_models = q_glm(~ W + L)),
+  threshold = c(0, 1)
+)
+
+policy_eval(
+  policy_data = pd,
+  g_models = g_glm(~ 1),
+  q_models = q_glm(~ A * (W + L)),
+  policy_learn = pl_set,
+  target = "subgroup"
+)
 ```
 
 ## Asymptotics

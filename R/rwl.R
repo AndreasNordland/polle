@@ -97,7 +97,10 @@ dyntxregime_rwl <- function(policy_data,
 }
 
 #' @export
-get_policy.rwl <- function(object){
+get_policy.rwl <- function(object, threshold = NULL){
+  if (!(is.null(threshold) || identical(threshold, 0))) {
+    stop("threshold is not implemented for rwl.")
+  }
   rwl_object <- getElement(object, "rwl_object")
   action_set <- getElement(object, "action_set")
   K <- getElement(object, "K")

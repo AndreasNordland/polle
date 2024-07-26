@@ -107,7 +107,10 @@ rql<- function(policy_data, alpha,
 }
 
 #' @export
-get_policy.ql <- function(object) {
+get_policy.ql <- function(object, threshold = NULL) {
+  if (!(is.null(threshold) || identical(threshold, 0))) {
+    stop("threshold is not implemented for ql.")
+  }
   g_functions <- get_g_functions(object)
   q_functions <- get_q_functions(object)
   action_set <- getElement(object, "action_set")

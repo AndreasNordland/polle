@@ -1,4 +1,3 @@
-
 test_that("policy_eval with target = 'sub_effect' checks inputs.", {
     d <- sim_single_stage(1e2, seed = 1)
     pd <- policy_data(d, action = "A", covariates = c("Z"), utility = "U")
@@ -47,6 +46,7 @@ test_that("policy_eval with target = 'sub_effect' checks inputs.", {
     )
 })
 
+
 test_that("policy_eval with target 'subgroup' agrees with targeted::cate.", {
     n <- 1e3
     Z <- rnorm(n = n)
@@ -89,8 +89,8 @@ test_that("policy_eval with target 'subgroup' agrees with targeted::cate.", {
     )
 
     expect_equal(
-        pe$IC,
-        ca$estimate$IC[, "factor(d)1"] |> unname()
+        IC(pe),
+        ca$estimate$IC[, "factor(d)1"] |> unname() |> matrix()
     )
 
     ##
@@ -104,7 +104,7 @@ test_that("policy_eval with target 'subgroup' agrees with targeted::cate.", {
         g_models = g_glm(~1),
         q_models = q_glm(~ A * Z),
         target = "sub_effect",
-        crossfit_type = "pooled",
+        cross_fit_type = "pooled",
         variance_type = "pooled",
         M = 2
     )
@@ -125,8 +125,8 @@ test_that("policy_eval with target 'subgroup' agrees with targeted::cate.", {
     )
 
     expect_equal(
-        pe$IC,
-        ca$estimate$IC[, "factor(d)1"] |> unname()
+        IC(pe),
+        ca$estimate$IC[, "factor(d)1"] |> unname() |> matrix()
     )
 
     ##
@@ -140,7 +140,7 @@ test_that("policy_eval with target 'subgroup' agrees with targeted::cate.", {
         g_models = g_glm(~1),
         q_models = q_glm(~ A * Z),
         target = "sub_effect",
-        crossfit_type = "stacked",
+        cross_fit_type = "stacked",
         variance_type = "pooled",
         M = 2
     )
@@ -172,12 +172,12 @@ test_that("policy_eval with target 'sub_effect' has the correct outputs: test1."
     test_output <- function(pe) {
         ## value_estimate
         expect_true(
-            !is.null(pe$value_estimate) & is.numeric(pe$value_estimate)
+            !is.null(coef(pe)) && is.numeric(coef(pe))
         )
 
         ## IC should be zero for Z < 0
         expect_true(
-            all(pe$IC[d$Z <= 0] == 0)
+            all(IC(pe)[d$Z <= 0] == 0)
         )
 
         ## id
@@ -199,6 +199,7 @@ test_that("policy_eval with target 'sub_effect' has the correct outputs: test1."
     }
 
     d <- sim_single_stage(1e2, seed = 1)
+    d$A <- c(rep(0, 50), rep(1, 50))
     pd <- policy_data(d, action = "A", covariates = c("Z"), utility = "U")
     p <- policy_def(function(Z) (Z > 0) * 1)
 
@@ -213,26 +214,28 @@ test_that("policy_eval with target 'sub_effect' has the correct outputs: test1."
     test_output(pe)
 
     ## cross-fitting: stacked estimator
+    set.seed(1)
     expect_no_error(
         pe <- policy_eval(
             policy_data = pd,
             policy = p,
             target = "subgroup",
             M = 2,
-            crossfit_type = "stacked",
+            cross_fit_type = "stacked",
             variance_type = "stacked"
         )
     )
     test_output(pe)
 
     ## cross-fitting: pooled estimator
+    set.seed(1)
     expect_no_error(
         pe <- policy_eval(
             policy_data = pd,
             policy = p,
             target = "sub_effect",
             M = 2,
-            crossfit_type = "pooled",
+            cross_fit_type = "pooled",
             variance_type = "pooled"
         )
     )
@@ -245,7 +248,7 @@ test_that("policy_eval with target 'sub_effect' has the correct outputs: test1."
             policy = p,
             target = "subgroup",
             M = 2,
-            crossfit_type = "pooled",
+            cross_fit_type = "pooled",
             variance_type = "complete"
         )
     )
@@ -253,8 +256,7 @@ test_that("policy_eval with target 'sub_effect' has the correct outputs: test1."
 })
 
 test_that("policy_eval with target 'subgroup' has the correct outputs: test2.", {
-
-  z <- 1:1e2
+    z <- 1:1e2
     a <- c(rep(1, 50), rep(2, 50))
     y <- a * 2
     p <- c(rep(1, 25), rep(2, 25), rep(1, 25), rep(2, 25))
@@ -299,8 +301,8 @@ test_that("policy_eval with target 'subgroup' has the correct outputs: test2.", 
     )
 
     expect_equal(
-        sub$IC,
-        ref_IC
+        IC(sub),
+        matrix(ref_IC)
     )
 
     ##
@@ -326,8 +328,8 @@ test_that("policy_eval with target 'subgroup' has the correct outputs: test2.", 
     )
 
     expect_equal(
-        sub$IC,
-        ref_IC
+        IC(sub),
+        matrix(ref_IC)
     )
 })
 

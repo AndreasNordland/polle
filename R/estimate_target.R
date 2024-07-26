@@ -1,13 +1,20 @@
-value <- function(target = "value",
-                  type,
-                  policy_data,
-                  policy, g_functions,
-                  q_functions) {
+estimate_target <- function(target = "value",
+                            type,
+                            K,
+                            action_set,
+                            actions,
+                            policy_actions,
+                            g_values,
+                            q_values,
+                            utility) {
   args <- list(
-    policy_data = policy_data,
-    policy = policy,
-    g_functions = g_functions,
-    q_functions = q_functions
+    K = K,
+    action_set = action_set,
+    actions = actions,
+    policy_actions = policy_actions,
+    g_values = g_values,
+    q_values = q_values,
+    utility = utility
   )
 
   if (target == "value") {
@@ -33,12 +40,13 @@ value <- function(target = "value",
   return(out)
 }
 
-dr_subgroup <- function(policy_data,
-                          policy,
-                          g_functions,
-                          q_functions) {
-  # getting the number of stages:
-  K <- get_K(policy_data)
+dr_subgroup <- function(K,
+                        action_set,
+                        actions,
+                        policy_actions,
+                        g_values,
+                        q_values,
+                        utility) {
   if (K != 1) {
     mes <- paste0(
       "subgroup average treatment effect evaluation",
@@ -46,9 +54,6 @@ dr_subgroup <- function(policy_data,
     )
     stop(mes)
   }
-
-  # getting the action set and stage action set:
-  action_set <- get_action_set(policy_data)
   if (length(action_set) != 2) {
     mes <- paste0(
       "subgroup average treatment effect evaluation is not ",
@@ -56,28 +61,13 @@ dr_subgroup <- function(policy_data,
     )
     stop(mes)
   }
-  # getting the observed actions:
-  actions <- get_actions(policy_data)
 
-  # getting the policy actions:
-  policy_actions <- policy(policy_data)
-
-  # checking that the policy actions comply with the stage action sets:
-  check_actions(
-    actions = policy_actions,
-    policy_data = policy_data
-  )
-
-  # getting the g-function values:
-  g_values <- predict(g_functions, policy_data)
-
-  # getting the Q-function values:
-  q_values <- predict(q_functions, policy_data)
-
-  ## calculating the doubly robust score for each treatment:
+  ##
+  ## calculating the doubly robust score for each treatment
+  ##
 
   ## (n X action_set) matrix with entries  I(A = a)
-  II <- matrix(nrow = get_n(policy_data), ncol = length(action_set))
+  II <- matrix(nrow = nrow(actions), ncol = length(action_set))
   for (j in seq_along(action_set)) {
     IIA <- actions[["A"]]
     II[, j] <- (IIA == action_set[j])
@@ -91,7 +81,7 @@ dr_subgroup <- function(policy_data,
   Q <- as.matrix(q_values[, -c("id", "stage"), with = FALSE])
 
   # (n) vector with entries U:
-  U <- get_utility(policy_data)$U
+  U <- utility$U
 
   # calculating the doubly robust (uncentralized) score for each treatment:
   Z <- Q + II / G * apply(Q, 2, function(q) U - q)
@@ -108,57 +98,34 @@ dr_subgroup <- function(policy_data,
   ## calculating the subgroup indicator:
   subgroup_indicator <- (policy_actions[["d"]] == action_set[2])
 
-  ## calculating the subgroup blip estimate:
-  subgroup_blip_estimate <- mean(blip[subgroup_indicator])
+  ## calculating the subgroup average treatment effect:
+  sate <- mean(blip[subgroup_indicator])
 
-  ## calculating the influence curve for the subgroup blip estimate:
+  ## calculating the influence curve for the subgroup average treatment effect:
   IC <- 1 / mean(subgroup_indicator) * subgroup_indicator *
-    (blip - subgroup_blip_estimate)
+    (blip - sate)
 
   out <- list(
-    value_estimate = subgroup_blip_estimate,
+    coef = sate,
     IC = IC,
     Z = Z,
-    subgroup_indicator = subgroup_indicator,
-    id = get_id(policy_data),
-    policy_actions = policy_actions,
-    g_values = g_values,
-    q_values = q_values
+    subgroup_indicator = subgroup_indicator
   )
 
   return(out)
 }
 
 
-dr_value <- function(policy_data,
-                     policy,
-                     g_functions,
-                     q_functions) {
-  # getting the number of stages:
-  K <- get_K(policy_data)
-
-  # getting the action set and stage action set:
-  action_set <- get_action_set(policy_data)
-
-  # getting the observed actions:
-  actions <- get_actions(policy_data)
-
-  # getting the policy actions:
-  policy_actions <- policy(policy_data)
-
-  # checking that the policy actions comply with the stage action sets:
-  check_actions(
-    actions = policy_actions,
-    policy_data = policy_data
-  )
-
-  # getting the g-function values:
-  g_values <- predict(g_functions, policy_data)
-
-  # getting the Q-function values:
-  q_values <- predict(q_functions, policy_data)
-
-  ### calculating the doubly robust score:
+dr_value <- function(K,
+                     action_set,
+                     actions,
+                     policy_actions,
+                     g_values,
+                     q_values,
+                     utility) {
+  ##
+  ## calculating the doubly robust score for the policy value
+  ##
 
   # (n X K) matrix with entries I(d_k(H_k) = A_k):
   IIA <- dcast(actions, id ~ stage, value.var = "A")[, -c("id"), with = FALSE]
@@ -180,8 +147,8 @@ dr_value <- function(policy_data,
   G <- dcast(g_d_values, id ~ stage, value.var = "P")[, -c("id"), with = FALSE]
   G <- as.matrix(G)
 
-  # (n) vector with entries U_i:
-  U <- get_utility(policy_data)$U
+  # (n) vector with entries U:
+  U <- utility$U
 
   # (n X K+1) matrix with entries Q_k(H_{k,i}, d_k(H_{k,i})), Q_{K+1} = U:
   q_d_values <- get_a_values(
@@ -210,11 +177,17 @@ dr_value <- function(policy_data,
     Zd <- Zd + ipw_weight(II[, 1:k], G = G[, 1:k]) * (Q[, k + 1] - Q[, k])
   }
 
-  # calculating the IPW and OR scores
+  ##
+  ## calculating the IPW and OR scores
+  ##
+
   Zd_ipw <- ipw_weight(II, G = G) * U
   Zd_or <- Q[, 1]
 
-  # output checks:
+  ##
+  ## output checks
+  ##
+
   stopifnot(
     !all(is.na(Zd)),
     !all(is.na(Zd_ipw)),
@@ -222,39 +195,25 @@ dr_value <- function(policy_data,
   )
 
   out <- list(
-    value_estimate = mean(Zd),
+    coef = mean(Zd),
     IC = Zd - mean(Zd),
-    value_estimate_ipw = mean(Zd_ipw),
-    value_estimate_or = mean(Zd_or),
-    id = get_id(policy_data),
-    policy_actions = policy_actions,
-    g_values = g_values,
-    q_values = q_values
+    coef_ipw = mean(Zd_ipw),
+    coef_or = mean(Zd_or)
   )
 
   return(out)
 }
 
-or_value <- function(policy_data,
-                     policy,
-                     q_functions,
+or_value <- function(K,
+                     action_set,
+                     actions,
+                     policy_actions,
+                     q_values,
                      ...) {
-  # getting the action set:
-  action_set <- get_action_set(policy_data)
 
-  # getting the policy actions:
-  policy_actions <- policy(policy_data)
-
-  # checking that the policy actions comply with the stage action sets:
-  check_actions(
-    actions = policy_actions,
-    policy_data = policy_data
-  )
-
-  # getting the Q-function values:
-  q_values <- predict(q_functions, policy_data)
-
-  ### calculating the score:
+  ##
+  ## calculating the outcome regression score
+  ##
 
   # (n X K) matrix with entries Q_k(d_k(H_k), H_k)
   q_d_values <- get_a_values(
@@ -270,47 +229,34 @@ or_value <- function(policy_data,
 
   Zd_or <- Q[, 1]
 
-  # output checks:
+  ##
+  ## output checks
+  ##
+
   stopifnot(
     all(!is.na(Zd_or))
   )
 
   out <- list(
-    value_estimate = mean(Zd_or),
-    IC = NULL,
-    id = get_id(policy_data),
-    policy_actions = policy_actions,
-    q_values = q_values
+    coef = mean(Zd_or),
+    IC = NULL
   )
   return(out)
 }
 
-ipw_value <- function(policy_data,
-                      policy,
-                      g_functions,
+ipw_value <- function(K,
+                      action_set,
+                      actions,
+                      policy_actions,
+                      g_values,
+                      utility,
                       ...) {
-  # getting the action set:
-  action_set <- get_action_set(policy_data)
-
-  # getting the observed actions:
-  actions <- get_actions(policy_data)
-
-  # getting the policy actions:
-  policy_actions <- policy(policy_data)
-
-  # checking that the policy actions comply with the stage action sets:
-  check_actions(
-    actions = policy_actions,
-    policy_data = policy_data
-  )
-
-  # getting the g-function values:
-  g_values <- predict(g_functions, policy_data)
-
-  ### calculating the score:
+  ##
+  ## calculating the inverse probability score
+  ##
 
   # (n) vector with entries U_i:
-  U <- get_utility(policy_data)$U
+  U <- utility$U
 
   # (n X K) matrix with entries I(d_k(H_k) = A_k):
   IIA <- as.matrix(dcast(
@@ -338,17 +284,17 @@ ipw_value <- function(policy_data,
 
   Zd_ipw <- ipw_weight(II, G = G) * U
 
-  # output checks:
+  ##
+  ## output checks
+  ##
+
   stopifnot(
     !all(is.na(Zd_ipw))
   )
 
   out <- list(
-    value_estimate = mean(Zd_ipw),
-    IC = Zd_ipw - mean(Zd_ipw),
-    id = get_id(policy_data),
-    policy_actions = policy_actions,
-    g_values = g_values
+    coef = mean(Zd_ipw),
+    IC = Zd_ipw - mean(Zd_ipw)
   )
   return(out)
 }

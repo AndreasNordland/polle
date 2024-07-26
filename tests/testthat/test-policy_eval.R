@@ -92,6 +92,7 @@ test_that("policy_eval checks inputs.", {
     ),
     "Provide either policy or policy_learn."
   )
+
   expect_error(
     policy_eval(
       policy_data = pd,
@@ -258,8 +259,7 @@ test_that("policy_eval checks inputs.", {
   })
 })
 
-
-test_that("policy_eval runs on a subset of the data with missing actions.", {
+test_that("policy_eval runs on a subset of the data with missing actions from the action set.", {
   d1 <- sim_single_stage(1e2, seed = 1)
   pd1 <- policy_data(d1, action = "A", covariates = c("Z"), utility = "U")
 
@@ -280,12 +280,12 @@ test_that("policy_eval runs on a subset of the data with missing actions.", {
     NA
   )
   expect_equal(
-    pe2_ipw$value_estimate,
+    coef(pe2_ipw),
     0
   )
   expect_equal(
-    pe2_ipw$IC,
-    rep(0, get_n(pd2))
+    IC(pe2_ipw),
+    matrix(rep(0, get_n(pd2)))
   )
 
   ## or
@@ -303,7 +303,7 @@ test_that("policy_eval runs on a subset of the data with missing actions.", {
     NA
   )
   expect_equal(
-    pe2_or$IC,
+    IC(pe2_or),
     NULL
   )
 })
@@ -346,6 +346,7 @@ test_that("policy_eval handles varying stage action sets.", {
   )
 })
 
+
 test_that("policy_eval with target = 'value' runs when cross-fitting.", {
   d <- sim_single_stage(1e2, seed = 1)
   pd <- policy_data(d, action = "A", covariates = c("Z"), utility = "U")
@@ -362,7 +363,7 @@ test_that("policy_eval with target = 'value' runs when cross-fitting.", {
   )
 
   expect_true(
-    is.numeric(pe_pooled$value_estimate)
+    is.numeric(coef(pe_pooled))
   )
 
   set.seed(1)
@@ -376,8 +377,8 @@ test_that("policy_eval with target = 'value' runs when cross-fitting.", {
   )
 
   expect_equal(
-    pe_pooled$value_estimate,
-    pe_stacked$value_estimate
+    coef(pe_pooled),
+    coef(pe_stacked)
   )
 
   expect_true(
@@ -441,7 +442,7 @@ test_that("policy_eval with target = 'value' agrees with targeted::lava", {
 
   expect_equal(
     coef(ca_dml2$estimate)["(Intercept)"] |> unname(),
-    pe_dml2$value_estimate
+    coef(pe_dml2)
   )
 
   expect_equal(
@@ -450,7 +451,8 @@ test_that("policy_eval with target = 'value' agrees with targeted::lava", {
   )
 })
 
-test_that("policy_eval with target 'value' has the correct outputs.", {
+
+test_that("policy_eval with target 'value' has the correct outputs in the single-stage case.", {
   z <- 1:1e2
   a <- c(rep(1, 50), rep(2, 50))
   y <- a * 2
@@ -490,12 +492,12 @@ test_that("policy_eval with target 'value' has the correct outputs.", {
   )
 
   expect_equal(
-    pe$IC,
-    ref_IC
+    IC(pe),
+    matrix(ref_IC)
   )
 
   ##
-  ## cross-fitting: default
+  ## cross-fitting: default (pooled)
   ##
 
   ## in each training, the empirical propensity is no longer 0.5
@@ -516,8 +518,8 @@ test_that("policy_eval with target 'value' has the correct outputs.", {
   )
 
   expect_equal(
-    pe$IC,
-    ref_IC
+    IC(pe),
+    matrix(ref_IC)
   )
 
   ##
@@ -555,8 +557,8 @@ test_that("policy_eval with target 'value' has the correct outputs.", {
   )
 
   expect_equal(
-    pe$IC,
-    ref_IC
+    IC(pe),
+    matrix(ref_IC)
   )
 
   ##
@@ -582,12 +584,12 @@ test_that("policy_eval with target 'value' has the correct outputs.", {
   )
 
   expect_equal(
-    pe$IC,
-    ref_IC
+    IC(pe),
+    matrix(ref_IC)
   )
 })
 
-test_that("policy_eval using the policy_learn has the correct output", {
+test_that("policy_eval() using policy_learn() has the correct output", {
   z <- 1:1e2
   a <- c(rep(1, 50), rep(2, 50))
   y <- a * 2
@@ -602,7 +604,7 @@ test_that("policy_eval using the policy_learn has the correct output", {
   )
 
   ref_pe <- mean((d$a == d$p) / 0.5 * (d$y - d$z) + d$z)
-  ref_IC <- (d$a == d$p) / 0.5 * (d$y - d$z) + d$z - ref_pe
+  ref_IC <- matrix((d$a == d$p) / 0.5 * (d$y - d$z) + d$z - ref_pe)
 
   pl <- policy_learn(
     type = "blip",
@@ -622,7 +624,145 @@ test_that("policy_eval using the policy_learn has the correct output", {
     coef(pe)
   )
   expect_equal(
-    pe$IC,
+    IC(pe),
     ref_IC
+  )
+})
+
+test_that("policy_eval() return estimates for multiple policies associated with multiple thresholds.", {
+  z <- 1:1e2
+  a <- c(rep(1, 50), rep(2, 50))
+  y <- a * 2
+  p1 <- (z > 28) + 1
+  p2 <- (z > 76) + 1
+  d <- data.table(z = z, a = a, y = y, p1 = p1, p2 = p2)
+  rm(a, z, y, p1, p2)
+  pd <- policy_data(
+    data = d,
+    action = "a",
+    covariates = c("z"),
+    utility = c("y")
+  )
+
+  gf <- fit_g_functions(pd, g_models = g_glm(~1))
+
+  ref_pe1 <- mean((d$a == d$p1) / 0.5 * (d$y - d$z) + d$z)
+  ## pooled IC
+  ref_IC1 <- matrix((d$a == d$p1) / 0.5 * (d$y - d$z) + d$z - ref_pe1)
+
+  ref_pe2 <- mean((d$a == d$p2) / 0.5 * (d$y - d$z) + d$z)
+  ref_IC2 <- matrix((d$a == d$p2) / 0.5 * (d$y - d$z) + d$z - ref_pe2)
+
+  ref_pe <- c(ref_pe1, ref_pe2)
+  ref_IC <- cbind(ref_IC1, ref_IC2)
+
+  p1 <- policy_def(28)
+  p0 <- policy_def(76)
+  expect_error(
+    policy_eval(
+      policy_data = pd,
+      policy = "test"
+    ),
+    "policy must be of inherited class 'policy'."
+  )
+  rm(p1, p0)
+
+  pl <- policy_learn(
+    type = "blip",
+    control = control_blip(blip_models = q_degen(var = "z")),
+    threshold = c(28, 76)
+  )
+
+  expect_no_error({
+    pe <- policy_eval(
+      policy_data = pd,
+      policy_learn = pl,
+      q_models = q_degen(var = "z"),
+      g_functions = gf
+    )
+  })
+  expect_equal(
+    coef(pe),
+    ref_pe
+  )
+
+  ##
+  ## cross-fitting
+  ##
+
+  ## cross fit estimate types
+expect_no_error({
+    pe <- policy_eval(
+      policy_data = pd,
+      policy_learn = pl,
+      M = 3,
+     cross_fit_type = "pooled",
+      q_models = q_degen(var = "z"),
+      g_functions = gf
+    )
+  })
+  expect_equal(
+    coef(pe),
+    ref_pe
+  )
+
+  expect_no_error({
+    pe <- policy_eval(
+      policy_data = pd,
+      policy_learn = pl,
+      M = 3,
+     cross_fit_type = "stacked",
+      q_models = q_degen(var = "z"),
+      g_functions = gf
+    )
+  })
+  expect_equal(
+    coef(pe),
+    ref_pe
+  )
+  
+  ## variance types
+  expect_no_error({
+    pe <- policy_eval(
+      policy_data = pd,
+      policy_learn = pl,
+      M = 3,
+      q_models = q_degen(var = "z"),
+      g_functions = gf
+    )
+  })
+  expect_equal(
+    coef(pe),
+    ref_pe
+  )
+
+  expect_no_error({
+    pe <- policy_eval(
+      policy_data = pd,
+      policy_learn = pl,
+      M = 3,
+      variance_type = "stacked",
+      q_models = q_degen(var = "z"),
+      g_functions = gf
+    )
+  })
+  expect_equal(
+    coef(pe),
+    ref_pe
+  )
+
+  expect_no_error({
+    pe <- policy_eval(
+      policy_data = pd,
+      policy_learn = pl,
+      M = 3,
+      variance_type = "pooled",
+      q_models = q_degen(var = "z"),
+      g_functions = gf
+    )
+  })
+  expect_equal(
+    coef(pe),
+    ref_pe
   )
 })

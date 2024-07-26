@@ -276,14 +276,14 @@ blip <- function(policy_data,
       }
 
       # calculating the optimal actions:
-      dd <- (blip_k$blip > threshold) + 1
+      dd <- (blip_k$blip > 0) + 1
 
       # overruling unrealistic actions:
       realistic <- apply(realistic_actions, 1, prod)
       dd <- dd * realistic +
         (realistic == 0) * apply(realistic_actions, 1, which.max)
     } else {
-      dd <- (blip_k$blip > threshold) + 1
+      dd <- (blip_k$blip > 0) + 1
     }
     d <- stage_action_set[dd]
 
@@ -334,14 +334,21 @@ get_policy_functions.blip <- function(object,
                                       stage,
                                       include_g_values = FALSE,
                                       ...) {
-  K <- getElement(object, "K")
+  threshold <- get_element(object, "threshold")
+  if (length(threshold) > 1) {
+    mes <- paste0(
+      "get_policy_functions.blip only implemented for a",
+      " single threshold. Reset the threshold element in the policy_object."
+    )
+    stop(mes)
+  }
+  K <- get_element(object, "K")
   check_stage(stage = stage, K = K)
-  stage_action_sets <- getElement(object, "stage_action_sets")
+  stage_action_sets <- get_element(object, "stage_action_sets")
   stage_action_set <- stage_action_sets[[stage]]
   rm(stage_action_sets)
-  alpha <- getElement(object, "alpha")
-  threshold <- getElement(object, "threshold")
-  g_functions <- getElement(object, "g_functions")
+  alpha <- get_element(object, "alpha")
+  g_functions <- get_element(object, "g_functions", check_name = FALSE)
   if (!is.null(g_functions)) {
     if (length(g_functions) == K) {
       g_function <- g_functions[[stage]]
@@ -355,8 +362,15 @@ get_policy_functions.blip <- function(object,
   stage_policy <- function(H) {
     blip <- predict(blip_model, H)
     g_values <- NULL
+
+    ## setting a possibly non-zero threshold for the first stage:
+    th <- 0
+    if (stage == 1) {
+      th <- threshold
+    }
+
     if (alpha == 0) {
-      dd <- (blip > threshold) + 1
+      dd <- (blip > th) + 1
       d <- stage_action_set[dd]
     } else {
       # evaluating the g-function:
@@ -388,7 +402,7 @@ get_policy_functions.blip <- function(object,
       }
 
       # calculating the optimal actions:
-      dd <- (blip > threshold) + 1
+      dd <- (blip > th) + 1
       realistic <- apply(realistic_actions, 1, prod)
       dd <- dd * realistic +
         (realistic == 0) * apply(realistic_actions, 1, which.max)
@@ -406,88 +420,138 @@ get_policy_functions.blip <- function(object,
   return(stage_policy)
 }
 
-#' @export
-get_policy.blip <- function(object) {
-  g_functions <- get_g_functions(object)
-  blip_functions <- getElement(object, "blip_functions")
-
-  action_set <- getElement(object, "action_set")
-  stage_action_sets <- getElement(object, "stage_action_sets")
-  K <- getElement(object, "K")
-  alpha <- getElement(object, "alpha")
-  threshold <- getElement(object, "threshold")
-
-  g_cols <- paste("g_", action_set, sep = "")
-
-  policy <- function(policy_data) {
-    if (get_K(policy_data) != K) {
-      mes <- paste0(
-        "The policy do not have the same number of ",
-        "stages as the policy data object."
-      )
-      stop(mes)
-    }
-    # evaluating the blip-functions:
-    blip_values <- predict(blip_functions, policy_data)
-
-    # getting the stage actions (sa) associated with the blip:
-    sa <- as.data.table(do.call(what = "rbind", stage_action_sets))
-    colnames(sa) <- c("ref_action", "alt_action")
-    sa <- cbind(stage = 1:K, sa)
-    setkeyv(sa, "stage")
-
-    if (alpha != 0) {
-      # evaluating the g-functions:
-      g_values <- predict(g_functions, policy_data)
-      # calculating the realistic actions:
-      realistic_actions <- t(apply(
-        g_values[, g_cols, with = FALSE],
-        MARGIN = 1,
-        function(x) x >= alpha
-      ))
-      if (any(apply(realistic_actions, MARGIN = 1, sum) == 0)) {
-        mes <- paste0(
-          "Cases with no realistic actions occur. ",
-          "Consider resetting the alpha level."
-        )
-        stop(mes)
-      }
-
-      realistic <- apply(
-        realistic_actions,
-        MARGIN = 1, function(x) action_set[x], simplify = FALSE
-      )
-      realistic_indicator <- unlist(
-        lapply(realistic, function(x) length(x) == 2)
-      )
-      realistic[realistic_indicator] <- NA
-      realistic <- unlist(realistic)
-
-      # getting the optimal stage action:
-      blip_values <- merge(blip_values, sa, by = "stage")
-      setkeyv(blip_values, c("id", "stage"))
-      alt_action <- ref_action <- ri <- d <- r <- NULL
-      blip_values[, "d" := ifelse(blip > threshold, alt_action, ref_action)]
-      blip_values[, "ri" := realistic_indicator]
-      blip_values[, "r" := realistic]
-      blip_values[, "d" := ifelse(ri, d, r)]
-    } else {
-      # getting the optimal stage action:
-      blip_values <- merge(blip_values, sa, by = "stage")
-      setkeyv(blip_values, c("id", "stage"))
-      blip_values[, "d" := ifelse(blip > threshold, alt_action, ref_action)]
-    }
-
-    # collecting the policy actions
-    policy_actions <- blip_values[, c("id", "stage", "d")]
-
-    return(policy_actions)
+set_threshold <- function(threshold = NULL, selection, overwrite = FALSE) {
+  if (is.null(threshold)) {
+    return(selection)
   }
 
-  # setting class and attributes:
-  policy <- new_policy(policy, name = "drql")
+  ## check threshold:
+  if (!(is.numeric(threshold))) {
+    stop("threshold must be numeric (vector).")
+  }
+  threshold <- unique(sort(threshold))
 
-  return(policy)
+  if (overwrite == FALSE) {
+    if (!all(threshold %in% selection)) {
+      mes <- paste(selection, collapse = ", ")
+      mes <- paste("Invalid threshold. Choose between ", mes, ".", sep = "")
+      stop(mes)
+    }
+  }
+  out <- threshold
+  return(out)
+}
+
+#' @export
+get_policy.blip <- function(object, threshold = NULL) {
+  blip_functions <- get_element(object, "blip_functions")
+  g_functions <- get_g_functions(object)
+  action_set <- get_element(object, "action_set")
+  g_cols <- paste("g_", action_set, sep = "")
+  stage_action_sets <- get_element(object, "stage_action_sets")
+  K <- get_element(object, "K")
+  alpha <- get_element(object, "alpha")
+  threshold_selection <- get_element(object, "threshold")
+
+  threshold <- set_threshold(
+    threshold = threshold,
+    selection = threshold_selection,
+    overwrite = TRUE
+  )
+
+  ## returning a policy of each threshold:
+  policy_list <- lapply(
+    threshold,
+    function(th) {
+      policy <- function(policy_data) {
+        if (get_K(policy_data) != K) {
+          mes <- paste0(
+            "The policy do not have the same number of ",
+            "stages as the policy data object."
+          )
+          stop(mes)
+        }
+        # evaluating the blip-functions:
+        blip_values <- predict(blip_functions, policy_data)
+
+        # getting the stage actions (sa) associated with the blip:
+        sa <- as.data.table(do.call(what = "rbind", stage_action_sets))
+        colnames(sa) <- c("ref_action", "alt_action")
+        sa <- cbind(stage = 1:K, sa)
+        setkeyv(sa, "stage")
+
+        if (alpha != 0) {
+          # evaluating the g-functions:
+          g_values <- predict(g_functions, policy_data)
+          # calculating the realistic actions:
+          realistic_actions <- t(apply(
+            g_values[, g_cols, with = FALSE],
+            MARGIN = 1,
+            function(x) x >= alpha
+          ))
+          if (any(apply(realistic_actions, MARGIN = 1, sum) == 0)) {
+            mes <- paste0(
+              "Cases with no realistic actions occur. ",
+              "Consider resetting the alpha level."
+            )
+            stop(mes)
+          }
+
+          realistic <- apply(
+            realistic_actions,
+            MARGIN = 1, function(x) action_set[x], simplify = FALSE
+          )
+          realistic_indicator <- unlist(
+            lapply(realistic, function(x) length(x) == 2)
+          )
+          realistic[realistic_indicator] <- NA
+          realistic <- unlist(realistic)
+
+          # getting the optimal stage action:
+          blip_values <- merge(blip_values, sa, by = "stage")
+          setkeyv(blip_values, c("id", "stage"))
+          alt_action <- ref_action <- ri <- d <- r <- NULL
+          blip_values[, "d" := ifelse(blip > 0, alt_action, ref_action)]
+          stage <- NULL
+          blip_values[
+            stage == 1,
+            "d" := ifelse(blip > th, alt_action, ref_action)
+          ]
+          blip_values[, "ri" := realistic_indicator]
+          blip_values[, "r" := realistic]
+          blip_values[, "d" := ifelse(ri, d, r)]
+        } else {
+          # getting the optimal stage action:
+          blip_values <- merge(blip_values, sa, by = "stage")
+          setkeyv(blip_values, c("id", "stage"))
+          blip_values[, "d" := ifelse(blip > 0, alt_action, ref_action)]
+          stage <- NULL
+          blip_values[
+            stage == 1,
+            "d" := ifelse(blip > th, alt_action, ref_action)
+          ]
+        }
+
+        # collecting the policy actions
+        policy_actions <- blip_values[, c("id", "stage", "d")]
+
+        return(policy_actions)
+      }
+
+      # setting class and attributes:
+      policy <- new_policy(policy, name = "drql")
+
+      return(policy)
+    }
+  )
+
+  if (length(policy_list) == 1) {
+    out <- policy_list[[1]]
+  } else {
+    out <- policy_list
+  }
+
+  return(out)
 }
 
 # plot function

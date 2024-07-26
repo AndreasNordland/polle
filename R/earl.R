@@ -106,7 +106,10 @@ dyntxregime_earl <- function(policy_data,
 }
 
 #' @export
-get_policy.earl <- function(object){
+get_policy.earl <- function(object, threshold = NULL){
+  if (!(is.null(threshold) || identical(threshold, 0))) {
+    stop("threshold is not implemented for earl.")
+  }
   earl_object <- getElement(object, "earl_object")
   action_set <- getElement(object, "action_set")
   K <- getElement(object, "K")

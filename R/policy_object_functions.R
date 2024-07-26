@@ -54,52 +54,64 @@ get_policy_object.policy_eval <- function(object){
 #' or a policy evaluation object The policy is a function which take a
 #' policy data object as input and returns the policy actions.
 #' @param object Object of class [policy_object] or [policy_eval].
+#' @param threshold Numeric vector.
+#' Thresholds for the first stage policy function.
 #' @returns function of class [policy].
 #' @examples
 #' library("polle")
 #' ### Two stages:
-#' d <- sim_two_stage(5e2, seed=1)
+#' d <- sim_two_stage(5e2, seed = 1)
 #' pd <- policy_data(d,
-#'                   action = c("A_1", "A_2"),
-#'                   baseline = c("BB"),
-#'                   covariates = list(L = c("L_1", "L_2"),
-#'                                     C = c("C_1", "C_2")),
-#'                   utility = c("U_1", "U_2", "U_3"))
+#'   action = c("A_1", "A_2"),
+#'   baseline = c("BB"),
+#'   covariates = list(
+#'     L = c("L_1", "L_2"),
+#'     C = c("C_1", "C_2")
+#'   ),
+#'   utility = c("U_1", "U_2", "U_3")
+#' )
 #' pd
 #'
 #' ### V-restricted (Doubly Robust) Q-learning
 #'
 #' # specifying the learner:
-#' pl <- policy_learn(type = "drql",
-#'                    control = control_drql(qv_models = q_glm(formula = ~ C)))
+#' pl <- policy_learn(
+#'   type = "drql",
+#'   control = control_drql(qv_models = q_glm(formula = ~C))
+#' )
 #'
 #' # fitting the policy (object):
-#' po <- pl(policy_data = pd,
-#'          q_models = q_glm(),
-#'          g_models = g_glm())
+#' po <- pl(
+#'   policy_data = pd,
+#'   q_models = q_glm(),
+#'   g_models = g_glm()
+#' )
 #'
 #' # getting and applying the policy:
 #' head(get_policy(po)(pd))
 #'
 #' # the policy learner can also be evaluated directly:
-#' pe <- policy_eval(policy_data = pd,
-#'                   policy_learn = pl,
-#'                   q_models = q_glm(),
-#'                   g_models = g_glm())
+#' pe <- policy_eval(
+#'   policy_data = pd,
+#'   policy_learn = pl,
+#'   q_models = q_glm(),
+#'   g_models = g_glm()
+#' )
 #'
 #' # getting and applying the policy again:
 #' head(get_policy(pe)(pd))
 #' @export
-get_policy <- function(object){
+get_policy <- function(object, threshold = NULL) {
   UseMethod("get_policy")
 }
 
 #' @export
-get_policy.policy_eval <- function(object){
+get_policy.policy_eval <- function(object, threshold = NULL) {
   po <- get_policy_object(object)
-  if (is.null(po))
+  if (is.null(po)) {
     return(NULL)
-  p <- get_policy(po)
+  }
+  p <- get_policy(po, threshold = threshold)
   return(p)
 }
 
