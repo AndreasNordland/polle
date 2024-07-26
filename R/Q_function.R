@@ -331,21 +331,26 @@ fit_Q_functions <- function(policy_data,
 #' @seealso [predict.nuisance_functions]
 #' @examples
 #' ### Two stages:
-#' d <- sim_two_stage(5e2, seed=1)
+#' d <- sim_two_stage(5e2, seed = 1)
 #' pd <- policy_data(d,
-#'                   action = c("A_1", "A_2"),
-#'                   baseline = c("B"),
-#'                   covariates = list(L = c("L_1", "L_2"),
-#'                                     C = c("C_1", "C_2")),
-#'                   utility = c("U_1", "U_2", "U_3"))
+#'   action = c("A_1", "A_2"),
+#'   baseline = c("B"),
+#'   covariates = list(
+#'     L = c("L_1", "L_2"),
+#'     C = c("C_1", "C_2")
+#'   ),
+#'   utility = c("U_1", "U_2", "U_3")
+#' )
 #' pd
 #'
 #' # evaluating the static policy a=1 using outcome regression
 #' # based on a GLM model at each stage.
-#' pe <- policy_eval(type = "or",
-#'                   policy_data = pd,
-#'                   policy = policy_def(1, reuse = TRUE, name = "A=1"),
-#'                   q_models = list(q_glm(), q_glm()))
+#' pe <- policy_eval(
+#'   type = "or",
+#'   policy_data = pd,
+#'   policy = policy_def(1, reuse = TRUE, name = "A=1"),
+#'   q_models = list(q_glm(), q_glm())
+#' )
 #' pe
 #'
 #' # getting the Q-functions
@@ -354,9 +359,6 @@ fit_Q_functions <- function(policy_data,
 #' # getting the fitted g-function values
 #' head(predict(q_functions, pd))
 #' @export
-get_q_functions <- function(object)
+get_q_functions <- function(object) {
   UseMethod("get_q_functions")
-
-
-
-
+}
