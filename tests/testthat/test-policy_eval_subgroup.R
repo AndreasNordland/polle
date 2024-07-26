@@ -361,3 +361,80 @@ test_that("policy_eval with target 'subgroup' has the correct outputs: test2.", 
 
 ##     summary(res, estimate = c(1), se = c(2), true = target)
 ## })
+
+test_that("policy_eval with target 'subgroup' returns NA no subjects are in the subgroup.", {
+
+  z <- 1:1e2
+    a <- c(rep(1, 50), rep(2, 50))
+    y <- a * 2
+        p1 <- c(rep(1, 50), rep(2, 50))
+    p2 <- c(rep(1, 100))
+
+    d <- data.table(z = z, a = a, y = y, p1 = p1, p2 = p2)
+    rm(a, z, y)
+    pd <- policy_data(
+        data = d,
+        action = "a",
+        covariates = c("z", "p1", "p2"),
+        utility = c("y")
+    )
+
+    ref_Z <- cbind(
+        (d$a == 1) / 0.5 * (d$y - d$z) + d$z,
+        (d$a == 2) / 0.5 * (d$y - d$z) + d$z
+    )
+    ref_blip <- ref_Z[, 2] - ref_Z[, 1]
+    ref_sub_eta50 <- mean(ref_blip[d$p1 == 2])
+    ref_IC_eta50 <- 2 * (d$p1 == 2) * (ref_blip - ref_sub_eta50)
+
+    p <- policy_def(1)
+
+    sub <- policy_eval(
+        target = "subgroup",
+        policy_data = pd,
+        policy = p,
+        q_models = q_degen(var = "z"),
+        g_models = g_glm(~1)
+    )
+
+
+    expect_equal(
+        coef(sub),
+        as.numeric(NA)
+    )
+
+    expect_equal(
+        IC(sub),
+        rep(as.numeric(NA), 1e2) |> matrix()
+    )
+
+    expect_no_error(
+        print(sub)
+    )
+
+    pl <- policy_learn(
+        type = "blip",
+        threshold = c(50, 101),
+        control = control_blip(blip_models = q_degen(var = "z"))
+    )
+
+    sub <- policy_eval(
+        target = "subgroup",
+        policy_data = pd,
+        policy_learn = pl,
+        q_models = q_degen(var = "z"),
+        g_models = g_glm(~1)
+    )
+
+    expect_no_error(print(sub))
+
+    expect_equal(
+        coef(sub),
+        c(ref_sub_eta50, as.numeric(NA))
+    )
+
+    expect_equal(
+        IC(sub),
+        cbind(ref_IC_eta50, rep(as.numeric(NA), 1e2)) |> unname()
+    )
+})
