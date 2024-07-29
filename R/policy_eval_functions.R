@@ -164,15 +164,21 @@ conditional <- function(object, policy_data, baseline)
   UseMethod("conditional")
 
 #' @export
-conditional.policy_eval <- function(object, policy_data, baseline){
+conditional.policy_eval <- function(object, policy_data, baseline) {
   policy_eval <- object
 
-  if (!inherits(policy_eval, "policy_eval"))
+  if (!inherits(policy_eval, "policy_eval")) {
     stop("policy_eval must be of inherited class 'policy_eval'.")
-  if (!inherits(policy_data, "policy_data"))
+  }
+  if (!inherits(policy_data, "policy_data")) {
     stop("policy_data must be of inherited class 'policy_data'.")
-  if (!is.character(baseline) | length(baseline)!= 1)
+  }
+  if (!is.character(baseline) || length(baseline) != 1) {
     stop("baseline must be a single character.")
+  }
+  if (get_element(policy_eval, "target") != "value") {
+    stop("only implemented for target = 'value'.")
+  }
 
   baseline_data <- policy_data[["baseline_data"]]
 
@@ -181,8 +187,9 @@ conditional.policy_eval <- function(object, policy_data, baseline){
     policy_eval[["id"]],
     baseline_data[["id"]]
   )
-  if (!check)
+  if (!check) {
     stop("ID's does not match.")
+  }
 
   # getting the doubly robust score:
   z <- IC(policy_eval) + coef(policy_eval)
@@ -191,19 +198,20 @@ conditional.policy_eval <- function(object, policy_data, baseline){
   agg <- aggregate(z, by = by, mean)
   coef <- agg[["V1"]]
 
+  n <- get_n(policy_data)
   groups <- agg[[baseline]]
   IC <- matrix(0, nrow = nrow(baseline_data), ncol = length(groups))
-  for (j in seq_along(coef)){
+  for (j in seq_along(coef)) {
     idx <- baseline_data[[baseline]] == groups[j]
-    id <- baseline_data[["id"]][idx]
-    ic <- z[idx,] - coef[j]
-    IC[idx,j] <- ic
+    ic <- z[idx, ] - coef[j]
+    IC[idx, j] <- ic / sum(idx) * n
   }
   est <- estimate(NULL,
-                  coef = coef,
-                  IC = cbind(IC),
-                  id = baseline_data[["id"]],
-                  labels = paste(baseline, groups, sep = ":"))
+    coef = coef,
+    IC = cbind(IC),
+    id = baseline_data[["id"]],
+    labels = paste(baseline, groups, sep = ":")
+  )
   return(est)
 }
 
