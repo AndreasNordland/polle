@@ -766,3 +766,65 @@ expect_no_error({
     ref_pe
   )
 })
+
+test_that("conditional.policy_eval agrees with targeted::CATE", {
+  n <- 1e3
+  B <- rbinom(n = n, size = 1, prob = 0.5)
+  Z <- rnorm(n = n)
+  A <- rbinom(size = 1, n = n, prob = 0.5)
+  U <- rnorm(mean = Z + Z * A, n = n)
+  d <- data.table(Z = Z, A = A, U = U, B = B)
+  rm(Z, A, U, B)
+  pd <- policy_data(d, action = "A", covariates = c("Z"), baseline = ("B"), utility = "U")
+  p1 <- policy_def(1)
+  p0 <- policy_def(0)
+
+  ##
+  ## no cross-fitting:
+  ##
+
+  pe1 <- policy_eval(
+    policy_data = pd,
+    policy = p1,
+    g_models = g_glm(~1),
+    q_models = q_glm(~ A * Z),
+    target = "value",
+    M = 1
+  )
+  pe0 <- policy_eval(
+    policy_data = pd,
+    policy = p0,
+    g_models = g_glm(~1),
+    q_models = q_glm(~ A * Z),
+    target = "value",
+    M = 1
+  )
+
+  cond_pe1 <- conditional(pe1, pd, baseline = "B")
+  cond_pe0 <- conditional(pe0, pd, baseline = "B")
+
+  est <- merge(cond_pe1, cond_pe0)
+  est <- estimate(est, function(p) p[1] - p[3])
+
+  ## implementation from the targeted package:
+  library(targeted)
+
+  ca <- cate(
+    treatment = A ~ factor(B) - 1,
+    response = U ~ A * Z,
+    propensity_model = A ~ 1,
+    data = d,
+    nfolds = 1,
+    type = "dml2"
+  )
+
+  expect_equal(
+    unname(coef(est)),
+    unname(coef(ca)["factor(B)0"])
+  )
+
+  expect_equal(
+    IC(est) |> matrix(),
+    ca$estimate$IC[, "factor(B)0"] |> unname() |> matrix()
+  )
+})
