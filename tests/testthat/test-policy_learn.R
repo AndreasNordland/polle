@@ -180,8 +180,7 @@ test_that("policy_learn checks input", {
 
 })
 
-
-test_that("policy_learn returns an error if type != 'blip' and threshold != 0.", {
+test_that("policy_learn returns an error if type != 'blip' or type != 'ptl and threshold != 0.", {
   d <- sim_single_stage(200, seed = 1)
   pd <- policy_data(d,
     action = "A",
@@ -193,13 +192,17 @@ test_that("policy_learn returns an error if type != 'blip' and threshold != 0.",
     policy_learn(type = "ptl", control = control_ptl(), threshold = NULL)
   )
 
-  expect_error(
-    policy_learn(type = "ptl", control = control_ptl(), threshold = 1),
-    "The threshold argument is only implemented for type = 'blip'. Please set threshold = NULL."
+  expect_no_error(
+    policy_learn(type = "ptl", control = control_ptl(), threshold = 1)
   )
 
   expect_no_error(
     policy_learn(type = "blip", control = control_blip(), threshold = 1)
+  )
+
+  expect_error(
+    policy_learn(type = "drql", control = control_drql(), threshold = 1),
+    ".only implemented for type 'blip' or 'ptl'"
   )
 })
 

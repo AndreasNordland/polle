@@ -412,7 +412,6 @@ test_that("get_policy and get_policy_functions agree with type blip and a non-ze
   ## hist(x = pred$blip, breaks = 100)
 
   d <- get_policy(po)(pd)$d
-
   pf <- get_policy_functions(po, stage = 1)
   his <- get_history(pd)
   H <- get_H(his)
@@ -422,6 +421,23 @@ test_that("get_policy and get_policy_functions agree with type blip and a non-ze
     d,
     dd
   )
+
+  d <- get_policy(po, threshold = 0)(pd)$d
+  pf <- get_policy_functions(po, stage = 1, threshold = 0)
+  his <- get_history(pd)
+  H <- get_H(his)
+  dd <- pf(H)
+
+  expect_equal(
+    d,
+    dd
+  )
+
+  expect_error(
+    get_policy_functions(po, threshold = c(0, 1)),
+    "Set single threshold"
+  )
+
 })
 
 test_that("get_policy.blip() returns multiple policies when given multiple thresholds.", {

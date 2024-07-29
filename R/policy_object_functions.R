@@ -124,8 +124,10 @@ get_policy.policy_eval <- function(object, threshold = NULL) {
 #' @param object Object of class "policy_object" or "policy_eval",
 #' see [policy_learn] and [policy_eval].
 #' @param stage Integer. Stage number.
-#' @param include_g_values If TRUE, the g-values are included as an attribute.
+#' @param threshold  Numeric, threshold for not
+#' choosing the reference action at stage 1.
 #' @param ... Additional arguments.
+#' @param include_g_values If TRUE, the g-values are included as an attribute.
 #' @returns Functions with arguments:
 #' \describe{
 #' \item{\code{H}}{[data.table] containing the variables needed to evaluate the policy (and g-function).}
@@ -170,7 +172,7 @@ get_policy.policy_eval <- function(object, threshold = NULL) {
 #' d2 <- pf2(H = new_H)
 #' head(d2)
 #' @export
-get_policy_functions <- function(object, stage, ...) {
+get_policy_functions <- function(object, stage, threshold, ...) {
   UseMethod("get_policy_functions")
 }
 

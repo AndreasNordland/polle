@@ -94,7 +94,7 @@ pd <- policy_data(
 )
 ```
 
-We set a correctly specified policy learner using ´policy_learn()´ and set
+We set a correctly specified policy learner using `policy_learn()` with `type = "blip"`  and set
 a threshold of $\eta = 1$:
 
 ```{r}
@@ -127,6 +127,36 @@ estimated threshold policy:
 ```{r pa_plot, echo = FALSE}
 library("ggplot2")
 plot_data <- data.table(d_N = factor(pa$d), W = d$W, L = d$L)
+ggplot(plot_data) +
+  geom_point(aes(x = W, y = L, color = d_N)) +
+  geom_abline(slope = -3, intercept = 1) +
+  theme_bw()
+```
+
+Similarly, we can also use `type = "ptl"` to fit a policy tree with
+a given threshold for not choosing the reference action
+(first action in action set in alphabetical order)
+
+```{r}
+get_action_set(pd)[1] # reference action
+pl1_ptl <- policy_learn(
+    type = "ptl",
+    control = control_ptl(policy_var = c("W", "L")),
+    threshold = 1
+)
+po1_ptl <- pl1_ptl(
+  policy_data = pd,
+  g_models = g_glm(~ 1),
+  q_models = q_glm(~ A * (W + L))
+)
+po1_ptl$ptl_objects
+```
+
+```{r pa_plot_ptl, echo = FALSE}
+pf1_ptl <- get_policy(po1_ptl)
+pa_ptl <- pf1_ptl(pd)
+library("ggplot2")
+plot_data <- data.table(d_N = factor(pa_ptl$d), W = d$W, L = d$L)
 ggplot(plot_data) +
   geom_point(aes(x = W, y = L, color = d_N)) +
   geom_abline(slope = -3, intercept = 1) +

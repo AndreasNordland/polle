@@ -332,14 +332,17 @@ blip <- function(policy_data,
 #' @export
 get_policy_functions.blip <- function(object,
                                       stage,
+                                      threshold = NULL,
                                       include_g_values = FALSE,
                                       ...) {
-  threshold <- get_element(object, "threshold")
+  threshold_selection <- get_element(object, "threshold")
+  threshold <- set_threshold(
+    threshold = threshold,
+    selection = threshold_selection,
+    overwrite = TRUE
+  )
   if (length(threshold) > 1) {
-    mes <- paste0(
-      "get_policy_functions.blip only implemented for a",
-      " single threshold. Reset the threshold element in the policy_object."
-    )
+    mes <- "Set single threshold."
     stop(mes)
   }
   K <- get_element(object, "K")
@@ -452,7 +455,6 @@ get_policy.blip <- function(object, threshold = NULL) {
   K <- get_element(object, "K")
   alpha <- get_element(object, "alpha")
   threshold_selection <- get_element(object, "threshold")
-
   threshold <- set_threshold(
     threshold = threshold,
     selection = threshold_selection,

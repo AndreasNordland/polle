@@ -278,9 +278,9 @@ policy_learn <- function(type = "ql",
     stop(mes)
   }
 
-  if ((threshold_indicator == TRUE) && (call != "blip")) {
+  if ((threshold_indicator == TRUE) && (!(call %in% c("blip", "ptl")))) {
     mes <- paste0(
-      "The threshold argument is only implemented for type = 'blip'. ",
+      "The threshold argument is only implemented for type 'blip' or 'ptl'. ",
       "Please set threshold = NULL."
     )
     stop(mes)

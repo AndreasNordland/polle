@@ -341,6 +341,7 @@ drql <- function(policy_data,
 #' @export
 get_policy_functions.drql <- function(object,
                                       stage,
+                                      threshold = NULL,
                                       include_g_values = FALSE,
                                       ...) {
   K <- getElement(object, "K")

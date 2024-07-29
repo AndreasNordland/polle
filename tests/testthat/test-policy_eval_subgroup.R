@@ -409,7 +409,7 @@ test_that("policy_eval with target 'subgroup' returns NA no subjects are in the 
     )
 
     expect_no_error(
-        print(sub)
+        tmp <- capture.output(print(sub))
     )
 
     pl <- policy_learn(
@@ -426,7 +426,9 @@ test_that("policy_eval with target 'subgroup' returns NA no subjects are in the 
         g_models = g_glm(~1)
     )
 
-    expect_no_error(print(sub))
+    expect_no_error(
+      tmp <- capture.output(print(sub))
+    )
 
     expect_equal(
         coef(sub),

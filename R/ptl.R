@@ -31,13 +31,14 @@ control_ptl <- function(policy_vars = NULL,
 }
 
 ptl <- function(policy_data,
+                alpha,
+                threshold,
                 g_models, g_functions, g_full_history,
                 q_models, q_full_history,
                 policy_vars, full_history,
                 L,
                 cross_fit_g_models, save_cross_fit_models,
                 future_args,
-                alpha,
                 depth, split.step, min.node.size, hybrid, search.depth,
                 ...) {
   K <- get_K(policy_data)
@@ -262,47 +263,81 @@ ptl <- function(policy_data,
     min.node.size_k <- min.node.size[[k]]
     search.depth_k <- search.depth[[k]]
 
-    if (hybrid == FALSE) {
-      ptl_k <- policytree::policy_tree(
-        X = X,
-        Gamma = Gamma,
-        depth = depth_k,
-        split.step = split.step_k,
-        min.node.size = min.node.size_k
+    if (k != 1) {
+      if (hybrid == FALSE) {
+        ptl_k <- policytree::policy_tree(
+          X = X,
+          Gamma = Gamma,
+          depth = depth_k,
+          split.step = split.step_k,
+          min.node.size = min.node.size_k
+        )
+      } else if (hybrid == TRUE) {
+        ptl_k <- policytree::hybrid_policy_tree(
+          X = X,
+          Gamma = Gamma,
+          depth = depth_k,
+          split.step = split.step_k,
+          min.node.size = min.node.size_k,
+          search.depth = search.depth_k
+        )
+      }
+      ptl_objects[[k]] <- ptl_k
+      dd <- predict(ptl_k, X)
+      d <- stage_action_set_k[dd]
+
+      if (alpha != 0) {
+        # getting the g-function values for each action:
+        g_values_k <- g_values[stage == k, ]
+
+        g_stage_cols <- paste("g_", stage_action_set_k, sep = "")
+        # modifying the policy to only recommend realistic actions
+        d[(g_values_k[, g_stage_cols[1], with = FALSE] < alpha)] <-
+          stage_action_set_k[2]
+        d[(g_values_k[, g_stage_cols[2], with = FALSE] < alpha)] <-
+          stage_action_set_k[1]
+      }
+
+      q_d_k <- get_a_values(a = d, action_set = action_set, q_values_k)[["P"]]
+      Q[idx_k, k] <- q_d_k
+      Q[!idx_k, k] <- Q[!idx_k, k + 1]
+      II[idx_k, k] <- (A_k == d)
+      II[!idx_k, k] <- TRUE
+      D[idx_k, k] <- d
+      G[!idx_k, k] <- TRUE
+    } else {
+      ptl_k_threshold <- lapply(
+        threshold,
+        function(th) {
+          gamma <- Gamma
+          ## adding the threshold to the reference action:
+          gamma[, 1] <- gamma[, 1] + th
+
+          if (hybrid == FALSE) {
+            ptl_k <- policytree::policy_tree(
+              X = X,
+              Gamma = gamma,
+              depth = depth_k,
+              split.step = split.step_k,
+              min.node.size = min.node.size_k
+            )
+          } else if (hybrid == TRUE) {
+            ptl_k <- policytree::hybrid_policy_tree(
+              X = X,
+              Gamma = gamma,
+              depth = depth_k,
+              split.step = split.step_k,
+              min.node.size = min.node.size_k,
+              search.depth = search.depth_k
+            )
+          }
+          return(ptl_k)
+        }
       )
-    } else if (hybrid == TRUE) {
-      ptl_k <- policytree::hybrid_policy_tree(
-        X = X,
-        Gamma = Gamma,
-        depth = depth_k,
-        split.step = split.step_k,
-        min.node.size = min.node.size_k,
-        search.depth = search.depth_k
-      )
+      tmp <- paste0("threshold_", threshold)
+      names(ptl_k_threshold) <- tmp
+      ptl_objects[[k]] <- ptl_k_threshold
     }
-    ptl_objects[[k]] <- ptl_k
-    dd <- predict(ptl_k, X)
-    d <- stage_action_set_k[dd]
-
-    if (alpha != 0) {
-      # getting the g-function values for each action:
-      g_values_k <- g_values[stage == k, ]
-
-      g_stage_cols <- paste("g_", stage_action_set_k, sep = "")
-      # modifying the policy to only recommend realistic actions
-      d[(g_values_k[, g_stage_cols[1], with = FALSE] < alpha)] <-
-        stage_action_set_k[2]
-      d[(g_values_k[, g_stage_cols[2], with = FALSE] < alpha)] <-
-        stage_action_set_k[1]
-    }
-
-    q_d_k <- get_a_values(a = d, action_set = action_set, q_values_k)[["P"]]
-    Q[idx_k, k] <- q_d_k
-    Q[!idx_k, k] <- Q[!idx_k, k+1]
-    II[idx_k, k] <- (A_k == d)
-    II[!idx_k, k] <- TRUE
-    D[idx_k, k] <- d
-    G[!idx_k, k] <- TRUE
   }
 
   # setting outputs:
@@ -330,6 +365,7 @@ ptl <- function(policy_data,
     action_set = action_set,
     stage_action_sets = stage_action_sets,
     alpha = alpha,
+    threshold = threshold,
     K = K,
     folds = folds
   )
@@ -341,91 +377,118 @@ ptl <- function(policy_data,
 
 #' @export
 get_policy.ptl <- function(object, threshold = NULL) {
-  if (!(is.null(threshold) || identical(threshold, 0))) {
-    stop("threshold is not implemented for ptl.")
-  }
-  stage_action_sets <- getElement(object, "stage_action_sets")
-  K <- getElement(object, "K")
-  full_history <- getElement(object, "full_history")
-  ptl_objects <- getElement(object, "ptl_objects")
-  ptl_designs <- getElement(object, "ptl_designs")
-  policy_vars <- getElement(object, "policy_vars")
-  g_functions <- getElement(object, "g_functions")
-  alpha <- getElement(object, "alpha")
+  stage_action_sets <- get_element(object, "stage_action_sets")
+  K <- get_element(object, "K")
+  full_history <- get_element(object, "full_history")
+  ptl_objects <- get_element(object, "ptl_objects")
+  ptl_designs <- get_element(object, "ptl_designs")
+  policy_vars <- get_element(object, "policy_vars")
+  g_functions <- get_element(object, "g_functions", check_name = FALSE)
+  alpha <- get_element(object, "alpha")
+  threshold_selection <- get_element(object, "threshold")
+  threshold <- set_threshold(
+    threshold = threshold,
+    selection = threshold_selection,
+    overwrite = FALSE
+  )
+  threshold_idx <- which(threshold_selection %in% threshold)
 
-  policy <- function(policy_data) {
-    if (get_K(policy_data) != K) {
-      stop("The policy do not have the same number of stages as the policy data object.")
-    }
+  policy_list <- lapply(
+    threshold_idx,
+    function(th_idx) {
+      ## selecting the stage 1 policy tree associated with the given threshold
+      po <- ptl_objects
+      po[[1]] <- ptl_objects[[1]][[th_idx]]
 
-    if (alpha != 0) {
-      # evaluating the g-functions:
-      g_values <- predict(g_functions, policy_data)
-    }
+      policy <- function(policy_data) {
+        if (get_K(policy_data) != K) {
+          mes <- paste0(
+            "The policy do not have the same ",
+            "number of stages as the policy data object."
+          )
+          stop(mes)
+        }
 
-    ### getting the actions recommended by the ptl objects:
-    policy_actions <- list()
-    for (k in K:1) {
-      # getting the policy history:
-      policy_history_k <- get_history(policy_data,
-        stage = k,
-        full_history = full_history
-      )
+        if (alpha != 0) {
+          # evaluating the g-functions:
+          g_values <- predict(g_functions, policy_data)
+        }
 
-      # getting the design matrix:
-      if (full_history == TRUE) {
-        vars <- policy_vars[[k]]
-      } else {
-        vars <- policy_vars
+        ## getting the actions recommended by the ptl objects:
+        policy_actions <- list()
+        for (k in K:1) {
+          # getting the policy history:
+          policy_history_k <- get_history(policy_data,
+            stage = k,
+            full_history = full_history
+          )
+
+          ## getting the design matrix:
+          if (full_history == TRUE) {
+            vars <- policy_vars[[k]]
+          } else {
+            vars <- policy_vars
+          }
+          H <- get_H(policy_history_k, vars = vars)
+          design <- ptl_designs[[k]]
+          newdata <- apply_design(design = design, data = H)
+
+          ## getting the stage action set
+          stage_action_set <- stage_action_sets[[k]]
+
+          ## policy tree predictions:
+          dd <- predict(po[[k]], newdata = newdata)
+          d <- stage_action_set[dd]
+
+          ## excluding unrealistic recommendations:
+          if (alpha != 0) {
+            g_stage_cols <- paste("g_", stage_action_set, sep = "")
+            stage <- NULL
+            g_values_k <- g_values[stage == k, ]
+
+            d[(g_values_k[, g_stage_cols[1], with = FALSE] < alpha)] <-
+              stage_action_set[2]
+            d[(g_values_k[, g_stage_cols[2], with = FALSE] < alpha)] <-
+              stage_action_set[1]
+          }
+
+          pa <- get_id_stage(policy_history_k)
+          pa[, d := d]
+          policy_actions[[k]] <- pa
+          rm(pa, d, dd)
+        }
+        policy_actions <- rbindlist(policy_actions)
+        setkeyv(policy_actions, c("id", "stage"))
+
+        return(policy_actions)
       }
-      H <- get_H(policy_history_k, vars = vars)
-      design <- ptl_designs[[k]]
-      newdata <- apply_design(design = design, data = H)
+      # setting class and attributes:
+      policy <- new_policy(policy, name = "ptl")
 
-      # getting the stage action set
-      stage_action_set <- stage_action_sets[[k]]
-
-      # policy tree predictions:
-      dd <- predict(ptl_objects[[k]], newdata = newdata)
-      d <- stage_action_set[dd]
-
-      # excluding unrealistic recommendations:
-      if (alpha != 0) {
-        g_stage_cols <- paste("g_", stage_action_set, sep = "")
-        stage <- NULL
-        g_values_k <- g_values[stage == k, ]
-
-        d[(g_values_k[, g_stage_cols[1], with = FALSE] < alpha)] <-
-          stage_action_set[2]
-        d[(g_values_k[, g_stage_cols[2], with = FALSE] < alpha)] <-
-          stage_action_set[1]
-      }
-
-      pa <- get_id_stage(policy_history_k)
-      pa[, d := d]
-      policy_actions[[k]] <- pa
-      rm(pa, d, dd)
+      return(policy)
     }
-    policy_actions <- rbindlist(policy_actions)
-    setkeyv(policy_actions, c("id", "stage"))
+  )
 
-    return(policy_actions)
+  if (length(policy_list) == 1) {
+    out <- policy_list[[1]]
+  } else {
+    out <- policy_list
   }
 
-  # setting class and attributes:
-  policy <- new_policy(policy, name = "ptl")
-
-  return(policy)
+  return(out)
 }
+
 
 #' @rdname get_policy_functions
 #' @export
-get_policy_functions.ptl <- function(object, stage, ...) {
-  K <- getElement(object, "K")
+get_policy_functions.ptl <- function(object,
+                                     stage,
+                                     threshold = NULL,
+                                     ...) {
+  K <- get_element(object, "K")
   check_stage(stage = stage, K = K)
-  stage_action_sets <- getElement(object, "stage_action_sets")
-  g_functions <- getElement(object, "g_functions")
-
+  stage_action_sets <- get_element(object, "stage_action_sets")
+  g_functions <- get_element(object, "g_functions", check_name = FALSE)
   if (!is.null(g_functions)) {
     if (length(g_functions) == K) {
       g_function <- g_functions[[stage]]
@@ -434,18 +497,37 @@ get_policy_functions.ptl <- function(object, stage, ...) {
     }
     rm(g_functions)
   }
+  alpha <- get_element(object, "alpha")
+  threshold_selection <- get_element(object, "threshold")
+  threshold <- set_threshold(
+    threshold = threshold,
+    selection = threshold_selection,
+    overwrite = FALSE
+  )
+  if (length(threshold) > 1) {
+    mes <- paste(threshold, collapse = ", ")
+    mes <- paste("Choose threshold: ", mes, ".", sep = "")
+    stop(mes)
+  }
+  threshold_idx <- which(threshold_selection %in% threshold)
 
-  ptl_object <- getElement(object, "ptl_objects")[[stage]]
-  ptl_design <- getElement(object, "ptl_designs")[[stage]]
-  full_history <- getElement(object, "full_history")
+  ## selecting the stage 1 policy tree associated with the given threshold:
+  ptl_objects <- get_element(object, "ptl_objects")
+  ptl_objects[[1]] <- ptl_objects[[1]][[threshold_idx]]
+
+  ## selecting the policy function for the given stage:
+  ptl_object <- ptl_objects[[stage]]
+  rm(ptl_objects)
+
+  ptl_design <- get_element(object, "ptl_designs")[[stage]]
+  full_history <- get_element(object, "full_history")
   if (full_history) {
-    policy_vars <- getElement(object, "policy_vars")[[stage]]
+    policy_vars <- get_element(object, "policy_vars")[[stage]]
   } else {
-    policy_vars <- getElement(object, "policy_vars")
+    policy_vars <- get_element(object, "policy_vars")
   }
   stage_action_set <- stage_action_sets[[stage]]
   rm(stage_action_sets)
-  alpha <- getElement(object, "alpha")
 
   rm(object)
   stage_policy <- function(H) {

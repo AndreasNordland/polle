@@ -168,6 +168,7 @@ get_policy.ql <- function(object, threshold = NULL) {
 #' @export
 get_policy_functions.ql <- function(object,
                                     stage,
+                                    threshold = NULL,
                                     include_g_values = FALSE,
                                     ...) {
   K <- getElement(object, "K")
