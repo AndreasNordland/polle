@@ -257,7 +257,7 @@ test_that("policy_data melts wide data correctly in a two stage case.", {
     baseline = "B",
     utility = "outcome"
   )
-  expect_equal(pd$stage_data, target_stage_data)
+  expect_equal(pd$stage_data, target_stage_data, check.attributes = FALSE)
 
   # including deterministic rewards:
   wide_data <- data.table(
@@ -300,7 +300,7 @@ test_that("policy_data melts wide data correctly in a two stage case.", {
     utility = c("outcome_1", "outcome_2", "outcome_3"),
     deterministic_rewards = list(U_A0 = c("outcome_1_A0", "outcome_2_A0"))
   )
-  expect_equal(pd$stage_data, target_stage_data)
+  expect_equal(pd$stage_data, target_stage_data, check.attributes = FALSE)
 
   # invalid inputs:
   args <- list(
@@ -356,7 +356,7 @@ test_that("policy_data melts wide data correctly in a single stage case.", {
 
   # except equal:
   pd <- policy_data(data = wide_data, action = "treat", covariates = c("B", "Z", "L"), utility = "outcome")
-  expect_equal(pd$stage_data, target_stage_data)
+  expect_equal(pd$stage_data, target_stage_data, check.attributes = FALSE)
   rm(pd)
 
   # duplicate variable names:
@@ -380,13 +380,15 @@ test_that("policy_data melts wide data correctly in a single stage case.", {
   )
   expect_equal(
     policy_data(data = wide_data_copy, action = "treat", covariates = c("B", "Z", "L"), utility = "outcome", id = "id")$stage_data,
-    target_stage_data
+    target_stage_data,
+    check.attributes = FALSE
   )
   wide_data_copy$id <- NULL
   wide_data_copy$ID <- c(1,2)
   expect_equal(
     policy_data(data = wide_data_copy, action = "treat", covariates = c("B", "Z", "L"), utility = "outcome", id = "ID")$stage_data,
-    target_stage_data
+    target_stage_data,
+    check.attributes = FALSE
   )
 
   #
