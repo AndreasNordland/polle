@@ -2,7 +2,7 @@
 #'
 #' @param history Object of class "history".
 #' @param vars Character vector. Subset of the history matrix.
-#' @return [data.table] H
+#' @return [data.table::data.table] H
 #' @noRd
 get_H <- function(history, vars = NULL){
 

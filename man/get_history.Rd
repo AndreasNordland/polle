@@ -19,15 +19,15 @@ If FALSE, only the state/Markov-type history is returned.}
 \value{
 Object of class \link{history}. The object is a list
 containing the following elements:
-\item{\code{H}}{\link{data.table} with keys id and stage and with variables
+\item{\code{H}}{\link[data.table:data.table]{data.table::data.table} with keys id and stage and with variables
 \{\eqn{B}, \eqn{X_k}\} (state history) or
 \{\eqn{B}, \eqn{X_1}, \eqn{A_1}, ..., \eqn{X_k}\}
 (full history), see details.}
-\item{\code{A}}{\link{data.table} with keys id and stage and variable \eqn{A_k}, see
+\item{\code{A}}{\link[data.table:data.table]{data.table::data.table} with keys id and stage and variable \eqn{A_k}, see
 details.}
 \item{action_name}{Name of the action variable in \code{A}.}
 \item{action_set}{Sorted character vector defining the action set.}
-\item{U}{(If \code{stage} is not NULL) \link{data.table} with keys id and stage
+\item{U}{(If \code{stage} is not NULL) \link[data.table:data.table]{data.table::data.table} with keys id and stage
 and with variables U_bar and U_Aa for every a in the actions set.
 U_bar is the accumulated rewards up till and including the given
 stage, i.e., \eqn{\sum_{j=1}^k U_j}. U_Aa is the deterministic

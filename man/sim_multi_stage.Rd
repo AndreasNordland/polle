@@ -34,8 +34,8 @@ sim_multi_stage(
 \item{seed}{Integer.}
 }
 \value{
-list with elements \code{stage_data} (\link{data.table}) and
-\code{baseline_data} (\link{data.table}).
+list with elements \code{stage_data} (\link[data.table:data.table]{data.table::data.table}) and
+\code{baseline_data} (\link[data.table:data.table]{data.table::data.table}).
 }
 \description{
 Simulate Multi-Stage Data

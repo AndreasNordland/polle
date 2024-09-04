@@ -10,7 +10,7 @@ get_utility(object)
 \item{object}{Object of class \link{policy_data}.}
 }
 \value{
-\link{data.table} with key id and numeric variable U.
+\link[data.table:data.table]{data.table::data.table} with key id and numeric variable U.
 }
 \description{
 \code{get_utility()} returns the utility, i.e., the sum of the rewards,

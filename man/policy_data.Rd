@@ -27,9 +27,9 @@ policy_data(
 \method{summary}{policy_data}(object, probs = seq(0, 1, 0.25), ...)
 }
 \arguments{
-\item{data}{\link{data.frame} or \link{data.table}; see Examples.}
+\item{data}{\link{data.frame} or \link[data.table:data.table]{data.table::data.table}; see Examples.}
 
-\item{baseline_data}{\link{data.frame} or \link{data.table}; see Examples.}
+\item{baseline_data}{\link{data.frame} or \link[data.table:data.table]{data.table::data.table}; see Examples.}
 
 \item{type}{Character string. If "wide", \code{data} is considered to be on wide format.
 If "long", \code{data} is considered to be on long format; see Examples.}
@@ -82,11 +82,11 @@ The name of each element must be on the form "U_Aa" where "a" corresponds to an 
 \value{
 \code{policy_data()} returns an object of class "policy_data".
 The object is a list containing the following elements:
-\item{\code{stage_data}}{\link{data.table} containing the id, stage number, event
+\item{\code{stage_data}}{\link[data.table:data.table]{data.table::data.table} containing the id, stage number, event
 indicator, action (\eqn{A_k}), state covariates
 (\eqn{X_k}), reward (\eqn{U_k}), and the
 deterministic rewards.}
-\item{\code{baseline_data}}{\link{data.table} containing the id and baseline
+\item{\code{baseline_data}}{\link[data.table:data.table]{data.table::data.table} containing the id and baseline
 covariates (\eqn{B}).}
 \item{\code{colnames}}{List containing the state covariate names, baseline
 covariate names, and the deterministic reward variable

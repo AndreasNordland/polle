@@ -15,7 +15,7 @@ or \code{q_functions} as returned by \code{\link[=policy_eval]{policy_eval()}} o
 \item{...}{Additional arguments.}
 }
 \value{
-\link{data.table} with keys \code{id} and \code{stage} and variables \code{g_a} or \code{Q_a} for
+\link[data.table:data.table]{data.table::data.table} with keys \code{id} and \code{stage} and variables \code{g_a} or \code{Q_a} for
 each action a in the actions set.
 }
 \description{

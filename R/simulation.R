@@ -134,7 +134,7 @@ sim_single_stage_multi_actions <- function(n = 1e3, seed = NULL){
 #' U_2 = A_1\cdot C_1 + L_2 \\
 #' U_3 = A_2\cdot C_2 + L_3.
 #' }
-#' @returns [data.table] with n rows and columns B, BB, L_1, C_1, A_1, L_2, C_2,
+#' @returns [data.table::data.table] with n rows and columns B, BB, L_1, C_1, A_1, L_2, C_2,
 #' A_2, L_3, U_1, U_2, U_3 (,U_1_A0, U_1_A1, U_2_A0, U_2_A1).
 #' @export
 sim_two_stage <- function(n = 1e4,
@@ -234,7 +234,7 @@ sim_two_stage <- function(n = 1e4,
 #' U_2 = A_1\cdot C_1 + L_2 \\
 #' U_3 = A_2\cdot C_2 + L_3.
 #' }
-#' @returns [data.table] with n rows and columns B, BB, L_1, C_1, A_1, L_2, C_2,
+#' @returns [data.table::data.table] with n rows and columns B, BB, L_1, C_1, A_1, L_2, C_2,
 #' A_2, L_3, U_1, U_2, U_3.
 #' @export
 sim_two_stage_multi_actions <- function(n=1e3,
@@ -417,8 +417,8 @@ sim_multi_stage_obs <- function(a,
 #' \end{cases}
 #' }
 #' Note that \eqn{\psi} is the minimum increment.
-#' @returns list with elements \code{stage_data} ([data.table]) and
-#'  \code{baseline_data} ([data.table]).
+#' @returns list with elements \code{stage_data} ([data.table::data.table]) and
+#'  \code{baseline_data} ([data.table::data.table]).
 #' @export
 sim_multi_stage <- function(n,
                             par = list(tau = 10,

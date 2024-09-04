@@ -53,7 +53,7 @@ choosing the reference action at stage 1.}
 \value{
 Functions with arguments:
 \describe{
-\item{\code{H}}{\link{data.table} containing the variables needed to evaluate the policy (and g-function).}
+\item{\code{H}}{\link[data.table:data.table]{data.table::data.table} containing the variables needed to evaluate the policy (and g-function).}
 }
 }
 \description{

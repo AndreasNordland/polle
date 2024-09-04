@@ -254,7 +254,8 @@ print.summary.policy_data <- function(x, ...) {
 
 #' Copy Policy Data Object
 #'
-#' Objects of class [policy_data] contains elements of class [data.table].
+#' Objects of class [policy_data] contains elements of
+#' class [data.table::data.table].
 #' \code{data.table} provide functions that operate on objects by reference.
 #' Thus, the \code{policy_data} object is not copied when modified by reference,
 #' see examples. An explicit copy can be made by \code{copy_policy_data}. The
@@ -662,15 +663,15 @@ NULL
 #' }
 #' @returns Object of class [history]. The object is a list
 #' containing the following elements:
-#' \item{\code{H}}{[data.table] with keys id and stage and with variables
+#' \item{\code{H}}{[data.table::data.table] with keys id and stage and with variables
 #'                 \{\eqn{B}, \eqn{X_k}\} (state history) or
 #'                 \{\eqn{B}, \eqn{X_1}, \eqn{A_1}, ..., \eqn{X_k}\}
 #'                 (full history), see details.}
-#' \item{\code{A}}{[data.table] with keys id and stage and variable \eqn{A_k}, see
+#' \item{\code{A}}{[data.table::data.table] with keys id and stage and variable \eqn{A_k}, see
 #'                 details.}
 #' \item{action_name}{Name of the action variable in \code{A}.}
 #' \item{action_set}{Sorted character vector defining the action set.}
-#' \item{U}{(If \code{stage} is not NULL) [data.table] with keys id and stage
+#' \item{U}{(If \code{stage} is not NULL) [data.table::data.table] with keys id and stage
 #'          and with variables U_bar and U_Aa for every a in the actions set.
 #'          U_bar is the accumulated rewards up till and including the given
 #'          stage, i.e., \eqn{\sum_{j=1}^k U_j}. U_Aa is the deterministic
@@ -814,7 +815,7 @@ get_history_names.policy_data <- function(object, stage = NULL){
 #' for every observation in the policy data object.
 #'
 #' @param object Object of class [policy_data].
-#' @returns [data.table] with key id and numeric variable U.
+#' @returns [data.table::data.table] with key id and numeric variable U.
 #' @examples
 #' ### Two stages:
 #' d <- sim_two_stage(5e2, seed=1)
@@ -852,7 +853,7 @@ get_rewards <- function(object){
 #' \code{get_actions} returns the actions at every stage for every observation
 #' in the policy data object.
 #' @param object Object of class [policy_data].
-#' @returns [data.table] with keys id and stage and character variable A.
+#' @returns [data.table::data.table] with keys id and stage and character variable A.
 #' @examples
 #' ### Two stages:
 #' d <- sim_two_stage(5e2, seed=1)
@@ -912,7 +913,7 @@ get_id.policy_data <- function(object){
 #'
 #' \code{get_id} returns the stages for every ID for every observation in the policy data object.
 #' @param object Object of class [policy_data] or [history].
-#' @returns [data.table] with keys id and stage.
+#' @returns [data.table::data.table] with keys id and stage.
 #' @examples
 #' ### Two stages:
 #' d <- sim_two_stage(5e2, seed=1)

@@ -178,8 +178,8 @@ new_policy_data <- function(stage_data, baseline_data = NULL, action_set = NULL,
 #' is used as input to [policy_eval()] and [policy_learn()] for policy
 #' evaluation and data adaptive policy learning.
 #'
-#' @param data [data.frame] or [data.table]; see Examples.
-#' @param baseline_data [data.frame] or [data.table]; see Examples.
+#' @param data [data.frame] or [data.table::data.table]; see Examples.
+#' @param baseline_data [data.frame] or [data.table::data.table]; see Examples.
 #' @param type Character string. If "wide", \code{data} is considered to be on wide format.
 #' If "long", \code{data} is considered to be on long format; see Examples.
 #' @param action Action variable name(s). Character vector or character string.
@@ -227,11 +227,11 @@ new_policy_data <- function(stage_data, baseline_data = NULL, action_set = NULL,
 #' @returns
 #' \code{policy_data()} returns an object of class "policy_data".
 #' The object is a list containing the following elements:
-#' \item{\code{stage_data}}{[data.table] containing the id, stage number, event
+#' \item{\code{stage_data}}{[data.table::data.table] containing the id, stage number, event
 #'                           indicator, action (\eqn{A_k}), state covariates
 #'                           (\eqn{X_k}), reward (\eqn{U_k}), and the
 #'                           deterministic rewards.}
-#' \item{\code{baseline_data}}{[data.table] containing the id and baseline
+#' \item{\code{baseline_data}}{[data.table::data.table] containing the id and baseline
 #'                             covariates (\eqn{B}).}
 #' \item{\code{colnames}}{List containing the state covariate names, baseline
 #'                        covariate names, and the deterministic reward variable

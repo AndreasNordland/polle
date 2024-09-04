@@ -10,7 +10,7 @@ get_policy_actions(object)
 \item{object}{Object of class \link{policy_eval}.}
 }
 \value{
-\link{data.table} with keys \code{id} and \code{stage} and action variable
+\link[data.table:data.table]{data.table::data.table} with keys \code{id} and \code{stage} and action variable
 \code{d}.
 }
 \description{
