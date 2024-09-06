@@ -98,7 +98,6 @@ dr_subgroup <- function(K,
   ## calculating the subgroup indicator:
   subgroup_indicator <- (policy_actions[["d"]] == action_set[2])
 
-
   sate <- as.numeric(NA)
   IC <- rep(as.numeric(NA), nrow(actions))
   if (any(subgroup_indicator)) {
@@ -107,11 +106,15 @@ dr_subgroup <- function(K,
     ## calculating the influence curve for the subgroup average treatment effect:
     IC <- 1 / mean(subgroup_indicator) * subgroup_indicator *
       (blip - sate)
+    ## Same for the complementary set (d=0)
+    sate0 <- mean(blip[!subgroup_indicator])
+    IC0 <- 1 / mean(!subgroup_indicator) * (!subgroup_indicator) *
+      (blip - sate0)
   }
 
   out <- list(
-    coef = sate,
-    IC = IC,
+    coef = c(sate, sate0),
+    IC = cbind(IC, IC0),
     Z = Z,
     subgroup_indicator = subgroup_indicator
   )
