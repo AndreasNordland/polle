@@ -20,7 +20,7 @@ Depends:
     SuperLearner
 Imports:
     data.table (>= 1.14.5),
-    lava (>= 1.7.0),
+    lava (>= 1.8.0),
     future.apply,
     progressr,
     methods,
