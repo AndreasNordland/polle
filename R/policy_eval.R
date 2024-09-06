@@ -409,7 +409,7 @@ policy_eval <- function(policy_data,
       name <- paste0("E[Z(", as[2], ")-Z(", as[1], ")|d=", as[2], "]")
       ##
       pol_name <- rep(pol_name, each = 2)
-      name <- c(name, paste0("E[Z(", as[1], ")-Z(", as[1], ")|d=", as[1], "]"))
+      name <- c(name, paste0("E[Z(", as[2], ")-Z(", as[1], ")|d=", as[1], "]"))
       if (!is.null(pol_name)) {
         name <- paste0(name, ": d=", pol_name)
       }
