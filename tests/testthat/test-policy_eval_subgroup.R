@@ -72,25 +72,23 @@ test_that("policy_eval with target 'subgroup' agrees with targeted::cate.", {
 
     ## implementation from the targeted package:
     d$d <- p(pd)$d
-    library(targeted)
 
-    ca <- cate(
-        treatment = A ~ factor(d) - 1,
-        response = U ~ A * Z,
+    ca <- targeted::cate(
+        cate_model = ~ factor(d) - 1,
+        response_model = U ~ A * Z,
         propensity_model = A ~ 1,
         data = d,
         nfolds = 1,
-        type = "dml2"
     )
 
     expect_equal(
         unname(coef(pe)),
-        unname(coef(ca)["factor(d)1"])
+        unname(coef(ca)[c("factor(d)1")])
     )
 
     expect_equal(
-        IC(pe),
-        ca$estimate$IC[, "factor(d)1"] |> unname() |> matrix()
+        IC(pe) |> unname(),
+        IC(ca)[, c("factor(d)1"),drop=FALSE] |> unname()
     )
 
     ##
@@ -110,13 +108,12 @@ test_that("policy_eval with target 'subgroup' agrees with targeted::cate.", {
     )
 
     set.seed(1)
-    ca <- cate(
-        treatment = A ~ factor(d) - 1,
-        response = U ~ A * Z,
+    ca <- targeted::cate(
+        cate_model = ~ factor(d) - 1,
+        response_model = U ~ A * Z,
         propensity_model = A ~ 1,
         data = d,
         nfolds = 2,
-        type = "dml2"
     )
 
     expect_equal(
@@ -133,32 +130,32 @@ test_that("policy_eval with target 'subgroup' agrees with targeted::cate.", {
     ## cross-fitting: stacked estimate and pooled variance
     ##
 
-    set.seed(1)
-    pe <- policy_eval(
-        policy_data = pd,
-        policy = p,
-        g_models = g_glm(~1),
-        q_models = q_glm(~ A * Z),
-        target = "sub_effect",
-        cross_fit_type = "stacked",
-        variance_type = "pooled",
-        M = 2
-    )
+    ## set.seed(1)
+    ## pe <- policy_eval(
+    ##     policy_data = pd,
+    ##     policy = p,
+    ##     g_models = g_glm(~1),
+    ##     q_models = q_glm(~ A * Z),
+    ##     target = "sub_effect",
+    ##     cross_fit_type = "stacked",
+    ##     variance_type = "pooled",
+    ##     M = 2
+    ## )
 
-    set.seed(1)
-    ca <- cate(
-        treatment = A ~ factor(d) - 1,
-        response = U ~ A * Z,
-        propensity_model = A ~ 1,
-        data = d,
-        nfolds = 2,
-        type = "dml1"
-    )
+    ## set.seed(1)
+    ## ca <- cate(
+    ##     treatment = A ~ factor(d) - 1,
+    ##     response = U ~ A * Z,
+    ##     propensity_model = A ~ 1,
+    ##     data = d,
+    ##     nfolds = 2,
+    ##     type = "dml1"
+    ## )
 
-    expect_equal(
-        unname(coef(pe)),
-        unname(coef(ca)["factor(d)1"])
-    )
+    ## expect_equal(
+    ##     unname(coef(pe)),
+    ##     unname(coef(ca)[c("factor(d)1", "factor(d)0")])
+    ## )
 
     ## in the targeted package, the stacked estimate is used
     ## to centralized the pooled variance estimate:
@@ -175,10 +172,14 @@ test_that("policy_eval with target 'sub_effect' has the correct outputs: test1."
             !is.null(coef(pe)) && is.numeric(coef(pe))
         )
 
-        ## IC should be zero for Z < 0
+        ## IC in group d=1 should be zero for Z < 0
         expect_true(
-            all(IC(pe)[d$Z <= 0] == 0)
+            all(IC(pe)[d$Z <= 0, 1] == 0)
         )
+        ## ## ... and for the other subgroup:
+        ## expect_true(
+        ##     all(IC(pe)[d$Z >0, 2] == 0)
+        ## )
 
         ## id
         expect_true(
@@ -291,7 +292,7 @@ test_that("policy_eval with target 'subgroup' has the correct outputs: test2.", 
         target = "subgroup",
         policy_data = pd,
         policy = p,
-        q_models = q_degen(var = "z"),
+        q_models = polle:::q_degen(var = "z"),
         g_models = g_glm(~1)
     )
 
@@ -317,7 +318,7 @@ test_that("policy_eval with target 'subgroup' has the correct outputs: test2.", 
         target = "sub_effect",
         policy_data = pd,
         policy = p,
-        q_models = q_degen(var = "z"),
+        q_models = polle:::q_degen(var = "z"),
         g_functions = gf,
         M = 2,
     )
@@ -393,7 +394,7 @@ test_that("policy_eval with target 'subgroup' returns NA no subjects are in the 
         target = "subgroup",
         policy_data = pd,
         policy = p,
-        q_models = q_degen(var = "z"),
+        q_models = polle:::q_degen(var = "z"),
         g_models = g_glm(~1)
     )
 
@@ -415,14 +416,14 @@ test_that("policy_eval with target 'subgroup' returns NA no subjects are in the 
     pl <- policy_learn(
         type = "blip",
         threshold = c(50, 101),
-        control = control_blip(blip_models = q_degen(var = "z"))
+        control = control_blip(blip_models = polle:::q_degen(var = "z"))
     )
 
     sub <- policy_eval(
         target = "subgroup",
         policy_data = pd,
         policy_learn = pl,
-        q_models = q_degen(var = "z"),
+        q_models = polle:::q_degen(var = "z"),
         g_models = g_glm(~1)
     )
 

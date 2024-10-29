@@ -423,10 +423,9 @@ test_that("policy_eval with target = 'value' agrees with targeted::lava", {
 
   set.seed(1)
   ca_dml2 <- targeted::cate(
-    treatment = A ~ 1,
+    cate_model = A ~ 1,
     response_model = U ~ A * Z,
     propensity_model = A ~ Z,
-    type = "dml2",
     data = d,
     nfolds = 2,
     contrast = 1
@@ -767,7 +766,7 @@ expect_no_error({
   )
 })
 
-test_that("conditional.policy_eval agrees with targeted::CATE", {
+test_that("conditional.policy_eval agrees with targeted::cate", {
   n <- 1e3
   B <- rbinom(n = n, size = 1, prob = 0.5)
   Z <- rnorm(n = n)
@@ -809,13 +808,12 @@ test_that("conditional.policy_eval agrees with targeted::CATE", {
   ## implementation from the targeted package:
   library(targeted)
 
-  ca <- cate(
-    treatment = A ~ factor(B) - 1,
-    response = U ~ A * Z,
+  ca <- targeted::cate(
+    cate_model = A ~ factor(B) - 1,
+    response_model = U ~ A * Z,
     propensity_model = A ~ 1,
     data = d,
     nfolds = 1,
-    type = "dml2"
   )
 
   expect_equal(
