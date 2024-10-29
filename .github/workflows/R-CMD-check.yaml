@@ -47,7 +47,7 @@ jobs:
       - name: Install extra dependencies
         run: |
           remotes::install_github("kkholst/targeted")
-
+        shell: Rscript {0}
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
