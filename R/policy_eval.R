@@ -406,14 +406,15 @@ policy_eval <- function(policy_data,
         pol_name <- attr(policy_learn, "name")
       }
       as <- get_action_set(policy_data)
-      name <- paste0("E[Z(", as[2], ")-Z(", as[1], ")|d=", as[2], "]")
-      ##
-      pol_name <- rep(pol_name, each = 2)
-      name <- c(name, paste0("E[Z(", as[2], ")-Z(", as[1], ")|d=", as[1], "]"))
+      name1 <- paste0("E[Z(", as[2], ")-Z(", as[1], ")|d=", as[2], "]")
+      name2 <- paste0("E[Z(", as[2], ")-Z(", as[1], ")|d=", as[1], "]")
       if (!is.null(pol_name)) {
-        name <- paste0(name, ": d=", pol_name)
+        name <- c(
+          paste0(name1, ": d=", pol_name),
+          paste0(name2, ": d=", pol_name)
+        )
       }
-      rm(as, pol_name)
+      rm(as, pol_name, name1, name2)
     }
   }
 
@@ -603,7 +604,7 @@ policy_eval_type <- function(target,
   subgroup_indicator <- NULL
   Z <- NULL
   if (target == "subgroup") {
-     ## getting the doubly robust score for each treatment:
+    ## getting the doubly robust score for each treatment:
     Z <- get_element(estimate_objects[[1]], "Z")
     ## getting the subgroup indicator (if available):
     subgroup_indicator <- lapply(
@@ -627,6 +628,14 @@ policy_eval_type <- function(target,
   ## getting the influence curves:
   IC <- lapply(estimate_objects, function(eb) get_element(eb, "IC"))
   IC <- do.call(what = "cbind", IC)
+
+  if (target == "subgroup") {
+    ## Reorder coefficients so all thresholds for d=1 are presented first
+    ## followied by d=0
+    idx <- seq_len(length(coef) / 2) * 2 - 1
+    coef <- coef[c(idx, idx+1)]
+    IC <- IC[, c(idx, idx + 1)]
+  }
 
   out <- policy_eval_object(
     coef = coef,
@@ -736,6 +745,7 @@ policy_eval_cross <- function(args,
     )
     subgroup_indicator <- do.call(what = "rbind", subgroup_indicator)
     subgroup_indicator <- subgroup_indicator[order(id), , drop = FALSE]
+    subgroup_indicator <- cbind(subgroup_indicator, !subgroup_indicator)
   }
 
   ##
@@ -800,6 +810,7 @@ policy_eval_cross <- function(args,
         function(x) mean((Z[, 2] - Z[, 1])[x])
       )
     }
+    n_coef <- length(coef)
   }
 
   ##
