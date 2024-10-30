@@ -445,7 +445,9 @@ policy_eval <- function(policy_data,
     eval$rep <- rep
 
     if (rep > 1) {
-      ## Repeated cross-fitting to reduce dependence on seed
+      ## Repeated cross-fitting to reduce dependence on seed.
+      ## TODO: This should work for static policies, but we need to assess this for
+      ## policy-learning
       eval0 <- function(...) {
         res <- policy_eval_cross(
           args = args,
