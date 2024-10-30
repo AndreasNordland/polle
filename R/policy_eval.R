@@ -399,6 +399,7 @@ policy_eval <- function(policy_data,
       }
       rm(pol_name)
     }
+
     if (target == "subgroup") {
       if (!is.null(policy)) {
         pol_name <- attr(policy, "name")
@@ -413,6 +414,8 @@ policy_eval <- function(policy_data,
           paste0(name1, ": d=", pol_name),
           paste0(name2, ": d=", pol_name)
         )
+      } else {
+        name <- c(name1, name2)
       }
       rm(as, pol_name, name1, name2)
     }
@@ -434,13 +437,14 @@ policy_eval <- function(policy_data,
       cross_fit_type = cross_fit_type,
       variance_type = variance_type,
       future_args = future_args
+
     )
   } else {
     args[["train_policy_data"]] <- policy_data
     args[["valid_policy_data"]] <- policy_data
     eval <- do.call(what = policy_eval_type, args = args)
   }
-  ## attr(eval, "a") <- pol_name
+
   return(eval)
 }
 
@@ -547,6 +551,7 @@ policy_eval_type <- function(target,
   # getting the utility:
   utility <- get_utility(valid_policy_data)
 
+
   ## calculating the target estimate for each policy:
   if (length(policy) == 1) {
     # getting the policy actions:
@@ -629,11 +634,11 @@ policy_eval_type <- function(target,
   IC <- lapply(estimate_objects, function(eb) get_element(eb, "IC"))
   IC <- do.call(what = "cbind", IC)
 
-  if (target == "subgroup") {
+  if (target == "subgroup" & length(coef) > 1) {
     ## Reorder coefficients so all thresholds for d=1 are presented first
     ## followied by d=0
     idx <- seq_len(length(coef) / 2) * 2 - 1
-    coef <- coef[c(idx, idx+1)]
+    coef <- coef[c(idx, idx + 1)]
     IC <- IC[, c(idx, idx + 1)]
   }
 
@@ -864,7 +869,7 @@ policy_eval_cross <- function(args,
       args[["train_policy_data"]] <- policy_data
       args[["valid_policy_data"]] <- policy_data
       pe <- do.call(what = policy_eval_type, args = args)
-      IC <- as.vector(IC(pe))
+      IC <- IC(pe)
       rm(pe)
     }
   }

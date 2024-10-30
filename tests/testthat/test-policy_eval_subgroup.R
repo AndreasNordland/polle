@@ -83,12 +83,13 @@ test_that("policy_eval with target 'subgroup' agrees with targeted::cate.", {
 
     expect_equal(
         unname(coef(pe)),
-        unname(coef(ca)[c("factor(d)1")])
+        unname(coef(ca)[c("factor(d)1", "factor(d)0")])
     )
 
     expect_equal(
         IC(pe) |> unname(),
-        IC(ca)[, c("factor(d)1"),drop=FALSE] |> unname()
+      IC(ca)[, c("factor(d)1", "factor(d)0"), drop=FALSE] |>
+      unname()
     )
 
     ##
@@ -118,12 +119,13 @@ test_that("policy_eval with target 'subgroup' agrees with targeted::cate.", {
 
     expect_equal(
         unname(coef(pe)),
-        unname(coef(ca)["factor(d)1"])
+        unname(coef(ca)[c("factor(d)1", "factor(d)0")])
     )
 
     expect_equal(
         IC(pe),
-        ca$estimate$IC[, "factor(d)1"] |> unname() |> matrix()
+      IC(ca)[, c("factor(d)1", "factor(d)0")] |>
+      unname()
     )
 
     ##
@@ -297,12 +299,12 @@ test_that("policy_eval with target 'subgroup' has the correct outputs: test2.", 
     )
 
     expect_equal(
-        coef(sub),
+        coef(sub)[1],
         ref_sub
     )
 
     expect_equal(
-        IC(sub),
+        IC(sub)[,1,drop=FALSE] |> unname(),
         matrix(ref_IC)
     )
 
@@ -324,12 +326,12 @@ test_that("policy_eval with target 'subgroup' has the correct outputs: test2.", 
     )
 
     expect_equal(
-        coef(sub),
+        coef(sub)[1],
         ref_sub
     )
 
     expect_equal(
-        IC(sub),
+        IC(sub)[,1,drop=FALSE] |> unname(),
         matrix(ref_IC)
     )
 })
@@ -365,7 +367,7 @@ test_that("policy_eval with target 'subgroup' has the correct outputs: test2.", 
 
 test_that("policy_eval with target 'subgroup' returns NA no subjects are in the subgroup.", {
 
-  z <- 1:1e2
+    z <- 1:1e2
     a <- c(rep(1, 50), rep(2, 50))
     y <- a * 2
         p1 <- c(rep(1, 50), rep(2, 50))
@@ -400,13 +402,13 @@ test_that("policy_eval with target 'subgroup' returns NA no subjects are in the 
 
 
     expect_equal(
-        coef(sub),
+        coef(sub)[1],
         as.numeric(NA)
     )
 
     expect_equal(
-        IC(sub),
-        rep(as.numeric(NA), 1e2) |> matrix()
+        unname(IC(sub)[,1,drop=FALSE]),
+        cbind(rep(as.numeric(NA), 1e2))
     )
 
     expect_no_error(
@@ -432,12 +434,12 @@ test_that("policy_eval with target 'subgroup' returns NA no subjects are in the 
     )
 
     expect_equal(
-        coef(sub),
+        coef(sub)[1:2],
         c(ref_sub_eta50, as.numeric(NA))
     )
 
     expect_equal(
-        IC(sub),
+        unname(IC(sub)[,1:2,drop=FALSE]),
         cbind(ref_IC_eta50, rep(as.numeric(NA), 1e2)) |> unname()
     )
 })

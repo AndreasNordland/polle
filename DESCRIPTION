@@ -26,6 +26,7 @@ Imports:
     methods,
     policytree (>= 1.2.0),
     survival,
+    targeted (>= 0.5),
     DynTxRegime
 Remotes:
     kkholst/targeted@main
