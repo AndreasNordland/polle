@@ -29,6 +29,7 @@ policy_eval(
   cross_fit_type = "pooled",
   variance_type = "pooled",
   M = 1,
+  rep = 1,
   future_args = list(future.seed = TRUE),
   name = NULL
 )
@@ -118,6 +119,8 @@ Either "stacked", or "pooled", see details. (Only used if \code{M > 1} and targe
 "stacked" or "complete", see details. (Only used if \code{M > 1})}
 
 \item{M}{Number of folds for cross-fitting.}
+
+\item{rep}{Repetitions of cross-fitting (estimates averaged over repeated cross-fittings)}
 
 \item{future_args}{Arguments passed to \code{\link[future.apply:future_apply]{future.apply::future_apply()}}.}
 

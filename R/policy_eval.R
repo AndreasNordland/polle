@@ -47,6 +47,7 @@
 #' @param variance_type Character string. Either "pooled" (default),
 #' "stacked" or "complete", see details. (Only used if \code{M > 1})
 #' @param M Number of folds for cross-fitting.
+#' @param rep Repetitions of cross-fitting (estimates averaged over repeated cross-fittings)
 #' @param future_args Arguments passed to [future.apply::future_apply()].
 #' @param name Character string.
 #' @param object,x,y Objects of class "policy_eval".
@@ -297,7 +298,9 @@ policy_eval <- function(policy_data,
                         type = "dr",
                         cross_fit_type = "pooled",
                         variance_type = "pooled",
-                        M = 1, future_args = list(future.seed=TRUE),
+                        M = 1,
+                        rep = 1,
+                        future_args = list(future.seed=TRUE),
                         name = NULL
                         ) {
   # input checks:
@@ -428,6 +431,7 @@ policy_eval <- function(policy_data,
   args[["future_args"]] <- NULL
   args[["variance_type"]] <- NULL
   args[["cross_fit_type"]] <- NULL
+  args[["rep"]] <- NULL
 
   if (M > 1) {
     eval <- policy_eval_cross(
@@ -437,8 +441,34 @@ policy_eval <- function(policy_data,
       cross_fit_type = cross_fit_type,
       variance_type = variance_type,
       future_args = future_args
-
     )
+    eval$rep <- rep
+
+    if (rep > 1) {
+      ## Repeated cross-fitting to reduce dependence on seed
+      eval0 <- function(...) {
+        res <- policy_eval_cross(
+          args = args,
+          policy_data = policy_data,
+          M = M,
+          cross_fit_type = cross_fit_type,
+          variance_type = variance_type,
+          future_args = future_args
+        )
+        list(coef=res$coef, IC=res$IC)
+      }
+      val <- do.call(
+        what = future.apply::future_lapply,
+        c(list(X = seq_len(rep - 1), FUN = eval0), future_args)
+      )
+      for (x in val) {
+        eval$coef <- eval$coef + x$coef
+        eval$IC <- eval$IC + x$IC
+      }
+      eval$coef <- eval$coef / rep
+      eval$IC <- eval$IC / rep
+    }
+
   } else {
     args[["train_policy_data"]] <- policy_data
     args[["valid_policy_data"]] <- policy_data
@@ -669,7 +699,8 @@ policy_eval_cross <- function(args,
                               M,
                               cross_fit_type,
                               variance_type,
-                              future_args) {
+                              future_args
+                              ) {
 
   ## check cross_fit_type input:
   cross_fit_type <- tolower(cross_fit_type)
@@ -718,6 +749,7 @@ policy_eval_cross <- function(args,
     ),
     future_args
   )
+
   cross_fits <- do.call(what = future.apply::future_lapply, cross_args)
 
   ## collecting the ids from each fold (unsorted):
