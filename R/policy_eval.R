@@ -446,8 +446,8 @@ policy_eval <- function(policy_data,
 
     if (rep > 1) {
       ## Repeated cross-fitting to reduce dependence on seed.
-      ## TODO: This should work for static policies, but we need to assess this for
-      ## policy-learning
+      ## TODO: This should work for static policies,
+      ## but we need to assess this for policy-learning
       eval0 <- function(...) {
         res <- policy_eval_cross(
           args = args,
@@ -501,6 +501,8 @@ policy_eval_object <- function(
     folds = NULL,
     cross_fit_type = NULL,
     variance_type = NULL) {
+  names(coef) <- name
+  colnames(IC) <- name
   out <- as.list(environment())
   out <- remove_null_elements(out)
   class(out) <- c("policy_eval")
@@ -673,6 +675,7 @@ policy_eval_type <- function(target,
     coef <- coef[c(idx, idx + 1)]
     IC <- IC[, c(idx, idx + 1)]
   }
+
 
   out <- policy_eval_object(
     coef = coef,
