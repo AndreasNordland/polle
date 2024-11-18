@@ -97,14 +97,28 @@ estimate.policy_eval <- function(x,
       ...
     )
   } else {
-    est <- lava::estimate(
-      NULL,
-      coef = coef(x),
-      IC = ic,
-      labels = labels,
-      level = level,
-      ...
-    )
+    if (!is.null(x$variance_type) &&
+        x$variance_type == "mean") {
+      V <- Reduce(`+`, lapply(pe2$IC, lava::var_ic))
+      V <- V / length(pe2$IC)
+      est <- lava::estimate(
+        NULL,
+        coef = coef(x),
+        vcov = V,
+        labels = labels,
+        level = level,
+        ...
+      )
+    } else {
+      est <- lava::estimate(
+        NULL,
+        coef = coef(x),
+        IC = ic,
+        labels = labels,
+        level = level,
+        ...
+      )
+    }
   }
   return(est)
 }
