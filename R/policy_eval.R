@@ -393,7 +393,7 @@ policy_eval <- function(policy_data,
       } else {
         pol_name <- attr(policy_learn, "name")
       }
-      name <- "E[Z(d)]"
+      name <- "E[U(d)]"
       if (!is.null(pol_name)) {
         name <- paste0(name, ": d=", pol_name)
       }
@@ -406,7 +406,7 @@ policy_eval <- function(policy_data,
         pol_name <- attr(policy_learn, "name")
       }
       as <- get_action_set(policy_data)
-      name <- paste0("E[Z(", as[2], ")-Z(", as[1], ")|d=", as[2], "]")
+      name <- paste0("E[U(", as[2], ")-U(", as[1], ")|d=", as[2], "]")
       if (!is.null(pol_name)) {
         name <- paste0(name, ": d=", pol_name)
       }
