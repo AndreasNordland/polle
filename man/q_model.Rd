@@ -37,7 +37,7 @@ q_rf(
 q_sl(
   formula = ~.,
   SL.library = c("SL.mean", "SL.glm"),
-  env = as.environment("package:SuperLearner"),
+  env = parent.frame(),
   onlySL = TRUE,
   discreteSL = FALSE,
   ...
