@@ -1,3 +1,8 @@
+# polle 1.5.1
+    - documentation and print method for policy_eval() improved
+    - multiple thresholds for policy_learn()
+    - bug fixes: get_policy_functions(), predict.blip_function(), predict.q_glmnet()
+
 # polle 1.5
     - added target argument in policy_eval for estimating the subgroup average treatment effect.
     - added threshold argument in policy_learn for learning the optimal subgroup.

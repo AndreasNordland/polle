@@ -1,6 +1,6 @@
 Package: polle
 Title: Policy Learning
-Version: 1.5
+Version: 1.5.1
 Authors@R: c(person(given = "Andreas",
                     family = "Nordland",
                     role = c("aut", "cre"),
