@@ -217,6 +217,8 @@ test_that("g_rf runs:", {
       type = "ipw"
     )
   )
+
+  expect_is(pe, class = "policy_eval")
 })
 
 
