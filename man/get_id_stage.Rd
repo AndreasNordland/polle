@@ -10,7 +10,7 @@ get_id_stage(object)
 \item{object}{Object of class \link{policy_data} or \link{history}.}
 }
 \value{
-\link{data.table} with keys id and stage.
+\link[data.table:data.table]{data.table::data.table} with keys id and stage.
 }
 \description{
 \code{get_id} returns the stages for every ID for every observation in the policy data object.

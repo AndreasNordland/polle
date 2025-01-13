@@ -161,7 +161,7 @@ policy value or subgroup average treatment effect.}
 Estimate of \code{coef} based solely on inverse probability weighting.}
 \item{\code{coef_or}}{(only if \code{type = "dr"}) Numeric vector.
 Estimate of \code{coef} based solely on outcome regression.}
-\item{\code{policy_actions}}{\link{data.table} with keys id and stage. Actions
+\item{\code{policy_actions}}{\link[data.table:data.table]{data.table::data.table} with keys id and stage. Actions
 associated with the policy for every observation and stage.}
 \item{\code{policy_object}}{(only if \code{policy = NULL} and \code{M = 1})
 The policy object returned by \code{policy_learn}, see \link{policy_learn}.}

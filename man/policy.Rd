@@ -5,7 +5,7 @@
 \alias{policy}
 \title{Policy-class}
 \value{
-\link{data.table} with keys \code{id} and \code{stage} and
+\link[data.table:data.table]{data.table::data.table} with keys \code{id} and \code{stage} and
 action variable \code{d}.
 }
 \description{

@@ -13,7 +13,8 @@ copy_policy_data(object)
 Object of class \link{policy_data}.
 }
 \description{
-Objects of class \link{policy_data} contains elements of class \link{data.table}.
+Objects of class \link{policy_data} contains elements of
+class \link[data.table:data.table]{data.table::data.table}.
 \code{data.table} provide functions that operate on objects by reference.
 Thus, the \code{policy_data} object is not copied when modified by reference,
 see examples. An explicit copy can be made by \code{copy_policy_data}. The

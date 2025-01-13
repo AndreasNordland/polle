@@ -10,7 +10,7 @@ get_actions(object)
 \item{object}{Object of class \link{policy_data}.}
 }
 \value{
-\link{data.table} with keys id and stage and character variable A.
+\link[data.table:data.table]{data.table::data.table} with keys id and stage and character variable A.
 }
 \description{
 \code{get_actions} returns the actions at every stage for every observation

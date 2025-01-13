@@ -138,7 +138,7 @@ realistic actions.}
 \item{\code{qv_functions}}{(only if \code{type = "drql"}) Fitted
 V-restricted Q-functions. Contains a fitted model for each stage and action.}
 \item{\code{ptl_objects}}{(only if \code{type = "ptl"}) Fitted V-restricted
-policy trees. Contains a \link{policy_tree} for each stage.}
+policy trees. Contains a \link[policytree:policy_tree]{policytree::policy_tree} for each stage.}
 \item{\code{ptl_designs}}{(only if \code{type = "ptl"}) Specification of the
 V-restricted design matrix for each stage}
 }

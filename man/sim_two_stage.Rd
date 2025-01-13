@@ -34,7 +34,7 @@ sim_two_stage(
 contributions are returned as well (columns U_1_A0, U_1_A1, U_2_A0, U_2_A1).}
 }
 \value{
-\link{data.table} with n rows and columns B, BB, L_1, C_1, A_1, L_2, C_2,
+\link[data.table:data.table]{data.table::data.table} with n rows and columns B, BB, L_1, C_1, A_1, L_2, C_2,
 A_2, L_3, U_1, U_2, U_3 (,U_1_A0, U_1_A1, U_2_A0, U_2_A1).
 }
 \description{

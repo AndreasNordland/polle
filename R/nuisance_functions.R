@@ -49,7 +49,7 @@ NULL
 #' or \code{q_functions} as returned by [policy_eval()] or [policy_learn()].
 #' @param new_policy_data Policy data object created by [policy_data()].
 #' @param ... Additional arguments.
-#' @returns [data.table] with keys \code{id} and \code{stage} and variables \code{g_a} or \code{Q_a} for
+#' @returns [data.table::data.table] with keys \code{id} and \code{stage} and variables \code{g_a} or \code{Q_a} for
 #' each action a in the actions set.
 #' @examples
 #' library("polle")

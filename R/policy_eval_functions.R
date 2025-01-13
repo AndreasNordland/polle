@@ -255,7 +255,7 @@ get_policy.policy_eval <- function(object){
 #' @description \code{get_policy_actions()} extract the actions dictated by the
 #' (learned and possibly cross-fitted) policy a every stage.
 #' @param object Object of class [policy_eval].
-#' @returns [data.table] with keys \code{id} and \code{stage} and action variable
+#' @returns [data.table::data.table] with keys \code{id} and \code{stage} and action variable
 #' \code{d}.
 #' @examples
 #' ### Two stages:

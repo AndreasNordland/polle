@@ -130,7 +130,7 @@ get_policy.policy_eval <- function(object, threshold = NULL) {
 #' @param include_g_values If TRUE, the g-values are included as an attribute.
 #' @returns Functions with arguments:
 #' \describe{
-#' \item{\code{H}}{[data.table] containing the variables needed to evaluate the policy (and g-function).}
+#' \item{\code{H}}{[data.table::data.table] containing the variables needed to evaluate the policy (and g-function).}
 #' }
 #' @examples
 #' library("polle")

@@ -20,12 +20,12 @@ input to the policy functions.}
 }
 \value{
 Function of class \code{"policy"}. The function takes a
-\link{policy_data} object as input and returns a \link{data.table}
+\link{policy_data} object as input and returns a \link[data.table:data.table]{data.table::data.table}
 with keys \code{id} and \code{stage} and action variable \code{d}.
 }
 \description{
 \code{policy_def} returns a function of class \link{policy}.
-The function input is a \link{policy_data} object and it returns a \link{data.table}
+The function input is a \link{policy_data} object and it returns a \link[data.table:data.table]{data.table::data.table}
 with keys \code{id} and \code{stage} and action variable \code{d}.
 }
 \examples{

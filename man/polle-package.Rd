@@ -6,7 +6,7 @@
 \alias{polle-package}
 \title{polle: Policy Learning}
 \description{
-Package for evaluating user-specified finite stage policies and learning optimal treatment policies via doubly robust loss functions. Policy learning methods include doubly robust blip/CATE learning and sequential policy tree learning. The package also include methods for optimal subgroup analysis. See Nordland and Holst (2022) \doi{10.48550/arXiv.2212.02335} for documentation and references.
+Package for evaluating user-specified finite stage policies and learning optimal treatment policies via doubly robust loss functions. Policy learning methods include doubly robust learning of the blip/conditional average treatment effect and sequential policy tree learning. The package also include methods for optimal subgroup analysis. See Nordland and Holst (2022) \doi{10.48550/arXiv.2212.02335} for documentation and references.
 }
 \seealso{
 Useful links:

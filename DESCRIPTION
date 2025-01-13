@@ -1,6 +1,6 @@
 Package: polle
 Title: Policy Learning
-Version: 1.5.0.1
+Version: 1.5.1
 Authors@R: c(person(given = "Andreas",
                     family = "Nordland",
                     role = c("aut", "cre"),
@@ -11,7 +11,7 @@ Authors@R: c(person(given = "Andreas",
                     email = "klaus@holst.it",
                     comment = c(ORCID="0000-0002-1364-6789"))
              )
-Description: Package for evaluating user-specified finite stage policies and learning optimal treatment policies via doubly robust loss functions. Policy learning methods include doubly robust blip/CATE learning and sequential policy tree learning. The package also include methods for optimal subgroup analysis. See Nordland and Holst (2022) <doi:10.48550/arXiv.2212.02335> for documentation and references.
+Description: Package for evaluating user-specified finite stage policies and learning optimal treatment policies via doubly robust loss functions. Policy learning methods include doubly robust learning of the blip/conditional average treatment effect and sequential policy tree learning. The package also include methods for optimal subgroup analysis. See Nordland and Holst (2022) <doi:10.48550/arXiv.2212.02335> for documentation and references.
 License: Apache License (>= 2)
 Encoding: UTF-8
 LazyData: true

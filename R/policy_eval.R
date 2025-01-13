@@ -75,7 +75,7 @@
 #' Estimate of \code{coef} based solely on inverse probability weighting.}
 #' \item{\code{coef_or}}{(only if \code{type = "dr"}) Numeric vector.
 #' Estimate of \code{coef} based solely on outcome regression.}
-#' \item{\code{policy_actions}}{[data.table] with keys id and stage. Actions
+#' \item{\code{policy_actions}}{[data.table::data.table] with keys id and stage. Actions
 #' associated with the policy for every observation and stage.}
 #' \item{\code{policy_object}}{(only if \code{policy = NULL} and \code{M = 1})
 #' The policy object returned by \code{policy_learn}, see [policy_learn].}
@@ -396,7 +396,7 @@ policy_eval <- function(policy_data,
       } else {
         pol_name <- attr(policy_learn, "name")
       }
-      name <- "E[Z(d)]"
+      name <- "E[U(d)]"
       if (!is.null(pol_name)) {
         name <- paste0(name, ": d=", pol_name)
       }
@@ -410,8 +410,8 @@ policy_eval <- function(policy_data,
         pol_name <- attr(policy_learn, "name")
       }
       as <- get_action_set(policy_data)
-      name1 <- paste0("E[Z(", as[2], ")-Z(", as[1], ")|d=", as[2], "]")
-      name2 <- paste0("E[Z(", as[2], ")-Z(", as[1], ")|d=", as[1], "]")
+      name1 <- paste0("E[U(", as[2], ")-U(", as[1], ")|d=", as[2], "]")
+      name2 <- paste0("E[U(", as[2], ")-U(", as[1], ")|d=", as[1], "]")
       if (!is.null(pol_name)) {
         name <- c(
           paste0(name1, ": d=", pol_name),

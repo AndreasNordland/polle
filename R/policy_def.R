@@ -21,7 +21,7 @@ new_policy <- function(fun, name){
 #' [policy_def] or a policy can be fitted using [policy_learn]
 #' (or [policy_eval]). [policy_learn] returns a [policy_object] from which
 #' the policy can be extracted using [get_policy].
-#' @returns [data.table] with keys \code{id} and \code{stage} and
+#' @returns [data.table::data.table] with keys \code{id} and \code{stage} and
 #' action variable \code{d}.
 #' @examples
 #' ### Two stages:
@@ -60,7 +60,7 @@ NULL
 #' Define Policy
 #'
 #' \code{policy_def} returns a function of class [policy].
-#' The function input is a [policy_data] object and it returns a [data.table]
+#' The function input is a [policy_data] object and it returns a [data.table::data.table]
 #'  with keys \code{id} and \code{stage} and action variable \code{d}.
 #'
 #' @param policy_functions A single function/character string or a list of
@@ -71,7 +71,7 @@ NULL
 #' @param reuse If TRUE, the policy function is reused at every stage.
 #' @param name Character string.
 #' @returns Function of class \code{"policy"}. The function takes a
-#' [policy_data] object as input and returns a [data.table]
+#' [policy_data] object as input and returns a [data.table::data.table]
 #' with keys \code{id} and \code{stage} and action variable \code{d}.
 #' @seealso [get_history_names()], [get_history()].
 #' @examples
@@ -243,7 +243,7 @@ print.policy <- function(x, ...) {
 #' @param name Name of the policy.
 #' @returns function with arguments \code{history}. Specifically,
 #' \code{history} is a history object, see [history]. When evaluated, the
-#' function returns a [data.table] with keys \code{id} and \code{stage} and
+#' function returns a [data.table::data.table] with keys \code{id} and \code{stage} and
 #' action variable \code{d}.
 #' @examples
 #' ### Two stages:
@@ -283,7 +283,7 @@ static_policy <- function(action, name=paste0("a=",action)) {
 #' object, see example. The function must return a vector of character strings.
 #' @returns function with arguments \code{history}. Specifically,
 #' \code{history} is a history object, see [history]. When evaluated, the
-#' function returns a [data.table] with keys \code{id} and \code{stage} and
+#' function returns a [data.table::data.table] with keys \code{id} and \code{stage} and
 #' action variable \code{d}.
 #' @examples
 #' ### Two stages:

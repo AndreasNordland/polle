@@ -499,7 +499,7 @@ predict.g_rf <- function(object, new_H, ...){
 g_sl <- function(formula = ~ .,
                  SL.library=c("SL.mean", "SL.glm"),
                  family=binomial(),
-                 env = as.environment("package:SuperLearner"),
+                 env = parent.frame(),
                  onlySL = TRUE,
                  ...) {
   if (!requireNamespace("SuperLearner"))

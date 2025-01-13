@@ -325,7 +325,7 @@ predict.q_rf <- function(object, new_AH, ...) {
 #' @export
 q_sl <- function(formula = ~ .,
                  SL.library=c("SL.mean", "SL.glm"),
-                 env = as.environment("package:SuperLearner"),
+                 env = parent.frame(),
                  onlySL = TRUE,
                  discreteSL = FALSE,
                  ...){
