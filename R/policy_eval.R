@@ -48,6 +48,7 @@
 #' "stacked" or "complete", see details. (Only used if \code{M > 1})
 #' @param M Number of folds for cross-fitting.
 #' @param rep Repetitions of cross-fitting (estimates averaged over repeated cross-fittings)
+#' @param min_subgroup_size Minimum number of observations in the evaluated subgroup (Only used if target = "subgroup").
 #' @param future_args Arguments passed to [future.apply::future_apply()].
 #' @param name Character string.
 #' @param object,x,y Objects of class "policy_eval".
@@ -300,6 +301,7 @@ policy_eval <- function(policy_data,
                         variance_type = "pooled",
                         M = 1,
                         rep = 1,
+                        min_subgroup_size = 1,
                         future_args = list(future.seed=TRUE),
                         name = NULL
                         ) {
@@ -344,6 +346,12 @@ policy_eval <- function(policy_data,
   }
   if (M <= 0) {
     stop("M must be an integer greater than 0.")
+  }
+  if (!(min_subgroup_size %% 1 == 0)) {
+    stop("min_subgroup_size must be an integer greater than 0.")
+  }
+  if (min_subgroup_size <= 0) {
+    stop("min_subgroup_size must be an integer greater than 0.")
   }
   if (!is.list(future_args)) {
     stop("future_args must be a list.")
@@ -497,6 +505,7 @@ policy_eval_object <- function(
     q_values = NULL,
     Z = NULL,
     subgroup_indicator = NULL,
+    min_subgroup_size = NULL,
     cross_fits = NULL,
     folds = NULL,
     cross_fit_type = NULL,
@@ -518,6 +527,7 @@ policy_eval_type <- function(target,
                              g_models, g_functions,
                              g_full_history, save_g_functions,
                              q_models, q_functions,
+                             min_subgroup_size,
                              q_full_history, save_q_functions,
                              name) {
   ##
@@ -600,13 +610,14 @@ policy_eval_type <- function(target,
     estimate_objects <- estimate_target(
       target = target,
       type = type,
-      K,
-      action_set,
-      actions,
-      policy_actions,
-      g_values,
-      q_values,
-      utility
+      K = K,
+      action_set = action_set,
+      actions = actions,
+      policy_actions = policy_actions,
+      g_values = g_values,
+      q_values = q_values,
+      utility = utility,
+      min_subgroup_size = min_subgroup_size
     )
     estimate_objects <- list(estimate_objects)
   } else {
@@ -627,13 +638,14 @@ policy_eval_type <- function(target,
         out <- estimate_target(
           target = target,
           type = type,
-          K,
-          action_set,
-          actions,
-          policy_actions,
-          g_values,
-          q_values,
-          utility
+          K = K,
+          action_set = action_set,
+          actions = actions,
+          policy_actions = policy_actions,
+          g_values = g_values,
+          q_values = q_values,
+          utility = utility,
+          min_subgroup_size = min_subgroup_size
         )
         return(out)
       }
@@ -693,6 +705,7 @@ policy_eval_type <- function(target,
     q_values = q_values,
     Z = Z,
     subgroup_indicator = subgroup_indicator,
+    min_subgroup_size = min_subgroup_size,
     name = name
   )
 
@@ -728,13 +741,14 @@ policy_eval_cross <- function(args,
   type <- get_element(args, "type")
   target <- get_element(args, "target")
   name <- get_element(args, "name")
+  min_subgroup_size <- get_element(args, "min_subgroup_size")
   n <- get_n(policy_data)
   id <- get_id(policy_data)
   policy_learn <- get_element(args, "policy_learn")
   if (!is.null(policy_learn)) {
-    n_coef <- length(get_element(attr(policy_learn, "pl_args"), "threshold"))
+    n_thres <- length(get_element(attr(policy_learn, "pl_args"), "threshold"))
   } else {
-    n_coef <- 1
+    n_thres <- 1
   }
 
   ## setting up the folds:
@@ -756,6 +770,7 @@ policy_eval_cross <- function(args,
   )
 
   cross_fits <- do.call(what = future.apply::future_lapply, cross_args)
+  
   ## collecting the ids from each fold (unsorted):
   id <- unlist(lapply(
     cross_fits,
@@ -770,7 +785,7 @@ policy_eval_cross <- function(args,
 
   ## collecting the cross-fitted policy actions (sorted):
   policy_actions <- NULL
-  if (n_coef == 1) {
+  if (n_thres == 1) {
     policy_actions <- lapply(
       cross_fits, function(x) get_element(x, "policy_actions")
     )
@@ -787,6 +802,9 @@ policy_eval_cross <- function(args,
     subgroup_indicator <- do.call(what = "rbind", subgroup_indicator)
     subgroup_indicator <- subgroup_indicator[order(id), , drop = FALSE]
     subgroup_indicator <- cbind(subgroup_indicator, !subgroup_indicator)
+    subgroup_size <- apply(subgroup_indicator,
+                             MARGIN = 2,
+                             sum)
   }
 
   ##
@@ -847,9 +865,11 @@ policy_eval_cross <- function(args,
     if (cross_fit_type == "pooled") {
       ## calculating the subgroup average treatment effect estimate:
       coef <- apply(subgroup_indicator,
-        MARGIN = 2,
-        function(x) mean((Z[, 2] - Z[, 1])[x])
-      )
+                    MARGIN = 2,
+                    function(x) mean((Z[, 2] - Z[, 1])[x])
+                    )
+      coef[!(subgroup_size >= min_subgroup_size)] <- as.numeric(NA)
+
     }
     n_coef <- length(coef)
   }
@@ -896,15 +916,16 @@ policy_eval_cross <- function(args,
     }
     if (variance_type == "pooled") {
       tmp <- apply(subgroup_indicator,
-        MARGIN = 2,
-        function(x) mean((Z[, 2] - Z[, 1])[x])
-        )
+                   MARGIN = 2,
+                   function(x) mean((Z[, 2] - Z[, 1])[x])
+                   )
       IC <- matrix(nrow = n, ncol = n_coef)
       for (j in 1:n_coef) {
         ic <- 1 / mean(subgroup_indicator[, j]) *
           subgroup_indicator[, j] * ((Z[, 2] - Z[, 1]) - tmp[j])
         IC[, j] <- ic
       }
+      IC[ ,!(subgroup_size >= min_subgroup_size)] <- NA
       rm(ic, tmp)
     }
     if (variance_type == "complete") {
@@ -915,7 +936,6 @@ policy_eval_cross <- function(args,
       rm(pe)
     }
   }
-
 
   ## calculating the cross-fitted ipw value estimate
   ## (only if target = "value" and type = "dr"):

@@ -280,7 +280,7 @@ test_that("policy_eval runs on a subset of the data with missing actions from th
     NA
   )
   expect_equal(
-    coef(pe2_ipw),
+    coef(pe2_ipw) |> unname(),
     0
   )
   expect_equal(
@@ -441,7 +441,7 @@ test_that("policy_eval with target = 'value' agrees with targeted::lava", {
 
   expect_equal(
     coef(ca_dml2$estimate)["(Intercept)"] |> unname(),
-    coef(pe_dml2)
+    coef(pe_dml2) |> unname()
   )
 
   expect_equal(
@@ -486,7 +486,7 @@ test_that("policy_eval with target 'value' has the correct outputs in the single
   )
 
   expect_equal(
-    coef(pe),
+    coef(pe) |> unname(),
     ref_pe
   )
 
@@ -512,7 +512,7 @@ test_that("policy_eval with target 'value' has the correct outputs in the single
   )
 
   expect_equal(
-    coef(pe),
+    coef(pe) |> unname(),
     ref_pe
   )
 
@@ -551,7 +551,7 @@ test_that("policy_eval with target 'value' has the correct outputs in the single
   }
 
   expect_equal(
-    coef(pe),
+    coef(pe) |> unname(),
     ref_pe
   )
 
@@ -578,7 +578,7 @@ test_that("policy_eval with target 'value' has the correct outputs in the single
   ref_IC <- (d$a == d$p) / 0.5 * (d$y - d$z) + d$z - ref_pe
 
   expect_equal(
-    coef(pe),
+    coef(pe) |> unname(),
     ref_pe
   )
 
@@ -620,7 +620,7 @@ test_that("policy_eval() using policy_learn() has the correct output", {
 
   expect_equal(
     ref_pe,
-    coef(pe)
+    coef(pe) |> unname()
   )
   expect_equal(
     IC(pe),
@@ -681,7 +681,7 @@ test_that("policy_eval() return estimates for multiple policies associated with 
     )
   })
   expect_equal(
-    coef(pe),
+    coef(pe) |> unname(),
     ref_pe
   )
 
@@ -701,7 +701,7 @@ expect_no_error({
     )
   })
   expect_equal(
-    coef(pe),
+    coef(pe) |> unname(),
     ref_pe
   )
 
@@ -716,7 +716,7 @@ expect_no_error({
     )
   })
   expect_equal(
-    coef(pe),
+    coef(pe) |> unname(),
     ref_pe
   )
   
@@ -731,7 +731,7 @@ expect_no_error({
     )
   })
   expect_equal(
-    coef(pe),
+    coef(pe) |> unname(),
     ref_pe
   )
 
@@ -746,7 +746,7 @@ expect_no_error({
     )
   })
   expect_equal(
-    coef(pe),
+    coef(pe) |> unname(),
     ref_pe
   )
 
@@ -761,7 +761,7 @@ expect_no_error({
     )
   })
   expect_equal(
-    coef(pe),
+    coef(pe) |> unname(),
     ref_pe
   )
 })

@@ -6,7 +6,8 @@ estimate_target <- function(target = "value",
                             policy_actions,
                             g_values,
                             q_values,
-                            utility) {
+                            utility,
+                            min_subgroup_size) {
   args <- list(
     K = K,
     action_set = action_set,
@@ -14,7 +15,8 @@ estimate_target <- function(target = "value",
     policy_actions = policy_actions,
     g_values = g_values,
     q_values = q_values,
-    utility = utility
+    utility = utility,
+    min_subgroup_size = min_subgroup_size
   )
 
   if (target == "value") {
@@ -46,7 +48,8 @@ dr_subgroup <- function(K,
                         policy_actions,
                         g_values,
                         q_values,
-                        utility) {
+                        utility,
+                        min_subgroup_size) {
   if (K != 1) {
     mes <- paste0(
       "subgroup average treatment effect evaluation",
@@ -98,7 +101,8 @@ dr_subgroup <- function(K,
   ## calculating the subgroup indicator:
   subgroup_indicator <- (policy_actions[["d"]] == action_set[2])
 
-  if (any(subgroup_indicator)) {
+  subgroup_size <- sum(subgroup_indicator)
+  if (subgroup_size >= min_subgroup_size) {
     ## calculating the subgroup average treatment effect:
     sate1 <- mean(blip[subgroup_indicator])
     ## calculating the influence curve for the subgroup average treatment
@@ -109,8 +113,9 @@ dr_subgroup <- function(K,
     sate1 <- as.numeric(NA)
     IC1 <- rep(as.numeric(NA), nrow(actions))
   }
-  ## Same for the complementary set (d=0)
-  if (any(!subgroup_indicator)) {
+  ## Same for the complementary subgroup (d=action_set[1])
+  comp_subgroup_size <- sum(!subgroup_indicator)
+  if (comp_subgroup_size >= min_subgroup_size) {
     sate0 <- mean(blip[!subgroup_indicator])
     IC0 <- 1 / mean(!subgroup_indicator) * (!subgroup_indicator) *
       (blip - sate0)
@@ -137,7 +142,8 @@ dr_value <- function(K,
                      policy_actions,
                      g_values,
                      q_values,
-                     utility) {
+                     utility,
+                     ...) {
   ##
   ## calculating the doubly robust score for the policy value
   ##
