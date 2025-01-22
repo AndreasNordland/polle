@@ -1,5 +1,5 @@
 check_actions <- function(actions, policy_data){
-  # checking the format of the actions data.table
+  ## checking the format of the actions data.table
   if (!is.data.table(actions))
     stop("actions must be a data.table.")
   if (!any("d" %in% colnames(actions)))
@@ -7,7 +7,7 @@ check_actions <- function(actions, policy_data){
   if (!all(key(actions) == c("id", "stage")))
     stop("actions must have keys 'id' and 'stage'.")
 
-  # checking that the actions comply with the stage action sets
+  ## checking that the actions comply with the stage action sets
   K <- get_K(policy_data)
   stage_action_sets <- get_stage_action_sets(policy_data)
   stage <- NULL
@@ -73,9 +73,8 @@ summary.policy_eval <- function(object, ...) {
 #' @export
 estimate.policy_eval <- function(x,
                                  labels = get_element(x,
-                                   "name",
-                                   check_name = FALSE
-                                 ),
+                                                      "name",
+                                                      check_name = FALSE),
                                  level = 0.95,
                                  ...) {
   p <- length(coef(x))
@@ -90,12 +89,12 @@ estimate.policy_eval <- function(x,
   ic <- IC(x)
   if (is.null(ic)) {
     est <- lava::estimate(
-      NULL,
-      coef = coef(x),
-      vcov = NULL,
-      labels = labels,
-      ...
-    )
+                   NULL,
+                   coef = coef(x),
+                   vcov = NULL,
+                   labels = labels,
+                   ...
+                 )
   } else {
     if (!is.null(x$variance_type) &&
         x$variance_type == "mean") {

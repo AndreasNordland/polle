@@ -60,7 +60,9 @@ predict.blip_function <- function(object, new_history, ...) {
 #' by [q_glm()], [q_rf()], [q_sl()] or similar functions.
 #' @returns list of (default) control arguments.
 #' @export
-control_blip <- function(blip_models = q_glm(~.)) {
+control_blip <- function(blip_models = q_glm(~.),
+                         quantile_prob_threshold = NULL)
+{
   control <- as.list(environment())
   return(control)
 }
@@ -68,6 +70,7 @@ control_blip <- function(blip_models = q_glm(~.)) {
 blip <- function(policy_data,
                  alpha,
                  threshold,
+                 quantile_prob_threshold,
                  g_models, g_functions, g_full_history,
                  q_models, q_full_history,
                  blip_models, full_history,
@@ -254,6 +257,17 @@ blip <- function(policy_data,
     # getting the blip-function values:
     blip_k <- predict(blip_function_k, new_history = blip_history_k)
 
+    ## calculating the the threshold associated with a given
+    ## quantile of the fitted blip values
+    quantile_threshold <- NULL
+    if (!is.null(quantile_prob_threshold)){
+      if (k == 1){
+        quantile_threshold <- quantile(x = blip_k$blip, probs = quantile_prob_threshold)
+      }
+      ## overwriting the threshold argument:
+      threshold <- unname(quantile_threshold)
+    }
+
     # getting the stage action with a positive blip:
     stage_action_set <- stage_action_sets[[k]]
     if (alpha != 0) {
@@ -319,6 +333,7 @@ blip <- function(policy_data,
     stage_action_sets = stage_action_sets,
     alpha = alpha,
     threshold = threshold,
+    quantile_prob_threshold = quantile_prob_threshold,
     K = K,
     folds = folds
   )
@@ -461,7 +476,7 @@ get_policy.blip <- function(object, threshold = NULL) {
     overwrite = TRUE
   )
 
-  ## returning a policy of each threshold:
+  ## returning a policy for each threshold:
   policy_list <- lapply(
     threshold,
     function(th) {
@@ -473,19 +488,19 @@ get_policy.blip <- function(object, threshold = NULL) {
           )
           stop(mes)
         }
-        # evaluating the blip-functions:
+        ## evaluating the blip-functions:
         blip_values <- predict(blip_functions, policy_data)
 
-        # getting the stage actions (sa) associated with the blip:
+        ## getting the stage actions (sa) associated with the blip:
         sa <- as.data.table(do.call(what = "rbind", stage_action_sets))
         colnames(sa) <- c("ref_action", "alt_action")
         sa <- cbind(stage = 1:K, sa)
         setkeyv(sa, "stage")
 
         if (alpha != 0) {
-          # evaluating the g-functions:
+          ## evaluating the g-functions:
           g_values <- predict(g_functions, policy_data)
-          # calculating the realistic actions:
+          ## calculating the realistic actions:
           realistic_actions <- t(apply(
             g_values[, g_cols, with = FALSE],
             MARGIN = 1,
@@ -509,7 +524,7 @@ get_policy.blip <- function(object, threshold = NULL) {
           realistic[realistic_indicator] <- NA
           realistic <- unlist(realistic)
 
-          # getting the optimal stage action:
+          ## getting the optimal stage action:
           blip_values <- merge(blip_values, sa, by = "stage")
           setkeyv(blip_values, c("id", "stage"))
           alt_action <- ref_action <- ri <- d <- r <- NULL
@@ -523,7 +538,7 @@ get_policy.blip <- function(object, threshold = NULL) {
           blip_values[, "r" := realistic]
           blip_values[, "d" := ifelse(ri, d, r)]
         } else {
-          # getting the optimal stage action:
+          ## getting the optimal stage action:
           blip_values <- merge(blip_values, sa, by = "stage")
           setkeyv(blip_values, c("id", "stage"))
           blip_values[, "d" := ifelse(blip > 0, alt_action, ref_action)]
@@ -534,14 +549,15 @@ get_policy.blip <- function(object, threshold = NULL) {
           ]
         }
 
-        # collecting the policy actions
+        ## collecting the policy actions
         policy_actions <- blip_values[, c("id", "stage", "d")]
 
         return(policy_actions)
       }
 
-      # setting class and attributes:
-      policy <- new_policy(policy, name = "drql")
+      ## setting class and attributes:
+      name <- paste0("blip(eta=", round(th, 3), ")")
+      policy <- new_policy(policy, name = name)
 
       return(policy)
     }
