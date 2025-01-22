@@ -462,8 +462,10 @@ get_policy.ptl <- function(object, threshold = NULL) {
 
         return(policy_actions)
       }
-      # setting class and attributes:
-      policy <- new_policy(policy, name = "ptl")
+      ## setting class and attributes:
+      th <- threshold_selection[th_idx]
+      name <- paste0("ptl(eta=", round(th, 3), ")")
+      policy <- new_policy(policy, name = name)
 
       return(policy)
     }

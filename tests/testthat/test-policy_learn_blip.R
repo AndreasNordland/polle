@@ -443,10 +443,10 @@ test_that("get_policy and get_policy_functions agree with type blip and a non-ze
 test_that("get_policy.blip() returns multiple policies when given multiple thresholds.", {
   d <- sim_single_stage(200, seed = 1)
   pd <- policy_data(d,
-    action = "A",
-    covariates = list("Z", "B", "L"),
-    utility = "U"
-  )
+                    action = "A",
+                    covariates = list("Z", "B", "L"),
+                    utility = "U"
+                    )
 
   pl <- policy_learn(
     type = "blip",
@@ -456,6 +456,11 @@ test_that("get_policy.blip() returns multiple policies when given multiple thres
   po <- pl(pd, q_models = q_glm(), g_models = g_glm())
 
   pol_list <- get_policy(po)
+
+  expect_equal(
+    lapply(pol_list, function(x) attr(x, "name")) |> unlist(),
+    paste0("blip(eta=", c(0,1,2), ")")
+  )
 
   expect_true(
     is.list(pol_list),
@@ -485,4 +490,43 @@ test_that("get_policy.blip() returns multiple policies when given multiple thres
     d,
     dd
   )
+})
+
+test_that("policy_learn with type blip uses the quantile_threshold argument.", {
+
+  d <- sim_single_stage(200, seed = 1)
+  pd <- policy_data(d,
+    action = "A",
+    covariates = list("Z", "B", "L"),
+    utility = "U"
+    )
+
+  ## policy value
+
+  pl <- policy_learn(
+    type = "blip",
+    threshold = c(1),
+    control = control_blip(quantile_prob_threshold = c(0.25, 0.5))
+  )
+  po <- pl(pd, q_models = q_glm(), g_models = g_glm())
+  pe <- policy_eval(
+    policy_data = pd,
+    policy_learn = pl
+  )
+
+  pl_ref <- policy_learn(
+    type = "blip",
+    threshold = pe$policy_object$threshold,
+    control = control_blip()
+  )
+  pe_ref <- policy_eval(
+    policy_data = pd,
+    policy_learn = pl_ref
+  )
+
+  expect_equal(
+    estimate(pe),
+    estimate(pe_ref)
+  )
+
 })

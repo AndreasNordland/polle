@@ -217,6 +217,11 @@ test_that("policy_learn with type = 'ptl' works with thresholds.", {
     pf <- get_policy(po)
   )
 
+  expect_equal(
+    lapply(pf, function(x) attr(x, "name")) |> unlist(),
+    paste0("ptl(eta=", c(0,0.5,1), ")")
+  )
+
   expect_error(
     pf <- get_policy(po, threshold = 2),
     "Invalid threshold. Choose between 0, 0.5, 1"

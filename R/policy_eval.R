@@ -300,7 +300,7 @@ policy_eval <- function(policy_data,
                         M = 1, future_args = list(future.seed=TRUE),
                         name = NULL
                         ) {
-  # input checks:
+  ## input checks:
   if (!inherits(policy_data, what = "policy_data"))
     stop("policy_data must be of inherited class 'policy_data'.")
   if (!is.null(policy)) {
@@ -309,7 +309,7 @@ policy_eval <- function(policy_data,
     }
   }
   if ((is.null(policy) && is.null(policy_learn)) ||
-    (!is.null(policy_learn) && !is.null(policy))) {
+      (!is.null(policy_learn) && !is.null(policy))) {
     stop("Provide either policy or policy_learn.")
   }
   if (is.null(policy) && !is.null(policy_learn)) {
@@ -356,17 +356,17 @@ policy_eval <- function(policy_data,
     stop("target must be a character string.")
   }
   if (target %in% c(
-    "value",
-    "policy_value"
-  )) {
+                    "value",
+                    "policy_value"
+                  )) {
     target <- "value"
   } else if (target %in% c(
-    "subgroup",
-    "sub_effect",
-    "subeffect",
-    "subvalue",
-    "sub_value"
-  )) {
+                           "subgroup",
+                           "sub_effect",
+                           "subeffect",
+                           "subvalue",
+                           "sub_value"
+                         )) {
     target <- "subgroup"
   } else {
     stop("target must be either 'value' or 'subgroup'.")
@@ -388,29 +388,12 @@ policy_eval <- function(policy_data,
   ## editing name:
   if (is.null(name)) {
     if (target == "value") {
-      if (!is.null(policy)) {
-        pol_name <- attr(policy, "name")
-      } else {
-        pol_name <- attr(policy_learn, "name")
-      }
       name <- "E[U(d)]"
-      if (!is.null(pol_name)) {
-        name <- paste0(name, ": d=", pol_name)
-      }
-      rm(pol_name)
     }
     if (target == "subgroup") {
-      if (!is.null(policy)) {
-        pol_name <- attr(policy, "name")
-      } else {
-        pol_name <- attr(policy_learn, "name")
-      }
       as <- get_action_set(policy_data)
       name <- paste0("E[U(", as[2], ")-U(", as[1], ")|d=", as[2], "]")
-      if (!is.null(pol_name)) {
-        name <- paste0(name, ": d=", pol_name)
-      }
-      rm(as, pol_name)
+      rm(as)
     }
   }
 
@@ -436,33 +419,30 @@ policy_eval <- function(policy_data,
     args[["valid_policy_data"]] <- policy_data
     eval <- do.call(what = policy_eval_type, args = args)
   }
-
-
-
+  
   return(eval)
 }
 
-policy_eval_object <- function(
-    coef,
-    IC,
-    type,
-    target,
-    id,
-    name,
-    coef_ipw = NULL,
-    coef_or = NULL,
-    policy_actions = NULL,
-    policy_object = NULL,
-    g_functions = NULL,
-    g_values = NULL,
-    q_functions = NULL,
-    q_values = NULL,
-    Z = NULL,
-    subgroup_indicator = NULL,
-    cross_fits = NULL,
-    folds = NULL,
-    cross_fit_type = NULL,
-    variance_type = NULL) {
+policy_eval_object <- function(coef,
+                               IC,
+                               type,
+                               target,
+                               id,
+                               name,
+                               coef_ipw = NULL,
+                               coef_or = NULL,
+                               policy_actions = NULL,
+                               policy_object = NULL,
+                               g_functions = NULL,
+                               g_values = NULL,
+                               q_functions = NULL,
+                               q_values = NULL,
+                               Z = NULL,
+                               subgroup_indicator = NULL,
+                               cross_fits = NULL,
+                               folds = NULL,
+                               cross_fit_type = NULL,
+                               variance_type = NULL) {
   out <- as.list(environment())
   out <- remove_null_elements(out)
   class(out) <- c("policy_eval")
@@ -507,50 +487,54 @@ policy_eval_type <- function(target,
   if (inherits(policy, what = "policy")) {
     policy <- list(policy)
   }
+  ## appending policy names:
+  pol_names <- lapply(policy, function(x) attr(x, which = "name", exact = TRUE))
+  pol_names <- unlist(pol_names)
+  name <- paste0(name, ": d=", pol_names)
 
   ##
   ## validating
   ##
 
-  # getting the g-function values:
+                                        # getting the g-function values:
   g_values <- NULL
   if (!is.null(g_functions)) {
     g_values <- predict(g_functions, valid_policy_data)
   }
 
-  # getting the Q-function values:
+  ## getting the Q-function values:
   q_values <- NULL
   if (!is.null(q_functions)) {
     q_values <- predict(q_functions, valid_policy_data)
   }
 
-  # setting g-functions output:
+  ## setting g-functions output:
   if (save_g_functions != TRUE) {
     g_functions <- NULL
   }
-  # setting Q-functions output:
+  ## setting Q-functions output:
   if (save_q_functions != TRUE) {
     q_functions <- NULL
   }
 
-  # getting the number of stages:
+  ## getting the number of stages:
   K <- get_K(valid_policy_data)
 
-  # getting the action set and stage action set:
+  ## getting the action set and stage action set:
   action_set <- get_action_set(valid_policy_data)
 
-  # getting the observed actions:
+  ## getting the observed actions:
   actions <- get_actions(valid_policy_data)
 
-  # getting the utility:
+  ## getting the utility:
   utility <- get_utility(valid_policy_data)
 
   ## calculating the target estimate for each policy:
   if (length(policy) == 1) {
-    # getting the policy actions:
+    ## getting the policy actions:
     policy_actions <- policy[[1]](valid_policy_data)
 
-    # checking that the policy actions comply with the stage action sets:
+    ## checking that the policy actions comply with the stage action sets:
     check_actions(
       actions = policy_actions,
       policy_data = valid_policy_data
@@ -574,10 +558,10 @@ policy_eval_type <- function(target,
     estimate_objects <- lapply(
       policy,
       function(p) {
-        # getting the policy actions:
+        ## getting the policy actions:
         policy_actions <- p(valid_policy_data)
 
-        # checking that the policy actions comply with the stage action sets:
+        ## checking that the policy actions comply with the stage action sets:
         check_actions(
           actions = policy_actions,
           policy_data = valid_policy_data
@@ -602,7 +586,7 @@ policy_eval_type <- function(target,
   subgroup_indicator <- NULL
   Z <- NULL
   if (target == "subgroup") {
-     ## getting the doubly robust score for each treatment:
+    ## getting the doubly robust score for each treatment:
     Z <- get_element(estimate_objects[[1]], "Z")
     ## getting the subgroup indicator (if available):
     subgroup_indicator <- lapply(
@@ -795,9 +779,9 @@ policy_eval_cross <- function(args,
     if (cross_fit_type == "pooled") {
       ## calculating the subgroup average treatment effect estimate:
       coef <- apply(subgroup_indicator,
-        MARGIN = 2,
-        function(x) mean((Z[, 2] - Z[, 1])[x])
-      )
+                    MARGIN = 2,
+                    function(x) mean((Z[, 2] - Z[, 1])[x])
+                    )
     }
   }
 
@@ -837,9 +821,9 @@ policy_eval_cross <- function(args,
     }
     if (variance_type == "pooled") {
       tmp <- apply(subgroup_indicator,
-        MARGIN = 2,
-        function(x) mean((Z[, 2] - Z[, 1])[x])
-        )
+                   MARGIN = 2,
+                   function(x) mean((Z[, 2] - Z[, 1])[x])
+                   )
       IC <- matrix(nrow = n, ncol = n_coef)
       for (j in 1:n_coef) {
         ic <- 1 / mean(subgroup_indicator[, j]) *
@@ -951,26 +935,25 @@ policy_eval_fold <- function(fold,
   train_id <- id[-fold]
   validation_id <- id[fold]
 
-  # training data:
+  ## training data:
   train_policy_data <- subset_id(policy_data, train_id)
   if (get_K(train_policy_data) != K) {
     stop("The number of stages varies accross the training folds.")
   }
 
-  # validation data:
+  ## validation data:
   valid_policy_data <- subset_id(policy_data, validation_id)
   if (get_K(valid_policy_data) != K) {
     stop("The number of stages varies accross the validation folds.")
   }
 
-  eval_args <- append(args, list(
-    valid_policy_data = valid_policy_data,
-    train_policy_data = train_policy_data
-  ))
+  eval_args <- append(args,
+                      list(valid_policy_data = valid_policy_data,
+                           train_policy_data = train_policy_data))
 
   out <- do.call(what = "policy_eval_type", args = eval_args)
 
-  # progress:
+  ## progress:
   prog()
 
   return(out)
