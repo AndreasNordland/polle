@@ -721,7 +721,7 @@ policy_eval_cross <- function(args,
   if (length(variance_type) != 1) {
     stop("variance_type must be a character string.")
   }
-  if (!(variance_type %in% c("pooled", "stacked", "complete", "mean"))) {
+  if (!(variance_type %in% c("pooled", "stacked", "complete"))) {
     stop("variance_type must be either 'pooled', 'stacked' or 'complete'.")
   }
 
@@ -893,12 +893,6 @@ policy_eval_cross <- function(args,
 
   ## target parameter: subgroup average treatment effect
   if (target == "subgroup") {
-    if (variance_type == "mean") {
-      IC <- lapply(
-        cross_fits, function(x) IC(x)
-      )
-
-    }
     if (variance_type == "stacked") {
       IC <- lapply(
         cross_fits, function(x) IC(x)
