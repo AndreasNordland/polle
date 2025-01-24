@@ -98,8 +98,8 @@ estimate.policy_eval <- function(x,
   } else {
     if (!is.null(x$variance_type) &&
         x$variance_type == "mean") {
-      V <- Reduce(`+`, lapply(pe2$IC, lava::var_ic))
-      V <- V / length(pe2$IC)
+      V <- Reduce(`+`, lapply(x$IC, lava::var_ic))
+      V <- V / length(x$IC)
       est <- lava::estimate(
         NULL,
         coef = coef(x),

@@ -273,7 +273,7 @@ blip <- function(policy_data,
     quantile_threshold <- NULL
     if (!is.null(quantile_prob_threshold)){
       if (k == 1){
-        quantile_threshold <- quantile(x = blip_k$blip, probs = quantile_prob_threshold)
+        quantile_threshold <- stats::quantile(x = blip_k$blip, probs = quantile_prob_threshold)
       }
       ## overwriting the threshold argument:
       threshold <- unname(quantile_threshold)
