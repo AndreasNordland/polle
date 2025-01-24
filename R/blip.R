@@ -58,6 +58,8 @@ predict.blip_function <- function(object, new_history, ...) {
 #' for doubly robust blip-learning, \code{type = "blip"}.
 #' @param blip_models Single element or list of V-restricted blip-models created
 #' by [q_glm()], [q_rf()], [q_sl()] or similar functions.
+#' @param quantile_prob_threshold Numeric vector. Quantile probabilities
+#' for adaptively setting the threshold for the conditional average treatment effect.
 #' @returns list of (default) control arguments.
 #' @export
 control_blip <- function(blip_models = q_glm(~.),
@@ -110,6 +112,15 @@ blip <- function(policy_data,
       "for dichotomous stage action sets."
     )
     stop(mes)
+  }
+  if (!is.null(quantile_prob_threshold)) {
+    if (!(is.numeric(quantile_prob_threshold) && (length(quantile_prob_threshold) >= 1))) {
+      stop("quantile_prob_threshold must be numeric vector with values in [0,1].")
+    }
+    if (!all(quantile_prob_threshold >= 0 & quantile_prob_threshold <= 1 )){
+      stop("quantile_prob_threshold must be numeric vector with values in [0,1].")
+    }
+    quantile_prob_threshold <- unique(sort(quantile_prob_threshold))
   }
 
   # getting the observed actions:

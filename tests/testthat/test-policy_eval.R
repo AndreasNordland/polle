@@ -469,7 +469,7 @@ test_that("policy_eval with target 'value' has the correct outputs in the single
   ## qfun <- fit_Q_function(history = his, Q = d$y, q_degen(var = "z"))
   ## predict.Q_function(qfun, new_history = his)
 
-  p <- policy_def(function(p) p)
+  p <- policy_def(function(p) p, name = "test")
 
   ref_pe <- mean((d$a == d$p) / 0.5 * (d$y - d$z) + d$z)
   ref_IC <- (d$a == d$p) / 0.5 * (d$y - d$z) + d$z - ref_pe
@@ -483,6 +483,15 @@ test_that("policy_eval with target 'value' has the correct outputs in the single
     policy = p,
     q_models = q_degen(var = "z"),
     g_models = g_glm(~1)
+  )
+
+  expect_equal(
+    pe$name,
+    names(coef(pe))
+  )
+  expect_equal(
+    pe$name,
+    c("E[U(d)]: d=test")
   )
 
   expect_equal(
@@ -509,6 +518,15 @@ test_that("policy_eval with target 'value' has the correct outputs in the single
     q_models = q_degen(var = "z"),
     g_functions = gf,
     M = 2,
+    )
+
+  expect_equal(
+    pe$name,
+    names(coef(pe))
+  )
+  expect_equal(
+    pe$name,
+    c("E[U(d)]: d=test")
   )
 
   expect_equal(
@@ -549,6 +567,15 @@ test_that("policy_eval with target 'value' has the correct outputs in the single
     ref_IC[f] <- (d_fold$a == d_fold$p) / 0.5 * (d_fold$y - d_fold$z) +
       d_fold$z - ref_pe_fold
   }
+
+  expect_equal(
+    pe$name,
+    names(coef(pe))
+  )
+  expect_equal(
+    pe$name,
+    c("E[U(d)]: d=test")
+  )
 
   expect_equal(
     coef(pe) |> unname(),
@@ -619,6 +646,15 @@ test_that("policy_eval() using policy_learn() has the correct output", {
   )
 
   expect_equal(
+    pe$name,
+    names(coef(pe))
+  )
+  expect_equal(
+    pe$name,
+    c("E[U(d)]: d=blip(eta=75)")
+  )
+
+  expect_equal(
     ref_pe,
     coef(pe) |> unname()
   )
@@ -685,21 +721,40 @@ test_that("policy_eval() return estimates for multiple policies associated with 
     ref_pe
   )
 
+  expect_equal(
+    pe$name,
+    names(coef(pe))
+  )
+  expect_equal(
+    pe$name,
+    c("E[U(d)]: d=blip(eta=28)", "E[U(d)]: d=blip(eta=76)")
+  )
+
   ##
   ## cross-fitting
   ##
 
   ## cross fit estimate types
-expect_no_error({
+  expect_no_error({
     pe <- policy_eval(
       policy_data = pd,
       policy_learn = pl,
       M = 3,
-     cross_fit_type = "pooled",
+      cross_fit_type = "pooled",
       q_models = q_degen(var = "z"),
       g_functions = gf
     )
   })
+
+  expect_equal(
+    pe$name,
+    names(coef(pe))
+  )
+  expect_equal(
+    pe$name,
+    c("E[U(d)]: d=blip(eta=28)", "E[U(d)]: d=blip(eta=76)")
+  )
+
   expect_equal(
     coef(pe) |> unname(),
     ref_pe
@@ -710,7 +765,7 @@ expect_no_error({
       policy_data = pd,
       policy_learn = pl,
       M = 3,
-     cross_fit_type = "stacked",
+      cross_fit_type = "stacked",
       q_models = q_degen(var = "z"),
       g_functions = gf
     )
@@ -730,6 +785,16 @@ expect_no_error({
       g_functions = gf
     )
   })
+
+  expect_equal(
+    pe$name,
+    names(coef(pe))
+  )
+  expect_equal(
+    pe$name,
+    c("E[U(d)]: d=blip(eta=28)", "E[U(d)]: d=blip(eta=76)")
+  )
+
   expect_equal(
     coef(pe) |> unname(),
     ref_pe
@@ -745,6 +810,16 @@ expect_no_error({
       g_functions = gf
     )
   })
+
+  expect_equal(
+    pe$name,
+    names(coef(pe))
+  )
+  expect_equal(
+    pe$name,
+    c("E[U(d)]: d=blip(eta=28)", "E[U(d)]: d=blip(eta=76)")
+  )
+
   expect_equal(
     coef(pe) |> unname(),
     ref_pe

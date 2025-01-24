@@ -239,7 +239,7 @@ test_that("policy_eval with target 'subgroup' has the correct outputs: test2.", 
     ## qfun <- fit_Q_function(history = his, Q = d$y, q_degen(var = "z"))
     ## predict.Q_function(qfun, new_history = his)
 
-    p <- policy_def(function(p) p)
+    p <- policy_def(function(p) p, name = "p")
 
     ref_Z <- cbind(
         (d$a == 1) / 0.5 * (d$y - d$z) + d$z,
@@ -271,6 +271,11 @@ test_that("policy_eval with target 'subgroup' has the correct outputs: test2.", 
     expect_equal(
         IC(sub) |> unname(),
         cbind(ref_IC, ref_IC_comp) |> unname()
+    )
+
+    expect_equal(
+      names(sub$coef),
+      c("E[U(2)-U(1)|d=2]: d=p", "E[U(2)-U(1)|d=1]: d=p")
     )
 
     ##
@@ -416,7 +421,7 @@ test_that("policy_eval with target 'subgroup' works with policy_learning with mu
   p2 <- c(rep(1, 100))
 
   d <- data.table(z = z, a = a, y = y, p1 = p1, p2 = p2)
-  rm(a, z, y, p1, p2)
+  rm(a, z, y)
   pd <- policy_data(
     data = d,
     action = "a",
@@ -457,13 +462,29 @@ test_that("policy_eval with target 'subgroup' works with policy_learning with mu
   )
 
   expect_equal(
-    coef(sub) |> unname(),
-    c(ref_sub2_eta50, as.numeric(NA), ref_sub1_eta50, ref_sub1_eta101)
+    sub$name,
+    names(sub$coef)
   )
 
   expect_equal(
-    unname(IC(sub)),
-    cbind(ref_IC2_eta50, rep(as.numeric(NA), 1e2), ref_IC1_eta50, ref_IC1_eta101) |> unname()
+    sub$name,
+    c("E[U(2)-U(1)|d=2]: d=blip(eta=50)", "E[U(2)-U(1)|d=1]: d=blip(eta=50)",
+      "E[U(2)-U(1)|d=2]: d=blip(eta=101)", "E[U(2)-U(1)|d=1]: d=blip(eta=101)")
+  )
+
+  expect_equal(
+    coef(sub) |> unname(),
+    c(ref_sub2_eta50, ref_sub1_eta50, as.numeric(NA), ref_sub1_eta101)
+  )
+
+  expect_equal(
+    IC(sub),
+    cbind(ref_IC2_eta50, ref_IC1_eta50, rep(as.numeric(NA), 1e2), ref_IC1_eta101) |> unname()
+  )
+
+  expect_equal(
+    sub$subgroup_indicator,
+    cbind(p1 == 2, p1 == 1, p2 == 2, p2 == 1)
   )
 
   ## cross-fitting:
@@ -479,6 +500,8 @@ test_that("policy_eval with target 'subgroup' works with policy_learning with mu
     policy_learn = pl,
     q_models = polle:::q_degen(var = "z"),
     g_functions = gf,
+    cross_fit_type = "pooled",
+    variance_type = "pooled",
     M = 2)
 
   expect_no_error(
@@ -486,14 +509,32 @@ test_that("policy_eval with target 'subgroup' works with policy_learning with mu
   )
 
   expect_equal(
-    coef(sub) |> unname(),
-    c(ref_sub2_eta50, as.numeric(NA), ref_sub1_eta50, ref_sub1_eta101)
+    sub$name,
+    names(sub$coef)
   )
 
   expect_equal(
-    unname(IC(sub)),
-    cbind(ref_IC2_eta50, rep(as.numeric(NA), 1e2), ref_IC1_eta50, ref_IC1_eta101) |> unname()
+    sub$name,
+    c("E[U(2)-U(1)|d=2]: d=blip(eta=50)", "E[U(2)-U(1)|d=1]: d=blip(eta=50)",
+      "E[U(2)-U(1)|d=2]: d=blip(eta=101)", "E[U(2)-U(1)|d=1]: d=blip(eta=101)")
   )
+
+  expect_equal(
+    coef(sub) |> unname(),
+    c(ref_sub2_eta50, ref_sub1_eta50, as.numeric(NA), ref_sub1_eta101)
+  )
+
+  expect_equal(
+    IC(sub),
+    cbind(ref_IC2_eta50, ref_IC1_eta50, rep(as.numeric(NA), 1e2), ref_IC1_eta101) |> unname()
+  )
+
+  expect_equal(
+    sub$subgroup_indicator,
+    cbind(p1 == 2, p1 == 1, p2 == 2, p2 == 1)
+  )
+
+  ## stacked:
 
   set.seed(1)
   sub <- policy_eval(
@@ -503,15 +544,44 @@ test_that("policy_eval with target 'subgroup' works with policy_learning with mu
     q_models = polle:::q_degen(var = "z"),
     g_functions = gf,
     M = 2,
-    cross_fit_type = "stacked"
+    cross_fit_type = "stacked",
+    variance_type = "stacked"
+  )
+
+  expect_no_error(
+    tmp <- capture.output(print(sub))
+  )
+
+  expect_equal(
+    sub$name,
+    names(sub$coef)
+  )
+
+  expect_equal(
+    sub$name,
+    c("E[U(2)-U(1)|d=2]: d=blip(eta=50)", "E[U(2)-U(1)|d=1]: d=blip(eta=50)",
+      "E[U(2)-U(1)|d=2]: d=blip(eta=101)", "E[U(2)-U(1)|d=1]: d=blip(eta=101)")
   )
 
   ref_sub2_eta50_fold1 <- mean(ref_blip[sub$folds[[1]]][d$p1[sub$folds[[1]]] == 2])
   ref_sub2_eta50_fold2 <- mean(ref_blip[sub$folds[[2]]][d$p1[sub$folds[[2]]] == 2])
+  ref_sub1_eta50_fold1 <- mean(ref_blip[sub$folds[[1]]][d$p1[sub$folds[[1]]] == 1])
+  ref_sub1_eta50_fold2 <- mean(ref_blip[sub$folds[[2]]][d$p1[sub$folds[[2]]] == 1])
+
+  ref_sub2_eta101_fold1 <- mean(ref_blip[sub$folds[[1]]][d$p2[sub$folds[[1]]] == 2])
+  ref_sub2_eta101_fold2 <- mean(ref_blip[sub$folds[[2]]][d$p2[sub$folds[[2]]] == 2])
+  ref_sub1_eta101_fold1 <- mean(ref_blip[sub$folds[[1]]][d$p2[sub$folds[[1]]] == 1])
+  ref_sub1_eta101_fold2 <- mean(ref_blip[sub$folds[[2]]][d$p2[sub$folds[[2]]] == 1])
 
   expect_equal(
-    mean(c(ref_sub2_eta50_fold1, ref_sub2_eta50_fold2)),
-    coef(sub)[c(1)] |> unname()
+    c(
+      mean(c(ref_sub2_eta50_fold1, ref_sub2_eta50_fold2)),
+      mean(c(ref_sub1_eta50_fold1, ref_sub1_eta50_fold2)),
+      mean(c(ref_sub2_eta101_fold1, ref_sub2_eta101_fold2)),
+      mean(c(ref_sub1_eta101_fold1, ref_sub1_eta101_fold2))
+
+    ),
+    coef(sub) |> unname()
   )
 
 })
@@ -532,8 +602,8 @@ test_that("policy_eval with target 'subgroup' returns NA when the subgroup count
     utility = c("y")
   )
 
-  p1 <- policy_def(function(p1) p1) # 4 observations in the subgroup d = 1
-  p2 <- policy_def(function(p2) p2) # 4 observations in the subgroup d = 2
+  p1 <- policy_def(function(p1) p1, name = "p1") # 4 observations in the subgroup d = 1
+  p2 <- policy_def(function(p2) p2, name = "p2") # 4 observations in the subgroup d = 2
 
   sub <- policy_eval(
     target = "subgroup",

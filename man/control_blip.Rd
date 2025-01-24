@@ -4,11 +4,14 @@
 \alias{control_blip}
 \title{Control arguments for doubly robust blip-learning}
 \usage{
-control_blip(blip_models = q_glm(~.))
+control_blip(blip_models = q_glm(~.), quantile_prob_threshold = NULL)
 }
 \arguments{
 \item{blip_models}{Single element or list of V-restricted blip-models created
 by \code{\link[=q_glm]{q_glm()}}, \code{\link[=q_rf]{q_rf()}}, \code{\link[=q_sl]{q_sl()}} or similar functions.}
+
+\item{quantile_prob_threshold}{Numeric vector. Quantile probabilities
+for adaptively setting the threshold for the conditional average treatment effect.}
 }
 \value{
 list of (default) control arguments.
