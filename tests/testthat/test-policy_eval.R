@@ -901,3 +901,100 @@ test_that("conditional.policy_eval agrees with targeted::cate", {
     ca$estimate$IC[, "factor(B)0"] |> unname() |> matrix()
   )
 })
+
+test_that("policy_eval with target = 'value' runs when performing repeated cross-fitting.", {
+
+  z <- 1:1e2
+  a <- c(rep(1, 50), rep(2, 50))
+  y <- a * 2
+  p <- c(rep(1, 25), rep(2, 25), rep(1, 25), rep(2, 25))
+  d <- data.table(z = z, a = a, y = y, p = p)
+  rm(a, z, y)
+  pd <- policy_data(
+    data = d,
+    action = "a",
+    covariates = c("z", "p"),
+    utility = c("y")
+  )
+  p <- policy_def(function(p) p, name = "test")
+
+  ref_pe <- mean((d$a == d$p) / 0.5 * (d$y - d$z) + d$z)
+  ref_IC <- (d$a == d$p) / 0.5 * (d$y - d$z) + d$z - ref_pe
+
+  gf <- fit_g_functions(pd, g_models = g_glm(~1))
+  set.seed(1)
+  expect_no_error(
+    pe <- policy_eval(
+      policy_data = pd,
+      policy = p,
+      M = 2,
+      nrep = 2,
+      q_models = q_degen(var = "z"),
+      g_functions = gf
+    )
+  )
+
+  expect_equal(
+    coef(pe) |> unname(),
+    ref_pe
+  )
+
+  expect_equal(
+    IC(pe),
+    matrix(ref_IC)
+  )
+
+  z <- 1:1e2
+  a <- c(rep(1, 50), rep(2, 50))
+  y <- a * 2
+  p1 <- (z > 28) + 1
+  p2 <- (z > 76) + 1
+  d <- data.table(z = z, a = a, y = y, p1 = p1, p2 = p2)
+  rm(a, z, y, p1, p2)
+  pd <- policy_data(
+    data = d,
+    action = "a",
+    covariates = c("z"),
+    utility = c("y")
+  )
+
+  gf <- fit_g_functions(pd, g_models = g_glm(~1))
+
+  ref_pe1 <- mean((d$a == d$p1) / 0.5 * (d$y - d$z) + d$z)
+  ## pooled IC
+  ref_IC1 <- matrix((d$a == d$p1) / 0.5 * (d$y - d$z) + d$z - ref_pe1)
+
+  ref_pe2 <- mean((d$a == d$p2) / 0.5 * (d$y - d$z) + d$z)
+  ref_IC2 <- matrix((d$a == d$p2) / 0.5 * (d$y - d$z) + d$z - ref_pe2)
+
+  ref_pe <- c(ref_pe1, ref_pe2)
+  ref_IC <- cbind(ref_IC1, ref_IC2)
+
+
+  pl <- policy_learn(
+    type = "blip",
+    control = control_blip(blip_models = q_degen(var = "z")),
+    threshold = c(28, 76)
+  )
+
+  expect_no_error({
+    pe <- policy_eval(
+      policy_data = pd,
+      policy_learn = pl,
+      q_models = q_degen(var = "z"),
+      g_functions = gf,
+      nrep = 2,
+      M = 2
+    )
+  })
+
+  expect_equal(
+    coef(pe) |> unname(),
+    ref_pe
+  )
+
+  expect_equal(
+    IC(pe),
+    ref_IC
+  )
+})

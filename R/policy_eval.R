@@ -47,7 +47,7 @@
 #' @param variance_type Character string. Either "pooled" (default),
 #' "stacked" or "complete", see details. (Only used if \code{M > 1})
 #' @param M Number of folds for cross-fitting.
-#' @param rep Repetitions of cross-fitting (estimates averaged over repeated cross-fittings)
+#' @param nrep Number of repetitions of cross-fitting (estimates averaged over repeated cross-fittings)
 #' @param min_subgroup_size Minimum number of observations in the evaluated subgroup (Only used if target = "subgroup").
 #' @param future_args Arguments passed to [future.apply::future_apply()].
 #' @param name Character string.
@@ -300,7 +300,7 @@ policy_eval <- function(policy_data,
                         cross_fit_type = "pooled",
                         variance_type = "pooled",
                         M = 1,
-                        rep = 1,
+                        nrep = 1,
                         min_subgroup_size = 1,
                         future_args = list(future.seed=TRUE),
                         name = NULL
@@ -418,44 +418,29 @@ policy_eval <- function(policy_data,
   args[["future_args"]] <- NULL
   args[["variance_type"]] <- NULL
   args[["cross_fit_type"]] <- NULL
-  args[["rep"]] <- NULL
+  args[["nrep"]] <- NULL
 
   if (M > 1) {
-    eval <- policy_eval_cross(
-      args = args,
-      policy_data = policy_data,
-      M = M,
-      cross_fit_type = cross_fit_type,
-      variance_type = variance_type,
-      future_args = future_args
-    )
-    eval$rep <- rep
-
-    if (rep > 1) {
-      ## Repeated cross-fitting to reduce dependence on seed.
-      ## TODO: This should work for static policies,
-      ## but we need to assess this for policy-learning
-      eval0 <- function(...) {
-        res <- policy_eval_cross(
-          args = args,
-          policy_data = policy_data,
-          M = M,
-          cross_fit_type = cross_fit_type,
-          variance_type = variance_type,
-          future_args = future_args
-        )
-        list(coef=res$coef, IC=res$IC)
-      }
-      val <- do.call(
-        what = future.apply::future_lapply,
-        c(list(X = seq_len(rep - 1), FUN = eval0), future_args)
+    if (nrep == 1){
+      eval <- policy_eval_cross(
+        args = args,
+        policy_data = policy_data,
+        M = M,
+        cross_fit_type = cross_fit_type,
+        variance_type = variance_type,
+        future_args = future_args
       )
-      for (x in val) {
-        eval$coef <- eval$coef + x$coef
-        eval$IC <- eval$IC + x$IC
-      }
-      eval$coef <- eval$coef / rep
-      eval$IC <- eval$IC / rep
+    } else {
+      ## repeated cross-fitting
+      eval <- policy_eval_rep(
+        nrep = nrep,
+        args = args,
+        policy_data = policy_data,
+        M = M,
+        cross_fit_type = cross_fit_type,
+        variance_type = variance_type,
+        future_args = future_args
+      )
     }
 
   } else {
@@ -1039,4 +1024,62 @@ policy_eval_fold <- function(fold,
   prog()
 
   return(out)
+}
+
+policy_eval_rep <- function(nrep,
+                            args,
+                            policy_data,
+                            M,
+                            cross_fit_type,
+                            variance_type,
+                            future_args){
+  onerun <- function(...){
+    pe <- policy_eval_cross(
+      args = args,
+      policy_data = policy_data,
+      M = M,
+      cross_fit_type = cross_fit_type,
+      variance_type = variance_type,
+      future_args = future_args
+    )
+    name <- get_element(pe, "name")
+    out <- list(coef=coef(pe), IC=IC(pe), name = name)
+    return(out)
+  }
+
+  ## repeated cross-fitting of the policy evaluation:
+  prog <- progressor(steps = nrep)
+  rep_args <- append(
+    list(
+      X = 1:nrep,
+      FUN = onerun,
+      prog = prog
+    ),
+    future_args
+  )
+  rep_fits <- do.call(what = future.apply::future_lapply, rep_args)
+
+  name <- get_element(rep_fits[[1]], "name")
+
+  coef <- lapply(rep_fits, function(x) get_element(x, "coef"))
+  coef <- do.call(what = "rbind", coef)
+  coef <- apply(coef, MARGIN = 2, mean)
+
+  IC <- lapply(rep_fits, function(x) get_element(x, "IC"))
+  IC <- Reduce("+", IC) / length(IC)
+
+  eval <- policy_eval_object(
+    coef = coef,
+    IC = IC,
+    type = get_element(args, "type"),
+    target = get_element(args, "target"),
+    id = get_id(policy_data),
+    name = name,
+    variance_type = variance_type,
+    cross_fit_type = cross_fit_type,
+    min_subgroup_size = get_element(args, "min_subgroup_size")
+  )
+
+  return(eval)
+
 }
