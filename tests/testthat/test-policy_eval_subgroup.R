@@ -131,94 +131,104 @@ test_that("policy_eval with target 'subgroup' agrees with targeted::cate.", {
 })
 
 test_that("policy_eval with target 'sub_effect' has the correct outputs: test1.", {
-    test_output <- function(pe) {
-        ## value_estimate
-        expect_true(
-            !is.null(coef(pe)) && is.numeric(coef(pe))
-        )
-
-        ## IC in group d=1 should be zero for Z < 0
-        expect_true(
-            all(IC(pe)[d$Z <= 0, 1] == 0)
-        )
-        ## ## ... and for the other subgroup:
-        ## expect_true(
-        ##     all(IC(pe)[d$Z >0, 2] == 0)
-        ## )
-
-        ## id
-        expect_true(
-            all(pe$id == 1:1e2)
-        )
-
-        ## type
-        expect_equal(
-            pe$type,
-            "dr"
-        )
-
-        ## target
-        expect_equal(
-            pe$target,
-            "subgroup"
-        )
-    }
-
-    d <- sim_single_stage(1e2, seed = 1)
-    d$A <- c(rep(0, 50), rep(1, 50))
-    pd <- policy_data(d, action = "A", covariates = c("Z"), utility = "U")
-    p <- policy_def(function(Z) (Z > 0) * 1)
-
-    ## no cross-fitting
-    expect_no_error(
-        pe <- policy_eval(
-            policy_data = pd,
-            policy = p,
-            target = "subgroup"
-        )
+  test_output <- function(pe) {
+    ## value_estimate
+    expect_true(
+      !is.null(coef(pe)) && is.numeric(coef(pe))
     )
-    test_output(pe)
 
-    ## cross-fitting: stacked estimator
-    set.seed(1)
-    expect_no_error(
-        pe <- policy_eval(
-            policy_data = pd,
-            policy = p,
-            target = "subgroup",
-            M = 2,
-            cross_fit_type = "stacked",
-            variance_type = "stacked"
-        )
+    ## IC in group d=1 should be zero for Z < 0
+    expect_true(
+      all(IC(pe)[d$Z <= 0, 1] == 0)
     )
-    test_output(pe)
+    ## ## ... and for the other subgroup:
+    ## expect_true(
+    ##     all(IC(pe)[d$Z >0, 2] == 0)
+    ## )
 
-    ## cross-fitting: pooled estimator
-    set.seed(1)
-    expect_no_error(
-        pe <- policy_eval(
-            policy_data = pd,
-            policy = p,
-            target = "sub_effect",
-            M = 2,
-            cross_fit_type = "pooled",
-            variance_type = "pooled"
-        )
+    ## id
+    expect_true(
+      all(pe$id == 1:1e2)
     )
-    test_output(pe)
 
-    ## cross-fitting: pooled estimator, complete variance estimate
-    expect_no_error(
-        pe <- policy_eval(
-            policy_data = pd,
-            policy = p,
-            target = "subgroup",
-            M = 2,
-            cross_fit_type = "pooled",
-            variance_type = "complete"
-        )
+    ## type
+    expect_equal(
+      pe$type,
+      "dr"
     )
-    test_output(pe)
+
+    ## target
+    expect_equal(
+      pe$target,
+      "subgroup"
+    )
+
+    ## name
+    expect_equal(
+      pe$name,
+      names(pe$coef)
+    )
+    expect_equal(
+      pe$name,
+      c("E[U(1)-U(0)|d=1]: d=test", "E[U(1)-U(0)|d=0]: d=test")
+    )
+  }
+
+  d <- sim_single_stage(1e2, seed = 1)
+  d$A <- c(rep(0, 50), rep(1, 50))
+  pd <- policy_data(d, action = "A", covariates = c("Z"), utility = "U")
+  p <- policy_def(function(Z) (Z > 0) * 1, name = "test")
+
+  ## no cross-fitting
+  expect_no_error(
+    pe <- policy_eval(
+      policy_data = pd,
+      policy = p,
+      target = "subgroup"
+    )
+  )
+  test_output(pe)
+
+  ## cross-fitting: stacked estimator
+  set.seed(1)
+  expect_no_error(
+    pe <- policy_eval(
+      policy_data = pd,
+      policy = p,
+      target = "subgroup",
+      M = 2,
+      cross_fit_type = "stacked",
+      variance_type = "stacked"
+    )
+  )
+  test_output(pe)
+
+  ## cross-fitting: pooled estimator
+  set.seed(1)
+  expect_no_error(
+    pe <- policy_eval(
+      policy_data = pd,
+      policy = p,
+      target = "sub_effect",
+      M = 2,
+      cross_fit_type = "pooled",
+      variance_type = "pooled"
+    )
+  )
+  test_output(pe)
+
+  ## cross-fitting: pooled estimator, complete variance estimate
+  expect_no_error(
+    pe <- policy_eval(
+      policy_data = pd,
+      policy = p,
+      target = "subgroup",
+      M = 2,
+      cross_fit_type = "pooled",
+      variance_type = "complete"
+    )
+  )
+  test_output(pe)
 })
 
 test_that("policy_eval with target 'subgroup' has the correct outputs: test2.", {
@@ -269,7 +279,7 @@ test_that("policy_eval with target 'subgroup' has the correct outputs: test2.", 
     )
 
     expect_equal(
-        IC(sub) |> unname(),
+        IC(sub),
         cbind(ref_IC, ref_IC_comp) |> unname()
     )
 
@@ -301,7 +311,7 @@ test_that("policy_eval with target 'subgroup' has the correct outputs: test2.", 
     )
 
     expect_equal(
-        IC(sub) |> unname(),
+        IC(sub),
         cbind(ref_IC, ref_IC_comp) |> unname()
     )
 })
