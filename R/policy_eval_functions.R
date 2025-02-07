@@ -91,7 +91,7 @@ estimate.policy_eval <- function(x,
     est <- lava::estimate(
                    NULL,
                    coef = coef(x),
-                   vcov = NULL,
+                   vcov = vcov(x),
                    labels = labels,
                    ...
                  )
