@@ -74,9 +74,9 @@ test_that("policy_eval with target 'subgroup' agrees with targeted::cate.", {
     d$d <- p(pd)$d
 
     ca <- targeted::cate(
-        cate_model = ~ factor(d) - 1,
-        response_model = U ~ A * Z,
-        propensity_model = A ~ 1,
+        cate.model = ~ factor(d) - 1,
+        response.model = U ~ A * Z,
+        propensity.model = A ~ 1,
         data = d,
         nfolds = 1,
     )
@@ -110,9 +110,9 @@ test_that("policy_eval with target 'subgroup' agrees with targeted::cate.", {
 
     set.seed(1)
     ca <- targeted::cate(
-        cate_model = ~ factor(d) - 1,
-        response_model = U ~ A * Z,
-        propensity_model = A ~ 1,
+        cate.model = ~ factor(d) - 1,
+        response.model = U ~ A * Z,
+        propensity.model = A ~ 1,
         data = d,
         nfolds = 2,
     )
@@ -123,7 +123,7 @@ test_that("policy_eval with target 'subgroup' agrees with targeted::cate.", {
     )
 
     expect_equal(
-        IC(pe),
+      IC(pe),
       IC(ca)[, c("factor(d)1", "factor(d)0")] |>
       unname()
     )
@@ -188,6 +188,19 @@ test_that("policy_eval with target 'sub_effect' has the correct outputs: test1."
     )
   )
   test_output(pe)
+
+  expect_no_error(
+    pe <- policy_eval(
+      policy_data = pd,
+      policy = p,
+      target = "subgroup",
+      name = c("group1", "group2")
+    )
+  )
+  expect_equal(
+    names(coef(pe)),
+    c("group1: d=test", "group2: d=test")
+  )
 
   ## cross-fitting: stacked estimator
   set.seed(1)
