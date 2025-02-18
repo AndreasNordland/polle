@@ -529,4 +529,15 @@ test_that("policy_learn with type blip uses the quantile_threshold argument.", {
     estimate(pe_ref)
   )
 
+  pl <- policy_learn(
+    type = "blip",
+    threshold = c(1),
+    control = control_blip(quantile_prob_threshold = c(0.25, 1.1))
+  )
+
+  expect_error(
+    policy_eval(policy_data = pd, policy_learn = pl),
+    "quantile_prob_threshold must be numeric vector with values in"
+  )
+
 })

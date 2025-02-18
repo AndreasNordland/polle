@@ -47,6 +47,8 @@
 #' @param variance_type Character string. Either "pooled" (default),
 #' "stacked" or "complete", see details. (Only used if \code{M > 1})
 #' @param M Number of folds for cross-fitting.
+#' @param nrep Number of repetitions of cross-fitting (estimates averaged over repeated cross-fittings)
+#' @param min_subgroup_size Minimum number of observations in the evaluated subgroup (Only used if target = "subgroup").
 #' @param future_args Arguments passed to [future.apply::future_apply()].
 #' @param name Character string.
 #' @param object,x,y Objects of class "policy_eval".
@@ -297,7 +299,10 @@ policy_eval <- function(policy_data,
                         type = "dr",
                         cross_fit_type = "pooled",
                         variance_type = "pooled",
-                        M = 1, future_args = list(future.seed=TRUE),
+                        M = 1,
+                        nrep = 1,
+                        min_subgroup_size = 1,
+                        future_args = list(future.seed=TRUE),
                         name = NULL
                         ) {
   ## input checks:
@@ -342,14 +347,14 @@ policy_eval <- function(policy_data,
   if (M <= 0) {
     stop("M must be an integer greater than 0.")
   }
+  if (!(min_subgroup_size %% 1 == 0)) {
+    stop("min_subgroup_size must be an integer greater than 0.")
+  }
+  if (min_subgroup_size <= 0) {
+    stop("min_subgroup_size must be an integer greater than 0.")
+  }
   if (!is.list(future_args)) {
     stop("future_args must be a list.")
-  }
-  if (!is.null(name)) {
-    name <- as.character(name)
-    if (length(name) != 1) {
-      stop("name must be a character string.")
-    }
   }
   target <- tolower(target)
   if (length(target) != 1) {
@@ -371,6 +376,19 @@ policy_eval <- function(policy_data,
   } else {
     stop("target must be either 'value' or 'subgroup'.")
   }
+  if (!is.null(name)) {
+    name <- as.character(name)
+    if (target == "value") {
+      if (length(name) != 1) {
+        stop("name must be a character string.")
+      }
+    }
+    if (target == "subgroup") {
+      if (length(name) != 2) {
+        stop("name must be a character vector of length 2 when target = 'subgroup'.")
+      }
+    }
+  }
   type <- tolower(type)
   if (length(type) != 1) {
     stop("type must be a character string.")
@@ -390,10 +408,13 @@ policy_eval <- function(policy_data,
     if (target == "value") {
       name <- "E[U(d)]"
     }
+
     if (target == "subgroup") {
       as <- get_action_set(policy_data)
-      name <- paste0("E[U(", as[2], ")-U(", as[1], ")|d=", as[2], "]")
-      rm(as)
+      name1 <- paste0("E[U(", as[2], ")-U(", as[1], ")|d=", as[2], "]")
+      name2 <- paste0("E[U(", as[2], ")-U(", as[1], ")|d=", as[1], "]")
+      name <- c(name1, name2)
+      rm(as, name1, name2)
     }
   }
 
@@ -404,45 +425,63 @@ policy_eval <- function(policy_data,
   args[["future_args"]] <- NULL
   args[["variance_type"]] <- NULL
   args[["cross_fit_type"]] <- NULL
+  args[["nrep"]] <- NULL
 
   if (M > 1) {
-    eval <- policy_eval_cross(
-      args = args,
-      policy_data = policy_data,
-      M = M,
-      cross_fit_type = cross_fit_type,
-      variance_type = variance_type,
-      future_args = future_args
-    )
+    if (nrep == 1){
+      eval <- policy_eval_cross(
+        args = args,
+        policy_data = policy_data,
+        M = M,
+        cross_fit_type = cross_fit_type,
+        variance_type = variance_type,
+        future_args = future_args
+      )
+    } else {
+      ## repeated cross-fitting
+      eval <- policy_eval_rep(
+        nrep = nrep,
+        args = args,
+        policy_data = policy_data,
+        M = M,
+        cross_fit_type = cross_fit_type,
+        variance_type = variance_type,
+        future_args = future_args
+      )
+    }
+
   } else {
     args[["train_policy_data"]] <- policy_data
     args[["valid_policy_data"]] <- policy_data
     eval <- do.call(what = policy_eval_type, args = args)
   }
-  
+
   return(eval)
 }
 
-policy_eval_object <- function(coef,
-                               IC,
-                               type,
-                               target,
-                               id,
-                               name,
-                               coef_ipw = NULL,
-                               coef_or = NULL,
-                               policy_actions = NULL,
-                               policy_object = NULL,
-                               g_functions = NULL,
-                               g_values = NULL,
-                               q_functions = NULL,
-                               q_values = NULL,
-                               Z = NULL,
-                               subgroup_indicator = NULL,
-                               cross_fits = NULL,
-                               folds = NULL,
-                               cross_fit_type = NULL,
-                               variance_type = NULL) {
+policy_eval_object <- function(
+    coef,
+    IC,
+    type,
+    target,
+    id,
+    name,
+    coef_ipw = NULL,
+    coef_or = NULL,
+    policy_actions = NULL,
+    policy_object = NULL,
+    g_functions = NULL,
+    g_values = NULL,
+    q_functions = NULL,
+    q_values = NULL,
+    Z = NULL,
+    subgroup_indicator = NULL,
+    min_subgroup_size = NULL,
+    cross_fits = NULL,
+    folds = NULL,
+    cross_fit_type = NULL,
+    variance_type = NULL) {
+  names(coef) <- name
   out <- as.list(environment())
   out <- remove_null_elements(out)
   class(out) <- c("policy_eval")
@@ -458,6 +497,7 @@ policy_eval_type <- function(target,
                              g_models, g_functions,
                              g_full_history, save_g_functions,
                              q_models, q_functions,
+                             min_subgroup_size,
                              q_full_history, save_q_functions,
                              name) {
   ##
@@ -490,7 +530,13 @@ policy_eval_type <- function(target,
   ## appending policy names:
   pol_names <- lapply(policy, function(x) attr(x, which = "name", exact = TRUE))
   pol_names <- unlist(pol_names)
-  name <- paste0(name, ": d=", pol_names)
+  if (!is.null(pol_names)){
+    name <- lapply(pol_names,
+                   function(pn){
+                     paste0(name, ": d=", pn)
+                   })
+    name <- unlist(name)
+  }
 
   ##
   ## validating
@@ -529,6 +575,7 @@ policy_eval_type <- function(target,
   ## getting the utility:
   utility <- get_utility(valid_policy_data)
 
+
   ## calculating the target estimate for each policy:
   if (length(policy) == 1) {
     ## getting the policy actions:
@@ -543,13 +590,14 @@ policy_eval_type <- function(target,
     estimate_objects <- estimate_target(
       target = target,
       type = type,
-      K,
-      action_set,
-      actions,
-      policy_actions,
-      g_values,
-      q_values,
-      utility
+      K = K,
+      action_set = action_set,
+      actions = actions,
+      policy_actions = policy_actions,
+      g_values = g_values,
+      q_values = q_values,
+      utility = utility,
+      min_subgroup_size = min_subgroup_size
     )
     estimate_objects <- list(estimate_objects)
   } else {
@@ -570,13 +618,14 @@ policy_eval_type <- function(target,
         out <- estimate_target(
           target = target,
           type = type,
-          K,
-          action_set,
-          actions,
-          policy_actions,
-          g_values,
-          q_values,
-          utility
+          K = K,
+          action_set = action_set,
+          actions = actions,
+          policy_actions = policy_actions,
+          g_values = g_values,
+          q_values = q_values,
+          utility = utility,
+          min_subgroup_size = min_subgroup_size
         )
         return(out)
       }
@@ -611,6 +660,14 @@ policy_eval_type <- function(target,
   IC <- lapply(estimate_objects, function(eb) get_element(eb, "IC"))
   IC <- do.call(what = "cbind", IC)
 
+  ## if (target == "subgroup" & length(coef) > 1) {
+  ##   ## Reorder coefficients so all thresholds for d=1 are presented first
+  ##   ## followied by d=0
+  ##   idx <- seq_len(length(coef) / 2) * 2 - 1
+  ##   coef <- coef[c(idx, idx + 1)]
+  ##   IC <- IC[, c(idx, idx + 1)]
+  ## }
+
   out <- policy_eval_object(
     coef = coef,
     IC = IC,
@@ -627,6 +684,7 @@ policy_eval_type <- function(target,
     q_values = q_values,
     Z = Z,
     subgroup_indicator = subgroup_indicator,
+    min_subgroup_size = min_subgroup_size,
     name = name
   )
 
@@ -638,7 +696,8 @@ policy_eval_cross <- function(args,
                               M,
                               cross_fit_type,
                               variance_type,
-                              future_args) {
+                              future_args
+                              ) {
 
   ## check cross_fit_type input:
   cross_fit_type <- tolower(cross_fit_type)
@@ -660,14 +719,14 @@ policy_eval_cross <- function(args,
 
   type <- get_element(args, "type")
   target <- get_element(args, "target")
-  name <- get_element(args, "name")
+  min_subgroup_size <- get_element(args, "min_subgroup_size")
   n <- get_n(policy_data)
   id <- get_id(policy_data)
   policy_learn <- get_element(args, "policy_learn")
   if (!is.null(policy_learn)) {
-    n_coef <- length(get_element(attr(policy_learn, "pl_args"), "threshold"))
+    n_thres <- length(get_element(attr(policy_learn, "pl_args"), "threshold"))
   } else {
-    n_coef <- 1
+    n_thres <- 1
   }
 
   ## setting up the folds:
@@ -687,8 +746,13 @@ policy_eval_cross <- function(args,
     ),
     future_args
   )
+
   cross_fits <- do.call(what = future.apply::future_lapply, cross_args)
 
+
+  ## collecting the paramenter name(s):
+  name <- get_element(cross_fits[[1]], "name")
+  
   ## collecting the ids from each fold (unsorted):
   id <- unlist(lapply(
     cross_fits,
@@ -703,7 +767,7 @@ policy_eval_cross <- function(args,
 
   ## collecting the cross-fitted policy actions (sorted):
   policy_actions <- NULL
-  if (n_coef == 1) {
+  if (n_thres == 1) {
     policy_actions <- lapply(
       cross_fits, function(x) get_element(x, "policy_actions")
     )
@@ -719,6 +783,10 @@ policy_eval_cross <- function(args,
     )
     subgroup_indicator <- do.call(what = "rbind", subgroup_indicator)
     subgroup_indicator <- subgroup_indicator[order(id), , drop = FALSE]
+    ## subgroup_indicator <- cbind(subgroup_indicator, !subgroup_indicator)
+    subgroup_size <- apply(subgroup_indicator,
+                             MARGIN = 2,
+                             sum)
   }
 
   ##
@@ -782,8 +850,13 @@ policy_eval_cross <- function(args,
                     MARGIN = 2,
                     function(x) mean((Z[, 2] - Z[, 1])[x])
                     )
+      coef[!(subgroup_size >= min_subgroup_size)] <- as.numeric(NA)
+
     }
+    n_coef <- length(coef)
   }
+  ## resetting the parameter name:
+  names(coef) <- name
 
   ##
   ## calculating the influence curve for the cross-fitted estimator (sorted):
@@ -830,17 +903,17 @@ policy_eval_cross <- function(args,
           subgroup_indicator[, j] * ((Z[, 2] - Z[, 1]) - tmp[j])
         IC[, j] <- ic
       }
+      IC[ ,!(subgroup_size >= min_subgroup_size)] <- NA
       rm(ic, tmp)
     }
     if (variance_type == "complete") {
       args[["train_policy_data"]] <- policy_data
       args[["valid_policy_data"]] <- policy_data
       pe <- do.call(what = policy_eval_type, args = args)
-      IC <- as.vector(IC(pe))
+      IC <- IC(pe)
       rm(pe)
     }
   }
-
 
   ## calculating the cross-fitted ipw value estimate
   ## (only if target = "value" and type = "dr"):
@@ -919,7 +992,8 @@ policy_eval_cross <- function(args,
     folds = folds,
     name = name,
     variance_type = variance_type,
-    cross_fit_type = cross_fit_type
+    cross_fit_type = cross_fit_type,
+    subgroup_indicator = subgroup_indicator
   )
 
   return(out)
@@ -957,4 +1031,62 @@ policy_eval_fold <- function(fold,
   prog()
 
   return(out)
+}
+
+policy_eval_rep <- function(nrep,
+                            args,
+                            policy_data,
+                            M,
+                            cross_fit_type,
+                            variance_type,
+                            future_args){
+  onerun <- function(...){
+    pe <- policy_eval_cross(
+      args = args,
+      policy_data = policy_data,
+      M = M,
+      cross_fit_type = cross_fit_type,
+      variance_type = variance_type,
+      future_args = future_args
+    )
+    name <- get_element(pe, "name")
+    out <- list(coef=coef(pe), IC=IC(pe), name = name)
+    return(out)
+  }
+
+  ## repeated cross-fitting of the policy evaluation:
+  prog <- progressor(steps = nrep)
+  rep_args <- append(
+    list(
+      X = 1:nrep,
+      FUN = onerun,
+      prog = prog
+    ),
+    future_args
+  )
+  rep_fits <- do.call(what = future.apply::future_lapply, rep_args)
+
+  name <- get_element(rep_fits[[1]], "name")
+
+  coef <- lapply(rep_fits, function(x) get_element(x, "coef"))
+  coef <- do.call(what = "rbind", coef)
+  coef <- apply(coef, MARGIN = 2, mean)
+
+  IC <- lapply(rep_fits, function(x) get_element(x, "IC"))
+  IC <- Reduce("+", IC) / length(IC)
+
+  eval <- policy_eval_object(
+    coef = coef,
+    IC = IC,
+    type = get_element(args, "type"),
+    target = get_element(args, "target"),
+    id = get_id(policy_data),
+    name = name,
+    variance_type = variance_type,
+    cross_fit_type = cross_fit_type,
+    min_subgroup_size = get_element(args, "min_subgroup_size")
+  )
+
+  return(eval)
+
 }
