@@ -397,7 +397,7 @@ test_that("policy_eval with target = 'value' runs when cross-fitting.", {
   )
 })
 
-test_that("policy_eval with target = 'value' agrees with targeted::lava", {
+test_that("policy_eval with target = 'value' agrees with targeted::cate", {
   d <- sim_single_stage(1e2, seed = 1)
   pd <- policy_data(d, action = "A", covariates = c("Z"), utility = "U")
   p <- policy_def(1)
@@ -423,9 +423,9 @@ test_that("policy_eval with target = 'value' agrees with targeted::lava", {
 
   set.seed(1)
   ca_dml2 <- targeted::cate(
-    cate_model = A ~ 1,
-    response_model = U ~ A * Z,
-    propensity_model = A ~ Z,
+    cate.model = A ~ 1,
+    response.model = U ~ A * Z,
+    propensity.model = A ~ Z,
     data = d,
     nfolds = 2,
     contrast = 1
@@ -884,9 +884,9 @@ test_that("conditional.policy_eval agrees with targeted::cate", {
   library(targeted)
 
   ca <- targeted::cate(
-    cate_model = A ~ factor(B) - 1,
-    response_model = U ~ A * Z,
-    propensity_model = A ~ 1,
+    cate.model = A ~ factor(B) - 1,
+    response.model = U ~ A * Z,
+    propensity.model = A ~ 1,
     data = d,
     nfolds = 1,
   )

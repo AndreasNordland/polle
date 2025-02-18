@@ -356,12 +356,6 @@ policy_eval <- function(policy_data,
   if (!is.list(future_args)) {
     stop("future_args must be a list.")
   }
-  if (!is.null(name)) {
-    name <- as.character(name)
-    if (length(name) != 1) {
-      stop("name must be a character string.")
-    }
-  }
   target <- tolower(target)
   if (length(target) != 1) {
     stop("target must be a character string.")
@@ -381,6 +375,19 @@ policy_eval <- function(policy_data,
     target <- "subgroup"
   } else {
     stop("target must be either 'value' or 'subgroup'.")
+  }
+  if (!is.null(name)) {
+    name <- as.character(name)
+    if (target == "value") {
+      if (length(name) != 1) {
+        stop("name must be a character string.")
+      }
+    }
+    if (target == "subgroup") {
+      if (length(name) != 2) {
+        stop("name must be a character vector of length 2 when target = 'subgroup'.")
+      }
+    }
   }
   type <- tolower(type)
   if (length(type) != 1) {
