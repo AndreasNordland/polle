@@ -247,8 +247,30 @@ policy_eval_seq <- function(args,
 
     coef <- colSums(scaled_Z) / colSums(Gamma)
     vcov <- colMeans(Gamma)^(-2)/nrow(Gamma)
+  } else if (target == "subgroup") {
+    browser()
+    online_onestep_terms <- lapply(sequential_fits, function(x){
+      browser()
+      IC <- get_element(x, "IC")
+      coef <- get_element(x, "coef")
+      Z <- apply(IC, MARGIN = 1, function(x) x + coef, simplify = FALSE)
+      Z <- do.call(what = "rbind", Z)
+
+      sigma <- unname(sqrt(get_element(x, "insample_sigma2")))
+
+      scaled_Z <- apply(Z, MARGIN = 1, function(x) x / sigma, simplify = FALSE)
+      scaled_Z <- do.call(what = "rbind", scaled_Z)
+
+      Gamma <- Z * 0 + 1
+      Gamma <- apply(Gamma, MARGIN = 1, function(x) x / sigma, simplify = FALSE)
+      Gamma <- do.call(what = "rbind", Gamma)
+
+      out <- list(scaled_Z = scaled_Z, Gamma = Gamma)
+      return(out)
+    })
+
   } else {
-    mes <- "policy_eval_sequential only implemented for target = 'value'."
+    mes <- "policy_eval_sequential only implemented for target = 'value' or 'subgroup'."
     stop(mes)
   }
 
