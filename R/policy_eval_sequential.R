@@ -137,6 +137,7 @@ policy_eval_seq <- function(args,
   n <- get_n(policy_data)
   id <- get_id(policy_data)
   K <- get_K(policy_data)
+  target <- get_element(args, "target")
 
   ## random index of the data (by id):
   random_index <- sample(1:n, n)
@@ -198,22 +199,46 @@ policy_eval_seq <- function(args,
       policy <- list(policy)
     }
 
-    train_sigma2 <- lapply(policy, function(p){
+    insample_parameters <- lapply(policy, function(p){
       args[["policy"]] <- p
 
       eval_args <- append(args,
                           list(valid_policy_data = train_policy_data,
                                train_policy_data = train_policy_data))
 
-      train_pe <- do.call(what = "policy_eval_type", args = eval_args)
+      pe <- do.call(what = "policy_eval_type", args = eval_args)
 
-      out <- var(IC(train_pe))
+      sigma2 <- var(IC(pe))
+      sigma2 <- diag(sigma2)
+      names(sigma2) <- get_element(pe, "name")
+
+      out <- list(sigma2 = sigma2)
+
+      if (target == "subgroup"){
+        subgroup_indicator <- get_element(pe, "subgroup_indicator")
+        subgroup_prob <- apply(
+          subgroup_indicator,
+          MARGIN = 2,
+          FUN = mean,
+          simplify = FALSE
+        )
+        subgroup_prob <- unlist(subgroup_prob)
+        names(subgroup_prob) <- get_element(pe, "name")
+        out[["subgroup_prob"]] <- subgroup_prob
+      }
+
       return(out)
     })
-    train_sigma2 <- unlist(train_sigma2)
+
+    insample_sigma2 <- lapply(insample_parameters, function(x) get_element(x, "sigma2"))
+    insample_sigma2 <- unlist(insample_sigma2)
+
+    insample_subgroup_prob <- lapply(insample_parameters, function(x) get_element(x, "subgroup_prob", check_name = FALSE))
+    insample_subgroup_prob <- unlist(insample_subgroup_prob)
 
     out <- valid_pe
-    out[["insample_sigma2"]] <- train_sigma2
+    out[["insample_sigma2"]] <- insample_sigma2
+    out[["insample_subgroup_prob"]] <- insample_subgroup_prob
 
     return(out)
   })
@@ -248,26 +273,41 @@ policy_eval_seq <- function(args,
     coef <- colSums(scaled_Z) / colSums(Gamma)
     vcov <- colMeans(Gamma)^(-2)/nrow(Gamma)
   } else if (target == "subgroup") {
-    browser()
     online_onestep_terms <- lapply(sequential_fits, function(x){
-      browser()
-      IC <- get_element(x, "IC")
-      coef <- get_element(x, "coef")
-      Z <- apply(IC, MARGIN = 1, function(x) x + coef, simplify = FALSE)
-      Z <- do.call(what = "rbind", Z)
-
+      subgroup_indicator <- get_element(x, "subgroup_indicator")
+      Z <- get_element(x, "Z")
+      subgroup_prob <- get_element(x, "insample_subgroup_prob")
       sigma <- unname(sqrt(get_element(x, "insample_sigma2")))
 
-      scaled_Z <- apply(Z, MARGIN = 1, function(x) x / sigma, simplify = FALSE)
-      scaled_Z <- do.call(what = "rbind", scaled_Z)
+      blip <- Z[, 2] - Z[, 1]
+      D <- apply(
+        subgroup_indicator,
+        MARGIN = 2,
+        FUN = function(si){
+          blip * si
+        },
+        simplify = FALSE
+      )
+      D <- do.call(what = "cbind", D)
+      scaled_D <- apply(D, MARGIN = 1, function(x) x / sigma, simplify = FALSE)
+      scaled_D <- do.call(what = "rbind", scaled_D)
 
-      Gamma <- Z * 0 + 1
+      Gamma <- D * 0 + 1
       Gamma <- apply(Gamma, MARGIN = 1, function(x) x / sigma, simplify = FALSE)
       Gamma <- do.call(what = "rbind", Gamma)
 
-      out <- list(scaled_Z = scaled_Z, Gamma = Gamma)
+      out <- list(scaled_D = scaled_D, Gamma = Gamma)
       return(out)
     })
+
+    scaled_D <- lapply(online_onestep_terms, function(x) get_element(x, "scaled_D"))
+    scaled_D <- do.call(what = "rbind", scaled_D)
+
+    Gamma <- lapply(online_onestep_terms, function(x) get_element(x, "Gamma"))
+    Gamma <- do.call(what = "rbind", Gamma)
+
+    coef <- colSums(scaled_D) / colSums(Gamma)
+    vcov <- colMeans(Gamma)^(-2)/nrow(Gamma)
 
   } else {
     mes <- "policy_eval_sequential only implemented for target = 'value' or 'subgroup'."
@@ -282,7 +322,7 @@ policy_eval_seq <- function(args,
     id = id,
     train_sequential_index = train_sequential_index,
     valid_sequential_index = valid_sequential_index,
-    name = names(coef)
+    name = get_element(sequential_fits[[1]], "name")
   )
 
   return(out)
