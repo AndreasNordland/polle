@@ -98,34 +98,6 @@ dr_subgroup <- function(K,
   ## calculating the doubly robust blip score:
   blip <- Z[, 2] - Z[, 1]
 
-  ## calculating the subgroup indicator for d = 1:
-  ## subgroup_indicator <- (policy_actions[["d"]] == action_set[2])
-
-  ## subgroup_size <- sum(subgroup_indicator)
-  ## if (subgroup_size >= min_subgroup_size) {
-  ##   ## calculating the subgroup average treatment effect:
-  ##   sate1 <- mean(blip[subgroup_indicator])
-  ##   ## calculating the influence curve for the subgroup average treatment
-  ##   ## effect:
-  ##   IC1 <- 1 / mean(subgroup_indicator) * subgroup_indicator *
-  ##     (blip - sate1)
-  ## } else {
-  ##   sate1 <- as.numeric(NA)
-  ##   IC1 <- rep(as.numeric(NA), nrow(actions))
-  ## }
-  ## ## Same for the complementary subgroup (d=action_set[1])
-  ## comp_subgroup_size <- sum(!subgroup_indicator)
-  ## if (comp_subgroup_size >= min_subgroup_size) {
-  ##   sate0 <- mean(blip[!subgroup_indicator])
-  ##   IC0 <- 1 / mean(!subgroup_indicator) * (!subgroup_indicator) *
-  ##     (blip - sate0)
-  ## } else {
-  ##   sate0 <- as.numeric(NA)
-  ##   IC0 <- rep(as.numeric(NA), nrow(actions))
-  ## }
-  ## sate <- c(sate1, sate0)
-  ## IC <- cbind(IC1, IC0)
-
   ## calculating the subgroup indicator for each treatment:
   subgroup_indicator <- (policy_actions[["d"]] == action_set[2])
   subgroup_indicator <- cbind(subgroup_indicator, !subgroup_indicator)

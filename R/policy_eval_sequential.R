@@ -289,6 +289,9 @@ policy_eval_seq <- function(args,
         simplify = FALSE
       )
       D <- do.call(what = "cbind", D)
+      D <- apply(D, MARGIN = 1, function(x) x / subgroup_prob, simplify = FALSE)
+      D <- do.call(what = "rbind", D)
+
       scaled_D <- apply(D, MARGIN = 1, function(x) x / sigma, simplify = FALSE)
       scaled_D <- do.call(what = "rbind", scaled_D)
 
