@@ -305,7 +305,66 @@ policy_eval <- function(policy_data,
                         future_args = list(future.seed=TRUE),
                         name = NULL
                         ) {
-  ## input checks:
+  ## argument input checks:
+  args <- as.list(environment())
+  args <- do.call(what = "policy_eval_input_checks", args)
+
+  ## collecting the arguments to be passed on:
+  args[["policy_data"]] <- NULL
+  args[["M"]] <- NULL
+  args[["future_args"]] <- NULL
+  args[["variance_type"]] <- NULL
+  args[["cross_fit_type"]] <- NULL
+  args[["nrep"]] <- NULL
+
+  if (M > 1) {
+    if (nrep == 1){
+      eval <- policy_eval_cross(
+        args = args,
+        policy_data = policy_data,
+        M = M,
+        cross_fit_type = cross_fit_type,
+        variance_type = variance_type,
+        future_args = future_args
+      )
+    } else {
+      ## repeated cross-fitting
+      eval <- policy_eval_rep(
+        nrep = nrep,
+        args = args,
+        policy_data = policy_data,
+        M = M,
+        cross_fit_type = cross_fit_type,
+        variance_type = variance_type,
+        future_args = future_args
+      )
+    }
+
+  } else {
+    args[["train_policy_data"]] <- policy_data
+    args[["valid_policy_data"]] <- policy_data
+    eval <- do.call(what = policy_eval_type, args = args)
+  }
+
+  return(eval)
+}
+
+policy_eval_input_checks <- function(policy_data,
+                                     policy, policy_learn,
+                                     g_functions, g_models,
+                                     g_full_history, save_g_functions,
+                                     q_functions, q_models,
+                                     q_full_history, save_q_functions,
+                                     target,
+                                     type,
+                                     cross_fit_type,
+                                     variance_type,
+                                     M,
+                                     nrep,
+                                     min_subgroup_size,
+                                     future_args,
+                                     name){
+  args <- as.list(environment())
   if (!inherits(policy_data, what = "policy_data"))
     stop("policy_data must be of inherited class 'policy_data'.")
   if (!is.null(policy)) {
@@ -418,45 +477,12 @@ policy_eval <- function(policy_data,
     }
   }
 
-  ## collecting the arguments to be passed on:
-  args <- as.list(environment())
-  args[["policy_data"]] <- NULL
-  args[["M"]] <- NULL
-  args[["future_args"]] <- NULL
-  args[["variance_type"]] <- NULL
-  args[["cross_fit_type"]] <- NULL
-  args[["nrep"]] <- NULL
+  ## editing args
+  args[["target"]] <- target
+  args[["type"]] <- type
+  args[["name"]] <- name
 
-  if (M > 1) {
-    if (nrep == 1){
-      eval <- policy_eval_cross(
-        args = args,
-        policy_data = policy_data,
-        M = M,
-        cross_fit_type = cross_fit_type,
-        variance_type = variance_type,
-        future_args = future_args
-      )
-    } else {
-      ## repeated cross-fitting
-      eval <- policy_eval_rep(
-        nrep = nrep,
-        args = args,
-        policy_data = policy_data,
-        M = M,
-        cross_fit_type = cross_fit_type,
-        variance_type = variance_type,
-        future_args = future_args
-      )
-    }
-
-  } else {
-    args[["train_policy_data"]] <- policy_data
-    args[["valid_policy_data"]] <- policy_data
-    eval <- do.call(what = policy_eval_type, args = args)
-  }
-
-  return(eval)
+  return(args)
 }
 
 policy_eval_object <- function(
