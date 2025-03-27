@@ -6,7 +6,8 @@ estimate_target <- function(target = "value",
                             policy_actions,
                             g_values,
                             q_values,
-                            utility) {
+                            utility,
+                            min_subgroup_size) {
   args <- list(
     K = K,
     action_set = action_set,
@@ -14,7 +15,8 @@ estimate_target <- function(target = "value",
     policy_actions = policy_actions,
     g_values = g_values,
     q_values = q_values,
-    utility = utility
+    utility = utility,
+    min_subgroup_size = min_subgroup_size
   )
 
   if (target == "value") {
@@ -46,7 +48,8 @@ dr_subgroup <- function(K,
                         policy_actions,
                         g_values,
                         q_values,
-                        utility) {
+                        utility,
+                        min_subgroup_size) {
   if (K != 1) {
     mes <- paste0(
       "subgroup average treatment effect evaluation",
@@ -95,19 +98,34 @@ dr_subgroup <- function(K,
   ## calculating the doubly robust blip score:
   blip <- Z[, 2] - Z[, 1]
 
-  ## calculating the subgroup indicator:
+  ## calculating the subgroup indicator for each treatment:
   subgroup_indicator <- (policy_actions[["d"]] == action_set[2])
+  subgroup_indicator <- cbind(subgroup_indicator, !subgroup_indicator)
+  subgroup_indicator <- unname(subgroup_indicator)
 
+  res <- apply(
+    subgroup_indicator,
+    MARGIN = 2,
+    FUN = function(si){
+      ## calculating the subgroup average treatment effect:
+      sate <- mean(blip[si])
+      ## calculating the influence curve for the subgroup average treatment effect:
+      IC <- 1 / mean(si) * si *
+        (blip - sate)
 
-  sate <- as.numeric(NA)
-  IC <- rep(as.numeric(NA), nrow(actions))
-  if (any(subgroup_indicator)) {
-    ## calculating the subgroup average treatment effect:
-    sate <- mean(blip[subgroup_indicator])
-    ## calculating the influence curve for the subgroup average treatment effect:
-    IC <- 1 / mean(subgroup_indicator) * subgroup_indicator *
-      (blip - sate)
-  }
+      ss <- sum(si)
+      if (ss < min_subgroup_size) {
+        sate <- as.numeric(NA)
+        IC <- rep(as.numeric(NA), length(si))
+      } 
+
+      out <- list(sate = sate, IC = IC)
+    },
+    simplify = FALSE
+  )
+  sate <- lapply(res, function(x) get_element(x, "sate")) |> unlist()
+  IC <- lapply(res, function(x) get_element(x, "IC"))
+  IC <- do.call(what = "cbind", IC)
 
   out <- list(
     coef = sate,
@@ -125,7 +143,8 @@ dr_value <- function(K,
                      policy_actions,
                      g_values,
                      q_values,
-                     utility) {
+                     utility,
+                     ...) {
   ##
   ## calculating the doubly robust score for the policy value
   ##

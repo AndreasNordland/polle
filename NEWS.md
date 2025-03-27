@@ -1,8 +1,12 @@
+# polle 1.6.0
+    - online estimation/sequential validation for (subgroup) policy evaluation
+    - improved functionality for subgroup analysis (subgroup average treatment effect)
+    
 # polle 1.5.1
     - documentation and print method for policy_eval() improved
     - multiple thresholds for policy_learn()
     - bug fixes: get_policy_functions(), predict.blip_function(), predict.q_glmnet()
-
+    
 # polle 1.5
     - added target argument in policy_eval for estimating the subgroup average treatment effect.
     - added threshold argument in policy_learn for learning the optimal subgroup.

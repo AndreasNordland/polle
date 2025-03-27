@@ -667,7 +667,7 @@ g_xgboost <- function(formula = ~.,
     # cross-validating models
     cv_res <- NULL
     if (length(ml_models)>1){
-      cv_res <- tryCatch(targeted::cv(ml_models, data, K = cv_args$nfolds, rep = cv_args$rep),
+      cv_res <- tryCatch(targeted::cv(ml_models, data, nfolds = cv_args$nfolds, rep = cv_args$rep),
         error = function(e) e
         )
       if (inherits(cv_res, "error")) {
