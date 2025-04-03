@@ -1,4 +1,4 @@
-new_policy_data <- function(stage_data, baseline_data = NULL, action_set = NULL, stage_action_sets = NULL, verbose){
+new_policy_data <- function(stage_data, baseline_data = NULL, action_set = NULL, stage_action_sets = NULL, censoring_covariates = NULL, verbose){
 
   # checking and processing stage_data:
   {
@@ -73,8 +73,10 @@ new_policy_data <- function(stage_data, baseline_data = NULL, action_set = NULL,
     # checking the utility variable (U):
     if (!all(is.numeric(unlist(stage_data[,"U"]))))
       stop("'utility' U must be numeric.")
-    if(any(is.na(stage_data[,"U"])))
-      stop("The utility varible U has missing values")
+    ## for stage action events (event = 0) and termination events (event = 1)
+    ## U should not be missing:
+    if(any(is.na(stage_data[event %in% c(0,1),"U"])))
+      stop("The utility variable U has missing values")
 
     # checking the deterministic reward variables (U_A[.]):
     deterministic_reward_names <- paste("U_A", action_set, sep = "")
@@ -103,9 +105,17 @@ new_policy_data <- function(stage_data, baseline_data = NULL, action_set = NULL,
     }
     rm(sdf)
 
-    # getting the names of the state data (X_k):
+    # getting the names of the state (and censoring) data (X_k):
     rn <- c("id", "stage", "event", "A", "U", deterministic_reward_names)
     state_names <- names(stage_data)[!(names(stage_data) %in% rn)]
+
+    ## removing censoring_covariates from state_names:
+    if (!is.null(censoring_covariates)){
+      if(!all(censoring_covariates %in% state_names)){
+        stop("invalid censoring_covariates.")
+      }
+      state_names <- state_names[!(state_names %in% censoring_covariates)]
+    }
   }
 
   # checking and processing baseline_data:
@@ -157,7 +167,8 @@ new_policy_data <- function(stage_data, baseline_data = NULL, action_set = NULL,
     colnames = list(
       state_names = state_names,
       deterministic_rewards = deterministic_reward_names,
-      baseline_names = baseline_names
+      baseline_names = baseline_names,
+      censoring_names = censoring_covariates
     ),
     action_set = action_set,
     stage_action_sets = stage_action_sets,
@@ -200,6 +211,8 @@ new_policy_data <- function(stage_data, baseline_data = NULL, action_set = NULL,
   #'   \item A vector is valid for wide data with incremental rewards. Must have length K+1; see Examples.
 #' }
 #' @param baseline Baseline covariate name(s). Character vector.
+#' @param censoring_covariates Stage specific covariate name(s) related solely to the right censoring process (e.g. 'time'). Character vector or string.
+#' Only used if \code{type = "long"}.
 #' @param deterministic_rewards Deterministic reward variable name(s). Named list of character vectors of length K.
 #' The name of each element must be on the form "U_Aa" where "a" corresponds to an action in the action set.
 #' @param id ID variable name. Character string.
@@ -309,6 +322,7 @@ policy_data <- function(data, baseline_data,
                         type="wide",
                         action, covariates, utility,
                         baseline = NULL,
+                        censoring_covariates = NULL,
                         deterministic_rewards = NULL,
                         id = NULL, stage = NULL, event = NULL,
                         action_set = NULL,
@@ -320,13 +334,19 @@ policy_data <- function(data, baseline_data,
     baseline_data <- copy(baseline_data)
   }
 
+  ## input checks:
   if(!(is.character(type) & (length(type == 1))))
     stop("'type' must be either \"wide\" or \"long\".")
   type <- tolower(type)
-  if (any(type %in% c("wide"))) {
+
+  ## format wide and long data:
+  if (any(type %in% c("wide"))) { # wide data
+    ## input warnings and checks:
     if (!missing(baseline_data)){
       stop("When 'type'=wide' set 'baseline_data' to NULL and use 'baseline' instead.")
     }
+    if (!is.null(censoring_covariates))
+      warning("censoring_covariates is not used when type = 'wide'.")
 
     # formatting the wide data:
     md <- melt_wide_data(
@@ -346,13 +366,20 @@ policy_data <- function(data, baseline_data,
       action_set = action_set,
       verbose = verbose
     )
-  } else if (any(type %in% "long")) {
+  } else if (any(type %in% "long")) { # long data
+    ## input warnings and checks:
     if (!is.null(deterministic_rewards))
       warning("deterministic_rewards is not used when type = 'long'.")
     if (missing(covariates))
       covariates <- NULL
     if(!is.null(covariates))
       warning("covariates is not used when type = 'long'.")
+    if (!is.null(censoring_covariates)){
+    if (is.list(censoring_covariates))
+      censoring_covariates <- unlist(censoring_covariates)
+    if (!is.character(censoring_covariates))
+      stop("'censoring_covariates' must be a vector or a list of type character.")
+    }
 
     ld <- format_long_data(
       data,
@@ -362,6 +389,7 @@ policy_data <- function(data, baseline_data,
       stage = stage,
       event = event,
       utility = utility,
+      censoring_covariates = censoring_covariates,
       verbose = verbose
     )
 
@@ -370,6 +398,7 @@ policy_data <- function(data, baseline_data,
       stage_data = ld$stage_data,
       baseline_data = ld$baseline_data,
       action_set = action_set,
+      censoring_covariates = censoring_covariates,
       verbose = verbose)
 
   } else{
@@ -407,16 +436,15 @@ melt_wide_data <- function(wide_data,
                            utility,
                            deterministic_rewards){
 
-  ### checking the form of the variable inputs
-  # id:
+  ## checking the form of the variable inputs:
+  ## id:
   if (!is.null(id)){
     if (!(is.character(id) & (length(id) == 1))){
       mes <- "'id' must be a character string."
       stop(mes)
     }
   }
-
-  # action:
+  ## action:
   if (is.list(action))
     action <- unlist(action)
   if (!is.vector(action) | !is.character(action))
@@ -428,11 +456,9 @@ melt_wide_data <- function(wide_data,
     mes <- paste("Action variables ", mes, " not found in data.", sep = "")
     stop(mes)
   }
-
-  # getting the action set:
+  ## getting the action set:
   action_set <- sort(unique(unlist(wide_data[ , action, with = FALSE])))
-
-  # covariates:
+  ## covariates:
   if (!(is.list(covariates) | is.vector(covariates)))
     stop("'covariates' must be a character vector or a list of character vectors.")
   covariates <- lapply(covariates, function(covar){
@@ -452,15 +478,14 @@ melt_wide_data <- function(wide_data,
     else
       stop("'covariates' must be a named list in case of multiple actions.")
   }
-
-  # baseline:
+  ## baseline:
   if (!is.null(baseline)){
     baseline <- unlist(baseline)
     if (!is.character(baseline)){
       stop("'baseline' must be a character string or vector.")
     }
   }
-  # utility:
+  ## utility:
   if (is.list(utility))
     utility <- unlist(utility)
   if (!is.vector(utility) | !is.character(utility))
@@ -472,7 +497,7 @@ melt_wide_data <- function(wide_data,
       stop(mes)
     }
   }
-  # deterministic_rewards:
+  ## deterministic_rewards:
   if (!is.null(deterministic_rewards)){
     deterministic_rewards <- lapply(deterministic_rewards, function(du){
       if (is.list(du))
@@ -493,7 +518,17 @@ melt_wide_data <- function(wide_data,
     }
   }
 
-  ### checking if 'data' contains all non-NA variable names:
+  ## checking id:
+  if (!is.null(id)){
+    if(!(id %in% colnames(wide_data))){
+      stop("invalid id variable (not in data)")
+    }
+    if (anyDuplicated(wide_data[[id]])){
+      stop("'id' column in data must be unique.")
+    }
+  }
+
+  ## checking if 'data' contains all non-NA variable names:
   tmp <- unlist(c(id, action, covariates, baseline, utility, deterministic_rewards))
   tmp <- tmp[!is.na(tmp)]
   if (!all(tmp %in% names(wide_data))){
@@ -504,7 +539,7 @@ melt_wide_data <- function(wide_data,
   }
   rm(tmp)
 
-  ### checking for non-NA duplicates:
+  ## checking for non-NA duplicates:
   tmp <- unlist(c(id, action, covariates, baseline, utility, deterministic_rewards))
   tmp <- tmp[!is.na(tmp)]
   if (anyDuplicated(tmp)>0){
@@ -515,13 +550,13 @@ melt_wide_data <- function(wide_data,
   }
   rm(tmp)
 
-  ### checking for invalid variable names:
+  ## checking for invalid variable names:
   if (any(c("event", "stage") %in% names(covariates))){
     stop("'covariates' can not have named elements \"event\" or \"stage\".")
   }
 
-  ### setting default variables if missing:
-  # setting id if missing:
+  ## setting default variables if missing:
+  ## setting id if missing:
   if (is.null(id)){
     if (any("id" %in% colnames(wide_data))){
       stop("'data' has a variable id, but 'id' = NULL. Please set 'id' = \"id\" or change the name of the id variable.")
@@ -531,7 +566,7 @@ melt_wide_data <- function(wide_data,
     id <- "id"
   }
 
-  # setting the rewards to 0 in case the final utility is provided:
+  ## setting the rewards to 0 in case the final utility is provided:
   if (length(utility)==1) {
     for (i in seq(K)) {
       u <- paste0("_", utility[i], "_", i)
@@ -541,7 +576,7 @@ melt_wide_data <- function(wide_data,
     }
   }
 
-  # augmenting wide_data to handle NA covariates entries:
+  ## augmenting wide_data to handle NA covariates entries:
   for (l in seq_along(covariates)){
     na_idx <- is.na(covariates[[l]])
     if (any(na_idx)){
@@ -550,16 +585,16 @@ melt_wide_data <- function(wide_data,
         mes <- paste("covariate", mes, 'is invalid.')
         stop(mes)
       }
-      # augmenting wide_data with NA column (of the same class):
+      ## augmenting wide_data with NA column (of the same class):
       NA_col_name <- paste("_NA_", l, sep = "")
       wide_data[, c(NA_col_name) := wide_data[[covariates[[l]][!na_idx][[1]]]]]
       wide_data[, c(NA_col_name) := NA]
-      # updating the covariate names:
+      ## updating the covariate names:
       covariates[[l]][na_idx] <- NA_col_name
     }
   }
 
-  ### melting stage data:
+  ## melting stage data:
   stage <- A <- U <- event <- NULL
   measure <- append(list("A" = action), covariates)
   measure <- append(measure, list("U" = utility))
@@ -584,7 +619,7 @@ melt_wide_data <- function(wide_data,
   setkeyv(stage_data, c("id", "stage"))
   rm(stage, A, U, event)
 
-  ### getting baseline data:
+  ## getting baseline data:
   if (!is.null(baseline)){
     sel <- c(id, baseline)
     baseline_data <- subset(wide_data, select = sel)
@@ -608,7 +643,7 @@ set_default_name <- function(data, variable_name, default_name){
     variable_name <- default_name
   }
 
-  if (!(is.character(variable_name) & (length(variable_name)==1))){
+  if (!(is.character(variable_name) & (length(variable_name) == 1))){
     mes <- parsed_name
     mes <- paste("'", mes, "' must be a character string.", sep = "")
     stop(mes)
@@ -630,9 +665,9 @@ set_default_name <- function(data, variable_name, default_name){
   setnames(data, variable_name, default_name)
 }
 
-format_long_data <- function(long_data, baseline_data, id, action, stage, event, utility, verbose){
+format_long_data <- function(long_data, baseline_data, id, action, stage, event, utility, censoring_covariates = NULL, verbose){
 
-  ### dealing with missing values
+  ## dealing with missing arguments:
   if (missing(action)){
     action <- NULL
   }
@@ -643,8 +678,8 @@ format_long_data <- function(long_data, baseline_data, id, action, stage, event,
     baseline_data <- NULL
   }
 
-  ### checking for duplicates
-  tmp <- unlist(c(id, action, stage, event, utility))
+  ## checking for duplicates
+  tmp <- unlist(c(id, action, stage, event, utility, censoring_covariates))
   if (anyDuplicated(tmp)>0){
     mes <- tmp[anyDuplicated(tmp)]
     mes <- paste(mes, collapse = "\", \"")

@@ -5,12 +5,27 @@ print.policy_data <- function(x, digits = 2, ...){
   cat(
     paste("Policy data with n = ", s$n,
           " observations and maximal K = ", s$K,
-          " stages.", sep = "")
+          " action stages.", sep = "")
   )
   cat("\n\n")
+
+  cat("Count of observed actions at a given stage:")
+
+  cat("\n")
+
   print(s$tab)
 
   cat("\n")
+
+  if(get_element(s, "cens_indicator") == TRUE){
+    cat("Count of right observations right censored at a given stage (not the cumulative count):")
+
+    cat("\n")
+
+    print(get_element(s, "cens_tab"), row.names = FALSE)
+
+    cat("\n")
+  }
 
   bas_var <- paste("Baseline covariates: ", s$baseline_covar, sep = "")
   cat(paste(strwrap(bas_var, 60), collapse="\n"))
@@ -21,11 +36,15 @@ print.policy_data <- function(x, digits = 2, ...){
   cat(paste(strwrap(state_var, 60), collapse="\n"))
 
   cat("\n")
-  mean_utility <- mean(get_utility(x)$U)
+  mean_utility <- mean(get_utility(x)$U, na.rm = TRUE)
   mean_utility <- round(mean_utility, digits = digits)
 
+  mes <-  paste("Average utility: ", mean_utility, sep = "")
+  if(get_element(s, "cens_indicator") == TRUE){
+    mes <-  paste("Average complete case utility: ", mean_utility, sep = "")
+  }
   cat(
-    paste("Average utility: ", mean_utility, sep = "")
+   mes
   )
   cat("\n")
 }
@@ -37,7 +56,7 @@ summary.policy_data <- function(object, probs=seq(0, 1, .25), ...) {
   n <- get_n(object)
   stage <- event <- NULL  # R-check glob. var.
   action_set <- get_action_set(object)
-  stage_data <- getElement(object, "stage_data")
+  stage_data <- get_element(object, "stage_data")
   st <- stage_data[event == 0,][, c("stage", "A"), with = FALSE]
   st$A <- factor(st$A, levels = action_set)
   colnames(st) <- c("stage", "action")
@@ -46,6 +65,9 @@ summary.policy_data <- function(object, probs=seq(0, 1, .25), ...) {
   bc <- paste(object$colnames$baseline_names, collapse = ", ")
   sc <- paste(object$colnames$state_names, collapse = ", ")
   stagedist <- list()
+  cens_indicator <-  any(stage_data[["event"]] == 2)
+  cens_tab <- NULL
+  if (!cens_indicator) {
   dt <- get_cum_rewards(object)
   if (!is.null(probs))
     for (i in seq_len(K+1)) {
@@ -53,8 +75,15 @@ summary.policy_data <- function(object, probs=seq(0, 1, .25), ...) {
       val <- stats::quantile(ss[["U"]], probs = probs, ...)
       stagedist <- append(stagedist, list(val))
     }
+  } else {
+    cens_st <- stage_data[event == 2,][, c("stage"), with = FALSE]
+    colnames(cens_st) <- c("stage")
+    cens_tab <- cens_st[,.(n = .N), by = "stage"]
+    cens_tab <- as.data.frame(cens_tab)
+  }
   res <- list(n=n, K=K, tab=stable, stagedist=stagedist,
-              baseline_covar=bc, stage_covar=sc)
+              baseline_covar=bc, stage_covar=sc,
+              cens_indicator = cens_indicator, cens_tab = cens_tab)
   class(res) <- "summary.policy_data"
   res
 }
@@ -459,67 +488,118 @@ subset_id.policy_data <- function(object, id, preserve_action_set = TRUE){
 #' @noRd
 #' @param object Object of class [policy_data()].
 #' @param stage stage number.
+#' @param censoring Logical.
+#' If FALSE, full_history() returns
+#' every observed (treatment) action for
+#' the given stage (A) and the associated
+#' history (H).
+#' If TRUE, full_history() returns
+#' every observed event for the given stage
+#' (A) and the associated state covariates and
+#' censoring covariates (H)
 #' @return Object of class "history".
-full_history <- function(object, stage){
+full_history <- function(object, stage, censoring = FALSE){
   K <- get_K(object)
-  if (stage > K)
-    stop("The stage number must be lower or equal to maximal number of stages observed.")
-
-  object_colnames <- getElement(object, "colnames")
-  stage_data <- getElement(object, "stage_data")
-  state_names <- getElement(object_colnames, "state_names")
-  baseline_data <- getElement(object, "baseline_data")
-  baseline_names <- getElement(object_colnames, "baseline_names")
+  object_colnames <- get_element(object, "colnames")
+  stage_data <- get_element(object, "stage_data")
+  state_names <- get_element(object_colnames, "state_names")
+  baseline_data <- get_element(object, "baseline_data")
+  baseline_names <- get_element(object_colnames, "baseline_names")
   action_set <- get_action_set(object)
   stage_action_sets <- get_stage_action_sets(object)
-  deterministic_rewards <- getElement(object_colnames, "deterministic_rewards")
+  deterministic_rewards <- get_element(object_colnames, "deterministic_rewards")
   stage_ <- stage; rm(stage)
 
-  # getting stage specific history names:
-  AH_names <- c("id", "stage", "A", state_names)
-  # filtering rows which have an action (event = 0):
-  event <- NULL
-  AH <- stage_data[event == 0, ]
-  # filtering rows up till the given stage number:
-  stage <- NULL
-  AH <- AH[stage <= stage_, AH_names, with = FALSE]
-  # filtering observations with an action at the given stage:
-  AH <- AH[, if(any(stage == stage_)) .SD, id]
-  # transforming the data from long to wide format:
-  AH <- dcast(AH, id ~ stage, value.var = AH_names[-c(1,2)])
-  # inserting stage column:
-  AH[, stage := stage_]
-  # merging the stage specific histories and the the baseline data by reference:
-  if(length(baseline_names) > 0){
-    AH[baseline_data, (baseline_names) := mget(paste0('i.', baseline_names))]
+  A <- U <- event <- stage_action_set <- action_name <- event_name <- NULL
+  if (censoring == FALSE){
+    if (stage_ > K) {
+      stop("The stage number must be lower or equal to maximal number of stages observed.")
+    }
+    ## getting stage specific history names:
+    AH_names <- c("id", "stage", "A", state_names)
+    ## filtering rows which have an action (event = 0):
+    AH <- stage_data[event == 0, ]
+    ## filtering rows up till the given stage number:
+    stage <- NULL
+    AH <- AH[stage <= stage_, AH_names, with = FALSE]
+    ## filtering observations with an action at the given stage:
+    AH <- AH[, if(any(stage == stage_)) .SD, id]
+    ## transforming the data from long to wide format:
+    AH <- dcast(AH, id ~ stage, value.var = AH_names[-c(1,2)])
+    ## inserting stage column:
+    AH[, stage := stage_]
+    ## merging the stage specific histories and the the baseline data by reference:
+    if(length(baseline_names) > 0){
+      AH[baseline_data, (baseline_names) := mget(paste0('i.', baseline_names))]
+    }
+    ## setting key and column order
+    setkeyv(AH, c("id", "stage"))
+    setcolorder(AH, neworder = c("id", "stage"))
+
+    ## separating the action at the given stage
+    action_name <- paste("A", stage_, sep = "_")
+    A_names <- c("id", "stage", action_name)
+    A <- AH[ , A_names, with = FALSE]
+    H <- AH[, c(action_name) := NULL]
+
+    ## getting the accumulated utility and deterministic utility contributions
+    U_bar <- id <- NULL
+    U <- stage_data[stage <= stage_][, U_bar := sum(U), id]
+    U <- U[event == 0][stage == stage_,]
+    U_names <- c("id", "stage", "U_bar", deterministic_rewards)
+    U <- U[ , U_names, with = FALSE]
+
+    stage_action_set <- stage_action_sets[[stage_]]
   }
-  # setting key and column order
-  setkeyv(AH, c("id", "stage"))
-  setcolorder(AH, neworder = c("id", "stage"))
+  if (censoring == TRUE) {
+    if (stage_ > (K+1)) {
+      stop("The stage number must be lower or equal to K+1.")
+    }
+    censoring_names <- get_element(object_colnames, "censoring_names")
+    if (!is.null(censoring_names)) {
+      state_names <- c(state_names, censoring_names)
+    }
 
-  # separating the action at the given stage
-  action_name <- paste("A", stage_, sep = "_")
-  A_names <- c("id", "stage", action_name)
-  A <- AH[ , A_names, with = FALSE]
-  H <- AH[, c(action_name) := NULL]
+    AH_names <- c("id", "stage", "event", "A", state_names)
 
-  # getting the accumulated utility and deterministic utility contributions
-  U_bar <- id <- NULL
-  U <- stage_data[stage <= stage_][, U_bar := sum(U), id]
-  U <- U[event == 0][stage == stage_,]
-  U_names <- c("id", "stage", "U_bar", deterministic_rewards)
-  U <- U[ , U_names, with = FALSE]
+    ## filtering rows up till the given stage number:
+    stage <- NULL
+    AH <- stage_data[stage <= stage_, AH_names, with = FALSE]
+    ## filtering observations with an action at the given stage:
+    AH <- AH[, if(any(stage == stage_)) .SD, id]
+    ## transforming the data from long to wide format:
+    AH <- dcast(AH, id ~ stage, value.var = AH_names[-c(1,2)])
+    ## inserting stage column:
+    AH[, stage := stage_]
+    ## merging the stage specific histories and the the baseline data by reference:
+    if(length(baseline_names) > 0){
+      AH[baseline_data, (baseline_names) := mget(paste0('i.', baseline_names))]
+    }
+                                        # setting key and column order
+    setkeyv(AH, c("id", "stage"))
+    setcolorder(AH, neworder = c("id", "stage"))
+
+    event_name <- paste("event", stage_, sep = "_")
+    event_names <- c("id", "stage", event_name)
+    event <- AH[ , event_names, with = FALSE]
+
+    H <- AH[, c(paste("A", stage_, sep = "_"),
+                paste("event", 1:stage_, sep = "_")) := NULL]
+  }
 
   history <- list(
     H = H,
     A = A,
+    event = event,
     U = U,
     action_name = action_name,
+    event_name = event_name,
     deterministic_rewards = deterministic_rewards,
     action_set = action_set,
-    stage_action_set = stage_action_sets[[stage_]],
+    stage_action_set = stage_action_set,
     stage = stage_
   )
+  history <- remove_null_elements(history)
   class(history) <- "history"
 
   return(history)
@@ -530,59 +610,95 @@ full_history <- function(object, stage){
 #' @noRd
 #' @param object object of class [policy_data()].
 #' @param stage stage number.
+#' @param censoring Logical.
+#' If FALSE, stage_state_history() returns
+#' every observed (treatment) action for
+#' the given stage (A) and the associated
+#' state data (H).
+#' If TRUE, stage_state_history() returns
+#' every observed event for the given stage
+#' (A) and the associated state covariates and
+#' censoring state covariates (H)
 #' @return Object of class "history".
-stage_state_history <- function(object, stage){
-
-  if (stage > object$dim$K)
-    stop("The stage number must be lower or equal to maximal number of stages observed.")
-
-  stage_data <- object$stage_data
-  state_names <- object$colnames$state_names
-  baseline_data <- object$baseline_data
-  baseline_names <- object$colnames$baseline_names
+stage_state_history <- function(object, stage, censoring = FALSE){
+  K <- get_K(object)
+  stage_data <- get_element(object, "stage_data")
+  state_names <- get_element(object, "colnames") |> get_element("state_names")
+  baseline_data <- get_element(object, "baseline_data")
+  baseline_names <- get_element(object,"colnames") |> get_element("baseline_names")
   action_set <- get_action_set(object)
   stage_action_sets <- get_stage_action_sets(object)
-  deterministic_rewards <- object$colnames$deterministic_rewards
-  stage_ <- stage
+  deterministic_rewards <- get_element(object, "colnames") |> get_element("deterministic_rewards")
+  stage_ <- stage; rm(stage)
 
-  # getting the state names:
-  AH_names <- c("id", "stage", "A", state_names)
-  # filtering rows which have an action (event = 0):
-  event <- NULL
-  AH <- stage_data[event == 0, ]
-  rm(event)
-  # filtering observations with an action at the given stage:
-  AH <- AH[stage == stage_, AH_names, with = FALSE]
-  # merging the state history and the the baseline data:
-  if(length(baseline_names) > 0){
-    AH[baseline_data, (baseline_names) := mget(paste0('i.', baseline_names))]
+  A <- U <- event <- stage_action_set <- action_name <- event_name <- NULL
+  if (censoring == FALSE) {
+    if (stage_ > K)
+      stop("The stage number must be lower or equal to maximal number of stages observed.")
+    ## getting the state names:
+    AH_names <- c("id", "stage", "A", state_names)
+    ## filtering rows which have an action (event = 0):
+    event <- NULL
+    AH <- stage_data[event == 0, ]
+    ## filtering observations with an action at the given stage:
+    AH <- AH[stage == stage_, AH_names, with = FALSE]
+    ## merging the state history and the the baseline data:
+    if(length(baseline_names) > 0){
+      AH[baseline_data, (baseline_names) := mget(paste0('i.', baseline_names))]
+    }
+
+    ## constructing H and A:
+    ## separating the action at the given stage
+    A_names <- c("id", "stage", "A")
+    A <- AH[,  A_names, with = FALSE]
+    H <- AH[, c("A") := NULL]
+
+    ## getting the accumulated utility and deterministic utility contributions
+    U <- U_bar <- NULL
+    U <- stage_data[stage <= stage_][, U_bar := sum(U), by = "id"]
+    U <- U[event == 0][stage == stage_,]
+    U_names <- c("id", "stage", "U_bar", deterministic_rewards)
+    U <- U[, U_names, with = FALSE]
+
+    stage_action_set <- stage_action_sets[[stage_]]
+    action_name <- "A"
   }
-
-  ### constructing H and A:
-  # separating the action at the given stage
-  A_names <- c("id", "stage", "A")
-  A <- AH[,  A_names, with = FALSE]
-  H <- AH[, c("A") := NULL]
-
-  # getting the accumulated utility and deterministic utility contributions
-  U <- U_bar <- NULL
-  U <- stage_data[stage <= stage_][, U_bar := sum(U), by = "id"]
-  U <- U[event == 0][stage == stage_,]
-  U_names <- c("id", "stage", "U_bar", deterministic_rewards)
-  U <- U[, U_names, with = FALSE]
-
-  id_names <- c("id", "stage")
+  if (censoring == TRUE) {
+    if (stage_ > (K+1)) {
+      stop("The stage number must be lower or equal to K+1.")
+    }
+    censoring_names <- get_element(object, "colnames") |> get_element("censoring_names")
+    if (!is.null(censoring_names)) {
+      state_names <- c(state_names, censoring_names)
+    }
+    ## getting the state names:
+    AH_names <- c("id", "stage", "event", state_names)
+    ## filtering observations with an action at the given stage:
+    AH <- stage_data[stage == stage_, AH_names, with = FALSE]
+    ## merging the state history and the the baseline data:
+    if(length(baseline_names) > 0){
+      AH[baseline_data, (baseline_names) := mget(paste0('i.', baseline_names))]
+    }
+    ## constructing H and event:
+    ## separating the action at the given stage
+    event_name <- "event"
+    event <- AH[,  c("id", "stage", event_name), with = FALSE]
+    H <- AH[, c("event") := NULL]
+  }
 
   history <- list(
     H = H,
     A = A,
+    event = event,
     U = U,
-    action_name = "A",
+    action_name = action_name,
+    event_name = event_name,
     deterministic_rewards = deterministic_rewards,
     action_set = action_set,
-    stage_action_set = stage_action_sets[[stage_]],
-    stage = stage
+    stage_action_set = stage_action_set,
+    stage = stage_
   )
+  history <- remove_null_elements(history)
   class(history) <- "history"
 
   return(history)
@@ -592,38 +708,66 @@ stage_state_history <- function(object, stage){
 #'
 #' @noRd
 #' @param object object of class [policy_data()].
+#' @param censoring Logical
 #' @return Object of class "history".
-state_history <- function(object){
-  stage_data <- object$stage_data
-  state_names <- object$colnames$state_names
-  baseline_data <- object$baseline_data
-  baseline_names <- object$colnames$baseline_names
-  action_set <- object$action_set
+state_history <- function(object, censoring = FALSE){
+  stage_data <- get_element(object, "stage_data")
+  state_names <- get_element(object, "colnames") |> get_element("state_names")
+  baseline_data <- get_element(object, "baseline_data")
+  baseline_names <- get_element(object, "colnames") |> get_element("baseline_names")
+  action_set <- get_element(object, "action_set")
 
-  # getting stage specific history names:
-  AH_names <- c("id", "stage", "A", state_names)
-  # filtering rows which have an action (event = 0):
-  event <- NULL
-  AH <- stage_data[event == 0, ]
-  AH <- AH[, AH_names, with = FALSE]
-  rm(event)
-  # merging the stage specific histories and the the baseline data by reference:
-  if(length(baseline_names) > 0){
-    AH[baseline_data, (baseline_names) := mget(paste0('i.', baseline_names))]
+
+  A <- event <- action_name <- event_name <- NULL
+  if (censoring == FALSE) {
+    ## getting stage specific history names:
+    AH_names <- c("id", "stage", "A", state_names)
+    ## filtering rows which have an action (event = 0):
+    event <- NULL
+    AH <- stage_data[event == 0, ]
+    AH <- AH[, AH_names, with = FALSE]
+    ## merging the stage specific histories and the the baseline data by reference:
+    if(length(baseline_names) > 0){
+      AH[baseline_data, (baseline_names) := mget(paste0('i.', baseline_names))]
+    }
+
+    ## constructing H and A:
+    ## separating the action at the given stage
+    A_names <- c("id", "stage", "A")
+    A <- AH[ , A_names, with = FALSE]
+    H <- AH[, c("A") := NULL]
+    action_name <- "A"
   }
+  if (censoring == TRUE) {
+    censoring_names <- get_element(object, "colnames") |> get_element("censoring_names")
+    if (!is.null(censoring_names)) {
+      state_names <- c(state_names, censoring_names)
+    }
+    ## getting stage specific history names:
+    AH_names <- c("id", "stage", "event", state_names)
+    AH <- stage_data[, AH_names, with = FALSE]
+    ## merging the stage specific histories and the the baseline data by reference:
+    if(length(baseline_names) > 0){
+      AH[baseline_data, (baseline_names) := mget(paste0('i.', baseline_names))]
+    }
 
-  ### constructing H and A:
-  # separating the action at the given stage
-  A_names <- c("id", "stage", "A")
-  A <- AH[ , A_names, with = FALSE]
-  H <- AH[, c("A") := NULL]
+    ## constructing H and event:
+    ## separating the event at the given stage
+    event_name <- "event"
+    event_names <- c("id", "stage", event_name)
+    event <- AH[ , event_names, with = FALSE]
+    H <- AH[, c(event_name) := NULL]
+  }
 
   history <- list(
     H = H,
     A = A,
-    action_name = "A",
+    event = event,
+    action_name = action_name,
+    event_name = event_name,
     action_set = action_set
   )
+  history <- remove_null_elements(history)
   class(history) <- "history"
 
   return(history)
