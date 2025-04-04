@@ -202,7 +202,7 @@ fit_g_functions <- function(policy_data, g_models, full_history = FALSE){
                           SIMPLIFY = FALSE)
     names(g_functions) <- paste("stage_", 1:K, sep = "")
   } else{
-    history <- state_history(policy_data)
+    history <- get_history(policy_data, stage = NULL, full_history = FALSE)
     g_functions <- list(all_stages = fit_g_function(history, g_models))
   }
 

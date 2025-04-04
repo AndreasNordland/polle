@@ -5,7 +5,7 @@
 \alias{get_history}
 \title{Get History Object}
 \usage{
-get_history(object, stage = NULL, full_history = FALSE)
+get_history(object, stage = NULL, full_history = FALSE, type = "action")
 }
 \arguments{
 \item{object}{Object of class \link{policy_data}.}

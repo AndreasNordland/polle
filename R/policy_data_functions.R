@@ -488,17 +488,18 @@ subset_id.policy_data <- function(object, id, preserve_action_set = TRUE){
 #' @noRd
 #' @param object Object of class [policy_data()].
 #' @param stage stage number.
-#' @param censoring Logical.
-#' If FALSE, full_history() returns
-#' every observed (treatment) action for
-#' the given stage (A) and the associated
-#' history (H).
-#' If TRUE, full_history() returns
+#' @param type Character string.
+#' If "action", full_history() returns
+#' every observation associated with a
+#' (treatment) action for the given stage (A)
+#' and the associated full history (H).
+#' If "event", full_history() returns
 #' every observed event for the given stage
-#' (A) and the associated state covariates and
+#' (event) and the associated full historybased
+#' on both the state covariates and
 #' censoring covariates (H)
 #' @return Object of class "history".
-full_history <- function(object, stage, censoring = FALSE){
+full_history <- function(object, stage, type){
   K <- get_K(object)
   object_colnames <- get_element(object, "colnames")
   stage_data <- get_element(object, "stage_data")
@@ -511,7 +512,7 @@ full_history <- function(object, stage, censoring = FALSE){
   stage_ <- stage; rm(stage)
 
   A <- U <- event <- stage_action_set <- action_name <- event_name <- NULL
-  if (censoring == FALSE){
+  if (type == "action"){
     if (stage_ > K) {
       stop("The stage number must be lower or equal to maximal number of stages observed.")
     }
@@ -551,7 +552,7 @@ full_history <- function(object, stage, censoring = FALSE){
 
     stage_action_set <- stage_action_sets[[stage_]]
   }
-  if (censoring == TRUE) {
+  if (type == "event") {
     if (stage_ > (K+1)) {
       stop("The stage number must be lower or equal to K+1.")
     }
@@ -620,7 +621,7 @@ full_history <- function(object, stage, censoring = FALSE){
 #' (A) and the associated state covariates and
 #' censoring state covariates (H)
 #' @return Object of class "history".
-stage_state_history <- function(object, stage, censoring = FALSE){
+stage_state_history <- function(object, stage, type){
   K <- get_K(object)
   stage_data <- get_element(object, "stage_data")
   state_names <- get_element(object, "colnames") |> get_element("state_names")
@@ -632,7 +633,7 @@ stage_state_history <- function(object, stage, censoring = FALSE){
   stage_ <- stage; rm(stage)
 
   A <- U <- event <- stage_action_set <- action_name <- event_name <- NULL
-  if (censoring == FALSE) {
+  if (type == "action") {
     if (stage_ > K)
       stop("The stage number must be lower or equal to maximal number of stages observed.")
     ## getting the state names:
@@ -663,7 +664,7 @@ stage_state_history <- function(object, stage, censoring = FALSE){
     stage_action_set <- stage_action_sets[[stage_]]
     action_name <- "A"
   }
-  if (censoring == TRUE) {
+  if (type == "event") {
     if (stage_ > (K+1)) {
       stop("The stage number must be lower or equal to K+1.")
     }
@@ -708,9 +709,9 @@ stage_state_history <- function(object, stage, censoring = FALSE){
 #'
 #' @noRd
 #' @param object object of class [policy_data()].
-#' @param censoring Logical
+#' @param type Character string. Either "action" or "event"
 #' @return Object of class "history".
-state_history <- function(object, censoring = FALSE){
+state_history <- function(object, type){
   stage_data <- get_element(object, "stage_data")
   state_names <- get_element(object, "colnames") |> get_element("state_names")
   baseline_data <- get_element(object, "baseline_data")
@@ -719,7 +720,7 @@ state_history <- function(object, censoring = FALSE){
 
 
   A <- event <- action_name <- event_name <- NULL
-  if (censoring == FALSE) {
+  if (type == "action") {
     ## getting stage specific history names:
     AH_names <- c("id", "stage", "A", state_names)
     ## filtering rows which have an action (event = 0):
@@ -738,7 +739,7 @@ state_history <- function(object, censoring = FALSE){
     H <- AH[, c("A") := NULL]
     action_name <- "A"
   }
-  if (censoring == TRUE) {
+  if (type == "event") {
     censoring_names <- get_element(object, "colnames") |> get_element("censoring_names")
     if (!is.null(censoring_names)) {
       state_names <- c(state_names, censoring_names)
@@ -879,11 +880,11 @@ NULL
 #' nrow(h3$H) # number of observations with two stages.
 #' get_n(pd3) # number of observations in total.
 #' @export
-get_history <- function(object, stage = NULL, full_history = FALSE)
+get_history <- function(object, stage = NULL, full_history = FALSE, type = "action")
   UseMethod("get_history")
 
 #' @export
-get_history.policy_data <- function(object, stage = NULL, full_history = FALSE){
+get_history.policy_data <- function(object, stage = NULL, full_history = FALSE, type = "action"){
   # input checks:
   if (!is.logical(full_history) | (length(full_history) != 1))
     stop("full_history must be TRUE or FALSE")
@@ -895,15 +896,20 @@ get_history.policy_data <- function(object, stage = NULL, full_history = FALSE){
     if (stage<=0)
       stop("stage must be an integer greater than 0.")
   }
+  if(!(is.character(type) & (length(type == 1))))
+    stop("'type' must be either \"action\" or \"event\".")
+  type <- tolower(type)
+  if (!(type %in% c("action", "event")))
+    stop("'type' must be either \"action\" or \"event\".")
 
   if (full_history == TRUE){
     if (is.null(stage)) stop("Please provide a stage number.")
-    his <- full_history(object, stage = stage)
+    his <- full_history(object, stage = stage, type = type)
   } else{
     if (is.null(stage)){
-      his <- state_history(object)
+      his <- state_history(object, type = type)
     } else{
-      his <- stage_state_history(object, stage = stage)
+      his <- stage_state_history(object, stage = stage, type = type)
     }
   }
   return(his)

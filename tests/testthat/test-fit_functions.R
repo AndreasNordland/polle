@@ -13,15 +13,15 @@ test_that("fit_functions handle multiple thresholds", {
     )
 
     expect_no_error(
-        ff <- fit_functions(
-            policy_data = pd,
-            type = "dr",
-            policy_learn = pl,
-            g_models = g_glm(),
-            g_full_history = FALSE,
-            q_models = q_glm(),
-            q_full_history = FALSE
-        )
+      ff <- fit_functions(
+        policy_data = pd,
+        type = "dr",
+        policy_learn = pl,
+        g_models = g_glm(),
+        g_full_history = FALSE,
+        q_models = q_glm(),
+        q_full_history = FALSE
+      )
     )
 
     expect_is(ff$policy_object, class = "policy_object")

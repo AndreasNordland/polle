@@ -52,7 +52,7 @@ test_that("get_history() checks input", {
   rm(fh)
 })
 
-test_that("full_data() returns the history associated with the censoring process when 'censoring = FALSE'", {
+test_that("full_history() returns the history associated with the action process when type = 'action'", {
 
   # long data
   ld <- data.table(
@@ -83,7 +83,7 @@ test_that("full_data() returns the history associated with the censoring process
 
 
   ## stage 1:
-  fh <- full_history(pd, stage = 1, censoring = FALSE)
+  fh <- full_history(pd, stage = 1, type = "action")
 
   ref <- data.table(
     id = c(1,3,4),
@@ -119,12 +119,12 @@ test_that("full_data() returns the history associated with the censoring process
 
   ## stage 2
   expect_error(
-    fh <- full_history(pd, stage = 2, censoring = FALSE),
+    fh <- full_history(pd, stage = 2, type = "action"),
     "The stage number must be lower or equal to maximal number of stages observed."
   )
 })
 
-test_that("stage_state_history() returns the history associated with the censoring process when 'censoring = FALSE'", {
+test_that("stage_state_history() returns the history associated with the action process when type = 'action'", {
 
   # long data
   ld <- data.table(
@@ -157,7 +157,7 @@ test_that("stage_state_history() returns the history associated with the censori
 
 
   ## stage 1:
-  fh <- stage_state_history(pd, stage = 1, censoring = FALSE)
+  fh <- stage_state_history(pd, stage = 1, type = "action")
 
   ref <- data.table(
     id = c(1,3,4),
@@ -193,13 +193,13 @@ test_that("stage_state_history() returns the history associated with the censori
 
   ## stage 2
   expect_error(
-    fh <- stage_state_history(pd, stage = 2, censoring = FALSE),
+    fh <- stage_state_history(pd, stage = 2, type = "action"),
     "The stage number must be lower or equal to maximal number of stages observed."
   )
 })
 
 
-test_that("state_history() returns the history associated with the censoring process when 'censoring = FALSE'", {
+test_that("state_history() returns the history associated with the action process when type = 'action'", {
 
   # long data
   ld <- data.table(
@@ -232,7 +232,7 @@ test_that("state_history() returns the history associated with the censoring pro
 
 
   ## stage 1:
-  fh <- state_history(pd, censoring = FALSE)
+  fh <- state_history(pd, type = "action")
 
   ref <- data.table(
     id = c(1,3,4),
@@ -267,7 +267,7 @@ test_that("state_history() returns the history associated with the censoring pro
   )
 })
 
-test_that("full_history() returns the history associated with the censoring process when 'censoring = TRUE'", {
+test_that("full_history() returns the history associated with the event process when type = 'event'", {
 
   # long data
   ## 4 cases: no right censoring, right censored before/at stage 1 action,
@@ -302,7 +302,7 @@ test_that("full_history() returns the history associated with the censoring proc
 
 
   ## stage 1:
-  fh <- full_history(pd, stage = 1, censoring = TRUE)
+  fh <- full_history(pd, stage = 1, type = "event")
 
   ref <- data.table(
     id = c(1,2,3,4),
@@ -338,7 +338,7 @@ test_that("full_history() returns the history associated with the censoring proc
   )
 
   ## stage 2
-  fh <- full_history(pd, stage = 2, censoring = TRUE)
+  fh <- full_history(pd, stage = 2, type = "event")
 
   ref <- data.table(
     id = c(1,3,4),
@@ -379,7 +379,7 @@ test_that("full_history() returns the history associated with the censoring proc
   )
 })
 
-test_that("stage_state_history() returns the history associated with the censoring process when 'censoring = TRUE'", {
+test_that("stage_state_history() returns the history associated with the event process when type = 'event'", {
 
   # long data
   ## 4 cases: no right censoring, right censored before/at stage 1 action,
@@ -414,7 +414,7 @@ test_that("stage_state_history() returns the history associated with the censori
 
 
   ## stage 1:
-  fh <- stage_state_history(pd, stage = 1, censoring = TRUE)
+  fh <- stage_state_history(pd, stage = 1, type = "event")
 
   ref <- data.table(
     id = c(1,2,3,4),
@@ -450,7 +450,7 @@ test_that("stage_state_history() returns the history associated with the censori
   )
 
   ## stage 2
-  fh <- stage_state_history(pd, stage = 2, censoring = TRUE)
+  fh <- stage_state_history(pd, stage = 2, type = "event")
 
   ref <- data.table(
     id = c(1,3,4),
@@ -486,7 +486,7 @@ test_that("stage_state_history() returns the history associated with the censori
   )
 })
 
-test_that("state_history() returns the history associated with the censoring process when 'censoring = TRUE'", {
+test_that("state_history() returns the history associated with the event process when type = 'event'", {
 
   # long data
   ## 4 cases: no right censoring, right censored before/at stage 1 action,
@@ -520,7 +520,7 @@ test_that("state_history() returns the history associated with the censoring pro
                     type = "long")
 
 
-  fh <- state_history(pd, censoring = TRUE)
+  fh <- state_history(pd, type = "event")
 
   ref <- data.table(
     id = c(1,1,2,3,3,4,4),
