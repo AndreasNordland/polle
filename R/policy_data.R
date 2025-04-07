@@ -210,16 +210,24 @@ new_policy_data <- function(stage_data, baseline_data = NULL, action_set = NULL,
   #'   \item A string is valid for long data and wide data with a single final utility.
   #'   \item A vector is valid for wide data with incremental rewards. Must have length K+1; see Examples.
 #' }
+#' @param data
+#' @param baseline_data
+#' @param type
+#' @param action
+#' @param covariates
+#' @param utility
 #' @param baseline Baseline covariate name(s). Character vector.
-#' @param censoring_covariates Stage specific covariate name(s) related solely to the right censoring process (e.g. 'time'). Character vector or string.
-#' Only used if \code{type = "long"}.
 #' @param deterministic_rewards Deterministic reward variable name(s). Named list of character vectors of length K.
 #' The name of each element must be on the form "U_Aa" where "a" corresponds to an action in the action set.
 #' @param id ID variable name. Character string.
 #' @param stage Stage number variable name.
 #' @param event Event indicator name.
+#' @param time Character string. Name of the time variable. Only used for right-censored data.
+#' @param time_2
 #' @param action_set Character string. Action set across all stages.
 #' @param verbose Logical. If TRUE, formatting comments are printed to the console.
+#' @param censoring_covariates Stage specific covariate name(s) related solely to the right censoring process (e.g. 'time'). Character vector or string.
+#' Only used if \code{type = "long"}.
 #' @param digits Minimum number of digits to be printed.
 #' @param x Object to be printed.
 #' @param object Object of class [policy_data]
@@ -322,9 +330,9 @@ policy_data <- function(data, baseline_data,
                         type="wide",
                         action, covariates, utility,
                         baseline = NULL,
-                        censoring_covariates = NULL,
                         deterministic_rewards = NULL,
                         id = NULL, stage = NULL, event = NULL,
+                        time = NULL, time_2 = NULL,
                         action_set = NULL,
                         verbose = FALSE) {
   data <- check_data(data)
@@ -342,11 +350,12 @@ policy_data <- function(data, baseline_data,
   ## format wide and long data:
   if (any(type %in% c("wide"))) { # wide data
     ## input warnings and checks:
-    if (!missing(baseline_data)){
+    if (!missing(baseline_data)) {
       stop("When 'type'=wide' set 'baseline_data' to NULL and use 'baseline' instead.")
     }
-    if (!is.null(censoring_covariates))
-      warning("censoring_covariates is not used when type = 'wide'.")
+    if (!is.null(time)) {
+      warning("time and time_2 is not used when type = 'wide'.")
+    }
 
     # formatting the wide data:
     md <- melt_wide_data(
@@ -374,11 +383,13 @@ policy_data <- function(data, baseline_data,
       covariates <- NULL
     if(!is.null(covariates))
       warning("covariates is not used when type = 'long'.")
-    if (!is.null(censoring_covariates)){
-    if (is.list(censoring_covariates))
-      censoring_covariates <- unlist(censoring_covariates)
-    if (!is.character(censoring_covariates))
-      stop("'censoring_covariates' must be a vector or a list of type character.")
+    if (is.null(time) & !is.null(time_2)) {
+      stop("time_2 provided, but time is NULL.")
+    }
+    if (!is.null(time)){
+      if(!(is.character(time) & (length(time == 1)))){
+        stop("'time' must be a character string.")
+      }
     }
 
     ld <- format_long_data(
@@ -388,8 +399,9 @@ policy_data <- function(data, baseline_data,
       action = action,
       stage = stage,
       event = event,
+      time = time,
+      time_2 = time_2,
       utility = utility,
-      censoring_covariates = censoring_covariates,
       verbose = verbose
     )
 
@@ -398,8 +410,8 @@ policy_data <- function(data, baseline_data,
       stage_data = ld$stage_data,
       baseline_data = ld$baseline_data,
       action_set = action_set,
-      censoring_covariates = censoring_covariates,
-      verbose = verbose)
+      verbose = verbose
+    )
 
   } else{
     stop("'type' must be either \"wide\" or \"long\".")
@@ -665,7 +677,7 @@ set_default_name <- function(data, variable_name, default_name){
   setnames(data, variable_name, default_name)
 }
 
-format_long_data <- function(long_data, baseline_data, id, action, stage, event, utility, censoring_covariates = NULL, verbose){
+format_long_data <- function(long_data, baseline_data, id, action, stage, event, time, time_2, utility, verbose){
 
   ## dealing with missing arguments:
   if (missing(action)){
@@ -687,6 +699,8 @@ format_long_data <- function(long_data, baseline_data, id, action, stage, event,
     stop(mes)
   }
   rm(tmp)
+
+  browser()
 
   ### setting default variable names by reference in long_data:
   set_default_name(long_data, variable_name = id, default_name = "id")

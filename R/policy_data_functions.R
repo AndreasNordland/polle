@@ -79,6 +79,7 @@ summary.policy_data <- function(object, probs=seq(0, 1, .25), ...) {
     cens_st <- stage_data[event == 2,][, c("stage"), with = FALSE]
     colnames(cens_st) <- c("stage")
     cens_tab <- cens_st[,.(n = .N), by = "stage"]
+    cens_tab <- cens_tab[order(stage),]
     cens_tab <- as.data.frame(cens_tab)
   }
   res <- list(n=n, K=K, tab=stable, stagedist=stagedist,
@@ -511,7 +512,7 @@ full_history <- function(object, stage, type){
   deterministic_rewards <- get_element(object_colnames, "deterministic_rewards")
   stage_ <- stage; rm(stage)
 
-  A <- U <- event <- stage_action_set <- action_name <- event_name <- NULL
+  A <- U <- event <- stage_action_set <- action_name <- event_name <- censoring_names <- NULL
   if (type == "action"){
     if (stage_ > K) {
       stop("The stage number must be lower or equal to maximal number of stages observed.")
@@ -595,6 +596,7 @@ full_history <- function(object, stage, type){
     U = U,
     action_name = action_name,
     event_name = event_name,
+    censoring_names = censoring_names,
     deterministic_rewards = deterministic_rewards,
     action_set = action_set,
     stage_action_set = stage_action_set,
@@ -632,7 +634,7 @@ stage_state_history <- function(object, stage, type){
   deterministic_rewards <- get_element(object, "colnames") |> get_element("deterministic_rewards")
   stage_ <- stage; rm(stage)
 
-  A <- U <- event <- stage_action_set <- action_name <- event_name <- NULL
+  A <- U <- event <- stage_action_set <- action_name <- event_name <- censoring_names <- NULL
   if (type == "action") {
     if (stage_ > K)
       stop("The stage number must be lower or equal to maximal number of stages observed.")
@@ -694,6 +696,7 @@ stage_state_history <- function(object, stage, type){
     U = U,
     action_name = action_name,
     event_name = event_name,
+    censoring_names = censoring_names,
     deterministic_rewards = deterministic_rewards,
     action_set = action_set,
     stage_action_set = stage_action_set,
@@ -719,7 +722,7 @@ state_history <- function(object, type){
   action_set <- get_element(object, "action_set")
 
 
-  A <- event <- action_name <- event_name <- NULL
+  A <- event <- action_name <- event_name <- censoring_names <- NULL
   if (type == "action") {
     ## getting stage specific history names:
     AH_names <- c("id", "stage", "A", state_names)
@@ -766,6 +769,7 @@ state_history <- function(object, type){
     event = event,
     action_name = action_name,
     event_name = event_name,
+    censoring_names = censoring_names,
     action_set = action_set
   )
   history <- remove_null_elements(history)

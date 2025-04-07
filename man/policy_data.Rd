@@ -14,11 +14,12 @@ policy_data(
   covariates,
   utility,
   baseline = NULL,
-  censoring_covariates = NULL,
   deterministic_rewards = NULL,
   id = NULL,
   stage = NULL,
   event = NULL,
+  time = NULL,
+  time_2 = NULL,
   action_set = NULL,
   verbose = FALSE
 )
@@ -57,9 +58,6 @@ elements, if a covariate is not available for the given stage(s).
 
 \item{baseline}{Baseline covariate name(s). Character vector.}
 
-\item{censoring_covariates}{Stage specific covariate name(s) related solely to the right censoring process (e.g. 'time'). Character vector or string.
-Only used if \code{type = "long"}.}
-
 \item{deterministic_rewards}{Deterministic reward variable name(s). Named list of character vectors of length K.
 The name of each element must be on the form "U_Aa" where "a" corresponds to an action in the action set.}
 
@@ -68,6 +66,10 @@ The name of each element must be on the form "U_Aa" where "a" corresponds to an 
 \item{stage}{Stage number variable name.}
 
 \item{event}{Event indicator name.}
+
+\item{time}{Character string. Name of the time variable. Only used for right-censored data.}
+
+\item{time_2}{Character string. Name of the ending time for counting process data.}
 
 \item{action_set}{Character string. Action set across all stages.}
 

@@ -34,13 +34,22 @@ get_H <- function(history, vars = NULL){
 #' @noRd
 get_A <- function(history){
   A <- getElement(history, "A")
-  stopifnot(!is.null(A))
+
   action_name <- getElement(history, "action_name")
   stopifnot(!is.null(action_name))
 
   A <- A[[action_name]]
 
   return(A)
+}
+
+get_event <- function(history){
+  event <- get_element(history, "event")
+  stopifnot(!is.null(event))
+  event_name <- get_element(history, "event_name")
+  event <- event[[event_name]]
+
+  return(event)
 }
 
 #' @export

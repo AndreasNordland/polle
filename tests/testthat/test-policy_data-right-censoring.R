@@ -31,7 +31,7 @@ test_that("policy_data checks checks censored_covariates input.", {
     pd <- policy_data(data = ld,
                       baseline_data = bd,
                       type = "long",
-                      censoring_covariates = c("time1")),
+                      time = "time1"),
     "invalid censoring_covariates."
   )
 
