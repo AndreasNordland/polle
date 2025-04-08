@@ -67,9 +67,9 @@ The name of each element must be on the form "U_Aa" where "a" corresponds to an 
 
 \item{event}{Event indicator name.}
 
-\item{time}{Character string. Name of the time variable. Only used for right-censored data.}
+\item{time}{Character string}
 
-\item{time_2}{Character string. Name of the ending time for counting process data.}
+\item{time_2}{Character string}
 
 \item{action_set}{Character string. Action set across all stages.}
 

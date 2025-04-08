@@ -1,161 +1,154 @@
-new_policy_data <- function(stage_data, baseline_data = NULL, action_set = NULL, stage_action_sets = NULL, censoring_covariates = NULL, verbose){
+new_policy_data <- function(stage_data,
+                            baseline_data = NULL,
+                            action_set = NULL,
+                            stage_action_sets = NULL,
+                            verbose) {
+  ## checking and processing stage_data:
 
-  # checking and processing stage_data:
-  {
-    if (missing(stage_data)) stage_data <- NULL
-    if (is.null(stage_data)) stop("'stage_data' is missing or NULL.")
-    if (is.data.frame(stage_data)) stage_data <- as.data.table(stage_data)
-    if (!is.data.table(stage_data))
-      stop("'stage_data' must be a data.table or a data.frame.")
-    if (!all(c("id", "stage", "event", "A", "U") %in% colnames(stage_data)))
-      stop("'stage_data' must contain id, stage, event, A (action) and U (utility/reward).")
-    setcolorder(stage_data, c("id", "stage", "event", "A"))
+  if (missing(stage_data)) stage_data <- NULL
+  if (is.null(stage_data)) stop("'stage_data' is missing or NULL.")
+  if (is.data.frame(stage_data)) stage_data <- as.data.table(stage_data)
+  if (!is.data.table(stage_data))
+    stop("'stage_data' must be a data.table or a data.frame.")
+  if (!all(c("id", "stage", "event", "A", "U") %in% colnames(stage_data)))
+    stop("'stage_data' must contain id, stage, event, A (action) and U (utility/reward).")
+  setcolorder(stage_data, c("id", "stage", "event", "time", "time_2", "A"))
 
-    # setting and checking keys:
-    setkeyv(stage_data, c("id", "stage"))
-    if (any(is.na(stage_data[, "id"]))) stop("id has missing values.")
-    if (any(is.na(stage_data[, "stage"]))) stop("stage has missing values.")
-    if (anyDuplicated(stage_data, by = key(stage_data)) > 0)
-      stop("The combination of id & stage must be unique.")
-    stage <- NULL
-    if (!all(stage_data[ , list("check" = all(stage == 1:.N)), by = "id"][,"check"]))
-      stop("stage must be on the form 1, 2, ..., k.")
-    rm(stage)
+  ## setting and checking keys:
+  setkeyv(stage_data, c("id", "stage"))
+  if (any(is.na(stage_data[, "id"]))) stop("id has missing values.")
+  if (any(is.na(stage_data[, "stage"]))) stop("stage has missing values.")
+  if (anyDuplicated(stage_data, by = key(stage_data)) > 0)
+    stop("The combination of id & stage must be unique.")
+  stage <- NULL
+  if (!all(stage_data[ , list("check" = all(stage == 1:.N)), by = "id"][,"check"]))
+    stop("stage must be on the form 1, 2, ..., k.")
+  rm(stage)
 
-    # checking the event variable:
-    if (any(is.na(stage_data[,"event"]))) stop("event have missing values.")
-    event <- NULL
-    if (!all(stage_data[,list("check" = all(event == c(rep(0, times = (.N-1)), 1) | event == c(rep(0, times = (.N-1)), 2))),by = "id"][, "check"]))
-      stop("event must be on the form 0,0,...,0,j (j in {1,2}).")
-    rm(event)
+  ## checking the event variable:
+  if (any(is.na(stage_data[,"event"]))) stop("event have missing values.")
+  event <- NULL
+  if (!all(stage_data[,list("check" = all(event == c(rep(0, times = (.N-1)), 1) | event == c(rep(0, times = (.N-1)), 2))),by = "id"][, "check"]))
+    stop("event must be on the form 0,0,...,0,j (j in {1,2}).")
+  rm(event)
 
-    # checking the action variable (A):
-    event <- NULL
-    A <- NULL
-    if (any(is.na(stage_data[event == 0, ][,"A"])))
-      stop("'action' (A) has missing values.")
-    if (!is.character(stage_data[,"A"])){
-      stage_data[, A := as.character(A)]
-    }
-    rm(event, A)
+  ## checking the action variable (A):
+  event <- NULL
+  A <- NULL
+  if (any(is.na(stage_data[event == 0, ][,"A"])))
+    stop("'action' (A) has missing values.")
+  if (!is.character(stage_data[,"A"])){
+    stage_data[, A := as.character(A)]
+  }
+  rm(event, A)
 
-    # getting the global set of actions (A):
-    obs_actions <- sort(unlist(unique(stage_data[,"A"])))
-    if (!is.null(action_set)){
-      action_set <- as.character(action_set)
-      if (!all(obs_actions %in% action_set))
-        stop("The given action set does not include all observed actions.")
-      action_set <- sort(action_set)
-    } else{
-      action_set <- obs_actions
-    }
-    action_set <- unname(action_set)
+  ## getting the global set of actions (A):
+  obs_actions <- sort(unlist(unique(stage_data[,"A"])))
+  if (!is.null(action_set)){
+    action_set <- as.character(action_set)
+    if (!all(obs_actions %in% action_set))
+      stop("The given action set does not include all observed actions.")
+    action_set <- sort(action_set)
+  } else{
+    action_set <- obs_actions
+  }
+  action_set <- unname(action_set)
 
-    # getting the action set at each stage:
-    event <- NULL
-    tmp <- stage_data[event == 0, list(set = list(sort(unique(A)))), stage]
-    obs_stage_action_sets <- lapply(tmp$set, c)
-    names(obs_stage_action_sets) <- paste("stage_", tmp$stage, sep = "")
-    rm(event, tmp)
-    if (!is.null(stage_action_sets)){
-      if(length(stage_action_sets) != length(obs_stage_action_sets))
-        stop("the given stage action set does not comply with the observed stage action sets.")
-      for (k in seq_along(stage_action_sets)){
-        if (!all(obs_stage_action_sets[[k]] %in% stage_action_sets[[k]]))
-          stop("The given stage action sets do not include all observed stage actions.")
-        stage_action_sets <- lapply(stage_action_sets, sort)
-      }
-
-    } else {
-      stage_action_sets <- obs_stage_action_sets
-    }
-
-    # checking the utility variable (U):
-    if (!all(is.numeric(unlist(stage_data[,"U"]))))
-      stop("'utility' U must be numeric.")
-    ## for stage action events (event = 0) and termination events (event = 1)
-    ## U should not be missing:
-    if(any(is.na(stage_data[event %in% c(0,1),"U"])))
-      stop("The utility variable U has missing values")
-
-    # checking the deterministic reward variables (U_A[.]):
-    deterministic_reward_names <- paste("U_A", action_set, sep = "")
-    missing_deterministic_reward_names <-
-      deterministic_reward_names[!(deterministic_reward_names %in% names(stage_data))]
-    if (length(missing_deterministic_reward_names) > 0){
-      mes <- paste(missing_deterministic_reward_names, collapse = ", ")
-      mes <- paste("Setting the deterministic rewards '", mes, "' to default value 0.", sep = "")
-      if (verbose == TRUE){
-        message(mes)
-      }
-      stage_data[, (missing_deterministic_reward_names) := 0]
-    }
-    if (!all(sapply(stage_data[, deterministic_reward_names, with = FALSE], function(col) is.numeric(col)))){
-      mes <- paste(deterministic_reward_names, collapse = ", ")
-      mes <- paste("'",mes, "'must be numeric.", sep = " ")
-      stop(mes)
+  ## getting the action set at each stage:
+  event <- NULL
+  tmp <- stage_data[event == 0, list(set = list(sort(unique(A)))), stage]
+  obs_stage_action_sets <- lapply(tmp$set, c)
+  names(obs_stage_action_sets) <- paste("stage_", tmp$stage, sep = "")
+  rm(event, tmp)
+  if (!is.null(stage_action_sets)){
+    if(length(stage_action_sets) != length(obs_stage_action_sets))
+      stop("the given stage action set does not comply with the observed stage action sets.")
+    for (k in seq_along(stage_action_sets)){
+      if (!all(obs_stage_action_sets[[k]] %in% stage_action_sets[[k]]))
+        stop("The given stage action sets do not include all observed stage actions.")
+      stage_action_sets <- lapply(stage_action_sets, sort)
     }
 
-    # coercing variables of type factor to type character in stage_data:
-    sdf <- sapply(stage_data, function(x) is.factor(x))
-    if (any(sdf)){
-      f_names <- colnames(stage_data)[sdf]
-      stage_data[, (f_names) := lapply(.SD, as.character), .SDcols = f_names]
+  } else {
+    stage_action_sets <- obs_stage_action_sets
+  }
+
+  ## checking the utility variable (U):
+  if (!all(is.numeric(unlist(stage_data[,"U"]))))
+    stop("'utility' U must be numeric.")
+  ## for stage action events (event = 0) and termination events (event = 1)
+  ## U should not be missing:
+  if(any(is.na(stage_data[event %in% c(0,1),"U"])))
+    stop("The utility variable U has missing values")
+
+  ## checking the deterministic reward variables (U_A[.]):
+  deterministic_reward_names <- paste("U_A", action_set, sep = "")
+  missing_deterministic_reward_names <-
+    deterministic_reward_names[!(deterministic_reward_names %in% names(stage_data))]
+  if (length(missing_deterministic_reward_names) > 0){
+    mes <- paste(missing_deterministic_reward_names, collapse = ", ")
+    mes <- paste("Setting the deterministic rewards '", mes, "' to default value 0.", sep = "")
+    if (verbose == TRUE){
+      message(mes)
+    }
+    stage_data[, (missing_deterministic_reward_names) := 0]
+  }
+  if (!all(sapply(stage_data[, deterministic_reward_names, with = FALSE], function(col) is.numeric(col)))){
+    mes <- paste(deterministic_reward_names, collapse = ", ")
+    mes <- paste("'",mes, "'must be numeric.", sep = " ")
+    stop(mes)
+  }
+
+  ## coercing variables of type factor to type character in stage_data:
+  sdf <- sapply(stage_data, function(x) is.factor(x))
+  if (any(sdf)){
+    f_names <- colnames(stage_data)[sdf]
+    stage_data[, (f_names) := lapply(.SD, as.character), .SDcols = f_names]
+    rm(f_names)
+  }
+  rm(sdf)
+
+  ## getting the names of the state data (X_k):
+  rn <- c("id", "stage", "event", "time", "time_2", "A", "U", deterministic_reward_names)
+  state_names <- names(stage_data)[!(names(stage_data) %in% rn)]
+
+  ## checking and processing baseline_data:
+
+  baseline_names <- NULL
+  if (!is.null(baseline_data)){
+    if (is.data.frame(baseline_data))
+      baseline_data <- as.data.table(baseline_data)
+
+    ## checking id:
+    if (!all(c("id") %in% names(baseline_data))) stop("'baseline_data' must contain id.")
+    if (any(is.na(baseline_data$id))) stop("'baseline_data' id has missing values")
+    if (anyDuplicated(baseline_data, by = key(baseline_data)) > 0) stop("'baseline_data' id contains duplicates.")
+
+    ## setting id as key:
+    setkeyv(baseline_data, "id")
+
+    ## comparing id:
+    if (!all(unique(unlist(stage_data[, "id"])) == unlist(baseline_data[,"id"])))
+      stop("'baseline_data' id must match 'stage_data' id.")
+
+    ## coercing columns of type factor to type character in baseline_data:
+    bdf <- sapply(baseline_data, function(x) is.factor(x))
+    if (any(bdf)){
+      f_names <- colnames(baseline_data)[bdf]
+      baseline_data[, (f_names) := lapply(.SD, as.character), .SDcols = f_names]
       rm(f_names)
     }
-    rm(sdf)
+    rm(bdf)
 
-    # getting the names of the state (and censoring) data (X_k):
-    rn <- c("id", "stage", "event", "A", "U", deterministic_reward_names)
-    state_names <- names(stage_data)[!(names(stage_data) %in% rn)]
-
-    ## removing censoring_covariates from state_names:
-    if (!is.null(censoring_covariates)){
-      if(!all(censoring_covariates %in% state_names)){
-        stop("invalid censoring_covariates.")
-      }
-      state_names <- state_names[!(state_names %in% censoring_covariates)]
-    }
+    ## getting the names of the baseline state data:
+    baseline_names <- names(baseline_data)[!(names(baseline_data) %in% c("id"))]
+  } else {
+    id <- NULL
+    baseline_data <- stage_data[, list(id = unique(id))]
+    rm(id)
   }
 
-  # checking and processing baseline_data:
-  {
-    baseline_names <- NULL
-    if (!is.null(baseline_data)){
-      if (is.data.frame(baseline_data))
-        baseline_data <- as.data.table(baseline_data)
-
-      # checking id:
-      if (!all(c("id") %in% names(baseline_data))) stop("'baseline_data' must contain id.")
-      if (any(is.na(baseline_data$id))) stop("'baseline_data' id has missing values")
-      if (anyDuplicated(baseline_data, by = key(baseline_data)) > 0) stop("'baseline_data' id contains duplicates.")
-
-      # setting id as key:
-      setkeyv(baseline_data, "id")
-
-      # comparing id:
-      if (!all(unique(unlist(stage_data[, "id"])) == unlist(baseline_data[,"id"])))
-          stop("'baseline_data' id must match 'stage_data' id.")
-
-      # coercing columns of type factor to type character in baseline_data:
-      bdf <- sapply(baseline_data, function(x) is.factor(x))
-      if (any(bdf)){
-        f_names <- colnames(baseline_data)[bdf]
-        baseline_data[, (f_names) := lapply(.SD, as.character), .SDcols = f_names]
-        rm(f_names)
-      }
-      rm(bdf)
-
-      # getting the names of the baseline state data:
-      baseline_names <- names(baseline_data)[!(names(baseline_data) %in% c("id"))]
-    } else {
-      id <- NULL
-      baseline_data <- stage_data[, list(id = unique(id))]
-      rm(id)
-    }
-  }
-
-  # getting the dimensions:
+  ## getting the dimensions:
   n <- length(unique(unlist(stage_data[,"id"])))
   stage <- NULL
   K <- stage_data[event == 0, list(max(stage))][[1]]
@@ -167,8 +160,7 @@ new_policy_data <- function(stage_data, baseline_data = NULL, action_set = NULL,
     colnames = list(
       state_names = state_names,
       deterministic_rewards = deterministic_reward_names,
-      baseline_names = baseline_names,
-      censoring_names = censoring_covariates
+      baseline_names = baseline_names
     ),
     action_set = action_set,
     stage_action_sets = stage_action_sets,
@@ -210,24 +202,16 @@ new_policy_data <- function(stage_data, baseline_data = NULL, action_set = NULL,
   #'   \item A string is valid for long data and wide data with a single final utility.
   #'   \item A vector is valid for wide data with incremental rewards. Must have length K+1; see Examples.
 #' }
-#' @param data
-#' @param baseline_data
-#' @param type
-#' @param action
-#' @param covariates
-#' @param utility
 #' @param baseline Baseline covariate name(s). Character vector.
 #' @param deterministic_rewards Deterministic reward variable name(s). Named list of character vectors of length K.
 #' The name of each element must be on the form "U_Aa" where "a" corresponds to an action in the action set.
 #' @param id ID variable name. Character string.
 #' @param stage Stage number variable name.
 #' @param event Event indicator name.
-#' @param time Character string. Name of the time variable. Only used for right-censored data.
-#' @param time_2
+#' @param time Character string
+#' @param time_2 Character string
 #' @param action_set Character string. Action set across all stages.
 #' @param verbose Logical. If TRUE, formatting comments are printed to the console.
-#' @param censoring_covariates Stage specific covariate name(s) related solely to the right censoring process (e.g. 'time'). Character vector or string.
-#' Only used if \code{type = "long"}.
 #' @param digits Minimum number of digits to be printed.
 #' @param x Object to be printed.
 #' @param object Object of class [policy_data]
@@ -354,7 +338,10 @@ policy_data <- function(data, baseline_data,
       stop("When 'type'=wide' set 'baseline_data' to NULL and use 'baseline' instead.")
     }
     if (!is.null(time)) {
-      warning("time and time_2 is not used when type = 'wide'.")
+      stop("time and time_2 is not used when type = 'wide'. Please set to NULL.")
+    }
+    if (!is.null(time_2)) {
+      stop("time and time_2 is not used when type = 'wide'. Please set to NULL.")
     }
 
     # formatting the wide data:
@@ -385,11 +372,6 @@ policy_data <- function(data, baseline_data,
       warning("covariates is not used when type = 'long'.")
     if (is.null(time) & !is.null(time_2)) {
       stop("time_2 provided, but time is NULL.")
-    }
-    if (!is.null(time)){
-      if(!(is.character(time) & (length(time == 1)))){
-        stop("'time' must be a character string.")
-      }
     }
 
     ld <- format_long_data(
@@ -563,8 +545,8 @@ melt_wide_data <- function(wide_data,
   rm(tmp)
 
   ## checking for invalid variable names:
-  if (any(c("event", "stage") %in% names(covariates))){
-    stop("'covariates' can not have named elements \"event\" or \"stage\".")
+  if (any(c("event", "stage", "time", "time_2") %in% names(covariates))){
+    stop("'covariates' can not have named elements \"event\", \"stage\", \"time\", or \"time_2\".")
   }
 
   ## setting default variables if missing:
@@ -621,12 +603,17 @@ melt_wide_data <- function(wide_data,
   stage_data <- melt(stage_data, id.vars = id, measure.vars = measure, variable.name = "stage")
   setnames(stage_data, id, "id")
 
+  ## setting the format of stage and A:
   stage_data[ , stage := as.integer(as.character(stage))]
   stage_data[ , A := as.character(A)]
   # setting the event variable:
   stage_data[!is.na(A), event := 0]
   stage_data <- stage_data[!(is.na(A) & is.na(U)), ]
   stage_data[is.na(A), event := 1]
+  ## setting time and time_2 to NA:
+  stage_data[ , time := as.numeric(NA)]
+  stage_data[ , time_2 := as.numeric(NA)]
+
   # setting keys:
   setkeyv(stage_data, c("id", "stage"))
   rm(stage, A, U, event)
@@ -648,7 +635,7 @@ melt_wide_data <- function(wide_data,
 # Long data ---------------------------------------------------------------
 
 # sets default by reference:
-set_default_name <- function(data, variable_name, default_name){
+set_default_name <- function(data, variable_name, default_name, create_if_null = FALSE){
   parsed_name <- deparse(substitute(variable_name))
 
   if (is.null(variable_name)){
@@ -662,9 +649,13 @@ set_default_name <- function(data, variable_name, default_name){
   }
 
   if (!(variable_name %in% names(data))){
-    mes <- parsed_name
-    mes <- paste("'", mes, "' is invalid.", sep = "")
-    stop(mes)
+    if (create_if_null == TRUE) {
+      data[ , c(variable_name) := as.numeric(NA)]
+    } else {
+      mes <- parsed_name
+      mes <- paste("'", mes, "' is invalid.", sep = "")
+      stop(mes)
+    }
   }
 
   if ((default_name %in% names(data)) & (variable_name != default_name)){
@@ -691,7 +682,7 @@ format_long_data <- function(long_data, baseline_data, id, action, stage, event,
   }
 
   ## checking for duplicates
-  tmp <- unlist(c(id, action, stage, event, utility, censoring_covariates))
+  tmp <- unlist(c(id, action, stage, event, utility, time, time_2))
   if (anyDuplicated(tmp)>0){
     mes <- tmp[anyDuplicated(tmp)]
     mes <- paste(mes, collapse = "\", \"")
@@ -700,14 +691,14 @@ format_long_data <- function(long_data, baseline_data, id, action, stage, event,
   }
   rm(tmp)
 
-  browser()
-
   ### setting default variable names by reference in long_data:
   set_default_name(long_data, variable_name = id, default_name = "id")
   set_default_name(long_data, variable_name = action, default_name = "A")
   set_default_name(long_data, variable_name = stage, default_name = "stage")
   set_default_name(long_data, variable_name = event, default_name = "event")
   set_default_name(long_data, variable_name = utility, default_name = "U")
+  set_default_name(long_data, variable_name = time, default_name = "time", create_if_null = TRUE)
+  set_default_name(long_data, variable_name = time_2, default_name = "time_2", create_if_null = TRUE)
 
   ### searching for deterministic reward variables in long_data:
   action_set <- sort(unique(unlist(long_data[,"A", with = FALSE])))

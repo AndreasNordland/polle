@@ -152,7 +152,7 @@ test_that("stage_state_history() returns the history associated with the action 
 
   pd <- policy_data(data = ld,
                     baseline_data = bd,
-                    censoring_covariates = "time",
+                    time = "time",
                     type = "long")
 
 
@@ -227,7 +227,7 @@ test_that("state_history() returns the history associated with the action proces
 
   pd <- policy_data(data = ld,
                     baseline_data = bd,
-                    censoring_covariates = "time",
+                    time = "time",
                     type = "long")
 
 
@@ -297,7 +297,7 @@ test_that("full_history() returns the history associated with the event process 
 
   pd <- policy_data(data = ld,
                     baseline_data = bd,
-                    censoring_covariates = c("time"),
+                    time = c("time"),
                     type = "long")
 
 
@@ -310,7 +310,6 @@ test_that("full_history() returns the history associated with the event process 
     B_1 = c("gr1", "gr2", "gr3", "gr4"),
     Z_1 = c("A", "A", "B", "B"),
     L_1 = c(1,2,1,3),
-    time_1 = c(1,0.5,1,1),
     W = c("blue", "red", "blue", "red")
   )
   setkey(ref, id, stage)
@@ -323,7 +322,7 @@ test_that("full_history() returns the history associated with the event process 
   ref <- data.table(
     id = c(1,2,3,4),
     stage = c(1,1,1,1),
-    event_1 = c(0,2,0,0)
+    event = c(0,2,0,0)
   )
   setkey(ref, id, stage)
 
@@ -332,12 +331,20 @@ test_that("full_history() returns the history associated with the event process 
     ref
   )
 
+  ref <- data.table(
+    id = c(1,2,3,4),
+    stage = c(1,1,1,1),
+    time = c(1,0.5,1,1),
+    time_2 = as.numeric(c(NA,NA,NA,NA))
+  )
+  setkey(ref, id, stage)
+
   expect_equal(
-    fh$event_name,
-    "event_1"
+    fh$time,
+    ref
   )
 
-  ## stage 2
+  ## stage 2:
   fh <- full_history(pd, stage = 2, type = "event")
 
   ref <- data.table(
@@ -350,8 +357,6 @@ test_that("full_history() returns the history associated with the event process 
     Z_2 = as.character(c(NA, NA, NA)),
     L_1 = c(1,1,3),
     L_2 = c(2,3,4),
-    time_1 = c(1,1,1),
-    time_2 = c(2,1.5,1.2),
     W = c("blue", "blue", "red")
   )
   setkey(ref, id, stage)
@@ -364,7 +369,7 @@ test_that("full_history() returns the history associated with the event process 
   ref <- data.table(
     id = c(1,3,4),
     stage = c(2,2,2),
-    event_2 = c(1,2,2)
+    event = c(1,2,2)
   )
   setkey(ref, id, stage)
 
@@ -373,10 +378,19 @@ test_that("full_history() returns the history associated with the event process 
     ref
   )
 
-  expect_equal(
-    fh$event_name,
-    "event_2"
+  ref <- data.table(
+    id = c(1,3,4),
+    stage = c(2,2,2),
+    time = c(2,1.5,1.2),
+    time_2 = as.numeric(c(NA,NA,NA))
   )
+  setkey(ref, id, stage)
+
+  expect_equal(
+    fh$time,
+    ref
+  )
+
 })
 
 test_that("stage_state_history() returns the history associated with the event process when type = 'event'", {
@@ -409,7 +423,7 @@ test_that("stage_state_history() returns the history associated with the event p
 
   pd <- policy_data(data = ld,
                     baseline_data = bd,
-                    censoring_covariates = c("time"),
+                    time = "time",
                     type = "long")
 
 
@@ -422,7 +436,6 @@ test_that("stage_state_history() returns the history associated with the event p
     B = c("gr1", "gr2", "gr3", "gr4"),
     Z = c("A", "A", "B", "B"),
     L = c(1,2,1,3),
-    time = c(1,0.5,1,1),
     W = c("blue", "red", "blue", "red")
   )
   setkey(ref, id, stage)
@@ -444,9 +457,17 @@ test_that("stage_state_history() returns the history associated with the event p
     ref
   )
 
+  ref <- data.table(
+    id = c(1,2,3,4),
+    stage = c(1,1,1,1),
+    time = c(1,0.5,1,1),
+    time_2 = as.numeric(c(NA,NA,NA,NA))
+  )
+  setkey(ref, id, stage)
+
   expect_equal(
-    fh$event_name,
-    "event"
+    fh$time,
+    ref
   )
 
   ## stage 2
@@ -458,7 +479,6 @@ test_that("stage_state_history() returns the history associated with the event p
     B = c("gr1","gr3", "gr4"),
     Z = as.character(c(NA, NA, NA)),
     L = c(2,3,4),
-    time = c(2,1.5,1.2),
     W = c("blue", "blue", "red")
   )
   setkey(ref, id, stage)
@@ -480,9 +500,17 @@ test_that("stage_state_history() returns the history associated with the event p
     ref
   )
 
+  ref <- data.table(
+    id = c(1,3,4),
+    stage = c(2,2,2),
+    time = c(2,1.5,1.2),
+    time_2 = as.numeric(c(NA,NA,NA))
+  )
+  setkey(ref, id, stage)
+
   expect_equal(
-    fh$event_name,
-    "event"
+    fh$time,
+    ref
   )
 })
 
@@ -516,7 +544,7 @@ test_that("state_history() returns the history associated with the event process
 
   pd <- policy_data(data = ld,
                     baseline_data = bd,
-                    censoring_covariates = c("time"),
+                    time = c("time"),
                     type = "long")
 
 
@@ -528,7 +556,6 @@ test_that("state_history() returns the history associated with the event process
     B = c("gr1","gr1", "gr2", "gr3", "gr3", "gr4", "gr4"),
     Z = c("A", NA, "A", "B", NA, "B", NA),
     L = c(1, 2, 2, 1, 3, 3,4),
-    time = c(1, 2, 0.5, 1, 1.5, 1, 1.2),
     W = c("blue", "blue", "red", "blue", "blue", "red", "red")
   )
   setkey(ref, id, stage)
@@ -550,9 +577,17 @@ test_that("state_history() returns the history associated with the event process
     ref
   )
 
+  ref <- data.table(
+    id = c(1,1,2,3,3,4,4),
+    stage = c(1,2,1,1,2,1,2),
+    time = c(1,2,0.5,1,1.5,1,1.2),
+    time_2 = rep(as.numeric(NA), 7)
+  )
+  setkey(ref, id, stage)
+
   expect_equal(
-    fh$event_name,
-    "event"
+    fh$time,
+    ref
   )
 
 })
