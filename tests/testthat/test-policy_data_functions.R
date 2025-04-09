@@ -335,7 +335,7 @@ test_that("full_history() returns the history associated with the event process 
     id = c(1,2,3,4),
     stage = c(1,1,1,1),
     time = c(1,0.5,1,1),
-    time_2 = as.numeric(c(NA,NA,NA,NA))
+    time2 = as.numeric(c(NA,NA,NA,NA))
   )
   setkey(ref, id, stage)
 
@@ -382,7 +382,7 @@ test_that("full_history() returns the history associated with the event process 
     id = c(1,3,4),
     stage = c(2,2,2),
     time = c(2,1.5,1.2),
-    time_2 = as.numeric(c(NA,NA,NA))
+    time2 = as.numeric(c(NA,NA,NA))
   )
   setkey(ref, id, stage)
 
@@ -461,7 +461,7 @@ test_that("stage_state_history() returns the history associated with the event p
     id = c(1,2,3,4),
     stage = c(1,1,1,1),
     time = c(1,0.5,1,1),
-    time_2 = as.numeric(c(NA,NA,NA,NA))
+    time2 = as.numeric(c(NA,NA,NA,NA))
   )
   setkey(ref, id, stage)
 
@@ -504,7 +504,7 @@ test_that("stage_state_history() returns the history associated with the event p
     id = c(1,3,4),
     stage = c(2,2,2),
     time = c(2,1.5,1.2),
-    time_2 = as.numeric(c(NA,NA,NA))
+    time2 = as.numeric(c(NA,NA,NA))
   )
   setkey(ref, id, stage)
 
@@ -581,7 +581,7 @@ test_that("state_history() returns the history associated with the event process
     id = c(1,1,2,3,3,4,4),
     stage = c(1,2,1,1,2,1,2),
     time = c(1,2,0.5,1,1.5,1,1.2),
-    time_2 = rep(as.numeric(NA), 7)
+    time2 = rep(as.numeric(NA), 7)
   )
   setkey(ref, id, stage)
 

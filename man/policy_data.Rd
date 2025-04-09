@@ -19,7 +19,7 @@ policy_data(
   stage = NULL,
   event = NULL,
   time = NULL,
-  time_2 = NULL,
+  time2 = NULL,
   action_set = NULL,
   verbose = FALSE
 )
@@ -69,7 +69,7 @@ The name of each element must be on the form "U_Aa" where "a" corresponds to an 
 
 \item{time}{Character string}
 
-\item{time_2}{Character string}
+\item{time2}{Character string}
 
 \item{action_set}{Character string. Action set across all stages.}
 

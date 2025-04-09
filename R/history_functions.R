@@ -46,10 +46,25 @@ get_A <- function(history){
 get_event <- function(history){
   event <- get_element(history, "event")
   stopifnot(!is.null(event))
-  event_name <- get_element(history, "event_name")
-  event <- event[[event_name]]
-
+  event <- event[["event"]]
   return(event)
+}
+
+get_time <- function(history){
+  time <- get_element(history, "time")
+  stopifnot(!is.null(time))
+  time <- time[["time"]]
+  return(time)
+}
+
+get_time2 <- function(history){
+  time <- get_element(history, "time")
+  stopifnot(!is.null(time))
+  time2 <- time[["time2"]]
+  if (any(is.na(time2))) {
+    time2 <- NULL
+  }
+  return(time2)
 }
 
 #' @export

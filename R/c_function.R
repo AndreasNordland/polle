@@ -6,25 +6,23 @@
 #' @returns Object of class "g_function".
 #' @noRd
 fit_c_function <- function(history, c_model){
-  browser()
+  stage <- get_element(history, "stage", check_name = FALSE)
 
-  stage <- getElement(history, "stage")
-
-  # getting the action (A) and the model matrix (H):
+  ## getting the event, time and the model matrix (H):
   event <- get_event(history)
+  time <- get_time(history)
+  time2 <- get_time2(history)
   H <- get_H(history)
 
-  # fitting the model:
-  g_model <- g_model(A = A, H = H, action_set = stage_action_set)
+  ## fitting the model:
+  c_model <- c_model(event = event, time = time, time2 = time2, H = H)
 
-  g_function <- list(
-    g_model = g_model,
+  c_function <- list(
+    c_model = c_model,
     H_names = colnames(H),
-    action_set = action_set,
-    stage_action_set = stage_action_set,
     stage = stage
   )
-  class(g_function) <- "g_function"
+  class(c_function) <- "c_function"
 
-  return(g_function)
+  return(c_function)
 }

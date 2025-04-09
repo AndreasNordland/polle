@@ -9,7 +9,7 @@
 ##'   coef delete.response complete.cases model.response na.pass aggregate vcov var
 ##' @importFrom methods formalArgs
 ##' @importFrom utils tail capture.output
-##' @importFrom survival survfit
+##' @importFrom survival survfit Surv
 ##' @importFrom progressr progressor
 ##' @import data.table SuperLearner
 ## usethis namespace: end

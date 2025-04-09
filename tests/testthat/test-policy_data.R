@@ -260,7 +260,7 @@ test_that("policy_data melts wide data correctly in a two stage case.", {
     stage = c(1,2,3,1,2,3),
     event = c(0,0,1,0,0,1),
     time = as.numeric(c(NA,NA,NA,NA,NA,NA)),
-    time_2 = as.numeric(c(NA,NA,NA,NA,NA,NA)),
+    time2 = as.numeric(c(NA,NA,NA,NA,NA,NA)),
     A = as.character(c(0,1,NA,1,0,NA)),
     Z = c("A","C",NA,"B","D",NA),
     L = c(1,3,NA,2,4,NA),
@@ -305,7 +305,7 @@ test_that("policy_data melts wide data correctly in a two stage case.", {
     stage = c(1,2,3,1,2,3),
     event = c(0,0,1,0,0,1),
     time = rep(as.numeric(NA), 6),
-    time_2 = rep(as.numeric(NA), 6),
+    time2 = rep(as.numeric(NA), 6),
     A = as.character(c(0,1,NA,1,0,NA)),
     Z = c("A","C",NA,"B","D",NA),
     L = c(1,3,NA,2,4,NA),
@@ -367,7 +367,7 @@ test_that("policy_data melts wide data correctly in a single stage case.", {
     stage = c(1,2,1,2),
     event = c(0,1,0,1),
     time = rep(as.numeric(NA), 4),
-    time_2 = rep(as.numeric(NA), 4),
+    time2 = rep(as.numeric(NA), 4),
     A = c("0", NA, "1", NA),
     B = c("gr1", NA, "gr2", NA),
     Z = c("A", NA, "B", NA),
@@ -420,14 +420,14 @@ test_that("policy_data melts wide data correctly in a single stage case.", {
                 action = "treat",
                 covariates = c("B", "Z", "stage"),
                 utility = "outcome"),
-    "'covariates' can not have named elements \"event\", \"stage\", \"time\", or \"time_2\"."
+    "'covariates' can not have named elements \"event\", \"stage\", \"time\", or \"time2\"."
   )
   expect_error(
     policy_data(data = wide_data_copy,
                 action = "treat",
                 covariates = c("B", "Z", "event"),
                 utility = "outcome"),
-    "'covariates' can not have named elements \"event\", \"stage\", \"time\", or \"time_2\"."
+    "'covariates' can not have named elements \"event\", \"stage\", \"time\", or \"time2\"."
   )
 
   ## id input
@@ -536,7 +536,7 @@ test_that("policy_data formats long data correctly for a single stage case.", {
     stage = c(1,2,1,2),
     event = c(0,1,0,1),
     time = rep(as.numeric(NA), 4),
-    time_2 = rep(as.numeric(NA), 4),
+    time2 = rep(as.numeric(NA), 4),
     A = c("0", NA, "1", NA),
     B = c("gr1", NA, "gr2", NA),
     Z = c("A", NA, "B", NA),

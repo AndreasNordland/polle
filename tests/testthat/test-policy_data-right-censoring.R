@@ -1,4 +1,4 @@
-test_that("policy_data checks checks time and time_2 input.", {
+test_that("policy_data checks checks time and time2 input.", {
 
   ## long data
   ## 3 cases: no right censoring, right censored before/at stage 1 action,
@@ -43,7 +43,7 @@ test_that("policy_data checks checks time and time_2 input.", {
                 id = "id",
                 type = "wide",
                 time = "time"),
-    "time and time_2 is not used when type = 'wide'. Please set to NULL."
+    "time and time2 is not used when type = 'wide'. Please set to NULL."
   )
 
   expect_error(
@@ -54,10 +54,10 @@ test_that("policy_data checks checks time and time_2 input.", {
                 id = "id",
                 type = "wide",
                 time = NULL),
-    "'covariates' can not have named elements \"event\", \"stage\", \"time\", or \"time_2\"."
+    "'covariates' can not have named elements \"event\", \"stage\", \"time\", or \"time2\"."
   )
 
-  ## checking time and time_2 input:
+  ## checking time and time2 input:
   ld <- data.table(
     id = c(1,1,2,3,3),
     stage = c(1,2,1,1,2),
@@ -86,9 +86,88 @@ test_that("policy_data checks checks time and time_2 input.", {
     ld$timetest
   )
   expect_equal(
-    pd$stage_data$time_2,
+    pd$stage_data$time2,
     as.numeric(c(NA, NA, NA, NA, NA))
   )
+
+  ## checking time and time2 input:
+  ld <- data.table(
+    id = c(1,1,2,3,3),
+    stage = c(1,2,1,1,2),
+    event = c(0,1,2,0,2),
+    A = c("0", NA, NA, "1", NA),
+    B = c("gr1","gr1", "gr2", "gr3", "gr3"),
+    Z = c("A", NA, "A", "B", NA),
+    L = c(1, 2, 2, 1, 3),
+    time = c(1, 2, 0.5, NA, 1.5),
+    U = c(0, 10, NA, 0, NA),
+    U_A0 = c(0,0,NA,0,NA),
+    U_A1 = c(0,0,NA,0,NA)
+  )
+  setkey(ld, id, stage)
+  setindex(ld, event)
+
+  expect_error(
+    pd <- policy_data(data = ld,
+                      baseline_data = bd,
+                      type = "long",
+                      time = "time"),
+    "time has missing values"
+  )
+
+  ld <- data.table(
+    id = c(1,1,2,3,3),
+    stage = c(1,2,1,1,2),
+    event = c(0,1,2,0,2),
+    A = c("0", NA, NA, "1", NA),
+    B = c("gr1","gr1", "gr2", "gr3", "gr3"),
+    Z = c("A", NA, "A", "B", NA),
+    L = c(1, 2, 2, 1, 3),
+    time = c(1, 2, 0.5, 1, 1.5),
+    time2 = c(2, 2.2, 1, NA, 2),
+    U = c(0, 10, NA, 0, NA),
+    U_A0 = c(0,0,NA,0,NA),
+    U_A1 = c(0,0,NA,0,NA)
+  )
+  setkey(ld, id, stage)
+  setindex(ld, event)
+
+  expect_error(
+    pd <- policy_data(data = ld,
+                      baseline_data = bd,
+                      type = "long",
+                      time = "time",
+                      time2 = "time2"),
+    "time2 has missing values"
+  )
+
+  ld <- data.table(
+    id = c(1,1,2,3,3),
+    stage = c(1,2,1,1,2),
+    event = c(0,1,2,0,2),
+    A = c("0", NA, NA, "1", NA),
+    B = c("gr1","gr1", "gr2", "gr3", "gr3"),
+    Z = c("A", NA, "A", "B", NA),
+    L = c(1, 2, 2, 1, 3),
+    time = c(1, 2, 0.5, 1, 1.5),
+    time2 = c(2, 2.2, 1, 0.8, 2),
+    U = c(0, 10, NA, 0, NA),
+    U_A0 = c(0,0,NA,0,NA),
+    U_A1 = c(0,0,NA,0,NA)
+  )
+  setkey(ld, id, stage)
+  setindex(ld, event)
+
+  expect_error(
+    pd <- policy_data(data = ld,
+                      baseline_data = bd,
+                      type = "long",
+                      time = "time",
+                      time2 = "time2"),
+    "time2 must be greater and time for all pairwise elements."
+  )
+
+
 })
 
 test_that("policy_data formats right censored long data correctly in the single stage case.", {
@@ -101,7 +180,7 @@ test_that("policy_data formats right censored long data correctly in the single 
     stage = c(1,2,1,1,2),
     event = c(0,1,2,0,2),
     time = c(1, 2, 0.5, 1, 1.5),
-    time_2 = rep(as.numeric(NA), 5),
+    time2 = rep(as.numeric(NA), 5),
     A = c("0", NA, NA, "1", NA),
     B = c("gr1","gr1", "gr2", "gr3", "gr3"),
     Z = c("A", NA, "A", "B", NA),

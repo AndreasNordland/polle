@@ -582,7 +582,7 @@ full_history <- function(object, stage, type){
     event <-  stage_data[stage == stage_, c("id", "stage", "event"), with = FALSE]
 
     ## getting the time at the given stage:
-    time <- stage_data[stage == stage_, c("id", "stage", "time", "time_2"), with = FALSE]
+    time <- stage_data[stage == stage_, c("id", "stage", "time", "time2"), with = FALSE]
   }
 
   history <- list(
@@ -678,7 +678,7 @@ stage_state_history <- function(object, stage, type){
     event <-  stage_data[stage == stage_, c("id", "stage", "event"), with = FALSE]
 
     ## getting the time at the given stage:
-    time <- stage_data[stage == stage_, c("id", "stage", "time", "time_2"), with = FALSE]
+    time <- stage_data[stage == stage_, c("id", "stage", "time", "time2"), with = FALSE]
   }
 
   history <- list(
@@ -747,7 +747,7 @@ state_history <- function(object, type){
     event <-  stage_data[ , c("id", "stage", "event"), with = FALSE]
 
     ## getting the time at the given stage:
-    time <- stage_data[ , c("id", "stage", "time", "time_2"), with = FALSE]
+    time <- stage_data[ , c("id", "stage", "time", "time2"), with = FALSE]
   }
 
   history <- list(

@@ -4,7 +4,6 @@ new_policy_data <- function(stage_data,
                             stage_action_sets = NULL,
                             verbose) {
   ## checking and processing stage_data:
-
   if (missing(stage_data)) stage_data <- NULL
   if (is.null(stage_data)) stop("'stage_data' is missing or NULL.")
   if (is.data.frame(stage_data)) stage_data <- as.data.table(stage_data)
@@ -12,7 +11,7 @@ new_policy_data <- function(stage_data,
     stop("'stage_data' must be a data.table or a data.frame.")
   if (!all(c("id", "stage", "event", "A", "U") %in% colnames(stage_data)))
     stop("'stage_data' must contain id, stage, event, A (action) and U (utility/reward).")
-  setcolorder(stage_data, c("id", "stage", "event", "time", "time_2", "A"))
+  setcolorder(stage_data, c("id", "stage", "event", "time", "time2", "A"))
 
   ## setting and checking keys:
   setkeyv(stage_data, c("id", "stage"))
@@ -31,6 +30,23 @@ new_policy_data <- function(stage_data,
   if (!all(stage_data[,list("check" = all(event == c(rep(0, times = (.N-1)), 1) | event == c(rep(0, times = (.N-1)), 2))),by = "id"][, "check"]))
     stop("event must be on the form 0,0,...,0,j (j in {1,2}).")
   rm(event)
+
+  ## checking the time and time2 variable:
+  if (!all(is.na(stage_data[["time"]]))) {
+    if (any(is.na(stage_data[["time"]]))) {
+      stop("time has missing values")
+    }
+  }
+  if (!all(is.na(stage_data[["time2"]]))) {
+    if (any(is.na(stage_data[["time2"]]))) {
+      stop("time2 has missing values")
+    }
+  }
+  if (!all(is.na(stage_data[["time"]])) & !all(is.na(stage_data[["time2"]]))) {
+    if (!all(stage_data[["time"]] < stage_data[["time2"]])) {
+      stop("time2 must be greater and time for all pairwise elements.")
+    }
+  }
 
   ## checking the action variable (A):
   event <- NULL
@@ -109,11 +125,10 @@ new_policy_data <- function(stage_data,
   rm(sdf)
 
   ## getting the names of the state data (X_k):
-  rn <- c("id", "stage", "event", "time", "time_2", "A", "U", deterministic_reward_names)
+  rn <- c("id", "stage", "event", "time", "time2", "A", "U", deterministic_reward_names)
   state_names <- names(stage_data)[!(names(stage_data) %in% rn)]
 
   ## checking and processing baseline_data:
-
   baseline_names <- NULL
   if (!is.null(baseline_data)){
     if (is.data.frame(baseline_data))
@@ -209,7 +224,7 @@ new_policy_data <- function(stage_data,
 #' @param stage Stage number variable name.
 #' @param event Event indicator name.
 #' @param time Character string
-#' @param time_2 Character string
+#' @param time2 Character string
 #' @param action_set Character string. Action set across all stages.
 #' @param verbose Logical. If TRUE, formatting comments are printed to the console.
 #' @param digits Minimum number of digits to be printed.
@@ -316,7 +331,7 @@ policy_data <- function(data, baseline_data,
                         baseline = NULL,
                         deterministic_rewards = NULL,
                         id = NULL, stage = NULL, event = NULL,
-                        time = NULL, time_2 = NULL,
+                        time = NULL, time2 = NULL,
                         action_set = NULL,
                         verbose = FALSE) {
   data <- check_data(data)
@@ -338,10 +353,10 @@ policy_data <- function(data, baseline_data,
       stop("When 'type'=wide' set 'baseline_data' to NULL and use 'baseline' instead.")
     }
     if (!is.null(time)) {
-      stop("time and time_2 is not used when type = 'wide'. Please set to NULL.")
+      stop("time and time2 is not used when type = 'wide'. Please set to NULL.")
     }
-    if (!is.null(time_2)) {
-      stop("time and time_2 is not used when type = 'wide'. Please set to NULL.")
+    if (!is.null(time2)) {
+      stop("time and time2 is not used when type = 'wide'. Please set to NULL.")
     }
 
     # formatting the wide data:
@@ -370,8 +385,8 @@ policy_data <- function(data, baseline_data,
       covariates <- NULL
     if(!is.null(covariates))
       warning("covariates is not used when type = 'long'.")
-    if (is.null(time) & !is.null(time_2)) {
-      stop("time_2 provided, but time is NULL.")
+    if (is.null(time) & !is.null(time2)) {
+      stop("time2 provided, but time is NULL.")
     }
 
     ld <- format_long_data(
@@ -382,7 +397,7 @@ policy_data <- function(data, baseline_data,
       stage = stage,
       event = event,
       time = time,
-      time_2 = time_2,
+      time2 = time2,
       utility = utility,
       verbose = verbose
     )
@@ -545,8 +560,8 @@ melt_wide_data <- function(wide_data,
   rm(tmp)
 
   ## checking for invalid variable names:
-  if (any(c("event", "stage", "time", "time_2") %in% names(covariates))){
-    stop("'covariates' can not have named elements \"event\", \"stage\", \"time\", or \"time_2\".")
+  if (any(c("event", "stage", "time", "time2") %in% names(covariates))){
+    stop("'covariates' can not have named elements \"event\", \"stage\", \"time\", or \"time2\".")
   }
 
   ## setting default variables if missing:
@@ -610,9 +625,9 @@ melt_wide_data <- function(wide_data,
   stage_data[!is.na(A), event := 0]
   stage_data <- stage_data[!(is.na(A) & is.na(U)), ]
   stage_data[is.na(A), event := 1]
-  ## setting time and time_2 to NA:
+  ## setting time and time2 to NA:
   stage_data[ , time := as.numeric(NA)]
-  stage_data[ , time_2 := as.numeric(NA)]
+  stage_data[ , time2 := as.numeric(NA)]
 
   # setting keys:
   setkeyv(stage_data, c("id", "stage"))
@@ -668,7 +683,7 @@ set_default_name <- function(data, variable_name, default_name, create_if_null =
   setnames(data, variable_name, default_name)
 }
 
-format_long_data <- function(long_data, baseline_data, id, action, stage, event, time, time_2, utility, verbose){
+format_long_data <- function(long_data, baseline_data, id, action, stage, event, time, time2, utility, verbose){
 
   ## dealing with missing arguments:
   if (missing(action)){
@@ -682,7 +697,7 @@ format_long_data <- function(long_data, baseline_data, id, action, stage, event,
   }
 
   ## checking for duplicates
-  tmp <- unlist(c(id, action, stage, event, utility, time, time_2))
+  tmp <- unlist(c(id, action, stage, event, utility, time, time2))
   if (anyDuplicated(tmp)>0){
     mes <- tmp[anyDuplicated(tmp)]
     mes <- paste(mes, collapse = "\", \"")
@@ -698,7 +713,7 @@ format_long_data <- function(long_data, baseline_data, id, action, stage, event,
   set_default_name(long_data, variable_name = event, default_name = "event")
   set_default_name(long_data, variable_name = utility, default_name = "U")
   set_default_name(long_data, variable_name = time, default_name = "time", create_if_null = TRUE)
-  set_default_name(long_data, variable_name = time_2, default_name = "time_2", create_if_null = TRUE)
+  set_default_name(long_data, variable_name = time2, default_name = "time2", create_if_null = TRUE)
 
   ### searching for deterministic reward variables in long_data:
   action_set <- sort(unique(unlist(long_data[,"A", with = FALSE])))
