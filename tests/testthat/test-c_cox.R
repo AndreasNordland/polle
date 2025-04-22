@@ -48,6 +48,8 @@ sim_single_stage_right_cens <- function(n = 2e3, zeta = c(0.7, 0.2), type = "rig
 
 test_that("c_cox returns the expected output", {
 
+  library("mets")
+
   set.seed(1)
   ld <- sim_single_stage_right_cens(n = 5e2, type = "interval")
   pd <- policy_data(data = ld, type = "long", action = "A", time = "time", time2 = "time2")
@@ -66,6 +68,20 @@ test_that("c_cox returns the expected output", {
     coef(ref_cox)
   )
 
+  surv <- predict.c_function(fcf, new_history = his)
+
+  ref_surv_time <- as.vector(predict(ref_cox, newdata = ld, times = ld$time, individual.time = TRUE)$surv)
+  ref_surv_time2 <- as.vector(predict(ref_cox, newdata = ld, times = ld$time2, individual.time = TRUE)$surv)
+
+  expect_equal(
+    surv$surv_time,
+    ref_surv_time
+  )
+  expect_equal(
+    surv$surv_time2,
+    ref_surv_time2
+  )
+
   ## state history for a given stage
   his <- get_history(pd, type = "event", stage = 2)
   fcf <- fit_c_function(
@@ -78,6 +94,20 @@ test_that("c_cox returns the expected output", {
   expect_equal(
     coef(fcf$c_model$model),
     coef(ref_cox)
+  )
+
+   surv <- predict.c_function(fcf, new_history = his)
+
+  ref_surv_time <- as.vector(predict(ref_cox, newdata = ld[stage == 2,], times = ld[stage == 2,]$time, individual.time = TRUE)$surv)
+  ref_surv_time2 <- as.vector(predict(ref_cox, newdata = ld[stage == 2,], times = ld[stage == 2,]$time2, individual.time = TRUE)$surv)
+
+  expect_equal(
+    surv$surv_time,
+    ref_surv_time
+  )
+  expect_equal(
+    surv$surv_time2,
+    ref_surv_time2
   )
 
   his <- get_history(pd, type = "event", stage = 1)
@@ -93,6 +123,20 @@ test_that("c_cox returns the expected output", {
     coef(ref_cox)
   )
 
+  surv <- predict.c_function(fcf, new_history = his)
+
+  ref_surv_time <- as.vector(predict(ref_cox, newdata = ld[stage == 1,], times = ld[stage == 1,]$time, individual.time = TRUE)$surv)
+  ref_surv_time2 <- as.vector(predict(ref_cox, newdata = ld[stage == 1,], times = ld[stage == 1,]$time2, individual.time = TRUE)$surv)
+
+  expect_equal(
+    surv$surv_time,
+    ref_surv_time
+  )
+  expect_equal(
+    surv$surv_time2,
+    ref_surv_time2
+  )
+
   ## full history
   his <- get_history(pd, type = "event", stage = 2, full_history = TRUE)
   fcf <- fit_c_function(
@@ -105,5 +149,19 @@ test_that("c_cox returns the expected output", {
   expect_equal(
     coef(fcf$c_model$model) |> unname(),
     coef(ref_cox) |> unname()
+  )
+
+  surv <- predict.c_function(fcf, new_history = his)
+
+  ref_surv_time <- as.vector(predict(ref_cox, newdata = ld[, tmp := shift(A), by = id][stage == 2,], times = ld[stage == 2,]$time, individual.time = TRUE)$surv)
+  ref_surv_time2 <- as.vector(predict(ref_cox, newdata = ld[, tmp := shift(A), by = id][stage == 2,], times = ld[stage == 2,]$time2, individual.time = TRUE)$surv)
+
+  expect_equal(
+    surv$surv_time,
+    ref_surv_time
+  )
+  expect_equal(
+    surv$surv_time2,
+    ref_surv_time2
   )
 })

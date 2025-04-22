@@ -295,6 +295,8 @@ policy_eval <- function(policy_data,
                         g_full_history = FALSE, save_g_functions = TRUE,
                         q_functions = NULL, q_models = q_glm(),
                         q_full_history = FALSE, save_q_functions = TRUE,
+                        c_functions = NULL, c_models = NULL,
+                        c_full_history = FALSE,
                         target = "value",
                         type = "dr",
                         cross_fit_type = "pooled",
@@ -355,6 +357,8 @@ policy_eval_input_checks <- function(policy_data,
                                      g_full_history, save_g_functions,
                                      q_functions, q_models,
                                      q_full_history, save_q_functions,
+                                     c_functions, c_models,
+                                     c_full_history,
                                      target,
                                      type,
                                      cross_fit_type,
@@ -396,6 +400,14 @@ policy_eval_input_checks <- function(policy_data,
   }
   if (!(is.logical(q_full_history) && (length(q_full_history) == 1))) {
     stop("q_full_history must be TRUE or FALSE")
+  }
+  if (!is.null(c_functions)) {
+    if (!(inherits(c_functions, "c_functions"))) {
+      stop("c_functions must be of class 'c_functions'.")
+    }
+  }
+  if (!(is.logical(g_full_history) && (length(g_full_history) == 1))) {
+    stop("g_full_history must be TRUE or FALSE")
   }
   if (!(is.numeric(M) && (length(M) == 1))) {
     stop("M must be an integer greater than 0.")
@@ -500,6 +512,8 @@ policy_eval_object <- function(
     g_values = NULL,
     q_functions = NULL,
     q_values = NULL,
+    c_functions = NULL,
+    c_values = NULL,
     Z = NULL,
     subgroup_indicator = NULL,
     min_subgroup_size = NULL,
@@ -523,14 +537,16 @@ policy_eval_type <- function(target,
                              g_models, g_functions,
                              g_full_history, save_g_functions,
                              q_models, q_functions,
-                             min_subgroup_size,
                              q_full_history, save_q_functions,
+                             c_models, c_functions,
+                             c_full_history,
+                             min_subgroup_size,
                              name) {
   ##
   ## training
   ##
 
-  ## fitting the g-functions, the q-functions and the policy/policies:
+  ## fitting the g-functions, the q-functions, c-functions, and the policy/policies:
   fits <- fit_functions(
     policy_data = train_policy_data,
     type = type,
@@ -538,13 +554,16 @@ policy_eval_type <- function(target,
     g_models = g_models, g_functions = g_functions,
     g_full_history = g_full_history,
     q_models = q_models, q_functions = q_functions,
-    q_full_history = q_full_history
+    q_full_history = q_full_history,
+    c_models = c_models, c_functions = c_functions,
+    c_full_history = c_full_history
   )
   rm(train_policy_data)
 
-  ## getting the fitted g-functions and Q-functions:
+  ## getting the fitted g-functions, Q-functions, and c-functions:
   g_functions <- get_element(fits, "g_functions")
   q_functions <- get_element(fits, "q_functions")
+  c_functions <- get_element(fits, "c_functions")
 
   ## getting the fitted policy/policies as a list:
   if (is.null(policy)) {

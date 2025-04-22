@@ -31,22 +31,33 @@ new_policy_data <- function(stage_data,
     stop("event must be on the form 0,0,...,0,j (j in {1,2}).")
   rm(event)
 
+  time_indicator <- !all(is.na(stage_data[["time"]]))
+  time2_indicator <- !all(is.na(stage_data[["time2"]]))
   ## checking the time and time2 variable:
-  if (!all(is.na(stage_data[["time"]]))) {
+  if (time_indicator == TRUE) {
     if (any(is.na(stage_data[["time"]]))) {
       stop("time has missing values")
     }
   }
-  if (!all(is.na(stage_data[["time2"]]))) {
+  if (time2_indicator == TRUE) {
     if (any(is.na(stage_data[["time2"]]))) {
       stop("time2 has missing values")
     }
   }
-  if (!all(is.na(stage_data[["time"]])) & !all(is.na(stage_data[["time2"]]))) {
+  if ((time_indicator == TRUE) & (time2_indicator == TRUE)) {
     if (!all(stage_data[["time"]] < stage_data[["time2"]])) {
       stop("time2 must be greater and time for all pairwise elements.")
     }
   }
+  ## if time is provided, but time2 is not
+  ## [time, time2) intervals are created by
+  ## shifting time (with 0 as fill):
+  if ((time_indicator == TRUE) & (time2_indicator == FALSE)){
+    time <- time2 <- NULL
+    stage_data[ , time2 := time]
+    stage_data[ , time := shift(time, fill = 0), by = id]
+  }
+
 
   ## checking the action variable (A):
   event <- NULL

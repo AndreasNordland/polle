@@ -334,8 +334,8 @@ test_that("full_history() returns the history associated with the event process 
   ref <- data.table(
     id = c(1,2,3,4),
     stage = c(1,1,1,1),
-    time = c(1,0.5,1,1),
-    time2 = as.numeric(c(NA,NA,NA,NA))
+    time = c(0,0,0,0),
+    time2 = c(1,0.5,1,1)
   )
   setkey(ref, id, stage)
 
@@ -381,8 +381,8 @@ test_that("full_history() returns the history associated with the event process 
   ref <- data.table(
     id = c(1,3,4),
     stage = c(2,2,2),
-    time = c(2,1.5,1.2),
-    time2 = as.numeric(c(NA,NA,NA))
+    time = c(1,1,1),
+    time2 = c(2,1.5,1.2)
   )
   setkey(ref, id, stage)
 
@@ -460,8 +460,8 @@ test_that("stage_state_history() returns the history associated with the event p
   ref <- data.table(
     id = c(1,2,3,4),
     stage = c(1,1,1,1),
-    time = c(1,0.5,1,1),
-    time2 = as.numeric(c(NA,NA,NA,NA))
+    time = c(0,0,0,0),
+    time2 = c(1,0.5,1,1)
   )
   setkey(ref, id, stage)
 
@@ -503,8 +503,8 @@ test_that("stage_state_history() returns the history associated with the event p
   ref <- data.table(
     id = c(1,3,4),
     stage = c(2,2,2),
-    time = c(2,1.5,1.2),
-    time2 = as.numeric(c(NA,NA,NA))
+    time = c(1,1,1),
+    time2 = c(2,1.5,1.2)
   )
   setkey(ref, id, stage)
 
@@ -580,8 +580,8 @@ test_that("state_history() returns the history associated with the event process
   ref <- data.table(
     id = c(1,1,2,3,3,4,4),
     stage = c(1,2,1,1,2,1,2),
-    time = c(1,2,0.5,1,1.5,1,1.2),
-    time2 = rep(as.numeric(NA), 7)
+    time = c(0,1,0,0,1,0,1),
+    time2 = c(1,2,0.5,1,1.5,1,1.2)
   )
   setkey(ref, id, stage)
 

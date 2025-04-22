@@ -8,6 +8,7 @@ fit_Q_function <- function(history, Q, q_model) {
   A <- get_A(history)
   H <- get_H(history)
   AH <- cbind(A, H)
+
   # checking that the dimensions fit:
   if (nrow(AH) != length(Q))
     stop("Unable to fit Q-function.")
@@ -20,15 +21,20 @@ fit_Q_function <- function(history, Q, q_model) {
     stop(mes)
   }
 
-  # getting the historic rewards
+  ## getting the historic rewards
   U <- getElement(history, "U")
-  # calculating the residual (fitted) values
+  ## calculating the residual (fitted) values
   U_A <- apply(
     action_matrix(a = A, action_set = action_set) * U[, deterministic_rewards, with = FALSE],
     MARGIN = 1,
     sum
   )
   V_res <- unlist(Q - U[, "U_bar"] - U_A)
+
+  ## removing missing outcomes (censored/coarsened)
+  missing_ <- is.na(Q)
+  V_res <- V_res[missing_ == FALSE]
+  AH <- AH[missing_ == FALSE, ]
 
   # fitting the (residual) Q-model
   q_model <- q_model(V_res = V_res, AH = AH)

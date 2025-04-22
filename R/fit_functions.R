@@ -2,7 +2,8 @@ fit_functions <- function(policy_data,
                           type = type,
                           policy = NULL, policy_learn = NULL,
                           g_models = NULL, g_functions = NULL, g_full_history,
-                          q_models = NULL, q_functions = NULL, q_full_history) {
+                          q_models = NULL, q_functions = NULL, q_full_history,
+                          c_models = NULL, c_functions = NULL, c_full_history) {
   # fitting the g-functions (if NULL and if g_models is not NULL):
   if (is.null(g_functions)) {
     # g-models are not fitted if type is "or".
@@ -11,6 +12,17 @@ fit_functions <- function(policy_data,
         policy_data,
         g_models = g_models,
         full_history = g_full_history
+      )
+    }
+  }
+
+  # fitting the c-functions (if NULL and if c_models is not NULL):
+  if (is.null(c_functions)) {
+    if (!is.null(c_models)) {
+      c_functions <- fit_c_functions(
+        policy_data,
+        c_models = c_models,
+        full_history = c_full_history
       )
     }
   }
@@ -25,7 +37,7 @@ fit_functions <- function(policy_data,
       q_models = q_models, q_full_history = q_full_history
     )
     ## getting the policy associated with the default threshold:
-    threshold <- getElement(policy_object, "threshold")[1]
+    threshold <- get_element(policy_object, "threshold")[1]
     policy <- get_policy(policy_object, threshold = threshold)
   }
 
@@ -34,13 +46,12 @@ fit_functions <- function(policy_data,
 
   ## the policy actions are needed to fit the Q-functions.
   ## note that the policy actions at the first stage will not
-  ## affect
-  ## the fit.
+  ## affect the fit.
 
   # fitting the Q-functions (if NULL and if q_models is not NULL):
   if (is.null(q_functions)) {
     if (!is.null(getElement(policy_object, "q_functions"))) {
-      q_functions <- getElement(policy_object, "q_functions")
+      q_functions <- get_element(policy_object, "q_functions")
     } else {
       # q-models are not fitted if type is "ipw".
       if (!is.null(q_models) && (type %in% c("dr", "or"))) {
@@ -52,7 +63,7 @@ fit_functions <- function(policy_data,
       }
     }
   }
-  
+
   out <- list(
     g_functions = g_functions,
     q_functions = q_functions,

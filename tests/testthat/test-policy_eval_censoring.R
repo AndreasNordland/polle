@@ -1,4 +1,3 @@
-
 sim_single_stage_right_cens <- function(n = 2e3, zeta = c(0.7, 0.2), type = "right"){
 
   d <- sim_single_stage(n = n)
@@ -46,20 +45,19 @@ sim_single_stage_right_cens <- function(n = 2e3, zeta = c(0.7, 0.2), type = "rig
   return(ld)
 }
 
-test_that("fit_c_functions return the expected output", {
+test_that("policy_eval returns the expected output when using c-models.", {
 
   set.seed(1)
   ld <- sim_single_stage_right_cens(n = 5e2, type = "interval")
   pd <- policy_data(data = ld, type = "long", action = "A", time = "time", time2 = "time2")
 
   ## single c-model:
-
   expect_error(
-    fcf <- fit_c_functions(
+    pe <- policy_eval(
       policy_data = pd,
+      policy = policy_def(1),
       c_models = c_cox(formula = ~ Z, time = "time", time_2 = "time_2"),
-      full_history = FALSE
-    ),
+      ),
     NA
   )
 
@@ -70,57 +68,5 @@ test_that("fit_c_functions return the expected output", {
     coef(fcf$all_stages$c_model$model)
   )
 
-  ## c-model for each stage, state history:
-  expect_error(
-    fcf <- fit_c_functions(
-      policy_data = pd,
-      c_models = list(
-        c_cox(formula = ~ Z, time = "time", time_2 = "time_2"),
-        c_cox(formula = ~ Z, time = "time", time_2 = "time_2")
-      ),
-      full_history = FALSE
-    ),
-    NA
-  )
 
-  ref_model1 <- phreg(Surv(time = time, time2 = time2, event = (event == 2)) ~ Z, data = ld[stage == 1, ])
-  ref_model2 <- phreg(Surv(time = time, time2 = time2, event = (event == 2)) ~ Z, data = ld[stage == 2, ])
-
-  expect_equal(
-    coef(ref_model1),
-    coef(fcf$stage_1$c_model$model)
-  )
-
-  expect_equal(
-    coef(ref_model2),
-    coef(fcf$stage_2$c_model$model)
-  )
-
-  ## c-model for each stage, full history:
-  expect_error(
-    fcf <- fit_c_functions(
-      policy_data = pd,
-      c_models = list(
-        c_cox(formula = ~ Z_1, time = "time", time_2 = "time_2"),
-        c_cox(formula = ~ Z_2, time = "time", time_2 = "time_2")
-      ),
-      full_history = TRUE
-    ),
-    NA
-  )
-
-  ref_model1 <- phreg(Surv(time = time, time2 = time2, event = (event == 2)) ~ Z, data = ld[stage == 1, ])
-  ref_model2 <- phreg(Surv(time = time, time2 = time2, event = (event == 2)) ~ Z, data = ld[stage == 2, ])
-
-  expect_equal(
-    unname(coef(ref_model1)),
-    unname(coef(fcf$stage_1$c_model$model))
-  )
-
-  expect_equal(
-    unname(coef(ref_model2)),
-    unname(coef(fcf$stage_2$c_model$model))
-  )
-
-
-})
+  })

@@ -61,9 +61,6 @@ get_time2 <- function(history){
   time <- get_element(history, "time")
   stopifnot(!is.null(time))
   time2 <- time[["time2"]]
-  if (any(is.na(time2))) {
-    time2 <- NULL
-  }
   return(time2)
 }
 

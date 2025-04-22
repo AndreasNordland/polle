@@ -82,12 +82,12 @@ test_that("policy_data checks checks time and time2 input.", {
     NA
   )
   expect_equal(
-    pd$stage_data$time,
+    pd$stage_data$time2,
     ld$timetest
   )
   expect_equal(
-    pd$stage_data$time2,
-    as.numeric(c(NA, NA, NA, NA, NA))
+    pd$stage_data$time,
+    c(0,1,0,0,1)
   )
 
   ## checking time and time2 input:
@@ -179,8 +179,8 @@ test_that("policy_data formats right censored long data correctly in the single 
     id = c(1,1,2,3,3),
     stage = c(1,2,1,1,2),
     event = c(0,1,2,0,2),
-    time = c(1, 2, 0.5, 1, 1.5),
-    time2 = rep(as.numeric(NA), 5),
+    time = c(0, 1, 0, 0, 1),
+    time2 = c(1, 2, 0.5, 1, 1.5),
     A = c("0", NA, NA, "1", NA),
     B = c("gr1","gr1", "gr2", "gr3", "gr3"),
     Z = c("A", NA, "A", "B", NA),
