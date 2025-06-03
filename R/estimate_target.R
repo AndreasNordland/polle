@@ -1,20 +1,24 @@
 estimate_target <- function(target = "value",
                             type,
                             K,
+                            id,
                             action_set,
                             actions,
                             policy_actions,
                             g_values,
                             q_values,
+                            c_values,
                             utility,
                             min_subgroup_size) {
   args <- list(
     K = K,
+    id,
     action_set = action_set,
     actions = actions,
     policy_actions = policy_actions,
     g_values = g_values,
     q_values = q_values,
+    c_values = c_values,
     utility = utility,
     min_subgroup_size = min_subgroup_size
   )
@@ -137,42 +141,51 @@ dr_subgroup <- function(K,
   return(out)
 }
 
+## doubly robust score for the policy value.
 dr_value <- function(K,
+                     id,
                      action_set,
                      actions,
                      policy_actions,
                      g_values,
                      q_values,
+                     c_values,
                      utility,
                      ...) {
-  ##
-  ## calculating the doubly robust score for the policy value
-  ##
 
-  # (n X K) matrix with entries I(d_k(H_k) = A_k):
-  IIA <- dcast(actions, id ~ stage, value.var = "A")[, -c("id"), with = FALSE]
+  ## getting the utility vector U:
+  U <- merge(id, utility, all.x = TRUE)[["U"]]
+
+  ## (n) vector indicating missing outcomes:
+  missing <- is.na(U)
+
+  ## (n X K) matrix with entries I(d_k(H_k) = A_k):
+  wide_actions <- dcast(actions, id ~ stage, value.var = "A")
+  wide_actions <- merge(id, wide_actions, all.x = TRUE)
+  IIA <- wide_actions[, -c("id"), with = FALSE]
   IIA <- as.matrix(IIA)
-  IId <- dcast(
+  wide_policy_actions <- dcast(
     policy_actions, id ~ stage,
     value.var = "d"
-  )[, -c("id"), with = FALSE]
+  )
+  wide_policy_actions <- merge(id, wide_policy_actions, all.x = TRUE)
+  IId <- wide_policy_actions[, -c("id"), with = FALSE]
   IId <- as.matrix(IId)
   II <- (IIA == IId)
   rm(IIA, IId)
 
-  # (n X K) matrix with entries g_k(d_k(H_k), H_k):
+  ## (n X K) matrix with entries g_k(d_k(H_k), H_k):
   g_d_values <- get_a_values(
     a = policy_actions$d,
     action_set = action_set,
     values = g_values
   )
-  G <- dcast(g_d_values, id ~ stage, value.var = "P")[, -c("id"), with = FALSE]
+  G <- dcast(g_d_values, id ~ stage, value.var = "P")
+  G <- merge(id, G, all.x = TRUE)
+  G <- G[, -c("id"), with = FALSE]
   G <- as.matrix(G)
 
-  # (n) vector with entries U:
-  U <- utility$U
-
-  # (n X K+1) matrix with entries Q_k(H_{k,i}, d_k(H_{k,i})), Q_{K+1} = U:
+  ## (n X K+1) matrix with entries Q_k(H_{k,i}, d_k(H_{k,i})), Q_{K+1} = U:
   q_d_values <- get_a_values(
     a = policy_actions$d,
     action_set = action_set,
@@ -181,7 +194,9 @@ dr_value <- function(K,
   if (!all(complete.cases(q_d_values))) {
     stop("The policy dictates actions with incomplete (NA) Q-function values")
   }
-  Q <- dcast(q_d_values, id ~ stage, value.var = "P")[, -c("id"), with = FALSE]
+  Q <- dcast(q_d_values, id ~ stage, value.var = "P")
+  Q <- merge(id, Q, all.x = TRUE)
+  Q <- Q[, -c("id"), with = FALSE]
   Q <- as.matrix(Q)
   Q <- apply(
     Q,
@@ -193,18 +208,27 @@ dr_value <- function(K,
   )
   Q <- cbind(Q, U)
 
-  # calculating the doubly robust score
+  ## (n) vector with inverse probability of censoring weights:
+  c_surv_time <- dcast(c_values, id ~ stage, value.var = "surv_time")[, -c("id"), with = FALSE]
+  c_surv_time2 <- dcast(c_values, id ~ stage, value.var = "surv_time2")[, -c("id"), with = FALSE]
+  cc <- c_surv_time2 / c_surv_time
+  cc <- as.matrix(cc)
+  c_weight <- (missing == FALSE) * ipw_weight(D = (cc * 0 + 1), G = cc)
+
+  ## calculating the complete case doubly robust score
   Zd <- Q[, 1]
   for (k in 1:K) {
     Zd <- Zd + ipw_weight(II[, 1:k], G = G[, 1:k]) * (Q[, k + 1] - Q[, k])
   }
+  ## weighting by the probability of not being censored/coarsened/missing:
+  Zd <- c_weight * Zd
+  Zd[missing == TRUE] <- 0
 
-  ##
-  ## calculating the IPW and OR scores
-  ##
-
-  Zd_ipw <- ipw_weight(II, G = G) * U
-  Zd_or <- Q[, 1]
+  ## calculating the IPW and OR scores:
+  Zd_ipw <- c_weight * ipw_weight(II, G = G) * U
+  Zd_ipw[missing == TRUE] <- 0
+  Zd_or <- c_weight * Q[, 1]
+  Zd_or[missing == TRUE] <- 0
 
   ##
   ## output checks
@@ -215,6 +239,8 @@ dr_value <- function(K,
     !all(is.na(Zd_ipw)),
     !all(is.na(Zd_or))
   )
+
+  browser()
 
   out <- list(
     coef = mean(Zd),

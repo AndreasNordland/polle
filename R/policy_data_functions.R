@@ -1051,8 +1051,9 @@ get_id.policy_data <- function(object){
 
 #' Get IDs and Stages
 #'
-#' \code{get_id} returns the stages for every ID for every observation in the policy data object.
+#' \code{get_id} returns the ID and stage number for all action or non-terminal events in the policy data object.
 #' @param object Object of class [policy_data] or [history].
+#' @param type Character string. Either "action" (event = 0) or "non-terminal" (event != 1).
 #' @returns [data.table::data.table] with keys id and stage.
 #' @examples
 #' ### Two stages:
@@ -1069,15 +1070,26 @@ get_id.policy_data <- function(object){
 #' # getting the IDs and stages:
 #' head(get_id_stage(pd))
 #' @export
-get_id_stage <- function(object)
+get_id_stage <- function(object, type = "action")
   UseMethod("get_id_stage")
 
 #' @export
-get_id_stage.policy_data <- function(object){
+get_id_stage.policy_data <- function(object, type = "action"){
+  type <- tolower(type)
+  if (length(type) != 1) {
+    stop("type must be a character string.")
+  }
+  if (!any(type %in% c("action", "non-terminal"))) {
+    stop("type must be either 'action' or 'non-terminal'.")
+  }
   stage_data <- get_stage_data(object)
   id_stage_names <- c("id", "stage")
   event <- NULL
-  id_stage <- stage_data[event == 0, ][, id_stage_names, with = FALSE]
+  event_ <- c(0)
+  if (type == "non-terminal") {
+    event_ <- c(0,2)
+  }
+  id_stage <- stage_data[event %in% event_, ][, id_stage_names, with = FALSE]
 
   return(id_stage)
 }

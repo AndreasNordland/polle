@@ -37,7 +37,10 @@ fit_functions <- function(policy_data,
       q_models = q_models, q_full_history = q_full_history
     )
     ## getting the policy associated with the default threshold:
-    threshold <- get_element(policy_object, "threshold")[1]
+    ## the policy is only used to fit the Q-functions, and
+    ## the threshold at stage 1 does not affect the learned
+    ## policy at later stages and thus the fitted Q-funcion
+    threshold <- get_element(policy_object, "threshold", check_name = FALSE)[1]
     policy <- get_policy(policy_object, threshold = threshold)
   }
 
@@ -67,6 +70,7 @@ fit_functions <- function(policy_data,
   out <- list(
     g_functions = g_functions,
     q_functions = q_functions,
+    c_functions = c_functions,
     policy_object = policy_object
   )
   return(out)

@@ -4,16 +4,18 @@
 \alias{get_id_stage}
 \title{Get IDs and Stages}
 \usage{
-get_id_stage(object)
+get_id_stage(object, type = "action")
 }
 \arguments{
 \item{object}{Object of class \link{policy_data} or \link{history}.}
+
+\item{type}{Character string. Either "action" (event = 0) or "non-terminal" (event != 1).}
 }
 \value{
 \link[data.table:data.table]{data.table::data.table} with keys id and stage.
 }
 \description{
-\code{get_id} returns the stages for every ID for every observation in the policy data object.
+\code{get_id} returns the ID and stage number for all action or non-terminal events in the policy data object.
 }
 \examples{
 ### Two stages:

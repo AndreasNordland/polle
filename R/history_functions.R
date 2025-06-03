@@ -74,7 +74,7 @@ get_id.history <- function(object){
 }
 
 #' @export
-get_id_stage.history <- function(object){
+get_id_stage.history <- function(object, ...){
   H <- getElement(object, "H")
   stopifnot(!is.null(H))
   id_stage <- c("id", "stage")

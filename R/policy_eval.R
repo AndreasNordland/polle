@@ -296,7 +296,7 @@ policy_eval <- function(policy_data,
                         q_functions = NULL, q_models = q_glm(),
                         q_full_history = FALSE, save_q_functions = TRUE,
                         c_functions = NULL, c_models = NULL,
-                        c_full_history = FALSE,
+                        c_full_history = FALSE, save_c_functions = TRUE,
                         target = "value",
                         type = "dr",
                         cross_fit_type = "pooled",
@@ -314,6 +314,7 @@ policy_eval <- function(policy_data,
   ## collecting the arguments to be passed on:
   args[["policy_data"]] <- NULL
   args[["M"]] <- NULL
+  args[["train_block_size"]] <- NULL
   args[["future_args"]] <- NULL
   args[["variance_type"]] <- NULL
   args[["cross_fit_type"]] <- NULL
@@ -358,7 +359,7 @@ policy_eval_input_checks <- function(policy_data,
                                      q_functions, q_models,
                                      q_full_history, save_q_functions,
                                      c_functions, c_models,
-                                     c_full_history,
+                                     c_full_history, save_c_functions,
                                      target,
                                      type,
                                      cross_fit_type,
@@ -366,8 +367,9 @@ policy_eval_input_checks <- function(policy_data,
                                      M,
                                      nrep,
                                      min_subgroup_size,
-                                     future_args,
-                                     name){
+                                     future_args = list(),
+                                     name,
+                                     train_block_size = 1){
   args <- as.list(environment())
   if (!inherits(policy_data, what = "policy_data"))
     stop("policy_data must be of inherited class 'policy_data'.")
@@ -489,6 +491,17 @@ policy_eval_input_checks <- function(policy_data,
     }
   }
 
+  ## train_block_size used for online/sequential validation:
+  if (!(is.numeric(train_block_size) && (length(train_block_size) == 1))) {
+    stop("train_block_size must be an integer greater than 0.")
+  }
+  if (!(train_block_size %% 1 == 0)) {
+    stop("train_block_size must be an integer greater than 0.")
+  }
+  if (train_block_size <= 0) {
+    stop("train_block_size must be an integer greater than 0.")
+  }
+
   ## editing args
   args[["target"]] <- target
   args[["type"]] <- type
@@ -539,7 +552,7 @@ policy_eval_type <- function(target,
                              q_models, q_functions,
                              q_full_history, save_q_functions,
                              c_models, c_functions,
-                             c_full_history,
+                             c_full_history, save_c_functions,
                              min_subgroup_size,
                              name) {
   ##
@@ -587,7 +600,11 @@ policy_eval_type <- function(target,
   ## validating
   ##
 
-                                        # getting the g-function values:
+  ## getting the id as a data.table:
+  id <- data.table(id = get_id(valid_policy_data))
+  setkeyv(id, "id")
+
+  ## getting the g-function values:
   g_values <- NULL
   if (!is.null(g_functions)) {
     g_values <- predict(g_functions, valid_policy_data)
@@ -599,6 +616,11 @@ policy_eval_type <- function(target,
     q_values <- predict(q_functions, valid_policy_data)
   }
 
+  ## getting the c-function values:
+  if (!is.null(c_functions)) {
+    c_values <- predict(c_functions, valid_policy_data)
+  }
+
   ## setting g-functions output:
   if (save_g_functions != TRUE) {
     g_functions <- NULL
@@ -606,6 +628,11 @@ policy_eval_type <- function(target,
   ## setting Q-functions output:
   if (save_q_functions != TRUE) {
     q_functions <- NULL
+  }
+
+  ## setting the c-functions output:
+  if (save_c_functions != TRUE) {
+    c_functions <- NULL
   }
 
   ## getting the number of stages:
@@ -636,11 +663,13 @@ policy_eval_type <- function(target,
       target = target,
       type = type,
       K = K,
+      id = id,
       action_set = action_set,
       actions = actions,
       policy_actions = policy_actions,
       g_values = g_values,
       q_values = q_values,
+      c_values = c_values,
       utility = utility,
       min_subgroup_size = min_subgroup_size
     )

@@ -27,13 +27,18 @@ ipw_weight <- function(D, G){
   stopifnot(
     is.vector(D) | is.matrix(D),
     is.vector(G) | is.matrix(G),
-    all(dim(G) == dim(D))
+    all(dim(G) == dim(D)),
+    all(is.na(D) == is.na(G))
   )
+
+  ## replacing NA values with 1:
+  D[is.na(D)] <- 1
+  G[is.na(G)] <- 1
 
   if (is.vector(D)) {
     out <- D / G
   } else {
-    out <- apply(D / G, 1, prod, na.rm = TRUE)
+    out <- apply(D / G, 1, prod)
   }
 
   if (any(is.na(out))) {

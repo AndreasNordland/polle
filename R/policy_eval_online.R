@@ -210,117 +210,28 @@ policy_eval_online <- function(policy_data,
                                g_full_history = FALSE, save_g_functions = TRUE,
                                q_functions = NULL, q_models = q_glm(),
                                q_full_history = FALSE, save_q_functions = TRUE,
+                               c_functions = NULL, c_models = NULL,
+                               c_full_history = FALSE,
                                target = "value",
                                M = 4,
                                train_block_size = get_n(policy_data) / 5,
                                name = NULL,
                                min_subgroup_size = 1) {
-  ## input checks:
-  if (!inherits(policy_data, what = "policy_data"))
-    stop("policy_data must be of inherited class 'policy_data'.")
-  if (!is.null(policy)) {
-    if (!inherits(policy, what = "policy")) {
-      stop("policy must be of inherited class 'policy'.")
-    }
-  }
-  if ((is.null(policy) && is.null(policy_learn)) ||
-      (!is.null(policy_learn) && !is.null(policy))) {
-    stop("Provide either policy or policy_learn.")
-  }
-  if (is.null(policy) && !is.null(policy_learn)) {
-    if (!inherits(policy_learn, what = "policy_learn")) {
-      stop("policy_learn must be of inherited class 'policy_learn'.")
-    }
-  }
-  if (!is.null(g_functions)) {
-    if (!(inherits(g_functions, "g_functions"))) {
-      stop("g_functions must be of class 'g_functions'.")
-    }
-  }
-  if (!(is.logical(g_full_history) && (length(g_full_history) == 1))) {
-    stop("g_full_history must be TRUE or FALSE")
-  }
-  if (!is.null(q_functions)) {
-    if (!(inherits(q_functions, "q_functions"))) {
-      stop("q-functions must be of class 'q_functions'.")
-    }
-  }
-  if (!(is.logical(q_full_history) && (length(q_full_history) == 1))) {
-    stop("q_full_history must be TRUE or FALSE")
-  }
-  if (!(is.numeric(M) && (length(M) == 1))) {
-    stop("M must be an integer greater than 0.")
-  }
-  if (!(M %% 1 == 0)) {
-    stop("M must be an integer greater than 0.")
-  }
-  if (M <= 0) {
-    stop("M must be an integer greater than 0.")
-  }
-  if (!(is.numeric(train_block_size) && (length(train_block_size) == 1))) {
-    stop("train_block_size must be an integer greater than 0.")
-  }
-  if (!(train_block_size %% 1 == 0)) {
-    stop("train_block_size must be an integer greater than 0.")
-  }
-  if (train_block_size <= 0) {
-    stop("train_block_size must be an integer greater than 0.")
-  }
-  if (!is.null(name)) {
-    name <- as.character(name)
-    if (length(name) != 1) {
-      stop("name must be a character string.")
-    }
-  }
-  if (!(min_subgroup_size %% 1 == 0)) {
-    stop("min_subgroup_size must be an integer greater than 0.")
-  }
-  if (min_subgroup_size <= 0) {
-    stop("min_subgroup_size must be an integer greater than 0.")
-  }
-  target <- tolower(target)
-  if (length(target) != 1) {
-    stop("target must be a character string.")
-  }
-  if (target %in% c(
-                    "value",
-                    "policy_value"
-                  )) {
-    target <- "value"
-  } else if (target %in% c(
-                           "subgroup",
-                           "sub_effect",
-                           "subeffect",
-                           "subvalue",
-                           "sub_value"
-                         )) {
-    target <- "subgroup"
-  } else {
-    stop("target must be either 'value' or 'subgroup'.")
-  }
-  ## setting type to "dr"
+  ## setting type to "dr":
   type <- "dr"
 
-  ## editing name:
-  if (is.null(name)) {
-    if (target == "value") {
-      name <- "E[U(d)]"
-    }
-
-    if (target == "subgroup") {
-      as <- get_action_set(policy_data)
-      name1 <- paste0("E[U(", as[2], ")-U(", as[1], ")|d=", as[2], "]")
-      name2 <- paste0("E[U(", as[2], ")-U(", as[1], ")|d=", as[1], "]")
-      name <- c(name1, name2)
-      rm(as, name1, name2)
-    }
-  }
+   ## argument input checks:
+  args <- as.list(environment())
+  args <- do.call(what = "policy_eval_input_checks", args)
 
   ## collecting the arguments to be passed on:
-  args <- as.list(environment())
   args[["policy_data"]] <- NULL
   args[["M"]] <- NULL
   args[["train_block_size"]] <- NULL
+  args[["future_args"]] <- NULL
+  args[["variance_type"]] <- NULL
+  args[["cross_fit_type"]] <- NULL
+  args[["nrep"]] <- NULL
 
   eval <- policy_eval_on(args = args,
                          policy_data = policy_data,

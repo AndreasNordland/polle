@@ -125,3 +125,30 @@ fit_c_functions <- function(policy_data, c_models, full_history = FALSE){
 
   return(c_functions)
 }
+
+#' @export
+predict.c_functions <- function(object, new_policy_data, ...){
+  K <- get_K(new_policy_data)
+  full_history <- attr(object, "full_history")
+
+  if (length(object) == (K+1)){
+    history <- lapply(1:(K+1), function(s) get_history(new_policy_data,
+                                                       stage = s,
+                                                       full_history = full_history,
+                                                       type = "event"))
+    values <- mapply(history,
+                     object,
+                     FUN = function(h, f) predict(f, h),
+                     SIMPLIFY = FALSE)
+    values <- rbindlist(values)
+    setkeyv(values, c("id", "stage"))
+  } else if (length(object) == 1){
+    ## state history across all stages:
+    history <- get_history(new_policy_data, stage = NULL, full_history = FALSE, type = "event")
+    values <- predict(object[[1]], history)
+  } else{
+    stop("Provide either 1 or K+1 c-functions for evaluation.")
+  }
+
+  return(values)
+}
