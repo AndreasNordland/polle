@@ -31,6 +31,12 @@ new_policy_data <- function(stage_data,
     stop("event must be on the form 0,0,...,0,j (j in {1,2}).")
   rm(event)
 
+  ## getting the dimensions:
+  n <- length(unique(unlist(stage_data[,"id"])))
+  stage <- NULL
+  K <- stage_data[event == 0, list(max(stage))][[1]]
+  rm(stage)
+
   time_indicator <- !all(is.na(stage_data[["time"]]))
   time2_indicator <- !all(is.na(stage_data[["time2"]]))
   ## checking the time and time2 variable:
@@ -57,7 +63,6 @@ new_policy_data <- function(stage_data,
     stage_data[ , time2 := time]
     stage_data[ , time := shift(time, fill = 0), by = id]
   }
-
 
   ## checking the action variable (A):
   event <- NULL
@@ -105,8 +110,12 @@ new_policy_data <- function(stage_data,
     stop("'utility' U must be numeric.")
   ## for stage action events (event = 0) and termination events (event = 1)
   ## U should not be missing:
-  if(any(is.na(stage_data[event %in% c(0,1),"U"])))
+  if (any(is.na(stage_data[event %in% c(0,1),"U"])))
     stop("The utility variable U has missing values")
+  if (any(is.na(stage_data[stage <= K,][event %in% c(2),"U"])))
+    stop("The utility variable U has missing values")
+  if (any(!is.na(stage_data[stage == (K+1) & (event %in% c(2)), "U"])))
+    stop("The utility variable U must be NA for stage K+1 if event = 2.")
 
   ## checking the deterministic reward variables (U_A[.]):
   deterministic_reward_names <- paste("U_A", action_set, sep = "")
@@ -125,6 +134,8 @@ new_policy_data <- function(stage_data,
     mes <- paste("'",mes, "'must be numeric.", sep = " ")
     stop(mes)
   }
+  if(any(is.na(stage_data[event %in% c(0,2), deterministic_reward_names, with = FALSE])))
+    stop("The deterministic reward variables have missing values.")
 
   ## coercing variables of type factor to type character in stage_data:
   sdf <- sapply(stage_data, function(x) is.factor(x))
@@ -174,11 +185,8 @@ new_policy_data <- function(stage_data,
     rm(id)
   }
 
-  ## getting the dimensions:
-  n <- length(unique(unlist(stage_data[,"id"])))
-  stage <- NULL
-  K <- stage_data[event == 0, list(max(stage))][[1]]
-  rm(stage)
+  ## creating a right-censoring indicator for each stage (K+1):
+  cens_indicator <- stage_data[, .(indicator = any(event == 2)), by = c("stage")]
 
   object <- list(
     stage_data = stage_data,
@@ -193,7 +201,8 @@ new_policy_data <- function(stage_data,
     dim = list(
       n = n,
       K = K
-    )
+    ),
+    cens_indicator = cens_indicator
   )
 
   class(object) <- "policy_data"

@@ -9,7 +9,7 @@ action_matrix <- function(a, action_set) {
   t(am(a = a, action_set = action_set))
 }
 
-get_a_values <- function(a, action_set, values) {
+get_a_values <- function(a, action_set, values, na.rm = TRUE) {
   stopifnot(
     is.data.table(values),
     all(key(values) == c("id", "stage")),
@@ -17,7 +17,7 @@ get_a_values <- function(a, action_set, values) {
     length(a) == nrow(values)
   )
   P <- action_matrix(a = a, action_set = action_set) * values[, -c("id", "stage"), with = FALSE]
-  P <- apply(P, 1, sum, na.rm = TRUE)
+  P <- apply(P, 1, sum, na.rm = na.rm)
   out <- data.table(values[, c("id", "stage"), with = FALSE], P = P)
 
   return(out)

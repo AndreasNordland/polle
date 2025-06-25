@@ -132,7 +132,7 @@ policy_def <- function(policy_functions, full_history = FALSE, reuse = FALSE, na
   force(full_history)
   force(reuse)
 
-  # input checks
+  ## input checks
   if (!(is.logical(full_history) & (length(full_history) == 1)))
     stop("full_history must be TRUE or FALSE")
   if (!(is.logical(reuse) & (length(reuse) == 1)))
@@ -163,10 +163,10 @@ policy_def <- function(policy_functions, full_history = FALSE, reuse = FALSE, na
     K <- get_K(policy_data)
 
     if (reuse == TRUE){
-      # policy_functions as a list:
+      ## policy_functions as a list:
       policy_functions <- replicate(K, policy_functions)
     }
-    # policy_functions as list (or vector):
+    ## policy_functions as list (or vector):
     policy_functions <- c(policy_functions)
 
     if (length(policy_functions) != K)
@@ -188,7 +188,8 @@ policy_def <- function(policy_functions, full_history = FALSE, reuse = FALSE, na
       1:K,
       function(k) get_history(policy_data,
                               stage = k,
-                              full_history = full_history)
+                              full_history = full_history,
+                              type = "event") # gets the action of right-censored/missing events as well
     )
     policy_actions <- mapply(
       function(sp, sh) sp(sh),
@@ -375,7 +376,7 @@ policy_g_functions <- function(g_functions, name = "pgf"){
   policy <- function(policy_data){
     action_set <- get_action_set(policy_data)
     g_cols <- paste("g_", action_set, sep = "")
-    g_values <- predict.nuisance_functions(g_functions, policy_data)
+    g_values <- predict.nuisance_functions(g_functions, policy_data, type = "event")
 
     dd <- apply(
       g_values[ , g_cols, with = FALSE],

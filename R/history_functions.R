@@ -43,8 +43,9 @@ get_A <- function(history){
   return(A)
 }
 
-get_event <- function(history){
-  event <- get_element(history, "event")
+#' @export
+get_event.history <- function(object){
+  event <- get_element(object, "event")
   stopifnot(!is.null(event))
   event <- event[["event"]]
   return(event)

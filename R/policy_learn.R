@@ -300,6 +300,12 @@ pl <- function(call, args) {
   function(policy_data,
            g_models = NULL, g_functions = NULL, g_full_history = FALSE,
            q_models, q_full_history = FALSE) {
+    ## policy data input checks:
+    if (any(get_element(policy_data, "cens_indicator")[["indicator"]])){
+      stop("policy learning not implemented under right-censoring/missing outcomes.")
+    }
+
+    ## evaluating the learner:
     eval_args <- as.list(environment())
     args <- append(args, eval_args)
     do.call(what = call, args)

@@ -397,7 +397,7 @@ test_that("policy_eval with target = 'value' runs when cross-fitting.", {
   )
 })
 
-test_that("policy_eval with target = 'value' agrees with targeted::cate", {
+test_that("policy_eval with target = 'value' agrees with targeted::cate in the single-stage case.", {
   d <- sim_single_stage(1e2, seed = 1)
   pd <- policy_data(d, action = "A", covariates = c("Z"), utility = "U")
   p <- policy_def(1)
@@ -614,6 +614,82 @@ test_that("policy_eval with target 'value' has the correct outputs in the single
     matrix(ref_IC)
   )
 })
+
+test_that("policy_eval with target 'value' has the correct outputs in the two-stage case for a single final utility outcome.", {
+
+  set.seed(1)
+  x1 <- runif(n = 1e2, min = -1, max = 1)
+  a1 <- c(rep(1, 50), rep(2, 50))
+  x2 <- runif(n = 1e2, min = -1, max = 1)
+  a2 <- c(rep(3, 50), rep(4, 50))
+  y <- a1 * x1 + a2 * x2 + runif(n = 1e2, min = -1, max = 1)
+  p1 <- c(rep(1, 25), rep(2, 25), rep(1, 25), rep(2, 25))
+  p2 <- c(rep(3, 25), rep(4, 25), rep(3, 25), rep(4, 25))
+  d <- data.table(x1 = x1,
+                  a1 = a1,
+                  x2 = x2,
+                  a2 = a2,
+                  y = y,
+                  p1 = p1,
+                  p2 = p2)
+  rm(x1, a1, x2, a2, y)
+
+  pd <- policy_data(
+    data = d,
+    action = c("a1", "a2"),
+    covariates = list(x = c("x1", "x2"),
+                      p = c("p1", "p2")),
+    utility = c("y")
+  )
+
+  ## his <- get_history(pd, stage = 1)
+  ## qfun <- fit_Q_function(history = his, Q = d$y, q_degen(var = "z"))
+  ## predict.Q_function(qfun, new_history = his)
+
+  p <- policy_def(function(p) p, name = "test", reuse = TRUE)
+
+  ref_pe <- mean(
+    d$x1 +
+    (d$a1 == d$p1) / 0.5 * (d$x2 - d$x1) +
+    (d$a1 == d$p1) / 0.5 * (d$a1 == d$p1) / 0.5 * (d$y - d$x2)
+  )
+
+  ref_IC <- d$x1 +
+    (d$a1 == d$p1) / 0.5 * (d$x2 - d$x1) +
+    (d$a1 == d$p1) / 0.5 * (d$a1 == d$p1) / 0.5 * (d$y - d$x2 ) -
+    ref_pe
+
+  ##
+  ## no cross-fitting
+  ##
+
+  pe <- policy_eval(
+    policy_data = pd,
+    policy = p,
+    q_models = list(q_degen(var = "x"), q_degen(var = "x")),
+    g_models = list(g_glm(~1), g_glm(~1))
+  )
+
+  expect_equal(
+    pe$name,
+    names(coef(pe))
+  )
+  expect_equal(
+    pe$name,
+    c("E[U(d)]: d=test")
+  )
+
+  expect_equal(
+    coef(pe) |> unname(),
+    ref_pe
+  )
+
+  expect_equal(
+    IC(pe),
+    matrix(ref_IC)
+  )
+})
+
 
 test_that("policy_eval() using policy_learn() has the correct output", {
   z <- 1:1e2

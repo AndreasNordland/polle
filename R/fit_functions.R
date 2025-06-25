@@ -3,8 +3,9 @@ fit_functions <- function(policy_data,
                           policy = NULL, policy_learn = NULL,
                           g_models = NULL, g_functions = NULL, g_full_history,
                           q_models = NULL, q_functions = NULL, q_full_history,
-                          c_models = NULL, c_functions = NULL, c_full_history) {
-  # fitting the g-functions (if NULL and if g_models is not NULL):
+                          c_models = NULL, c_functions = NULL, c_full_history,
+                          m_model = NULL, m_function = NULL, m_full_history) {
+  ## fitting the g-functions (if NULL and if g_models is not NULL):
   if (is.null(g_functions)) {
     # g-models are not fitted if type is "or".
     if (!is.null(g_models) && (type %in% c("dr", "ipw"))) {
@@ -16,7 +17,7 @@ fit_functions <- function(policy_data,
     }
   }
 
-  # fitting the c-functions (if NULL and if c_models is not NULL):
+  ## fitting the c-functions (if NULL and if c_models is not NULL):
   if (is.null(c_functions)) {
     if (!is.null(c_models)) {
       c_functions <- fit_c_functions(
@@ -27,7 +28,16 @@ fit_functions <- function(policy_data,
     }
   }
 
-  # learning the policy:
+  ## fitting m-function:
+  if (is.null(m_function)) {
+    m_function <- fit_m_function(
+      policy_data,
+      m_model = m_model,
+      full_history = m_full_history
+    )
+  }
+
+  ## learning the policy:
   policy_object <- NULL
   if (is.null(policy)) {
     policy_object <- policy_learn(
@@ -61,7 +71,8 @@ fit_functions <- function(policy_data,
         q_functions <- fit_Q_functions(
           policy_data,
           policy_actions = policy_actions,
-          q_models = q_models, full_history = q_full_history
+          q_models = q_models, full_history = q_full_history,
+          m_function = m_function
         )
       }
     }
@@ -71,6 +82,7 @@ fit_functions <- function(policy_data,
     g_functions = g_functions,
     q_functions = q_functions,
     c_functions = c_functions,
+    m_function = m_function,
     policy_object = policy_object
   )
   return(out)

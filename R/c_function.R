@@ -1,13 +1,15 @@
 #' Fit Single c-function
 #'
-#' \code{fit_c_function} is used to fit a single time depending coarsening model, i.e.,
-#' right-censoring model.
+#' \code{fit_c_function} is used to fit a single right-censoring model.
+#' \code{c_model} can eiter be of inherited class c_model or g_model for
+#' discrete right-censoring.
 #' @param history History object created by [get_history()]
-#' @param c_model Censoring model/g-model created by ?? or similar functions.
-#' @returns Object of class "g_function".
+#' @param c_model Censoring model, c-model/g-model, created by ?? or similar functions.
+#' @returns Object of class "c_function".
 #' @noRd
 fit_c_function <- function(history, c_model){
   stage <- get_element(history, "stage", check_name = FALSE)
+  c_model_class <- class(c_model)
 
   ## getting the event, time and the model matrix (H):
   event <- get_event(history)
@@ -16,10 +18,16 @@ fit_c_function <- function(history, c_model){
   H <- get_H(history)
 
   ## fitting the model:
-  c_model <- c_model(event = event, time = time, time2 = time2, H = H)
+  if (inherits(c_model, "g_model")) {
+    A <- as.numeric(!(event == c(2)))
+    c_model <- c_model(A = A, H = H, action_set = c(0,1))
+  } else {
+    c_model <- c_model(event = event, time = time, time2 = time2, H = H)
+  }
 
   c_function <- list(
     c_model = c_model,
+    c_model_class = c_model_class,
     H_names = colnames(H),
     stage = stage
   )
@@ -30,21 +38,27 @@ fit_c_function <- function(history, c_model){
 
 #' @export
 predict.c_function <- function(object, new_history, ...){
-  c_model <- getElement(object, "c_model")
-  H_names <- getElement(object, "H_names")
+  c_model <- get_element(object, "c_model")
+  c_model_class <- get_element(object, "c_model_class")
+  H_names <- get_element(object, "H_names")
 
   id_stage <- get_id_stage(new_history)
   new_H <- get_H(new_history)
 
   ## time points for evaluation of the c-model:
-
   new_time <- get_time(new_history)
   new_time2 <- get_time2(new_history)
 
-  surv_time <- predict(c_model, new_H = new_H, new_time = new_time)
-  surv_time2 <- predict(c_model, new_H = new_H, new_time = new_time2)
-  surv <- cbind(surv_time, surv_time2)
-  colnames(surv) <- c("surv_time", "surv_time2")
+  if ("g_model" %in% c_model_class) {
+    surv <- matrix(predict(c_model, new_H = new_H)[, 2])
+    surv <- cbind(1, surv)
+    colnames(surv) <- c("surv_time", "surv_time2")
+  } else {
+    surv_time <- predict(c_model, new_H = new_H, new_time = new_time)
+    surv_time2 <- predict(c_model, new_H = new_H, new_time = new_time2)
+    surv <- cbind(surv_time, surv_time2)
+    colnames(surv) <- c("surv_time", "surv_time2")
+  }
 
   if (!all(complete.cases(surv))){
     if(!is.null(stage)){
@@ -70,7 +84,6 @@ predict.c_function <- function(object, new_history, ...){
     stop(mes)
   }
 
-
   # including the id's and stage number(s)
   c_values <- data.table(id_stage, surv)
   setkeyv(c_values, c("id", "stage"))
@@ -87,15 +100,27 @@ fit_c_functions <- function(policy_data, c_models, full_history = FALSE){
     stop("full_history must be TRUE or FALSE")
   if (is.null(c_models))
     stop("Please provide c_models.")
-  mes <- "c_models must be a single c_model or a list of K+1 c_models's."
-  if (is.list(c_models)){
+
+  mes <- "c_models must be a single c_model (or g_model) or a list of K+1 c_model's (or g_model's)."
+  if (is.list(c_models)) {
+    ## updating class:
+    c_models <- lapply(c_models, function(cm) {
+      if (inherits(cm, "g_model")) {
+        class(cm) <- c("c_model", class(cm))
+      }
+      return(cm)
+    })
     tmp <- all(unlist(lapply(c_models, function(cm) inherits(cm, "c_model"))))
     if (!tmp)
       stop(mes)
     rm(tmp)
     if (length(c_models) != (K+1))
       stop(mes)
-  } else{
+  } else {
+    if (inherits(c_models, "g_model")) {
+      ## updating class:
+      class(c_models) <- c("c_model", class(c_models))
+    }
     if (!inherits(c_models, "c_model"))
       stop(mes)
     if (full_history == TRUE)
@@ -143,8 +168,11 @@ predict.c_functions <- function(object, new_policy_data, ...){
     values <- rbindlist(values)
     setkeyv(values, c("id", "stage"))
   } else if (length(object) == 1){
-    ## state history across all stages:
-    history <- get_history(new_policy_data, stage = NULL, full_history = FALSE, type = "event")
+    ## state history across all stages 1,...,K+1:
+    history <- get_history(new_policy_data,
+                           stage = NULL,
+                           full_history = FALSE,
+                           type = "event")
     values <- predict(object[[1]], history)
   } else{
     stop("Provide either 1 or K+1 c-functions for evaluation.")

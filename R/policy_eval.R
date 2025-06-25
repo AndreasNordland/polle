@@ -297,6 +297,8 @@ policy_eval <- function(policy_data,
                         q_full_history = FALSE, save_q_functions = TRUE,
                         c_functions = NULL, c_models = NULL,
                         c_full_history = FALSE, save_c_functions = TRUE,
+                        m_function = NULL, m_model = NULL,
+                        m_full_history = FALSE, save_m_function = TRUE,
                         target = "value",
                         type = "dr",
                         cross_fit_type = "pooled",
@@ -360,6 +362,8 @@ policy_eval_input_checks <- function(policy_data,
                                      q_full_history, save_q_functions,
                                      c_functions, c_models,
                                      c_full_history, save_c_functions,
+                                     m_function, m_model,
+                                     m_full_history, save_m_function,
                                      target,
                                      type,
                                      cross_fit_type,
@@ -408,8 +412,16 @@ policy_eval_input_checks <- function(policy_data,
       stop("c_functions must be of class 'c_functions'.")
     }
   }
-  if (!(is.logical(g_full_history) && (length(g_full_history) == 1))) {
-    stop("g_full_history must be TRUE or FALSE")
+  if (!(is.logical(c_full_history) && (length(c_full_history) == 1))) {
+    stop("c_full_history must be TRUE or FALSE")
+  }
+  if (!is.null(m_function)) {
+    if (!(inherits(m_function, "q_functions"))) {
+      stop("m_function must be of class 'q_functions'.")
+    }
+  }
+  if (!(is.logical(m_full_history) && (length(m_full_history) == 1))) {
+    stop("m_full_history must be TRUE or FALSE")
   }
   if (!(is.numeric(M) && (length(M) == 1))) {
     stop("M must be an integer greater than 0.")
@@ -553,6 +565,8 @@ policy_eval_type <- function(target,
                              q_full_history, save_q_functions,
                              c_models, c_functions,
                              c_full_history, save_c_functions,
+                             m_model, m_function,
+                             m_full_history, save_m_function,
                              min_subgroup_size,
                              name) {
   ##
@@ -569,7 +583,9 @@ policy_eval_type <- function(target,
     q_models = q_models, q_functions = q_functions,
     q_full_history = q_full_history,
     c_models = c_models, c_functions = c_functions,
-    c_full_history = c_full_history
+    c_full_history = c_full_history,
+    m_model = m_model, m_function = m_function,
+    m_full_history = m_full_history
   )
   rm(train_policy_data)
 
@@ -577,6 +593,7 @@ policy_eval_type <- function(target,
   g_functions <- get_element(fits, "g_functions")
   q_functions <- get_element(fits, "q_functions")
   c_functions <- get_element(fits, "c_functions")
+  m_function <- get_element(fits, "m_function")
 
   ## getting the fitted policy/policies as a list:
   if (is.null(policy)) {
@@ -604,21 +621,28 @@ policy_eval_type <- function(target,
   id <- data.table(id = get_id(valid_policy_data))
   setkeyv(id, "id")
 
-  ## getting the g-function values:
+  ## getting the g-function values (for events 0):
   g_values <- NULL
   if (!is.null(g_functions)) {
-    g_values <- predict(g_functions, valid_policy_data)
+    g_values <- predict(g_functions, valid_policy_data, type = "action")
   }
 
-  ## getting the Q-function values:
+  ## getting the Q-function values (for events 0,2):
   q_values <- NULL
   if (!is.null(q_functions)) {
-    q_values <- predict(q_functions, valid_policy_data)
+    q_values <- predict(q_functions, valid_policy_data, type = "event")
   }
 
-  ## getting the c-function values:
+  ## getting the c-function values (for events 0,2):
+  c_values <- NULL
   if (!is.null(c_functions)) {
     c_values <- predict(c_functions, valid_policy_data)
+  }
+
+  ## getting the m-function values:
+  m_values <- NULL
+  if (!is.null(m_function)) {
+    m_values <- predict(m_function, valid_policy_data)
   }
 
   ## setting g-functions output:
@@ -635,6 +659,11 @@ policy_eval_type <- function(target,
     c_functions <- NULL
   }
 
+   ## setting the M-functions output:
+  if (save_m_function != TRUE) {
+    m_function <- NULL
+  }
+
   ## getting the number of stages:
   K <- get_K(valid_policy_data)
 
@@ -644,13 +673,15 @@ policy_eval_type <- function(target,
   ## getting the observed actions:
   actions <- get_actions(valid_policy_data)
 
+  ## getting the events:
+  events <- get_event(valid_policy_data)
+
   ## getting the utility:
   utility <- get_utility(valid_policy_data)
 
-
   ## calculating the target estimate for each policy:
   if (length(policy) == 1) {
-    ## getting the policy actions:
+    ## getting the policy actions for both right-censoring and action events:
     policy_actions <- policy[[1]](valid_policy_data)
 
     ## checking that the policy actions comply with the stage action sets:
@@ -667,9 +698,11 @@ policy_eval_type <- function(target,
       action_set = action_set,
       actions = actions,
       policy_actions = policy_actions,
+      events = events,
       g_values = g_values,
       q_values = q_values,
       c_values = c_values,
+      m_values = m_values,
       utility = utility,
       min_subgroup_size = min_subgroup_size
     )
@@ -680,7 +713,7 @@ policy_eval_type <- function(target,
     estimate_objects <- lapply(
       policy,
       function(p) {
-        ## getting the policy actions:
+        ## getting the policy actions:## getting the policy actions for both right-censoring and action events:
         policy_actions <- p(valid_policy_data)
 
         ## checking that the policy actions comply with the stage action sets:
@@ -696,8 +729,11 @@ policy_eval_type <- function(target,
           action_set = action_set,
           actions = actions,
           policy_actions = policy_actions,
+          events = events,
           g_values = g_values,
           q_values = q_values,
+          c_values = c_values,
+          m_values = m_values,
           utility = utility,
           min_subgroup_size = min_subgroup_size
         )

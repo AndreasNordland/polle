@@ -33,6 +33,7 @@ Remotes:
 Suggests:
     DTRlearn2,
     glmnet (>= 4.1-6),
+    mets,
     mgcv,
     xgboost,
     knitr,

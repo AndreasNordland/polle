@@ -29,6 +29,8 @@ c_cox <- function(formula = ~.,
   formula <- as.formula(formula)
   dotdotdot <- list(...)
 
+  if (!requireNamespace("mets")) stop("Package 'mets' required")
+
   c_cox <- function(event, time, time2, H) {
     ## setting the reponse of the formula to Surv(time = time, time2 = time2, event == 2):
     ## note that time, time2 and event are added to the formula environment
@@ -39,7 +41,7 @@ c_cox <- function(formula = ~.,
                             weights = weights),
                        dotdotdot)
 
-    model <- tryCatch(do.call(what = "phreg", args = args_cox),
+    model <- tryCatch(do.call(mets::phreg, args = args_cox),
                       error = function(e) e
                       )
     if (inherits(model, "error")) {
@@ -56,7 +58,7 @@ c_cox <- function(formula = ~.,
     return(m)
   }
 
-                                        # setting class:
+  ## setting class:
   c_cox <- new_c_model(c_cox)
 
   return(c_cox)
