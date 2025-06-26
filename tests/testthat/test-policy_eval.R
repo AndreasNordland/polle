@@ -664,6 +664,168 @@ test_that("policy_eval() using policy_learn() has the correct output", {
   )
 })
 
+test_that("policy_eval with target 'value' has the correct outputs for the fixed two-stage case and a single final utility outcome.", {
+
+  set.seed(1)
+  x1 <- runif(n = 1e2, min = -1, max = 1)
+  a1 <- c(rep(1, 50), rep(2, 50))
+  x2 <- runif(n = 1e2, min = -1, max = 1)
+  a2 <- c(rep(3, 50), rep(4, 50))
+  y <- a1 * x1 + a2 * x2 + runif(n = 1e2, min = -1, max = 1)
+  p1 <- c(rep(1, 25), rep(2, 25), rep(1, 25), rep(2, 25))
+  p2 <- c(rep(3, 25), rep(4, 25), rep(3, 25), rep(4, 25))
+  d <- data.table(x1 = x1,
+                  a1 = a1,
+                  x2 = x2,
+                  a2 = a2,
+                  y = y,
+                  p1 = p1,
+                  p2 = p2)
+  rm(x1, a1, x2, a2, y)
+
+  pd <- policy_data(
+    data = d,
+    action = c("a1", "a2"),
+    covariates = list(x = c("x1", "x2"),
+                      p = c("p1", "p2")),
+    utility = c("y")
+  )
+
+  ## his <- get_history(pd, stage = 1)
+  ## qfun <- fit_Q_function(history = his, Q = d$y, q_degen(var = "z"))
+  ## predict.Q_function(qfun, new_history = his)
+
+  p <- policy_def(function(p) p, name = "test", reuse = TRUE)
+
+  ref_pe <- mean(
+    d$x1 +
+    (d$a1 == d$p1) / 0.5 * (d$x2 - d$x1) +
+    (d$a1 == d$p1) / 0.5 * (d$a1 == d$p1) / 0.5 * (d$y - d$x2)
+  )
+
+  ref_IC <- d$x1 +
+    (d$a1 == d$p1) / 0.5 * (d$x2 - d$x1) +
+    (d$a1 == d$p1) / 0.5 * (d$a1 == d$p1) / 0.5 * (d$y - d$x2 ) -
+    ref_pe
+
+  ##
+  ## no cross-fitting
+  ##
+
+  pe <- policy_eval(
+    policy_data = pd,
+    policy = p,
+    q_models = list(q_degen(var = "x"), q_degen(var = "x")),
+    g_models = list(g_glm(~1), g_glm(~1))
+  )
+
+  expect_equal(
+    pe$name,
+    names(coef(pe))
+  )
+  expect_equal(
+    pe$name,
+    c("E[U(d)]: d=test")
+  )
+
+  expect_equal(
+    coef(pe) |> unname(),
+    ref_pe
+  )
+
+  expect_equal(
+    IC(pe),
+    matrix(ref_IC)
+  )
+})
+
+test_that("policy_eval with target 'value' has the correct outputs for the stochastic two-stage case and a single final utility outcome.", {
+
+  set.seed(1)
+  x1 <- runif(n = 1e2, min = -1, max = 1)
+  a1 <- c(rep(1, 50), rep(2, 50))
+  x2 <- runif(n = 1e2, min = -1, max = 1)
+  a2 <- c(rep(3, 50), rep(4, 50))
+  y <- a1 * x1 + a2 * x2 + runif(n = 1e2, min = -1, max = 1)
+  p1 <- c(rep(1, 25), rep(2, 25), rep(1, 25), rep(2, 25))
+  p2 <- c(rep(3, 25), rep(4, 25), rep(3, 25), rep(4, 25))
+  m <- rbinom(n = 1e2, size = 1, prob = 0.5) # stage 2 missing indicator
+  d <- data.table(x1 = x1,
+                  a1 = a1,
+                  x2 = x2,
+                  a2 = a2,
+                  y = y,
+                  p1 = p1,
+                  p2 = p2,
+                  m = m)
+  rm(x1, a1, x2, a2, y)
+
+  pd <- policy_data(
+    data = d,
+    action = c("a1", "a2"),
+    covariates = list(x = c("x1", "x2"),
+                      p = c("p1", "p2")),
+    utility = c("y")
+  )
+
+  gf <- fit_g_functions(pd, g_models = list(g_glm(~1), g_glm(~1)))
+
+  ld <- pd$stage_data
+  ld[stage == 2, m := m]
+  ld[, m := nafill(m, fill = 0)]
+  ld <- ld[m == 0, ]
+  ld[ , stage := 1:.N, by = id]
+  setkey(ld, id, stage)
+  ld[ , m := NULL]
+
+  pd <- policy_data(data = ld, type = "long")
+
+  p <- policy_def(function(p) p, name = "test", reuse = TRUE)
+
+  ref_pe <- mean(
+    d$x1 +
+    (d$a1 == d$p1) / 0.5 * (((d$m == 0) * d$x2 + (d$m == 1) * d$y) - d$x1) +
+    (d$m == 0) * (d$a1 == d$p1) / 0.5 * (d$a1 == d$p1) / 0.5 * (d$y - d$x2)
+  )
+
+  ref_IC <-  d$x1 +
+    (d$a1 == d$p1) / 0.5 * (((d$m == 0) * d$x2 + (d$m == 1) * d$y) - d$x1) +
+    (d$m == 0) * (d$a1 == d$p1) / 0.5 * (d$a1 == d$p1) / 0.5 * (d$y - d$x2) -
+    ref_pe
+
+  ##
+  ## no cross-fitting
+  ##
+
+  pe <- policy_eval(
+    policy_data = pd,
+    policy = p,
+    q_models = list(q_degen(var = "x"), q_degen(var = "x")),
+    g_functions = gf
+  )
+
+  expect_equal(
+    pe$name,
+    names(coef(pe))
+  )
+  expect_equal(
+    pe$name,
+    c("E[U(d)]: d=test")
+  )
+
+  expect_equal(
+    coef(pe) |> unname(),
+    ref_pe
+  )
+
+  expect_equal(
+    IC(pe),
+    matrix(ref_IC)
+  )
+
+})
+
+
 test_that("policy_eval() return estimates for multiple policies associated with multiple thresholds.", {
   z <- 1:1e2
   a <- c(rep(1, 50), rep(2, 50))
