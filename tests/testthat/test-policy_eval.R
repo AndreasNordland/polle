@@ -172,7 +172,7 @@ test_that("policy_eval checks inputs.", {
   )
 
   gfun <- fit_g_functions(pd, g_glm(), FALSE)
-  qfun <- fit_Q_functions(pd, q_models = q_glm(), policy_actions = p(pd))
+  qfun <- fit_Q_functions(pd, q_models = q_glm(), policy_actions = p(pd), m_function = NULL)
 
   ## g-functions
   expect_error(
@@ -737,6 +737,7 @@ test_that("policy_eval with target 'value' has the correct outputs for the fixed
     IC(pe),
     matrix(ref_IC)
   )
+
 })
 
 test_that("policy_eval with target 'value' has the correct outputs for the stochastic two-stage case and a single final utility outcome.", {
@@ -782,16 +783,18 @@ test_that("policy_eval with target 'value' has the correct outputs for the stoch
 
   p <- policy_def(function(p) p, name = "test", reuse = TRUE)
 
-  ref_pe <- mean(
-    d$x1 +
-    (d$a1 == d$p1) / 0.5 * (((d$m == 0) * d$x2 + (d$m == 1) * d$y) - d$x1) +
-    (d$m == 0) * (d$a1 == d$p1) / 0.5 * (d$a1 == d$p1) / 0.5 * (d$y - d$x2)
-  )
+  ref_pe <- mean(d$x1 +
+                 (d$a1 == d$p1) / 0.5 * (((d$m == 0) * d$x2 + (d$m == 1) * d$y) - d$x1) +
+                 (d$m == 0) * (d$a1 == d$p1) / 0.5 * (d$a2 == d$p2) / 0.5 * (d$y - d$x2))
 
-  ref_IC <-  d$x1 +
-    (d$a1 == d$p1) / 0.5 * (((d$m == 0) * d$x2 + (d$m == 1) * d$y) - d$x1) +
-    (d$m == 0) * (d$a1 == d$p1) / 0.5 * (d$a1 == d$p1) / 0.5 * (d$y - d$x2) -
-    ref_pe
+  ref_IC <-  (d$x1 +
+              (d$a1 == d$p1) / 0.5 * (((d$m == 0) * d$x2 + (d$m == 1) * d$y) - d$x1) +
+              (d$m == 0) * (d$a1 == d$p1) / 0.5 * (d$a2 == d$p2) / 0.5 * (d$y - d$x2) -
+              ref_pe)
+
+  ref_pe_or <- mean(d$x1)
+
+  ref_pe_ipw <- mean((d$a1 == d$p1) / 0.5 * (d$m == 0) * (d$a2 == d$p2) / 0.5 *  d$y)
 
   ##
   ## no cross-fitting
@@ -823,10 +826,63 @@ test_that("policy_eval with target 'value' has the correct outputs for the stoch
     matrix(ref_IC)
   )
 
+  expect_equal(
+    get_element(pe, "coef_or"),
+    ref_pe_or
+  )
+
+  expect_equal(
+    get_element(pe, "coef_ipw"),
+    ref_pe_ipw
+  )
+
+  ##
+  ## cross-fitting
+  ##
+
+  pe <- policy_eval(
+    policy_data = pd,
+    policy = p,
+    q_models = list(q_degen(var = "x"), q_degen(var = "x")),
+    g_functions = gf,
+    M = 2
+  )
+
+  expect_equal(
+    pe$name,
+    names(coef(pe))
+  )
+  expect_equal(
+    pe$name,
+    c("E[U(d)]: d=test")
+  )
+
+  expect_equal(
+    coef(pe) |> unname(),
+    ref_pe
+  )
+
+  expect_equal(
+    IC(pe),
+    matrix(ref_IC)
+  )
+
+  expect_equal(
+    get_element(pe, "coef_or"),
+    ref_pe_or
+  )
+
+  expect_equal(
+    get_element(pe, "coef_ipw"),
+    ref_pe_ipw
+  )
+
+
 })
 
 
 test_that("policy_eval() return estimates for multiple policies associated with multiple thresholds.", {
+
   z <- 1:1e2
   a <- c(rep(1, 50), rep(2, 50))
   y <- a * 2
@@ -1001,6 +1057,7 @@ test_that("policy_eval() return estimates for multiple policies associated with 
     coef(pe) |> unname(),
     ref_pe
   )
+
 })
 
 test_that("conditional.policy_eval agrees with targeted::cate", {

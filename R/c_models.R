@@ -71,3 +71,25 @@ predict.c_cox <- function(object, new_H, new_time, ...){
   surv <- as.vector(get_element(ch, "surv"))
   return(surv)
 }
+
+#' @export
+c_no_censoring <- function(){
+
+  c_no_censoring <- function(event, time, time2, H){
+    model <- list()
+    class(model) <- c("c_no_censoring")
+    return(model)
+  }
+
+  ## setting class:
+  c_no_censoring <- new_c_model(c_no_censoring)
+
+  return(c_no_censoring)
+}
+
+#' @export
+predict.c_no_censoring <- function(object, new_H, new_time, ...){
+  n <- nrow(new_H)
+  surv <- rep(1, times = n)
+  return(surv)
+}

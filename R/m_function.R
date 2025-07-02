@@ -28,7 +28,10 @@ fit_m_function <- function(policy_data,
     id <- get_id(policy_data)
 
     ## getting the history at stage K+1:
-    his <- get_history(policy_data, stage = K+1, full_history = full_history, type = "event")
+    his <- get_history(policy_data,
+                       stage = K+1,
+                       full_history = full_history,
+                       event_set = c(0,1,2))
     H <- get_H(his)[get_event(his) == 1, ]
     id_not_missing <- get_id(his)[get_event(his) == 1][["id"]]
 
@@ -70,7 +73,7 @@ predict.m_function <- function(object, new_policy_data, ...) {
   new_history <- get_history(new_policy_data,
                      full_history = full_history,
                      stage = K+1,
-                     type = "event")
+                     event_set = c(0,1,2))
 
 
   m_model <- getElement(object, "m_model")

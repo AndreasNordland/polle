@@ -17,6 +17,15 @@ fit_c_function <- function(history, c_model){
   time2 <- get_time2(history)
   H <- get_H(history)
 
+  ## checking if right-censoring occur
+  no_censoring <- all(event != 2)
+
+  ## overwriting the c-model if no censoring occur:
+  if (no_censoring == TRUE) {
+    c_model <- c_no_censoring()
+    c_model_class <- class(c_model)
+  }
+
   ## fitting the model:
   if (inherits(c_model, "g_model")) {
     A <- as.numeric(!(event == c(2)))
@@ -133,7 +142,7 @@ fit_c_functions <- function(policy_data, c_models, full_history = FALSE){
                       function(s) get_history(policy_data,
                                               stage = s,
                                               full_history = full_history,
-                                              type = "event"))
+                                              event_set = c(0,1,2)))
     c_functions <- mapply(history,
                           c_models,
                           FUN = function(h, cm) fit_c_function(history = h,
@@ -141,7 +150,10 @@ fit_c_functions <- function(policy_data, c_models, full_history = FALSE){
                           SIMPLIFY = FALSE)
     names(c_functions) <- paste("stage_", 1:(K+1), sep = "")
   } else{
-    history <- get_history(policy_data, stage = NULL, full_history = FALSE, type = "event")
+    history <- get_history(policy_data,
+                           stage = NULL,
+                           full_history = FALSE,
+                           event_set = c(0,1,2))
     c_functions <- list(all_stages = fit_c_function(history, c_models))
   }
 
@@ -160,7 +172,7 @@ predict.c_functions <- function(object, new_policy_data, ...){
     history <- lapply(1:(K+1), function(s) get_history(new_policy_data,
                                                        stage = s,
                                                        full_history = full_history,
-                                                       type = "event"))
+                                                       event_set = c(0,1,2)))
     values <- mapply(history,
                      object,
                      FUN = function(h, f) predict(f, h),
@@ -172,7 +184,7 @@ predict.c_functions <- function(object, new_policy_data, ...){
     history <- get_history(new_policy_data,
                            stage = NULL,
                            full_history = FALSE,
-                           type = "event")
+                           event_set = c(0,1,2))
     values <- predict(object[[1]], history)
   } else{
     stop("Provide either 1 or K+1 c-functions for evaluation.")

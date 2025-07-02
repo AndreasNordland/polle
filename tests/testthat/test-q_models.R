@@ -1,4 +1,5 @@
 test_that("fit_q_functions handles varying stage-action sets", {
+
   d <- sim_two_stage_multi_actions(n = 1e2)
   expect_error(
     pd <- policy_data(data = d,
@@ -9,12 +10,13 @@ test_that("fit_q_functions handles varying stage-action sets", {
                       utility = c("U_1", "U_2", "U_3")),
     NA
   )
+
   p <- policy_def(
     c("yes", "no")
   )
 
   expect_error(
-    qfit <- fit_Q_functions(pd, policy_actions = p(pd), q_models = list(q_glm(), q_glm()), full_history = FALSE),
+    qfit <- fit_Q_functions(pd, policy_actions = p(pd), q_models = list(q_glm(), q_glm()), full_history = FALSE, m_function = NULL),
     NA
   )
   expect_error(
@@ -137,7 +139,8 @@ test_that("q_sl can find user-defined learners",{
   expect_error(
     qfun <- polle:::fit_Q_functions(pd,
                                     p(pd),
-                                    q_sl(SL.library = "SL.test", env = env)),
+                                    q_sl(SL.library = "SL.test", env = env),
+                                    m_function = NULL),
     NA)
 
 })

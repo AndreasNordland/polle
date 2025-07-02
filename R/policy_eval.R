@@ -487,6 +487,12 @@ policy_eval_input_checks <- function(policy_data,
   } else {
     stop("type must be either 'dr', 'ipw' or  'or'.")
   }
+  cens_indicator <- get_element(policy_data, "cens_indicator")
+  terminal_indicator <- get_element(policy_data, "terminal_indicator")
+  if (any(cens_indicator[["indicator"]]) &&
+      any(terminal_indicator[stage <= get_K(policy_data),][["indicator"]])) {
+    stop("policy_eval is not implemented for both right-censoring and a stochastic number of action stages.")
+  }
 
   ## editing name:
   if (is.null(name)) {
@@ -539,6 +545,8 @@ policy_eval_object <- function(
     q_values = NULL,
     c_functions = NULL,
     c_values = NULL,
+    m_function = NULL,
+    m_values = NULL,
     Z = NULL,
     subgroup_indicator = NULL,
     min_subgroup_size = NULL,
@@ -624,13 +632,13 @@ policy_eval_type <- function(target,
   ## getting the g-function values (for events 0):
   g_values <- NULL
   if (!is.null(g_functions)) {
-    g_values <- predict(g_functions, valid_policy_data, type = "action")
+    g_values <- predict(g_functions, valid_policy_data, event_set = c(0))
   }
 
   ## getting the Q-function values (for events 0,2):
   q_values <- NULL
   if (!is.null(q_functions)) {
-    q_values <- predict(q_functions, valid_policy_data, type = "event")
+    q_values <- predict(q_functions, valid_policy_data, event_set = c(0,2))
   }
 
   ## getting the c-function values (for events 0,2):
@@ -726,6 +734,7 @@ policy_eval_type <- function(target,
           target = target,
           type = type,
           K = K,
+          id = id,
           action_set = action_set,
           actions = actions,
           policy_actions = policy_actions,
@@ -792,6 +801,10 @@ policy_eval_type <- function(target,
     g_values = g_values,
     q_functions = q_functions,
     q_values = q_values,
+    c_functions = c_functions,
+    c_values = c_values,
+    m_function = m_function,
+    m_values = m_values,
     Z = Z,
     subgroup_indicator = subgroup_indicator,
     min_subgroup_size = min_subgroup_size,
@@ -1083,6 +1096,29 @@ policy_eval_cross <- function(args,
   } else {
     q_values <- NULL
   }
+  ## collecting the cross-fitted c- and m-values (sorted):
+  c_values <- lapply(
+    cross_fits,
+    function(x) get_element(x, "c_values", check_name = FALSE)
+  )
+  null_c_values <- unlist(lapply(c_values, is.null))
+  if (!all(null_c_values)) {
+    c_values <- data.table::rbindlist(c_values)
+    setkey(c_values, "id", "stage")
+  } else {
+    c_values <- NULL
+  }
+  m_values <- lapply(
+    cross_fits,
+    function(x) get_element(x, "m_values", check_name = FALSE)
+  )
+  null_m_values <- unlist(lapply(m_values, is.null))
+  if (!all(null_m_values)) {
+    m_values <- data.table::rbindlist(m_values)
+    setkey(m_values, "id", "stage")
+  } else {
+    m_values <- NULL
+  }
 
   ## sorting id:
   id <- id[order(id)]
@@ -1098,6 +1134,8 @@ policy_eval_cross <- function(args,
     policy_actions = policy_actions,
     g_values = g_values,
     q_values = q_values,
+    c_values = c_values,
+    m_values = m_values,
     cross_fits = cross_fits,
     folds = folds,
     name = name,

@@ -429,8 +429,13 @@ test_that("policy_learn with type = 'drql' saves cross-fitted models.", {
 })
 
 
-test_that("policy_learn with type drql handles multiple stages with varying stage action sets",{
+test_that("policy_learn with type drql handles multiple stages with varying stage action sets", {
+
   d <- sim_multi_stage(300, seed = 1)
+  ## changing administrative right-censoring events to terminal events:
+  d$stage_data[event == 2, U := 10]
+  d$stage_data[event == 2, event := 1]
+
   # constructing policy_data object:
   pd <- policy_data(data = d$stage_data,
                     baseline_data = d$baseline_data,

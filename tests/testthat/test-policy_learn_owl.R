@@ -155,6 +155,10 @@ test_that("policy_learn with type owl runs as intended", {
 
 test_that("input to policy_learn with type owl handles incorrect input in a multi-stage setup.",{
   d <- sim_multi_stage(200, seed = 1)
+   ## changing administrative right-censoring events to terminal events:
+  d$stage_data[event == 2, U := 10]
+  d$stage_data[event == 2, event := 1]
+
   # constructing policy_data object:
   pd <- policy_data(data = d$stage_data,
                     baseline_data = d$baseline_data,

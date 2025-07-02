@@ -74,7 +74,7 @@ NULL
 #' # getting the fitted Q-function values:
 #' head(predict(get_q_functions(pe), pd))
 #' @export
-predict.nuisance_functions <- function(object, new_policy_data, type = "action", ...){
+predict.nuisance_functions <- function(object, new_policy_data, event_set = c(0)){
   K <- get_K(new_policy_data)
   action_set <- get_action_set(new_policy_data)
   full_history <- attr(object, "full_history")
@@ -83,7 +83,7 @@ predict.nuisance_functions <- function(object, new_policy_data, type = "action",
     history <- lapply(1:K, function(s) get_history(new_policy_data,
                                                    stage = s,
                                                    full_history = full_history,
-                                                   type = type))
+                                                   event_set = event_set))
     values <- mapply(history,
                      object,
                      FUN = function(h, f) predict(f, h),
@@ -92,7 +92,10 @@ predict.nuisance_functions <- function(object, new_policy_data, type = "action",
     setkeyv(values, c("id", "stage"))
   } else if (length(object) == 1){
     ## state history across all stages:
-    history <- get_history(new_policy_data, stage = NULL, full_history = FALSE, type = type)
+    history <- get_history(new_policy_data,
+                           stage = NULL,
+                           full_history = FALSE,
+                           event_set = event_set)
     values <- predict(object[[1]], history)
   } else{
     stop("Provide either 1 or K nuisance functions for evaluation.")

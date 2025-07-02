@@ -189,7 +189,7 @@ policy_def <- function(policy_functions, full_history = FALSE, reuse = FALSE, na
       function(k) get_history(policy_data,
                               stage = k,
                               full_history = full_history,
-                              type = "event") # gets the action of right-censored/missing events as well
+                              event_set = c(0,2)) # action and right-censoring events
     )
     policy_actions <- mapply(
       function(sp, sh) sp(sh),
@@ -376,7 +376,9 @@ policy_g_functions <- function(g_functions, name = "pgf"){
   policy <- function(policy_data){
     action_set <- get_action_set(policy_data)
     g_cols <- paste("g_", action_set, sep = "")
-    g_values <- predict.nuisance_functions(g_functions, policy_data, type = "event")
+    g_values <- predict.nuisance_functions(g_functions,
+                                           policy_data,
+                                           event_set = c(0,2))
 
     dd <- apply(
       g_values[ , g_cols, with = FALSE],

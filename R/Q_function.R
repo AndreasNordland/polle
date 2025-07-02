@@ -123,7 +123,7 @@ q_step <- function(policy_data, k, full_history, Q, q_models) {
 
   stage <- NULL
   id <- get_id(policy_data)
-  id_k <- get_id_stage(policy_data, type = "action")[stage == k]$id
+  id_k <- get_id_stage(policy_data)[stage == k][["id"]]
   idx_k <- (id %in% id_k)
   rm(stage)
 
@@ -136,15 +136,14 @@ q_step <- function(policy_data, k, full_history, Q, q_models) {
   ## getting the Q-function history for each action event:
   q_history <- get_history(policy_data,
                            stage = k,
-                           full_history = full_history,
-                           type = "action")
+                           full_history = full_history)
   ## fitting the Q-function:
   q_function <- fit_Q_function(q_history, Q = Q[idx_k], q_model = q_model)
   ## getting the Q-function values for each action and right-censoring event:
   q_history <- get_history(policy_data,
                            stage = k,
                            full_history = full_history,
-                           type = "event")
+                           event_set = c(0,2))
   q_values <- predict(q_function, new_history = q_history)
   ## getting the ID-index for each action and right-censoring event:
   idx_k <- (id %in% q_values[["id"]])
@@ -165,10 +164,9 @@ q_step_cf <- function(folds,
                       q_models,
                       save_cross_fit_models,
                       future_args) {
-  browser()
   stage <- NULL
   id <- get_id(policy_data)
-  id_k <- get_id_stage(policy_data)[stage == k]$id
+  id_k <- get_id_stage(policy_data)[stage == k][["id"]]
   idx_k <- (id %in% id_k)
   rm(stage)
   K <- get_K(policy_data)
@@ -236,6 +234,7 @@ q_step_cf <- function(folds,
 #' @param policy_actions Policy actions, see [policy_def].
 #' @param q_models Outcome regression models/Q-models created by [q_glm()], [q_rf()], [q_sl()] or similar functions.
 #' @param full_history If TRUE, the full history is used to fit each Q-model. If FALSE, the single stage/"Markov type" history is used to fit each Q-model.
+#' @param m_function Function of class m_function to impute missing outcomes.
 #' @examples
 #' library("polle")
 #' ### Simulating two-stage policy data
@@ -265,7 +264,7 @@ fit_Q_functions <- function(policy_data,
                             policy_actions,
                             q_models,
                             full_history = FALSE,
-                            m_function) {
+                            m_function = NULL) {
   K <- get_K(policy_data)
   n <- get_n(policy_data)
   action_set <- get_action_set(policy_data)

@@ -1,5 +1,5 @@
 fit_functions <- function(policy_data,
-                          type = type,
+                          type,
                           policy = NULL, policy_learn = NULL,
                           g_models = NULL, g_functions = NULL, g_full_history,
                           q_models = NULL, q_functions = NULL, q_full_history,

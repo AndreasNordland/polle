@@ -148,6 +148,7 @@ test_that("fit_g_function_cf saves the cross-fitted models",{
 })
 
 test_that("g_models checks formula input", {
+
   d <- sim_two_stage(1e2, seed = 1)
   pd <- policy_data(d,
     action = c("A_1", "A_2"),
@@ -173,29 +174,34 @@ test_that("g_models checks formula input", {
     g_models = g_glm(formula = A ~ X)
   ), "object 'X' not found when calling 'g_glm' with formula:
 AA ~ X")
+
   expect_error(policy_eval(
     policy_data = pd,
     policy = p_dynamic,
     g_models = g_sl(formula = a ~ X)
   ), "object 'X' not found when calling model.frame with formula:
 a ~ X")
+
   expect_error(policy_eval(
     policy_data = pd,
     policy = p_dynamic,
     g_models = g_rf(formula = ~X)
   ), "object 'X' not found when calling model.frame with formula:
 ~X")
+
   expect_error(policy_eval(
     policy_data = pd,
     policy = p_dynamic,
     g_models = g_glmnet(formula = ~X)
   ), "object 'X' not found when calling model.frame with formula:
 AA ~ X")
+
   expect_error(policy_eval(
     policy_data = pd,
     policy = p_dynamic,
     g_models = g_empir(formula = ~X)
   ), "The g-model formula ~X is invalid.")
+
 })
 
 

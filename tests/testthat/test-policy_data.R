@@ -740,6 +740,7 @@ test_that("the action set is preserved when subsetting",{
 # partial -----------------------------------------------------------------
 
 test_that("partial checks input",{
+
   d <- sim_multi_stage(5e2, seed = 1)
   # constructing policy_data object:
   pd <- policy_data(data = d$stage_data,

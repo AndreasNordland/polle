@@ -134,7 +134,7 @@ new_policy_data <- function(stage_data,
     mes <- paste("'",mes, "'must be numeric.", sep = " ")
     stop(mes)
   }
-  if(any(is.na(stage_data[event %in% c(0,2), deterministic_reward_names, with = FALSE])))
+  if(any(is.na(stage_data[stage <= K][event %in% c(0,2), deterministic_reward_names, with = FALSE])))
     stop("The deterministic reward variables have missing values.")
 
   ## coercing variables of type factor to type character in stage_data:
@@ -188,6 +188,9 @@ new_policy_data <- function(stage_data,
   ## creating a right-censoring indicator for each stage (K+1):
   cens_indicator <- stage_data[, .(indicator = any(event == 2)), by = c("stage")]
 
+  ## creating a terminal event indicator for each stage (K+1):
+  terminal_indicator <- stage_data[, .(indicator = any(event == 1)), by = c("stage")]
+
   object <- list(
     stage_data = stage_data,
     baseline_data = baseline_data,
@@ -202,7 +205,8 @@ new_policy_data <- function(stage_data,
       n = n,
       K = K
     ),
-    cens_indicator = cens_indicator
+    cens_indicator = cens_indicator,
+    terminal_indicator = terminal_indicator
   )
 
   class(object) <- "policy_data"

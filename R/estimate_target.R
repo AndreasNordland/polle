@@ -12,20 +12,10 @@ estimate_target <- function(target = "value",
                             m_values,
                             utility,
                             min_subgroup_size) {
-  args <- list(
-    K = K,
-    id,
-    action_set = action_set,
-    actions = actions,
-    policy_actions = policy_actions,
-    events,
-    g_values = g_values,
-    q_values = q_values,
-    c_values = c_values,
-    m_values = m_values,
-    utility = utility,
-    min_subgroup_size = min_subgroup_size
-  )
+
+  args <- as.list(environment())
+  args[["target"]] <- NULL
+  args[["type"]] <- NULL
 
   if (target == "value") {
     if (type == "dr") {
@@ -51,11 +41,15 @@ estimate_target <- function(target = "value",
 }
 
 dr_subgroup <- function(K,
+                        id,
                         action_set,
                         actions,
                         policy_actions,
+                        events,
                         g_values,
                         q_values,
+                        c_values,
+                        m_values,
                         utility,
                         min_subgroup_size) {
   if (K != 1) {
@@ -71,6 +65,12 @@ dr_subgroup <- function(K,
       "implemented for more than two actions."
     )
     stop(mes)
+  }
+  if (!is.null(c_values)) {
+    stop("subgroup evaluation not implemented for censored outcomes.")
+  }
+  if (!is.null(m_values)) {
+    stop("subgroup evaluation not implemented for censored outcomes.")
   }
 
   ##
@@ -164,8 +164,35 @@ dr_value <- function(K,
   ## (n) vector indicating right-censored outcomes:
   censored_outcomes <- is.na(U)
 
+  ## (n X K+1) matrix with entries Delta_k:
+  D <- dcast(events, id ~ stage, value.var = "event")
+  D <- D[ , -c("id"), with = FALSE]
+  D <- (D != 2) * 1.0
+  ## fill NA values with 0:
+  ## (occur under right-censoring or a stochastic number of stages)
+  D <- apply(
+    D,
+    MARGIN = 2,
+    function(v) {
+      v[is.na(v)] <- 0
+      return(v)
+    }
+  )
+
+  ## (n X K+1) matrix with entries C_k(H_k):
+  if (!is.null(c_values)){
+    surv_time <- dcast(c_values, id ~ stage, value.var = "surv_time")[, -c("id"), with = FALSE]
+    surv_time2 <- dcast(c_values, id ~ stage, value.var = "surv_time2")[, -c("id"), with = FALSE]
+    C <- surv_time2 / surv_time
+    C <- as.matrix(C)
+    ## fill 1 whenever D == 0:
+    C[D == 0] <- 1
+  } else {
+    C <- matrix(nrow = nrow(id), ncol = K+1, 1)
+  }
+
   ## (n X K+1) matrix with entries I(d_k(H_k) = A_k)
-  ## I(d_{K+1}(H_{K+1}) = A_{K+1}) = 1
+  ## I(d_{K+1}(H_{K+1}) = A_{K+1}) = 1:
   wide_actions <- dcast(actions, id ~ stage, value.var = "A")
   wide_actions <- merge(id, wide_actions, all.x = TRUE)
   IIA <- wide_actions[, -c("id"), with = FALSE]
@@ -180,9 +207,11 @@ dr_value <- function(K,
   II <- (IIA == IId)
   II <- cbind(II, 1)
   rm(IIA, IId)
+  ## fill 0 whenever D == 0:
+  II[D == 0] <- 0
 
-  ## (n X K+1) matrix with entries g_k(d_k(H_k), H_k)
-  ## NA for right-censoring events (event == 2)
+  ## (n X K+1) matrix with entries g_k(d_k(H_k), H_k).
+  ## fill 1 for right-censoring events (event == 2)
   ## g_{K+1} = 1:
   g_values <- merge(policy_actions, g_values, all.x = TRUE)
   g_values[ , d := NULL]
@@ -197,8 +226,10 @@ dr_value <- function(K,
   G <- G[, -c("id"), with = FALSE]
   G <- as.matrix(G)
   G <- cbind(G, 1)
+  ## fill 1 whenever D == 0:
+  G[D == 0] <- 1
 
-  ## (n X K) matrix with entries Q_k(H_{k,i}, d_k(H_{k,i}))
+  ## (n X K) matrix with entries Q_k(H_{k,i}, d_k(H_{k,i})):
   q_d_values <- get_a_values(
     a = policy_actions$d,
     action_set = action_set,
@@ -223,91 +254,45 @@ dr_value <- function(K,
     M <- M[, -c("id"), with = FALSE]
     Q <- cbind(Q, M)
   }
-
-  ## (n X 1) vector with values Q_{K+2} = U
+  ## (n X 1) vector with values Q_{K+2} = U:
   Q <- cbind(Q, U)
-
-  ## Q <- apply(
-  ##   Q,
-  ##   MARGIN = 2,
-  ##   function(v) {
-  ##     v[is.na(v)] <- U[is.na(v)]
-  ##     return(v)
-  ##   }
-  ## )
-
-  ## (n X K+1) matrix with entries Delta_k
-  D <- dcast(events, id ~ stage, value.var = "event")
-  D <- D[ , -c("id"), with = FALSE]
-  D <- (D != 2) * 1.0
-  D <- apply(
-    D,
+  ## fill Q NA values with the utility outcome:
+  Q <- apply(
+    Q,
     MARGIN = 2,
     function(v) {
-      v[is.na(v)] <- 0
+      v[is.na(v)] <- U[is.na(v)]
       return(v)
     }
   )
-
-  ## (n X K+1) matrix with entries C_k(H_k):
-  if (!is.null(c_values)){
-    surv_time <- dcast(c_values, id ~ stage, value.var = "surv_time")[, -c("id"), with = FALSE]
-    surv_time2 <- dcast(c_values, id ~ stage, value.var = "surv_time2")[, -c("id"), with = FALSE]
-    C <- surv_time2 / surv_time
-    C <- as.matrix(C)
-    C <- apply(
-      C,
-      MARGIN = 2,
-      function(v) {
-        v[is.na(v)] <- 1
-        return(v)
-      }
-    )
-  } else {
-    C <- matrix(nrow = nrow(id), ncol = K+1, 1)
-  }
-
-  ## right-censoring/monotone coarsening occurence indicator:
-  ## c_indicator <- !is.null(c_values)
-  ## if (c_indicator == TRUE){
-  ##   ## (n) vector with inverse probability of censoring weights:
-  ##   c_surv_time <- dcast(c_values, id ~ stage, value.var = "surv_time")[, -c("id"), with = FALSE]
-  ##   c_surv_time2 <- dcast(c_values, id ~ stage, value.var = "surv_time2")[, -c("id"), with = FALSE]
-  ##   cc <- c_surv_time2 / c_surv_time
-  ##   cc <- as.matrix(cc)
-  ##   c_weight <- (missing == FALSE) * ipw_weight(D = (cc * 0 + 1), G = cc)
-  ## }
+  ## fill 0 whenever D == 0:
+  Q[, -1][D == 0] <- 0
 
   ## calculating the complete case doubly robust score
   Zd <- Q[, 1]
   for (k in 1:(K+1)) {
-    Zd <- Zd + ipw_weight(II[, 1:k], G = G[, 1:k]) * (Q[, k + 1] - Q[, k])
+    Zd <- Zd + ipw_weight(D[, 1:k], C[, 1:k]) * ipw_weight(II[, 1:k], G[, 1:k]) * (Q[, k + 1] - Q[, k])
   }
-  ## weighting by the probability of not being censored/coarsened/missing:
-  ## Zd <- c_weight * Zd
-  ## Zd[missing == TRUE] <- 0
 
   ## calculating the IPW and OR scores:
-  ## Zd_ipw <- c_weight * ipw_weight(II, G = G) * U
-  ## Zd_ipw[missing == TRUE] <- 0
-  ## Zd_or <- c_weight * Q[, 1]
-  ## Zd_or[missing == TRUE] <- 0
+  Zd_ipw <- ipw_weight(D[, 1:k], C[, 1:k]) * ipw_weight(II, G = G) * ifelse(is.na(U), 0, U)
+  Zd_or <- Q[, 1]
 
   ##
   ## output checks
   ##
 
   stopifnot(
-    !all(is.na(Zd))#,
-    ## !all(is.na(Zd_ipw)),
-    ## !all(is.na(Zd_or))
+    all(!is.na(Zd)),
+    all(!is.na(Zd_ipw)),
+    all(!is.na(Zd_or))
   )
 
   out <- list(
     coef = mean(Zd),
-    IC = Zd - mean(Zd)#,
-    ## coef_ipw = mean(Zd_ipw),
-    ## coef_or = mean(Zd_or)
+    IC = Zd - mean(Zd),
+    coef_ipw = mean(Zd_ipw),
+    coef_or = mean(Zd_or)
   )
 
   return(out)

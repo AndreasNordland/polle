@@ -67,9 +67,9 @@ test_that("policy_data checks checks time and time2 input.", {
     Z = c("A", NA, "A", "B", NA),
     L = c(1, 2, 2, 1, 3),
     timetest = c(1, 2, 0.5, 1, 1.5),
-    U = c(0, 10, NA, 0, NA),
-    U_A0 = c(0,0,NA,0,NA),
-    U_A1 = c(0,0,NA,0,NA)
+    U = c(0, 10, 0, 0, NA),
+    U_A0 = c(0,0,0,0,NA),
+    U_A1 = c(0,0,0,0,NA)
   )
   setkey(ld, id, stage)
   setindex(ld, event)
@@ -100,9 +100,9 @@ test_that("policy_data checks checks time and time2 input.", {
     Z = c("A", NA, "A", "B", NA),
     L = c(1, 2, 2, 1, 3),
     time = c(1, 2, 0.5, NA, 1.5),
-    U = c(0, 10, NA, 0, NA),
-    U_A0 = c(0,0,NA,0,NA),
-    U_A1 = c(0,0,NA,0,NA)
+    U = c(0, 10,0, 0, NA),
+    U_A0 = c(0,0,0,0,NA),
+    U_A1 = c(0,0,0,0,NA)
   )
   setkey(ld, id, stage)
   setindex(ld, event)
@@ -125,9 +125,9 @@ test_that("policy_data checks checks time and time2 input.", {
     L = c(1, 2, 2, 1, 3),
     time = c(1, 2, 0.5, 1, 1.5),
     time2 = c(2, 2.2, 1, NA, 2),
-    U = c(0, 10, NA, 0, NA),
-    U_A0 = c(0,0,NA,0,NA),
-    U_A1 = c(0,0,NA,0,NA)
+    U = c(0, 10, 0, 0, NA),
+    U_A0 = c(0,0,0,0,NA),
+    U_A1 = c(0,0,0,0,NA)
   )
   setkey(ld, id, stage)
   setindex(ld, event)
@@ -151,9 +151,9 @@ test_that("policy_data checks checks time and time2 input.", {
     L = c(1, 2, 2, 1, 3),
     time = c(1, 2, 0.5, 1, 1.5),
     time2 = c(2, 2.2, 1, 0.8, 2),
-    U = c(0, 10, NA, 0, NA),
-    U_A0 = c(0,0,NA,0,NA),
-    U_A1 = c(0,0,NA,0,NA)
+    U = c(0, 10, 0, 0, NA),
+    U_A0 = c(0,0,0,0,NA),
+    U_A1 = c(0,0,0,0,NA)
   )
   setkey(ld, id, stage)
   setindex(ld, event)
@@ -185,9 +185,9 @@ test_that("policy_data formats right censored long data correctly in the single 
     B = c("gr1","gr1", "gr2", "gr3", "gr3"),
     Z = c("A", NA, "A", "B", NA),
     L = c(1, 2, 2, 1, 3),
-    U = c(0, 10, NA, 0, NA),
-    U_A0 = c(0,0,NA,0,NA),
-    U_A1 = c(0,0,NA,0,NA)
+    U = c(0, 10, 0, 0, NA),
+    U_A0 = c(0,0,0,0,NA),
+    U_A1 = c(0,0,0,0,NA)
   )
   setkey(ld, id, stage)
   setindex(ld, event)
@@ -225,9 +225,9 @@ test_that("a policy_data object prints as expected under right censoring occur."
     Z = c("A", NA, "A", "B", NA, "B", NA),
     L = c(1, 2, 2, 1, 3, 3,4),
     time = c(1, 2, 0.5, 1, 1.5, 1, 1.2),
-    U = c(0, 10, NA, 0, NA, 0, NA),
-    U_A0 = c(0,0,NA,0,NA, 0, NA),
-    U_A1 = c(0,0,NA,0,NA, 0, NA)
+    U = c(0, 10, 0, 0, NA, 0, NA),
+    U_A0 = c(0,0,0,0,NA, 0, NA),
+    U_A1 = c(0,0,0,0,NA, 0, NA)
   )
   setkey(ld, id, stage)
   setindex(ld, event)

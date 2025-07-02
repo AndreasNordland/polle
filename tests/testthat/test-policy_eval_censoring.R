@@ -86,79 +86,217 @@ sim_two_stage_right_cens <- function(n = 1e4,
   return(ld)
 }
 
-test_that("policy_eval return the expected outcome for a two-stage discrete censoring model and a final utility outcome:", {
+test_that("policy_eval with target 'value' has the expected output for the fixed two-stage case under right-censoring a single final utility outcome.", {
 
   set.seed(1)
-  ld <- sim_two_stage_right_cens(n = 500)
-  ld[ , absL := abs(L)]
+  x1 <- runif(n = 1e2, min = -1, max = 1)
+  a1 <- c(rep(1, 50), rep(2, 50))
+  x2 <- runif(n = 1e2, min = -1, max = 1)
+  a2 <- c(rep(3, 50), rep(4, 50))
+  x3 <- runif(n = 1e2, min = -1, max = 1)
+  y <- a1 * x1 + a2 * x2 + runif(n = 1e2, min = -1, max = 1)
+  p1 <- c(rep(1, 25), rep(2, 25), rep(1, 25), rep(2, 25))
+  p2 <- c(rep(3, 25), rep(4, 25), rep(3, 25), rep(4, 25))
+  delta1 <- rbinom(n = 1e2, size = 1, prob = 0.8) # stage 1 non-missing indicator
+  delta2 <- rbinom(n = 1e2, size = 1, prob = 0.8) # stage 2 non-missing indicator
+  delta3 <- rbinom(n = 1e2, size = 1, prob = 0.8) # stage 3 non-missing indicator
+  d <- data.table(x1 = x1,
+                  a1 = a1,
+                  x2 = x2,
+                  a2 = a2,
+                  x3 = x3,
+                  y = y,
+                  p1 = p1,
+                  p2 = p2,
+                  delta1 = delta1,
+                  delta2 = delta2,
+                  delta3 = delta3)
+
+
+  pd <- policy_data(
+    data = d,
+    action = c("a1", "a2"),
+    covariates = list(x = c("x1", "x2"),
+                      p = c("p1", "p2")),
+    utility = c("y")
+  )
+
+  gf <- fit_g_functions(pd, g_models = list(g_glm(~1), g_glm(~1)))
+
+  ld <- pd$stage_data
+  ld[stage ==3, x := x3]
+
+  ld[stage == 1, delta:= delta1]
+  ld[stage == 2, delta:= delta2]
+  ld[stage == 3, delta:= delta3]
+  ld[ , delta := cumprod(delta), by = id]
+  ld[ , tmp := cumsum(delta == 0), by = id]
+  ld <- ld[tmp %in% c(0,1)]
+  ld[ , tmp := NULL]
+  ld[delta == 0, event := 2]
+  ld[ , delta := NULL]
+  ld[event == 2 & stage == 3, U := NA]
+  ld[event == 2, A := NA]
+
   pd <- policy_data(data = ld, type = "long")
+
+  ## policy:
+  p <- policy_def(function(p) p, name = "test", reuse = TRUE)
+
+  ## g-functions:
+  gf <- fit_g_functions(policy_data = pd,
+                  g_models = list(g_glm(~1), g_glm(~1)))
+  tmp <- predict(gf, pd)
+
+  g1 <- ld[stage == 1 & event == 0, mean(A == "1")]
+  g2 <- ld[stage == 1 & event == 0, mean(A == "2")]
+  g3 <- ld[stage == 2 & event == 0, mean(A == "3")]
+  g4 <- ld[stage == 2 & event == 0, mean(A == "4")]
+  expect_equal(
+    c(g1, g2, g3, g4),
+    apply(tmp[, 3:6, with = FALSE], 2, function(x) max(unique(x))) |> unname()
+  )
+  rm(tmp)
+
+  ## c-functions:
+  cf <- fit_c_functions(policy_data = pd,
+                        c_models = g_glm(~1))
+  tmp <- predict(cf, pd)
+  c1 <- 1-ld[, list(mean(event == 2))][[1]]
+  expect_equal(
+    unique(tmp$surv_time),
+    1
+  )
+  expect_equal(
+    tmp$surv_time2 |> unique(),
+    c1
+  )
+
+  theta <- d$x1 +
+    (d$delta1 == 1) / c1 * (d$a1 == d$p1) / (g1 * (d$a1 == "1") + g2 * (d$a1 == "2")) * (d$x2 - d$x1) +
+    (d$delta1 == 1) / c1 * (d$a1 == d$p1) / (g1 * (d$a1 == "1") + g2 * (d$a1 == "2")) *
+    (d$delta2 == 1) / c1 * (d$a2 == d$p2) / (g3 * (d$a2 == "3") + g4 * (d$a2 == "4")) * (d$x3 - d$x2) +
+    (d$delta1 == 1) / c1 * (d$a1 == d$p1) / (g1 * (d$a1 == "1") + g2 * (d$a1 == "2")) *
+    (d$delta2 == 1) / c1 * (d$a2 == d$p2) / (g3 * (d$a2 == "3") + g4 * (d$a2 == "4")) *
+    (d$delta3 == 1) / c1 * (d$y - d$x3)
+
+  ref_pe <- mean(theta)
+  ref_IC <-  theta - ref_pe
+
+  ref_pe_or <- mean(d$x1)
+
+  ref_pe_ipw <- mean((d$a1 == d$p1) / 0.5 * (d$m == 0) * (d$a2 == d$p2) / 0.5 *  d$y)
+
+  ##
+  ## no cross-fitting
+  ##
 
   pe <- policy_eval(
     policy_data = pd,
-    policy = policy_def(1, reuse = TRUE),
-    m_model = q_glm(~ absL),
-    m_full_history = FALSE,
-    c_models = g_glm(~ abs(L))
+    policy = p,
+    q_models = list(q_degen(var = "x"), q_degen(var = "x")),
+    m_model = q_degen(var = "x"),
+    g_functions = gf,
+    c_functions = cf
+  )
+
+  expect_equal(
+    pe$name,
+    names(coef(pe))
+  )
+  expect_equal(
+    pe$name,
+    c("E[U(d)]: d=test")
+  )
+
+  expect_equal(
+    coef(pe) |> unname(),
+    ref_pe
+  )
+
+  expect_equal(
+    IC(pe),
+    matrix(ref_IC)
+  )
+
+  ##
+  ## cross-fitting
+  ##
+
+  pe <- policy_eval(
+    policy_data = pd,
+    policy = p,
+    q_models = list(q_degen(var = "x"), q_degen(var = "x")),
+    m_model = q_degen(var = "x"),
+    g_functions = gf,
+    c_functions = cf,
+    M = 2
+  )
+
+  expect_equal(
+    pe$name,
+    names(coef(pe))
+  )
+  expect_equal(
+    pe$name,
+    c("E[U(d)]: d=test")
+  )
+
+  expect_equal(
+    coef(pe) |> unname(),
+    ref_pe
+  )
+
+  expect_equal(
+    IC(pe),
+    matrix(ref_IC)
   )
 
 })
 
-
-test_that("policy_eval returns the expected output when using c-models.", {
+test_that("policy_eval returns the expected c_functions output when using c-models.", {
 
   set.seed(1)
   ld <- sim_single_stage_right_cens(n = 5e2, type = "interval")
   pd <- policy_data(data = ld, type = "long", action = "A", time = "time", time2 = "time2")
 
   ## single c-model and m-model:
-  expect_error(
-    pe <- policy_eval(
-      policy_data = pd,
-      policy = policy_def(1),
-      m_model = q_glm(~.),
-      m_full_history = FALSE,
-      c_models = c_cox(formula = ~ Z, time = "time", time_2 = "time_2")
-      ),
-    NA
+
+  pe <- policy_eval(
+    policy_data = pd,
+    policy = policy_def(1),
+    m_model = q_glm(~.),
+    m_full_history = FALSE,
+    c_models = c_cox(formula = ~ Z, time = "time", time_2 = "time_2")
   )
 
+  library(mets)
   ref_model <- phreg(Surv(time = time, time2 = time2, event = (event == 2)) ~ Z, data = ld)
 
   expect_equal(
     coef(ref_model),
-    coef(fcf$all_stages$c_model$model)
+    coef(pe$c_functions$all_stages$c_model$model)
   )
 
 })
 
-test_that("get_utility returns NA for right-censored observations", {
+test_that("policy_eval returns error when right-censoring occur for a stochastic number of stages", {
 
   set.seed(1)
-  ld <- sim_single_stage_right_cens(n = 5e2, type = "interval")
-  pd <- policy_data(data = ld, type = "long", action = "A", time = "time", time2 = "time2")
+  ld <- sim_two_stage_right_cens(n = 1e2)
+  ld <- ld[-2, ]
+  ld[, stage := 1:.N, by = list(id)]
 
-  expect_equal(
-    ld[ , list(na = any(event == 2)), by = id][["na"]],
-    is.na(get_utility(pd)[["U"]])
-  )
-
-})
-
-test_that("policy_learns does not run with missing outcomes.", {
-
-  set.seed(1)
-  ld <- sim_single_stage_right_cens(n = 5e2, type = "interval")
   pd <- policy_data(data = ld, type = "long", action = "A", time = "time", time2 = "time2")
 
   expect_error(
-    pe <- policy_eval(
+    policy_eval(
       policy_data = pd,
-      policy_learn = policy_learn(),
-      m_model = q_glm(~.),
+      policy = policy_def(1, reuse = TRUE),
+      m_model = q_glm(~1),
       m_full_history = FALSE,
-      c_models = c_cox(formula = ~ Z, time = "time", time_2 = "time_2"),
-      ),
-    "policy learning not implemented under right-censoring/missing outcomes."
+      c_models = g_glm(~1)
+    ),
+    "policy_eval is not implemented for both right-censoring and a stochastic number of action stages."
   )
-
 })

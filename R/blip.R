@@ -137,7 +137,7 @@ blip <- function(policy_data,
     folds <- NULL
   }
 
-  # (cross-)fitting the g-functions:
+  ## (cross-)fitting the g-functions
   valid_ids <- NULL
   g_functions_cf <- NULL
   if (!is.null(folds) && cross_fit_g_models == TRUE) {
@@ -156,9 +156,9 @@ blip <- function(policy_data,
   } else {
     if (is.null(g_functions)) {
       g_functions <- fit_g_functions(policy_data,
-        g_models = g_models,
-        full_history = g_full_history
-      )
+                                     g_models = g_models,
+                                     full_history = g_full_history
+                                     )
     }
     g_values <- predict(g_functions, policy_data)
   }

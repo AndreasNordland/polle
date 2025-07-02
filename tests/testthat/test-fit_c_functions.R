@@ -27,9 +27,9 @@ sim_single_stage_right_cens <- function(n = 2e3, zeta = c(0.7, 0.2), type = "rig
 
   ld[delta == FALSE , event := 2]
   ld[delta == FALSE, A := NA]
-  ld[delta == FALSE, U := NA]
-  ld[delta == FALSE, U_A0 := NA]
-  ld[delta == FALSE, U_A1 := NA]
+  ld[delta == FALSE & stage == 2, U := NA]
+  ld[delta == FALSE & stage == 2, U_A0 := NA]
+  ld[delta == FALSE & stage == 2, U_A1 := NA]
 
   ld[ , tmp := shift(delta, fill = TRUE), by = list(id)]
   ld <- ld[tmp == TRUE, ]
@@ -54,7 +54,11 @@ sim_two_stage_right_cens <- function(n = 1e4,
                                      action_model_2 = function(C_2, beta, ...)
                                        stats::rbinom(n = NROW(C_1), size = 1, prob = lava::expit(beta * C_2)),
                                      deterministic_rewards = FALSE,
-                                     cens_model = function(L, zeta, ...)
+                                     cens_model_1 = function(L, zeta, ...)
+                                       stats::rbinom(n = NROW(L), size = 1, prob = lava::expit(zeta * abs(L))),
+                                     cens_model_2 = function(L, zeta, ...)
+                                       stats::rbinom(n = NROW(L), size = 1, prob = lava::expit(zeta * abs(L))),
+                                     cens_model_3 = function(L, zeta, ...)
                                        stats::rbinom(n = NROW(L), size = 1, prob = lava::expit(zeta * abs(L)))) {
 
   d <- sim_two_stage(n = n)
@@ -71,10 +75,14 @@ sim_two_stage_right_cens <- function(n = 1e4,
   ld[is.na(L), L := d[["L_3"]]]
 
   ## simulating the discrete right-censoring:
-  delta <- rbinom(n = nrow(ld), size = 1, prob = cens_model(ld$L, zeta = par["zeta"]))
+  delta_1 <- rbinom(n = nrow(ld[stage == 1]), size = 1, prob = cens_model_1(ld[stage == 1]$L, zeta = par["zeta"]))
+  delta_2 <- rbinom(n = nrow(ld[stage == 2]), size = 1, prob = cens_model_2(ld[stage == 2]$L, zeta = par["zeta"]))
+  delta_3 <- rbinom(n = nrow(ld[stage == 3]), size = 1, prob = cens_model_3(ld[stage == 3]$L, zeta = par["zeta"]))
 
   ## adapting the data to the right-censoring process:
-  ld[ , delta := delta]
+  ld[stage == 1 , delta := delta_1]
+  ld[stage == 2 , delta := delta_2]
+  ld[stage == 3 , delta := delta_3]
   ld[ , delta := cumprod(delta), by = id]
   ld[ , tmp := cumsum(delta == 0), by = id]
   ld <- ld[tmp %in% c(0,1)]
@@ -173,7 +181,7 @@ test_that("fit_c_functions(): g_model's passed as the argument c_models are fitt
   ld[ , absL := abs(L)]
   pd <- policy_data(data = ld, type = "long")
 
-  ## single g_model:
+  ## single c_model:
   ref_model <- glm(I(event != 2) ~ absL, data = ld, family = binomial())
   tmp <- fit_c_functions(policy_data = pd,
                          c_models = g_glm(~ absL),
@@ -223,5 +231,41 @@ test_that("fit_c_functions(): g_model's passed as the argument c_models are fitt
       check.attributes = FALSE
     )
   }
+
+})
+
+test_that("fit_c_functions(): returns default right-censoring model for stages where no right-censoring occur,", {
+
+  set.seed(1)
+  ld <- sim_two_stage_right_cens(n = 500, cens_model_2 = function(L, ...) rep(1, length(L)))
+  ld[ , absL := abs(L)]
+  pd <- policy_data(data = ld, type = "long")
+
+  expect_no_error(
+    tmp <- fit_c_functions(policy_data = pd,
+                           c_models = list(g_glm(~ absL), g_glm(~ absL), g_glm(~ absL)),
+                           full_history = FALSE)
+  )
+
+  pred <- predict(tmp, new_policy_data = pd)
+
+  ref_model1 <- glm(I(event != 2) ~ absL, data = ld[stage == 1], family = binomial())
+  ref_model3 <- glm(I(event != 2) ~ absL, data = ld[stage == 3], family = binomial())
+
+  ref_predict1 <- predict(ref_model1, newdata = ld[stage == 1], type = "response")
+  ref_predict3 <- predict(ref_model3, newdata = ld[stage == 3], type = "response")
+
+  ref <- cbind(get_id_stage(pd, event_set = c(0,1,2)))
+  ref[, surv_time := 1]
+  ref[stage == 1, surv_time2 := ref_predict1]
+  ref[stage == 2, surv_time2 := 1]
+  ref[stage == 3, surv_time2 := ref_predict3]
+  setkey(ref, id, stage)
+  attr(ref, "index") <- NULL
+
+  expect_equal(
+    pred,
+    ref
+  )
 
 })
