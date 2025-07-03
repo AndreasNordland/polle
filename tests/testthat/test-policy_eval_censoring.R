@@ -172,7 +172,7 @@ test_that("policy_eval with target 'value' has the expected output for the fixed
     c1
   )
 
-  theta <- d$x1 +
+  Z <- d$x1 +
     (d$delta1 == 1) / c1 * (d$a1 == d$p1) / (g1 * (d$a1 == "1") + g2 * (d$a1 == "2")) * (d$x2 - d$x1) +
     (d$delta1 == 1) / c1 * (d$a1 == d$p1) / (g1 * (d$a1 == "1") + g2 * (d$a1 == "2")) *
     (d$delta2 == 1) / c1 * (d$a2 == d$p2) / (g3 * (d$a2 == "3") + g4 * (d$a2 == "4")) * (d$x3 - d$x2) +
@@ -180,8 +180,8 @@ test_that("policy_eval with target 'value' has the expected output for the fixed
     (d$delta2 == 1) / c1 * (d$a2 == d$p2) / (g3 * (d$a2 == "3") + g4 * (d$a2 == "4")) *
     (d$delta3 == 1) / c1 * (d$y - d$x3)
 
-  ref_pe <- mean(theta)
-  ref_IC <-  theta - ref_pe
+  ref_pe <- mean(Z)
+  ref_IC <-  Z - ref_pe
 
   ref_pe_or <- mean(d$x1)
 
@@ -299,4 +299,135 @@ test_that("policy_eval returns error when right-censoring occur for a stochastic
     ),
     "policy_eval is not implemented for both right-censoring and a stochastic number of action stages."
   )
+})
+
+test_that("policy_eval with target 'subgroup' has the correct output under right-censoring.", {
+
+  set.seed(1)
+  z <- 1:1e2*1.0
+  a <- c(rep(1, 50), rep(2, 50))
+  y <- a * 2
+  p <- c(rep(1, 25), rep(2, 25), rep(1, 25), rep(2, 25))
+  delta1 <- rbinom(n = 1e2, size = 1, prob = 0.8) # stage 1 non-missing indicator
+  delta2 <- rbinom(n = 1e2, size = 1, prob = 0.8) # stage 2 non-missing indicator
+  z2 <- runif(n = 1e2, min = -1, max = 1)
+  d <- data.table(z = z, a = a, y = y, p = p, delta1 = delta1, delta2 = delta2, z2 = z2)
+  rm(a, z, y)
+  pd <- policy_data(
+    data = d,
+    action = "a",
+    covariates = c("z", "p"),
+    utility = c("y")
+  )
+
+  ld <- pd$stage_data
+  ld[stage == 2, z := z2]
+
+  ld[stage == 1, delta:= delta1]
+  ld[stage == 2, delta:= delta2]
+  ld[ , delta := cumprod(delta), by = id]
+  ld[ , tmp := cumsum(delta == 0), by = id]
+  ld <- ld[tmp %in% c(0,1)]
+  ld[ , tmp := NULL]
+  ld[delta == 0, event := 2]
+  ld[ , delta := NULL]
+  ld[event == 2 & stage == 2, U := NA]
+  ld[event == 2, A := NA]
+
+  pd <- policy_data(data = ld, type = "long")
+
+  p <- policy_def(function(p) p, name = "p")
+
+  g1 <- ld[stage == 1 & event == 0, mean(A == "1")]
+  g2 <- ld[stage == 1 & event == 0, mean(A == "2")]
+  c1 <- 1-ld[, list(mean(event == 2))][[1]]
+
+  ## Z <- d$x1 +
+  ##   (d$delta1 == 1) / c1 * (d$a1 == d$p1) / (g1 * (d$a1 == "1") + g2 * (d$a1 == "2")) * (d$x2 - d$x1) +
+  ##   (d$delta1 == 1) / c1 * (d$a1 == d$p1) / (g1 * (d$a1 == "1") + g2 * (d$a1 == "2")) *
+  ##   (d$delta2 == 1) / c1 * (d$a2 == d$p2) / (g3 * (d$a2 == "3") + g4 * (d$a2 == "4")) * (d$x3 - d$x2) +
+  ##   (d$delta1 == 1) / c1 * (d$a1 == d$p1) / (g1 * (d$a1 == "1") + g2 * (d$a1 == "2")) *
+  ##   (d$delta2 == 1) / c1 * (d$a2 == d$p2) / (g3 * (d$a2 == "3") + g4 * (d$a2 == "4")) *
+  ##   (d$delta3 == 1) / c1 * (d$y - d$x3)
+
+  ref_Z <- cbind(
+    d$z +
+    (d$delta1 == 1) / c1 * (d$a == 1) / g1 * (d$z2 - d$z) +
+    (d$delta1 == 1) / c1 * (d$delta2 == 1) / c1 * (d$a == 1) / g1 *(d$y - d$z2),
+    d$z +
+    (d$delta1 == 1) / c1 * (d$a == 2) / g2 * (d$z2 - d$z) +
+    (d$delta1 == 1) / c1 * (d$delta2 == 1) / c1 * (d$a == 2) / g2 *(d$y - d$z2)
+  )
+  ref_blip <- ref_Z[, 2] - ref_Z[, 1]
+  ref_sub <- mean(ref_blip[d$p == 2])
+  ref_sub_comp <- mean(ref_blip[d$p == 1])
+  ref_IC <- 2 * (d$p == 2) * (ref_blip - ref_sub)
+  ref_IC_comp <- 2 * (d$p == 1) * (ref_blip - ref_sub_comp)
+
+  ## g-functions:
+  gf <- fit_g_functions(policy_data = pd,
+                        g_models = list(g_glm(~1)))
+
+  ## c-functions:
+  cf <- fit_c_functions(policy_data = pd,
+                        c_models = g_glm(~1))
+
+  ##
+  ## no cross-fitting
+  ##
+
+  sub <- policy_eval(
+    target = "subgroup",
+    policy_data = pd,
+    policy = p,
+    q_models = polle:::q_degen(var = "z"),
+    m_model = polle:::q_degen(var = "z"),
+    g_functions = gf,
+    c_functions = cf
+  )
+
+  expect_equal(
+    coef(sub) |> unname(),
+    c(ref_sub, ref_sub_comp)
+  )
+
+  expect_equal(
+    IC(sub),
+    cbind(ref_IC, ref_IC_comp) |> unname()
+  )
+
+  expect_equal(
+    names(sub$coef),
+    c("E[U(2)-U(1)|d=2]: d=p", "E[U(2)-U(1)|d=1]: d=p")
+  )
+
+  ##
+  ## cross-fitting
+  ##
+
+  ## in each training, the empirical propensity is no longer 0.5
+  ## instead a g_model is fitted on the complete data:
+  gf <- fit_g_functions(pd, g_models = g_glm(~1))
+
+  sub <- policy_eval(
+    target = "subgroup",
+    policy_data = pd,
+    policy = p,
+    q_models = polle:::q_degen(var = "z"),
+    m_model = polle:::q_degen(var = "z"),
+    g_functions = gf,
+    c_functions = cf,
+    M = 2
+  )
+
+  expect_equal(
+    coef(sub) |> unname(),
+    c(ref_sub, ref_sub_comp)
+  )
+
+  expect_equal(
+    IC(sub),
+    cbind(ref_IC, ref_IC_comp) |> unname()
+  )
+
 })

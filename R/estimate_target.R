@@ -66,36 +66,88 @@ dr_subgroup <- function(K,
     )
     stop(mes)
   }
-  if (!is.null(c_values)) {
-    stop("subgroup evaluation not implemented for censored outcomes.")
-  }
-  if (!is.null(m_values)) {
-    stop("subgroup evaluation not implemented for censored outcomes.")
-  }
 
   ##
   ## calculating the doubly robust score for each treatment
   ##
 
+  ## (n X K+1) matrix with entries Delta_k:
+  D <- dcast(events, id ~ stage, value.var = "event")
+  D <- D[ , -c("id"), with = FALSE]
+  D <- (D != 2) * 1.0
+  ## fill NA values with 0:
+  ## (occur under right-censoring or a stochastic number of stages)
+  D <- apply(
+    D,
+    MARGIN = 2,
+    function(v) {
+      v[is.na(v)] <- 0
+      return(v)
+    }
+  )
+
+  ## getting the utility vector U:
+  U <- utility[["U"]]
+  ## (n) vector indicating right-censored outcomes:
+  censored_outcomes <- is.na(U)
+  ## fill 0 whenever  D[,2] == 0:
+  U[D[,2] == 0] <- 0
+
+  ## (n X K+1) matrix with entries C_k(H_k):
+  if (!is.null(c_values)){
+    surv_time <- dcast(c_values, id ~ stage, value.var = "surv_time")[, -c("id"), with = FALSE]
+    surv_time2 <- dcast(c_values, id ~ stage, value.var = "surv_time2")[, -c("id"), with = FALSE]
+    C <- surv_time2 / surv_time
+    C <- as.matrix(C)
+    ## fill 1 whenever D == 0:
+    C[D == 0] <- 1
+  } else {
+    C <- matrix(nrow = nrow(id), ncol = K+1, 1)
+  }
+
+  ## old:
+
   ## (n X action_set) matrix with entries  I(A = a)
-  II <- matrix(nrow = nrow(actions), ncol = length(action_set))
+  II <- matrix(nrow = nrow(id), ncol = length(action_set))
+  wide_actions <- dcast(actions, id ~ stage, value.var = "A")
+  wide_actions <- merge(id, wide_actions, all.x = TRUE)
+  IIA <- wide_actions[, -c("id"), with = FALSE]
+  IIA <- as.matrix(IIA)
   for (j in seq_along(action_set)) {
-    IIA <- actions[["A"]]
     II[, j] <- (IIA == action_set[j])
   }
   rm(IIA)
+  ## fill 0 whenever D[,1] == 0:
+  II[D[,1] == 0,] <- 0
 
   ## (n X action_set) matrix with entries  g(a)
+  g_values <- merge(policy_actions, g_values, all.x = TRUE)
+  g_values[ , d := NULL]
   G <- as.matrix(g_values[, -c("id", "stage"), with = FALSE])
+  ## fill 1 whenever  D[,1] == 0:
+  G[ D[,1] == 0,] <- 1
 
   ## (n X #actions) matrix with entries  Q(a)
   Q <- as.matrix(q_values[, -c("id", "stage"), with = FALSE])
 
-  # (n) vector with entries U:
-  U <- utility$U
+  ## (n X 1) vector with values Q_{K+1}
+  ## Q_{K+1} = U if no right-censoring occur at stage K+1,
+  ## i.e., m_values is NULL:
+  if (is.null(m_values)) {
+    M <- U
+  } else {
+    M <- dcast(m_values, id ~ stage, value.var = "Q")
+    M <- merge(id, M, all.x = TRUE)
+    M <- M[, -c("id"), with = FALSE]
+    M <- as.vector(as.matrix(M))
+  }
+  ## fill 0 whenever  D[,1] == 0:
+  M[D[,1] == 0] <- 0
 
   # calculating the doubly robust (uncentralized) score for each treatment:
-  Z <- Q + II / G * apply(Q, 2, function(q) U - q)
+  Z <- Q +
+    D[,1] / C[,1] * II / G * apply(Q, 2, function(q) M - q) +
+    D[,1] / C[,1] * II / G * D[,2] / C[,2] * (U - M)
   colnames(Z) <- paste("Z_", action_set, sep = "")
 
   ## checks:
