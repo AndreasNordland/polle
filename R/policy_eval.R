@@ -354,6 +354,60 @@ policy_eval <- function(policy_data,
   return(eval)
 }
 
+model_input_checks <- function(policy_data,
+                               g_functions, g_models,
+                               g_full_history, save_g_functions,
+                               q_functions, q_models,
+                               q_full_history, save_q_functions,
+                               c_functions, c_models,
+                               c_full_history, save_c_functions,
+                               m_function, m_model,
+                               m_full_history, save_m_function) {
+  check_function <- function(func, class_name){
+    if (!is.null(func) && !inherits(func, class_name)) {
+      stop(paste(class_name, " must be of class '", class_name, "'.", sep=""))
+    }
+  }
+
+  # check function classes:
+  check_function(g_functions, "g_functions")
+  check_function(q_functions, "q_functions")
+  check_function(c_functions, "c_functions")
+  check_function(m_function, "m_function")
+
+  # check logical flags:
+  logical_checks <- function(flag, name) {
+    if (!(is.logical(flag) && length(flag) == 1)) {
+      stop(paste(name, "must be TRUE or FALSE.", sep = " "))
+    }
+  }
+
+  logical_checks(g_full_history, "g_full_history")
+  logical_checks(q_full_history, "q_full_history")
+  logical_checks(c_full_history, "c_full_history")
+  logical_checks(m_full_history, "m_full_history")
+
+  cens_indicator <- get_element(policy_data, "cens_indicator")
+  terminal_indicator <- get_element(policy_data, "terminal_indicator")
+  if (any(cens_indicator[["indicator"]]) &&
+      any(terminal_indicator[stage <= get_K(policy_data),][["indicator"]])) {
+    stop("policy_eval is not implemented for both right-censoring and a stochastic number of action stages.")
+  }
+  if (any(cens_indicator[["indicator"]])){
+    if ((is.null(c_models) && is.null(c_functions)) ||
+        (!is.null(c_functions) && !is.null(c_models))) {
+      stop("Right-censoring events (event = 2) occur in the policy data. Please provide either c_functions or c_models.")
+    }
+  }
+  missing <- cens_indicator[stage == (get_K(policy_data)+1),][["indicator"]]
+  if (missing == TRUE) {
+    if ((is.null(m_model) && is.null(m_function)) ||
+        (!is.null(m_function) && !is.null(m_model))) {
+      stop("Right-censoring events (event = 2) occur at stage K+1 in the policy data. Please provide either m_function or m_model.")
+    }
+  }
+}
+
 policy_eval_input_checks <- function(policy_data,
                                      policy, policy_learn,
                                      g_functions, g_models,
@@ -382,6 +436,17 @@ policy_eval_input_checks <- function(policy_data,
       stop("policy must be of inherited class 'policy'.")
     }
   }
+
+  model_input_checks(policy_data = policy_data,
+                     g_functions = g_functions, g_models = g_models,
+                     g_full_history = g_full_history, save_g_functions = save_g_functions,
+                     q_functions = q_functions, q_models = q_models,
+                     q_full_history = q_full_history, save_q_functions = save_q_functions,
+                     c_functions = c_functions, c_models = c_models,
+                     c_full_history = c_full_history, save_c_functions = save_c_functions,
+                     m_function = m_function, m_model = m_model,
+                     m_full_history = m_full_history, save_m_function = save_m_function)
+
   if ((is.null(policy) && is.null(policy_learn)) ||
       (!is.null(policy_learn) && !is.null(policy))) {
     stop("Provide either policy or policy_learn.")
@@ -391,38 +456,7 @@ policy_eval_input_checks <- function(policy_data,
       stop("policy_learn must be of inherited class 'policy_learn'.")
     }
   }
-  if (!is.null(g_functions)) {
-    if (!(inherits(g_functions, "g_functions"))) {
-      stop("g_functions must be of class 'g_functions'.")
-    }
-  }
-  if (!(is.logical(g_full_history) && (length(g_full_history) == 1))) {
-    stop("g_full_history must be TRUE or FALSE")
-  }
-  if (!is.null(q_functions)) {
-    if (!(inherits(q_functions, "q_functions"))) {
-      stop("q-functions must be of class 'q_functions'.")
-    }
-  }
-  if (!(is.logical(q_full_history) && (length(q_full_history) == 1))) {
-    stop("q_full_history must be TRUE or FALSE")
-  }
-  if (!is.null(c_functions)) {
-    if (!(inherits(c_functions, "c_functions"))) {
-      stop("c_functions must be of class 'c_functions'.")
-    }
-  }
-  if (!(is.logical(c_full_history) && (length(c_full_history) == 1))) {
-    stop("c_full_history must be TRUE or FALSE")
-  }
-  if (!is.null(m_function)) {
-    if (!(inherits(m_function, "q_functions"))) {
-      stop("m_function must be of class 'q_functions'.")
-    }
-  }
-  if (!(is.logical(m_full_history) && (length(m_full_history) == 1))) {
-    stop("m_full_history must be TRUE or FALSE")
-  }
+
   if (!(is.numeric(M) && (length(M) == 1))) {
     stop("M must be an integer greater than 0.")
   }
@@ -486,12 +520,6 @@ policy_eval_input_checks <- function(policy_data,
     type <- "or"
   } else {
     stop("type must be either 'dr', 'ipw' or  'or'.")
-  }
-  cens_indicator <- get_element(policy_data, "cens_indicator")
-  terminal_indicator <- get_element(policy_data, "terminal_indicator")
-  if (any(cens_indicator[["indicator"]]) &&
-      any(terminal_indicator[stage <= get_K(policy_data),][["indicator"]])) {
-    stop("policy_eval is not implemented for both right-censoring and a stochastic number of action stages.")
   }
 
   ## editing name:
