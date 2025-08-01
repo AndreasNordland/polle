@@ -31,6 +31,7 @@ control_owl <- function(policy_vars = NULL,
                         c = 2^(-2:2),
                         sigma = c(0.03,0.05,0.07),
                         s = 2.^(-2:2),
+
                         m = 4){
   control <- as.list(environment())
   return(control)
@@ -72,6 +73,9 @@ dtrlearn2_owl <- function(policy_data,
   if (full_history == TRUE){
     if ((!is.list(policy_vars)) | (length(policy_vars) != K))
       stop("policy_vars must be a list of length K, when full_history = TRUE.")
+  }
+  if (any(get_element(policy_data, "cens_indicator")[["indicator"]])){
+    stop("policy learning with type 'owl' not implemented under right-censoring/missing outcomes.")
   }
 
   # getting the observed actions:

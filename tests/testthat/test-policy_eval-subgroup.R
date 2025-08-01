@@ -1,4 +1,4 @@
-test_that("policy_eval with target = 'sub_effect' checks inputs.", {
+test_that("policy_eval with target = 'subgroup' checks inputs.", {
     d <- sim_single_stage(1e2, seed = 1)
     pd <- policy_data(d, action = "A", covariates = c("Z"), utility = "U")
     p <- policy_def(1)
@@ -21,7 +21,7 @@ test_that("policy_eval with target = 'sub_effect' checks inputs.", {
             policy_data = pd,
             policy = p,
             g_models = g_empir(),
-            target = "sub_effect"
+            target = "subgroup"
         ),
         "subgroup average treatment effect evaluation is not implemented for more than two actions."
     )
@@ -40,7 +40,7 @@ test_that("policy_eval with target = 'sub_effect' checks inputs.", {
             policy_data = pd,
             policy = p,
             g_models = g_empir(),
-            target = "sub_effect"
+            target = "subgroup"
         ),
         "subgroup average treatment effect evaluation is not implemeted for multiple stages."
     )

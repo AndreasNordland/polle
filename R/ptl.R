@@ -112,6 +112,9 @@ ptl <- function(policy_data,
       stop("search.depth must be an integer vector of length K.")
     }
   }
+  if (any(get_element(policy_data, "cens_indicator")[["indicator"]])){
+    stop("policy learning with type 'ptl' not implemented under right-censoring/missing outcomes.")
+  }
 
   # getting the observed actions:
   actions <- get_actions(policy_data)
@@ -129,9 +132,10 @@ ptl <- function(policy_data,
   # (cross-)fitting the g-functions:
   g_functions_cf <- NULL
   if (!is.null(folds) && cross_fit_g_models == TRUE) {
-    g_cf <- fit_g_functions_cf(
+    g_cf <- crossfit_function(
       policy_data = policy_data,
-      g_models = g_models,
+      fun = fit_g_functions,
+      models = g_models,
       full_history = g_full_history,
       folds = folds,
       save_cross_fit_models = save_cross_fit_models,

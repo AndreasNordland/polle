@@ -15,6 +15,7 @@ policy_learn(
   full_history = FALSE,
   L = 1,
   cross_fit_g_models = TRUE,
+  cross_fit_c_models = TRUE,
   save_cross_fit_models = FALSE,
   future_args = list(future.seed = TRUE),
   name = type
@@ -106,6 +107,9 @@ policy tree). If FALSE, the single stage/
 \item{L}{Number of folds for cross-fitting nuisance models.}
 
 \item{cross_fit_g_models}{If \code{TRUE}, the g-models will not be
+cross-fitted even if L > 1.}
+
+\item{cross_fit_c_models}{If \code{TRUE}, the c-models will not be
 cross-fitted even if L > 1.}
 
 \item{save_cross_fit_models}{If \code{TRUE}, the cross-fitted

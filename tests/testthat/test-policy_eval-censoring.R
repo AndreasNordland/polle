@@ -86,6 +86,125 @@ sim_two_stage_right_cens <- function(n = 1e4,
   return(ld)
 }
 
+test_that("policy_eval checks input under right-censoring", {
+
+  ## right-censoring at every stage:
+  set.seed(1)
+  x1 <- runif(n = 1e2, min = -1, max = 1)
+  a1 <- c(rep(1, 50), rep(2, 50))
+  x2 <- runif(n = 1e2, min = -1, max = 1)
+  a2 <- c(rep(3, 50), rep(4, 50))
+  x3 <- runif(n = 1e2, min = -1, max = 1)
+  y <- a1 * x1 + a2 * x2 + runif(n = 1e2, min = -1, max = 1)
+  p1 <- c(rep(1, 25), rep(2, 25), rep(1, 25), rep(2, 25))
+  p2 <- c(rep(3, 25), rep(4, 25), rep(3, 25), rep(4, 25))
+  delta1 <- rbinom(n = 1e2, size = 1, prob = 0.8) # stage 1 non-missing indicator
+  delta2 <- rbinom(n = 1e2, size = 1, prob = 0.8) # stage 2 non-missing indicator
+  delta3 <- rbinom(n = 1e2, size = 1, prob = 0.8) # stage 3 non-missing indicator
+  d <- data.table(x1 = x1,
+                  a1 = a1,
+                  x2 = x2,
+                  a2 = a2,
+                  x3 = x3,
+                  y = y,
+                  p1 = p1,
+                  p2 = p2,
+                  delta1 = delta1,
+                  delta2 = delta2,
+                  delta3 = delta3)
+
+
+  pd <- policy_data(
+    data = d,
+    action = c("a1", "a2"),
+    covariates = list(x = c("x1", "x2"),
+                      p = c("p1", "p2")),
+    utility = c("y")
+  )
+
+  ld <- pd$stage_data
+  ld[stage ==3, x := x3]
+
+  ld[stage == 1, delta:= delta1]
+  ld[stage == 2, delta:= delta2]
+  ld[stage == 3, delta:= delta3]
+  ld[ , delta := cumprod(delta), by = id]
+  ld[ , tmp := cumsum(delta == 0), by = id]
+  ld <- ld[tmp %in% c(0,1)]
+  ld[ , tmp := NULL]
+  ld[delta == 0, event := 2]
+  ld[ , delta := NULL]
+  ld[event == 2 & stage == 3, U := NA]
+  ld[event == 2, A := NA]
+
+  pd <- policy_data(data = ld, type = "long")
+
+  ## policy:
+  p <- policy_def(function(p) p, name = "test", reuse = TRUE)
+
+  ## g-functions:
+  gf <- fit_g_functions(pd, g_models = list(g_glm(~1), g_glm(~1)))
+
+  ## c-functions:
+  cf <- fit_c_functions(policy_data = pd,
+                        c_models = g_glm(~1))
+
+  ## m-function:
+  mf <- fit_m_function(policy_data = pd,
+                       m_model = q_glm(~x))
+
+  ## missing c_models and c_functions input:
+  expect_error(
+    pe <- policy_eval(
+      policy_data = pd,
+      policy = p,
+      q_models = list(q_degen(var = "x"), q_degen(var = "x")),
+      m_model = q_degen(var = "x"),
+      g_functions = gf
+    ),
+    "Right-censoring events \\(event = 2\\) occur in the policy data\\. Please provide either c_functions or c_models\\.$"
+  )
+
+  ## incorrect c_functions input:
+  expect_error(
+    pe <- policy_eval(
+      policy_data = pd,
+      policy = p,
+      q_models = list(q_degen(var = "x"), q_degen(var = "x")),
+      m_model = q_degen(var = "x"),
+      c_functions = gf,
+      g_functions = gf
+    ),
+    "c_functions must be of class 'c_functions'\\."
+  )
+
+  ## incorrect c_models input:
+  expect_error(
+    pe <- policy_eval(
+      policy_data = pd,
+      policy = p,
+      q_models = list(q_degen(var = "x"), q_degen(var = "x")),
+      m_model = q_degen(var = "x"),
+      c_models = q_glm(~1),
+      g_functions = gf
+    ),
+    "c_models must be a single c_model \\(or g_model\\) or a list of K\\+1 c_model's \\(or g_model's\\)\\."
+  )
+
+  ## missing m_model and m_function input:
+  expect_error(
+    pe <- policy_eval(
+      policy_data = pd,
+      policy = p,
+      q_models = list(q_degen(var = "x"), q_degen(var = "x")),
+      c_functions = cf,
+      g_functions = gf
+    ),
+    "Right-censoring events \\(event = 2\\) occur at stage K\\+1 in the policy data. Please provide either m_function or m_model\\."
+  )
+
+})
+
 test_that("policy_eval with target 'value' has the expected output for the fixed two-stage case under right-censoring and single final utility outcome.", {
 
   ## right-censoring at every stage:
@@ -359,6 +478,34 @@ test_that("policy_eval with target 'value' has the expected output for the fixed
     policy = p,
     q_models = list(q_degen(var = "x"), q_degen(var = "x")),
     m_model = q_degen(var = "x"),
+    g_functions = gf,
+    c_functions = cf
+  )
+
+  expect_equal(
+    pe$name,
+    names(coef(pe))
+  )
+  expect_equal(
+    pe$name,
+    c("E[U(d)]: d=test")
+  )
+
+  expect_equal(
+    coef(pe) |> unname(),
+    ref_pe
+  )
+
+  expect_equal(
+    IC(pe),
+    matrix(ref_IC)
+  )
+
+  ## no m_model input:
+  pe <- policy_eval(
+    policy_data = pd,
+    policy = p,
+    q_models = list(q_degen(var = "x"), q_degen(var = "x")),
     g_functions = gf,
     c_functions = cf
   )
@@ -755,6 +902,31 @@ test_that("policy_eval with target 'subgroup' has the correct output under right
     policy = p,
     q_models = polle:::q_degen(var = "z"),
     m_model = polle:::q_degen(var = "z"),
+    g_functions = gf,
+    c_functions = cf
+  )
+
+  expect_equal(
+    coef(sub) |> unname(),
+    c(ref_sub, ref_sub_comp)
+  )
+
+  expect_equal(
+    IC(sub),
+    cbind(ref_IC, ref_IC_comp) |> unname()
+  )
+
+  expect_equal(
+    names(sub$coef),
+    c("E[U(2)-U(1)|d=2]: d=p", "E[U(2)-U(1)|d=1]: d=p")
+  )
+
+  ## no m_model input:
+  sub <- policy_eval(
+    target = "subgroup",
+    policy_data = pd,
+    policy = p,
+    q_models = polle:::q_degen(var = "z"),
     g_functions = gf,
     c_functions = cf
   )

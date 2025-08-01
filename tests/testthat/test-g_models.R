@@ -95,9 +95,10 @@ test_that("fit_g_functions handles varying stage-action sets", {
   set.seed(1)
   folds <- list(c(1:30), 31:get_n(pd))
   expect_error(
-    gfit <- fit_g_functions_cf(folds,
+    gfit <- crossfit_function(folds = folds,
                                policy_data = pd,
-                               g_models = list(g_glm(), g_rf()),
+                               fun = fit_g_functions,
+                               models = list(g_glm(), g_rf()),
                                full_history = FALSE,
                                save_cross_fit_models = TRUE),
     NA
@@ -119,11 +120,12 @@ test_that("fit_g_function_cf saves the cross-fitted models",{
   set.seed(1)
   folds <- list(c(1:30), 31:get_n(pd))
   expect_error(
-    gfit <- fit_g_functions_cf(folds,
-                               policy_data = pd,
-                               g_models = list(g_glm(), g_rf()),
-                               full_history = FALSE,
-                               save_cross_fit_models = TRUE),
+    gfit <- crossfit_function(folds,
+                              policy_data = pd,
+                              fun = fit_g_functions,
+                              models = list(g_glm(), g_rf()),
+                              full_history = FALSE,
+                              save_cross_fit_models = TRUE),
     NA
   )
 
@@ -134,11 +136,12 @@ test_that("fit_g_function_cf saves the cross-fitted models",{
   set.seed(1)
   folds <- list(c(1:30), 31:get_n(pd))
   expect_error(
-    gfit <- fit_g_functions_cf(folds,
-                               policy_data = pd,
-                               g_models = list(g_glm(), g_rf()),
-                               full_history = FALSE,
-                               save_cross_fit_models = FALSE),
+    gfit <- crossfit_function(folds,
+                              policy_data = pd,
+                              fun = fit_g_functions,
+                              models = list(g_glm(), g_rf()),
+                              full_history = FALSE,
+                              save_cross_fit_models = FALSE),
     NA
   )
   expect_true(

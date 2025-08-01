@@ -164,12 +164,9 @@ q_step_cf <- function(folds,
                       q_models,
                       save_cross_fit_models,
                       future_args) {
-  stage <- NULL
   id <- get_id(policy_data)
-  id_k <- get_id_stage(policy_data)[stage == k][["id"]]
-  idx_k <- (id %in% id_k)
-  rm(stage)
   K <- get_K(policy_data)
+
   future_args <- append(
     future_args,
     list(
@@ -192,9 +189,9 @@ q_step_cf <- function(folds,
         valid_id <- id[f]
         valid_policy_data <- subset_id(policy_data, valid_id)
         valid_history <- get_history(valid_policy_data,
-          stage = k,
-          full_history = full_history
-        )
+                                     stage = k,
+                                     full_history = full_history,
+                                     event_set = c(0,2))
         valid_values <- predict(train_q_function, valid_history)
 
         if (save_cross_fit_models == FALSE) {
@@ -217,6 +214,10 @@ q_step_cf <- function(folds,
 
   q_values <- rbindlist(q_values)
   setkeyv(q_values, c("id", "stage"))
+
+  ## getting the ID-index for each Q-value
+  ## (action and right-censoring events):
+  idx_k <- (id %in% q_values[["id"]])
 
   out <- list(
     q_functions_cf = q_functions_cf,

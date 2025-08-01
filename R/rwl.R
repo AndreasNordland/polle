@@ -60,6 +60,9 @@ dyntxregime_rwl <- function(policy_data,
 
   if (L != 1)
     stop("L must be 1 when using rwl (no cross-fitting).")
+  if (any(get_element(policy_data, "cens_indicator")[["indicator"]])){
+    stop("policy learning with type 'rwl' not implemented under right-censoring/missing outcomes.")
+  }
 
   # getting the observed actions:
   actions <- get_actions(policy_data)

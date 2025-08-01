@@ -339,7 +339,7 @@ test_that("policy_learn with type drql handles varying action sets", {
 
 })
 
-test_that("policy_learn with type = 'drql' works with cross_fit_g_models.", {
+test_that("policy_learn with type = 'drql' uses the cross_fit_g_models argument", {
   d <- sim_two_stage_multi_actions(n = 1e2)
   pd <- policy_data(
     data = d,

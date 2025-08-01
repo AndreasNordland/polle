@@ -736,7 +736,6 @@ test_that("the action set is preserved when subsetting",{
 
 })
 
-
 # partial -----------------------------------------------------------------
 
 test_that("partial checks input",{

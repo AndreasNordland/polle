@@ -81,6 +81,8 @@
 #' @param L Number of folds for cross-fitting nuisance models.
 #' @param cross_fit_g_models If \code{TRUE}, the g-models will not be
 #' cross-fitted even if L > 1.
+#' @param cross_fit_c_models If \code{TRUE}, the c-models will not be
+#' cross-fitted even if L > 1.
 #' @param save_cross_fit_models If \code{TRUE}, the cross-fitted
 #' models will be saved.
 #' @param future_args Arguments passed to [future.apply::future_apply()].
@@ -175,6 +177,7 @@ policy_learn <- function(type = "ql",
                          full_history = FALSE,
                          L = 1,
                          cross_fit_g_models = TRUE,
+                         cross_fit_c_models = TRUE,
                          save_cross_fit_models = FALSE,
                          future_args = list(future.seed = TRUE),
                          name = type) {
@@ -195,7 +198,7 @@ policy_learn <- function(type = "ql",
     }
     threshold <- unique(sort(threshold))
   }
-  if (threshold_indicator == FALSE) {
+  if (isFALSE(threshold_indicator)) {
     threshold <- 0
   }
   if (!(is.logical(full_history) && (length(full_history) == 1))) {
@@ -236,6 +239,7 @@ policy_learn <- function(type = "ql",
     threshold = threshold,
     L = L,
     cross_fit_g_models = cross_fit_g_models,
+    cross_fit_c_models = cross_fit_c_models,
     save_cross_fit_models = save_cross_fit_models,
     future_args = future_args,
     full_history = full_history
@@ -299,12 +303,9 @@ policy_learn <- function(type = "ql",
 pl <- function(call, args) {
   function(policy_data,
            g_models = NULL, g_functions = NULL, g_full_history = FALSE,
-           q_models, q_full_history = FALSE) {
-    ## policy data input checks:
-    if (any(get_element(policy_data, "cens_indicator")[["indicator"]])){
-      stop("policy learning not implemented under right-censoring/missing outcomes.")
-    }
-
+           q_models, q_full_history = FALSE,
+           c_models = NULL, c_functions = NULL, c_full_history = FALSE,
+           m_model = NULL, m_function = NULL, m_full_history = FALSE) {
     ## evaluating the learner:
     eval_args <- as.list(environment())
     args <- append(args, eval_args)

@@ -87,3 +87,75 @@ fit_functions <- function(policy_data,
   )
   return(out)
 }
+
+#' Cross-fit functions
+#'
+#' \code{crossfit_function()} is used to cross-fit a list of c-models
+#'
+#' @param folds List of vectors of indices for each validation fold, see examples.
+#' @param policy_data Policy data object created by [policy_data()].
+#' @param fun Function used to fit the models, either \code{fit_g_functions()}, \code{fit_c_functions()}
+#' @param models single model or list of models like [g_sl()].
+#' @param full_history If TRUE, the full history is used to fit each model.
+#' If FALSE, the single stage/"Markov type" history is used to fit each model.
+#' @param save_models Logical. Should the cross-fitted models be saved.
+#' @param future_args arguments passed to [future.apply::future_lapply].
+#' @noRd
+crossfit_function <- function(folds,
+                              policy_data,
+                              fun,
+                              models,
+                              full_history,
+                              save_cross_fit_models = FALSE,
+                              future_args = list(future.seed = TRUE)){
+  id <- get_id(policy_data)
+  K <- get_K(policy_data)
+  force(fun)
+  force(models)
+  force(full_history)
+
+  future_args <- append(
+    future_args,
+    list(X = folds,
+         FUN = function(f){
+           train_id <- id[-f]
+           train_policy_data <- subset_id(policy_data, train_id)
+           if (get_K(train_policy_data) != K)
+             stop("The number of stages K varies across the training policy data folds.")
+           train_functions <- fun(policy_data = train_policy_data,
+                                  models,
+                                  full_history = full_history)
+
+           valid_id <- id[f]
+           valid_policy_data <- subset_id(policy_data, valid_id)
+           valid_values <- predict(train_functions, valid_policy_data)
+
+           if (save_cross_fit_models == FALSE)
+             train_functions <- NULL
+
+           out <- list(
+             train_functions = train_functions,
+             valid_values = valid_values,
+             valid_id = valid_id
+           )
+           return(out)
+         })
+  )
+
+  fit_cf <- do.call(what = future.apply::future_lapply, future_args)
+  fit_cf <- simplify2array(fit_cf)
+
+  functions <- fit_cf["train_functions", ]
+  values <- fit_cf["valid_values", ]
+  valid_ids <- fit_cf["valid_id", ]
+
+  values <- rbindlist(values)
+  setkeyv(values, c("id", "stage"))
+
+  out <- list(
+    functions = functions,
+    values = values,
+    valid_ids = valid_ids
+  )
+  return(out)
+}

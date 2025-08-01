@@ -207,7 +207,7 @@ test_that("policy_eval checks inputs.", {
       policy = p,
       q_functions = gfun
     ),
-    "q-functions must be of class 'q_functions'."
+    "q_functions must be of class 'q_functions'."
   )
 
   ## M: cross-fitting

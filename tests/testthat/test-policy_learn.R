@@ -238,7 +238,7 @@ test_that("set_threshold", {
   )
 })
 
-test_that("policy_learn() does not run with missing outcomes.", {
+test_that("policy_learn() does not run with missing outcomes for drql, rql, ptl, earl, rwl, owl.", {
 
   sim_single_stage_right_cens <- function(n = 2e3, zeta = c(0.7, 0.2), type = "right"){
 
@@ -294,12 +294,67 @@ test_that("policy_learn() does not run with missing outcomes.", {
   expect_error(
     pe <- policy_eval(
       policy_data = pd,
-      policy_learn = policy_learn(),
+      policy_learn = policy_learn(type = "drql", control = control_drql()),
       m_model = q_glm(~.),
       m_full_history = FALSE,
       c_models = c_cox(formula = ~ Z, time = "time", time_2 = "time_2"),
       ),
-    "policy learning not implemented under right-censoring/missing outcomes."
+    "policy learning with type 'drql' not implemented under right-censoring/missing outcomes."
+  )
+
+  expect_error(
+    pe <- policy_eval(
+      policy_data = pd,
+      policy_learn = policy_learn(type = "rql", control = list()),
+      m_model = q_glm(~.),
+      m_full_history = FALSE,
+      c_models = c_cox(formula = ~ Z, time = "time", time_2 = "time_2"),
+      ),
+    "policy learning with type 'rql' not implemented under right-censoring/missing outcomes."
+  )
+
+  expect_error(
+    pe <- policy_eval(
+      policy_data = pd,
+      policy_learn = policy_learn(type = "ptl", control = control_ptl()),
+      m_model = q_glm(~.),
+      m_full_history = FALSE,
+      c_models = c_cox(formula = ~ Z, time = "time", time_2 = "time_2"),
+      ),
+    "policy learning with type 'ptl' not implemented under right-censoring/missing outcomes."
+  )
+
+  expect_error(
+    pe <- policy_eval(
+      policy_data = pd,
+      policy_learn = policy_learn(type = "earl", control = control_earl()),
+      m_model = q_glm(~.),
+      m_full_history = FALSE,
+      c_models = c_cox(formula = ~ Z, time = "time", time_2 = "time_2"),
+      ),
+    "policy learning with type 'earl' not implemented under right-censoring/missing outcomes."
+  )
+
+  expect_error(
+    pe <- policy_eval(
+      policy_data = pd,
+      policy_learn = policy_learn(type = "rwl", control = control_rwl()),
+      m_model = q_glm(~.),
+      m_full_history = FALSE,
+      c_models = c_cox(formula = ~ Z, time = "time", time_2 = "time_2"),
+      ),
+    "policy learning with type 'rwl' not implemented under right-censoring/missing outcomes."
+  )
+
+  expect_error(
+    pe <- policy_eval(
+      policy_data = pd,
+      policy_learn = policy_learn(type = "owl", control = control_owl()),
+      m_model = q_glm(~.),
+      m_full_history = FALSE,
+      c_models = c_cox(formula = ~ Z, time = "time", time_2 = "time_2"),
+      ),
+    "policy learning with type 'owl' not implemented under right-censoring/missing outcomes."
   )
 
 })

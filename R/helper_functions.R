@@ -76,3 +76,38 @@ get_element <- function(x, name, check_name = TRUE) {
 
   return(y)
 }
+
+#' Create Random Folds of Indices
+#'
+#' @param number Integer. Number of folds to create
+#' @param sample_size Integer. Total number of indices to split
+#'
+#' @return List of integer vectors containing indices, or NULL if number <= 1
+#'
+#' @examples
+#' sample_folds(3, 10)
+#' sample_folds(5, 100)
+#' @noRd
+sample_folds <- function(number, sample_size) {
+  ## input checks:
+  if (!is.numeric(number) || !is.numeric(sample_size)) {
+    stop("Arguments must be numeric")
+  }
+  if (number < 0 || sample_size < 0) {
+    stop("Arguments must be non-negative")
+  }
+  if (number %% 1 != 0 || sample_size %% 1 != 0) {
+    stop("Arguments must be whole numbers")
+  }
+  if (sample_size < number) {
+    stop ("sample_size is less than the number of folds")
+  }
+
+  if (number > 1) {
+    folds <- split(sample(1:sample_size, sample_size), rep(1:number, length.out = sample_size))
+    folds <- lapply(folds, sort)
+  } else {
+    folds <- NULL
+  }
+  return(folds)
+}
