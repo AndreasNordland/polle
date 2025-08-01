@@ -20,7 +20,9 @@ test_that("fit_functions handle multiple thresholds", {
         g_models = g_glm(),
         g_full_history = FALSE,
         q_models = q_glm(),
-        q_full_history = FALSE
+        q_full_history = FALSE,
+        c_full_history = FALSE,
+        m_full_history = FALSE
       )
     )
 
