@@ -259,6 +259,88 @@ test_that("policy_eval checks inputs.", {
   })
 })
 
+test_that("policy_eval handles combinations of nuisance models and functions correctly.", {
+
+  d <- sim_single_stage(1e2, seed = 1)
+  pd <- policy_data(d, action = "A", covariates = c("Z"), utility = "U")
+  p <- policy_def(1)
+
+  ## g-models and g-functions:
+  gf <- fit_g_functions(pd, g_models = g_glm(~1))
+
+  expect_error(
+    pe <- policy_eval(pd, policy = p, g_functions = NULL, g_models = NULL),
+    "Provide either g_functions or g_models."
+  )
+
+  expect_no_error(
+    pe <- policy_eval(pd, policy = p, g_functions = gf, g_models = g_glm(~Z))
+  )
+  ## if a g-function is provided, the g-model is ignored
+  expect_equal(
+    get_g_functions(pe),
+    gf
+  )
+  expect_equal(
+    pe$g_values,
+    predict.nuisance_functions(gf, new_policy_data = pd)
+  )
+
+  ## cross-fitting
+  expect_no_error(
+    pe <- policy_eval(pd, policy = p, g_functions = gf, g_models = g_glm(~Z), M = 2)
+  )
+  ## if a g-function is provided, the g-model is ignored
+  expect_equal(
+    pe$cross_fits$fold_1$g_functions,
+    gf
+  )
+  expect_equal(
+    pe$g_values,
+    predict.nuisance_functions(gf, new_policy_data = pd)
+  )
+  rm(gf, pe)
+
+  ## q-models and q-functions:
+  qf <- fit_Q_functions(pd, policy_actions = p(pd), q_models = q_glm(~1))
+
+  expect_error(
+    pe <- policy_eval(pd, policy = p, q_functions = NULL, q_models = NULL),
+    "Provide either q_functions or q_models."
+  )
+
+  expect_no_error(
+    pe <- policy_eval(pd, policy = p, q_functions = qf, q_models = q_glm(~Z))
+  )
+
+  ## if a g-function is provided, the g-model is ignored
+  expect_equal(
+    get_q_functions(pe),
+    qf
+  )
+
+  expect_equal(
+    pe$q_values,
+    predict.nuisance_functions(qf, new_policy_data = pd)
+  )
+
+  ## cross-fitting
+  expect_no_error(
+    pe <- policy_eval(pd, policy = p, q_functions = qf, q_models = q_glm(~Z), M = 2)
+  )
+
+  ## if a g-function is provided, the g-model is ignored
+  expect_equal(
+    pe$cross_fits$fold_1$q_functions,
+    qf
+  )
+  expect_equal(
+    pe$q_values,
+    predict.nuisance_functions(qf, new_policy_data = pd)
+  )
+
+})
+
 test_that("policy_eval runs on a subset of the data with missing actions from the action set.", {
   d1 <- sim_single_stage(1e2, seed = 1)
   pd1 <- policy_data(d1, action = "A", covariates = c("Z"), utility = "U")
@@ -613,6 +695,53 @@ test_that("policy_eval with target 'value' has the correct outputs in the single
     IC(pe),
     matrix(ref_IC)
   )
+})
+
+test_that("policy_eval passes nuisance models to policy_learn correctly", {
+  d <- sim_single_stage(1e2, seed = 1)
+  pd <- policy_data(d, action = "A", covariates = c("Z"), utility = "U")
+
+  ## g-models and g-functions
+  pl <- policy_learn(type = "blip", control = control_blip(), alpha = 0.05)
+  gf <- fit_g_functions(pd, g_models = g_glm(~1))
+  expect_no_error(
+    pe <- policy_eval(pd,
+                      policy_learn = pl,
+                      g_functions = gf,
+                      g_models = g_glm(~Z)) # g_models are ignored with no cross-fitting
+  )
+  po <- get_policy_object(pe)
+  expect_equal(
+    po$g_functions,
+    gf
+  )
+
+  pl <- policy_learn(type = "blip", control = control_blip(), alpha = 0.05, L = 2, save_cross_fit_models = TRUE)
+  expect_no_error(
+    pe <- policy_eval(pd,
+                      policy_learn = pl,
+                      g_functions = gf,     # g_functions are used within policy_eval
+                      g_models = g_glm(~Z)) # g_models are used within policy_learn
+  )
+
+  po <- get_policy_object(pe)
+  expect_equal(
+    gf,
+    get_g_functions(pe)
+  )
+  expect_equal(
+    predict.nuisance_functions(gf, new_policy_data = pd),
+    pe$g_values
+  )
+  tmp <- glm(A ~ Z, family = binomial, data = d[-po$folds[[1]],])
+  tmp2 <- po$g_functions_cf[[1]]$all_stages
+  expect_equal(
+    coef(tmp) |> unname(),
+    coef(tmp2$g_model$model) |> unname()
+  )
+
+  stop("test q-functions as well")
+
 })
 
 test_that("policy_eval() using policy_learn() has the correct output", {

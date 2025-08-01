@@ -387,6 +387,13 @@ model_input_checks <- function(policy_data,
   logical_checks(c_full_history, "c_full_history")
   logical_checks(m_full_history, "m_full_history")
 
+  if ((is.null(g_functions) && is.null(g_models))) {
+    stop("Provide either g_functions or g_models.")
+  }
+  if ((is.null(q_functions) && is.null(q_models))) {
+    stop("Provide either q_functions or q_models.")
+  }
+
   cens_indicator <- get_element(policy_data, "cens_indicator")
   terminal_indicator <- get_element(policy_data, "terminal_indicator")
   if (any(cens_indicator[["indicator"]]) &&
@@ -394,15 +401,13 @@ model_input_checks <- function(policy_data,
     stop("policy_eval is not implemented for both right-censoring and a stochastic number of action stages.")
   }
   if (any(cens_indicator[["indicator"]])){
-    if ((is.null(c_models) && is.null(c_functions)) ||
-        (!is.null(c_functions) && !is.null(c_models))) {
+    if ((is.null(c_models) && is.null(c_functions))) {
       stop("Right-censoring events (event = 2) occur in the policy data. Please provide either c_functions or c_models.")
     }
   }
   missing <- cens_indicator[stage == (get_K(policy_data)+1),][["indicator"]]
   if (missing == TRUE) {
-    if ((is.null(m_model) && is.null(m_function)) ||
-        (!is.null(m_function) && !is.null(m_model))) {
+    if ((is.null(m_model) && is.null(m_function))) {
       stop("Right-censoring events (event = 2) occur at stage K+1 in the policy data. Please provide either m_function or m_model.")
     }
   }

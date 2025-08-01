@@ -676,7 +676,7 @@ test_that("policy_eval returns the expected c_functions output when using c-mode
     policy = policy_def(1),
     m_model = q_glm(~.),
     m_full_history = FALSE,
-    c_models = c_cox(formula = ~ Z, time = "time", time_2 = "time_2")
+    c_models = c_cox(formula = ~ Z)
   )
 
   library(mets)

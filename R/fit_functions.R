@@ -44,7 +44,9 @@ fit_functions <- function(policy_data,
       policy_data = policy_data,
       g_models = g_models, g_functions = g_functions,
       g_full_history = g_full_history,
-      q_models = q_models, q_full_history = q_full_history
+      q_models = q_models, q_full_history = q_full_history,
+      c_models = c_models, c_functions = c_functions, c_full_history = c_full_history,
+      m_model = m_model, m_function = m_function, m_full_history = m_full_history
     )
     ## getting the policy associated with the default threshold:
     ## the policy is only used to fit the Q-functions, and

@@ -122,4 +122,83 @@ Z_1(d,& g, Q^d, C)(O) \\
 
 We note that this score adapted to handle continuous right-censroing is not the efficient score which incorporate the induced temporal structure. A study of the second order remainder terms yields that for correctly specified nuisance models for $g_0, Q^d_0, C_0$, under reasonable convergence rate assumptions, the associated one-step estimator has asymptotic variance as induced by the influence function $Z_1(d,g_0, Q^d_0, C_0)(O) - \mathbb{E}[Z_1(d,g_0, Q^d_0, C_0)(O)]$.
 
+## Examples
+
+```{r simdata}
+sim_single_stage_right_cens <- function(n = 2e3, zeta = c(0.7, 0.2), type = "right"){
+
+  d <- sim_single_stage(n = n)
+  pd <- policy_data(data = d,
+                    action = "A",
+                    covariates = c("Z", "L", "B"),
+                    utility = "U")
+
+  ld <- pd$stage_data
+
+  ld[stage == 1, time := 1]
+  ld[stage == 2, time := 2]
+
+  ld[stage == 2, Z := d$Z]
+  ld[stage == 2, L := d$L]
+  ld[stage == 2, B := d$B]
+
+  ## simulating the right censoring time
+  ## only depending on the baseline covariate Z:
+  C <- c(rexp(n, 1) / exp((-1) * cbind(1, as.numeric(d$Z)) %*% zeta))
+
+  ld[stage == 1, time_c := C]
+  ld[stage == 2, time_c := C]
+
+  ld[, delta := time_c >= time]
+
+  ld[delta == FALSE , event := 2]
+  ld[delta == FALSE, A := NA]
+  ld[delta == FALSE & stage == 2, U := NA]
+  ld[delta == FALSE, U_A0 := 0]
+  ld[delta == FALSE, U_A1 := 0]
+
+  ld[ , tmp := shift(delta, fill = TRUE), by = list(id)]
+  ld <- ld[tmp == TRUE, ]
+  ld[ , time := pmin(time, time_c)]
+  ld[ , time_c := NULL]
+  ld[ , tmp := NULL]
+  ld[ , delta := NULL]
+
+  if (type == "interval"){
+    ld[, time2 := time]
+    ld[, time := shift(time, fill = 0), by = list(id)]
+  }
+
+  return(ld)
+}
+```
+
+```{r simpd}
+set.seed(1)
+ld <- sim_single_stage_right_cens(n = 5e2, type = "interval")
+pd <- policy_data(data = ld, type = "long", action = "A", time = "time", time2 = "time2")
+```
+
+```{r pe}
+pe <- policy_eval(
+  policy_data = pd,
+  policy = policy_def(1),
+  m_model = q_glm(~.),
+  m_full_history = FALSE,
+  c_models = c_cox(formula = ~ Z)
+)
+pe
+```
+
+```{r pl}
+pe <- policy_eval(
+  policy_data = pd,
+  policy_learn = policy_learn(type = "blip", control = control_blip()),
+  m_model = q_glm(~.),
+  m_full_history = FALSE,
+  c_models = c_cox(formula = ~ Z)
+)
+pe
+```
+
 # References
