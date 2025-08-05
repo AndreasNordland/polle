@@ -13,23 +13,32 @@ check_g_formula <- function(formula, data){
 }
 
 update_g_formula <- function(formula, A, H) {
+  if (!inherits(formula, "formula")) {
+    stop("'formula' must be a formula object")
+  }
+
   action_set <- sort(unique(A))
   if (length(action_set) != 2)
     stop("g_glm requires exactly two levels.")
-  AA <- A
-  AA[A == action_set[1]] <- 0
-  AA[A == action_set[2]] <- 1
-  AA <- as.numeric(AA)
+  AA_ <- A
+  AA_[A == action_set[1]] <- 0
+  AA_[A == action_set[2]] <- 1
+  AA_ <- as.numeric(AA_)
   tt <- terms(formula, data = H)
 
   if (length(attr(tt, "term.labels")) == 0)
-    formula <- AA ~ 1
+    formula <- AA_ ~ 1
   else
-    formula <- reformulate(attr(tt, "term.labels"), response = "AA")
+    formula <- reformulate(attr(tt, "term.labels"), response = "AA_")
 
-  environment(formula)$AA <- AA
+  if ("AA_" %in% colnames(H)) {
+    stop("Variable name 'AA_' is not allowed in the history H. ",
+         "Please rename this column.")
+  }
+
+  environment(formula)$AA_ <- AA_
   attr(formula, "action_set") <- action_set
-  attr(formula, "response") <- "AA"
+  attr(formula, "response") <- "AA_"
 
   return(formula)
 }
