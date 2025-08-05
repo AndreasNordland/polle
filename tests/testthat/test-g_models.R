@@ -1,5 +1,32 @@
 library("data.table")
 
+test_that("update_g_formula", {
+
+  d <- sim_single_stage(1e2, seed = 1)
+  d$AA_ <- ifelse(d$A == 0, "p", "t")
+  pd <- policy_data(d, action = "A", covariates = c("Z", "AA_"), utility = "U")
+
+  p1 <- policy_def(1)
+
+  expect_error(
+    policy_eval(pd,
+                policy = p1,
+                g_models = g_glm(~Z),
+                q_models = q_glm(~Z)),
+    "Variable name 'AA_' is not allowed in the history H. Please rename this column."
+  )
+
+
+  expect_error(
+    policy_eval(pd,
+                policy = p1,
+                g_models = g_glm(~ Z+ AA_),
+                q_models = q_glm(~ Z)),
+    "Variable name 'AA_' is not allowed in the history H. Please rename this column."
+  )
+})
+
+
 test_that("predict.g_functions checks the action set",{
   d <- sim_two_stage_multi_actions(n = 1e2)
 
