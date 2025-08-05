@@ -510,6 +510,7 @@ test_that("policy_eval with target = 'value' agrees with targeted::cate in the s
     propensity.model = A ~ Z,
     data = d,
     nfolds = 2,
+    second.order = FALSE,
     contrast = 1
   )
 
@@ -1235,6 +1236,7 @@ test_that("conditional.policy_eval agrees with targeted::cate", {
     cate.model = A ~ factor(B) - 1,
     response.model = U ~ A * Z,
     propensity.model = A ~ 1,
+    second.order = FALSE,
     data = d,
     nfolds = 1,
   )

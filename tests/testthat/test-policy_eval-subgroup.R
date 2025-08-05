@@ -78,6 +78,7 @@ test_that("policy_eval with target 'subgroup' agrees with targeted::cate.", {
         response.model = U ~ A * Z,
         propensity.model = A ~ 1,
         data = d,
+        second.order = FALSE,
         nfolds = 1,
     )
 
@@ -113,6 +114,7 @@ test_that("policy_eval with target 'subgroup' agrees with targeted::cate.", {
         cate.model = ~ factor(d) - 1,
         response.model = U ~ A * Z,
         propensity.model = A ~ 1,
+        second.order = FALSE,
         data = d,
         nfolds = 2,
     )
