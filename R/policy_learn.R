@@ -170,8 +170,8 @@
 #' po$qv_functions$stage_1
 #' head(get_policy(pe)(pd))
 #' @export
-policy_learn <- function(type = "ql",
-                         control = list(),
+policy_learn <- function(type = "blip",
+                         control = control_blip(),
                          alpha = 0,
                          threshold = NULL,
                          full_history = FALSE,
