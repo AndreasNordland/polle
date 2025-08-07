@@ -741,7 +741,22 @@ test_that("policy_eval passes nuisance models to policy_learn correctly", {
     coef(tmp2$g_model$model) |> unname()
   )
 
-  stop("test q-functions as well")
+  ## q-models and q-functions
+  pl <- policy_learn(type = "blip", control = control_blip(), alpha = 0.05)
+  qf <- fit_Q_functions(pd, policy_actions = policy_def(1)(pd), q_models = q_glm(~A))
+  expect_no_error(
+    pe <- policy_eval(pd,
+                      policy_learn = pl,
+                      q_functions = qf,
+                      q_models = q_glm(~A+Z)) # q_models are NOT ignored even when a Q-function is provided.
+  )
+  po <- get_policy_object(pe)
+  expect_true(
+    !identical(
+      po$q_functions$stage_1$q_model$model |> coef() |> unname(),
+      qf$stage_1$q_model$model |> coef() |> unname()
+    )
+  )
 
 })
 

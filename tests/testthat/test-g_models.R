@@ -181,14 +181,14 @@ test_that("g_models checks formula input", {
 
   d <- sim_two_stage(1e2, seed = 1)
   pd <- policy_data(d,
-    action = c("A_1", "A_2"),
-    baseline = c("BB", "B"),
-    covariates = list(
-      L = c("L_1", "L_2"),
-      C = c("C_1", "C_2")
-    ),
-    utility = c("U_1", "U_2", "U_3")
-  )
+                    action = c("A_1", "A_2"),
+                    baseline = c("BB", "B"),
+                    covariates = list(
+                      L = c("L_1", "L_2"),
+                      C = c("C_1", "C_2")
+                    ),
+                    utility = c("U_1", "U_2", "U_3")
+                    )
 
   p_dynamic <- policy_def(
     policy_functions = list(
@@ -202,29 +202,25 @@ test_that("g_models checks formula input", {
     policy_data = pd,
     policy = p_dynamic,
     g_models = g_glm(formula = A ~ X)
-  ), "object 'X' not found when calling 'g_glm' with formula:
-AA ~ X")
+  ), "object 'X' not found when calling 'g_glm' with formula:\n~X")
 
   expect_error(policy_eval(
     policy_data = pd,
     policy = p_dynamic,
     g_models = g_sl(formula = a ~ X)
-  ), "object 'X' not found when calling model.frame with formula:
-a ~ X")
+  ), "object 'X' not found when calling model.frame with formula:\n~X")
 
   expect_error(policy_eval(
     policy_data = pd,
     policy = p_dynamic,
     g_models = g_rf(formula = ~X)
-  ), "object 'X' not found when calling model.frame with formula:
-~X")
+  ), "object 'X' not found when calling model.frame with formula:\n~X")
 
   expect_error(policy_eval(
     policy_data = pd,
     policy = p_dynamic,
     g_models = g_glmnet(formula = ~X)
-  ), "object 'X' not found when calling model.frame with formula:
-AA ~ X")
+  ), "object 'X' not found when calling model.frame with formula:\n~X")
 
   expect_error(policy_eval(
     policy_data = pd,

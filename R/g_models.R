@@ -254,9 +254,9 @@ g_glm <- function(formula = ~.,
                        dotdotdot)
 
     model <- tryCatch(do.call(what = "glm", args = args_glm),
-                      error = function(e) e
-    )
+                      error = function(e) e)
     if (inherits(model, "error")) {
+      formula <- delete.response(terms(formula))
       model$message <-
         paste0(model$message, " when calling 'g_glm' with formula:\n",
                format(formula))
@@ -270,7 +270,7 @@ g_glm <- function(formula = ~.,
     return(m)
   }
 
-  # setting class:
+                                        # setting class:
   g_glm <- new_g_model(g_glm)
 
   return(g_glm)
@@ -309,6 +309,7 @@ g_glmnet <- function(formula = ~.,
                       error = function(e) e
     )
     if (inherits(model, "error")) {
+      formula <- delete.response(terms(formula))
       model$message <-
         paste0(model$message, " when calling 'g_glmnet' with formula:\n",
                format(formula))
@@ -597,6 +598,7 @@ g_xgboost <- function(formula = ~.,
         error = function(e) e
         )
       if (inherits(cv_res, "error")) {
+        formula <- delete.response(terms(formula))
         cv_res$message <-
           paste0(cv_res$message, " when calling 'g_xgboost' with formula:\n",
                  format(formula))
