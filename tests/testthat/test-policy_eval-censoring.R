@@ -473,11 +473,15 @@ test_that("policy_eval with target 'value' has the expected output for the fixed
   ## no cross-fitting
   ##
 
+  mf <- fit_m_function(policy_data = pd, m_model = q_glm(~x))
+  expect_null(mf)
+
+  ## m-model input:
   pe <- policy_eval(
     policy_data = pd,
     policy = p,
     q_models = list(q_degen(var = "x"), q_degen(var = "x")),
-    m_model = q_degen(var = "x"),
+    m_model = q_degen(var = "x"), # m-values should be ignored
     g_functions = gf,
     c_functions = cf
   )
