@@ -1042,3 +1042,223 @@ test_that("policy_eval with target 'subgroup' has the correct output under right
   )
 
 })
+
+test_that("policy_eval() handles sparse censoring.", {
+
+  ## right-censoring for a single subject at stage 2.
+  set.seed(1)
+  x1 <- runif(n = 1e2, min = -1, max = 1)
+  a1 <- c(rep(1, 50), rep(2, 50))
+  x2 <- runif(n = 1e2, min = -1, max = 1)
+  a2 <- c(rep(3, 50), rep(4, 50))
+  x3 <- runif(n = 1e2, min = -1, max = 1)
+  y <- a1 * x1 + a2 * x2 + runif(n = 1e2, min = -1, max = 1)
+  p1 <- c(rep(1, 25), rep(2, 25), rep(1, 25), rep(2, 25))
+  p2 <- c(rep(3, 25), rep(4, 25), rep(3, 25), rep(4, 25))
+  delta1 <- rbinom(n = 1e2, size = 1, prob = 1) # stage 1 non-missing indicator
+  delta2 <- c(0, rep(1, 99)) # stage 2 non-missing indicator
+  delta3 <- rbinom(n = 1e2, size = 1, prob = 1) # stage 3 non-missing indicator
+  d <- data.table(x1 = x1,
+                  a1 = a1,
+                  x2 = x2,
+                  a2 = a2,
+                  x3 = x3,
+                  y = y,
+                  p1 = p1,
+                  p2 = p2,
+                  delta1 = delta1,
+                  delta2 = delta2,
+                  delta3 = delta3)
+
+
+  pd <- policy_data(
+    data = d,
+    action = c("a1", "a2"),
+    covariates = list(x = c("x1", "x2"),
+                      p = c("p1", "p2")),
+    utility = c("y")
+  )
+
+  gf <- fit_g_functions(pd, g_models = list(g_glm(~1), g_glm(~1)))
+
+  ld <- pd$stage_data
+  ld[stage ==3, x := x3]
+
+  ld[stage == 1, delta:= delta1]
+  ld[stage == 2, delta:= delta2]
+  ld[stage == 3, delta:= delta3]
+  ld[ , delta := cumprod(delta), by = id]
+  ld[ , tmp := cumsum(delta == 0), by = id]
+  ld <- ld[tmp %in% c(0,1)]
+  ld[ , tmp := NULL]
+  ld[delta == 0, event := 2]
+  ld[ , delta := NULL]
+  ld[event == 2 & stage == 3, U := NA]
+  ld[event == 2, A := NA]
+
+  pd <- policy_data(data = ld, type = "long")
+
+  ## policy:
+  p <- policy_def(function(p) p, name = "test", reuse = TRUE)
+
+  ## cross-fitting
+  expect_no_error(
+    pe <- policy_eval(
+      policy_data = pd,
+      policy = p,
+      q_models = list(q_degen(var = "x"), q_degen(var = "x")),
+      g_functions = gf,
+      c_models = g_empir(),
+      M = 2
+    )
+  )
+
+  expect_equal(
+    pe$c_values$surv_time2 |> unique() |> sort(),
+    c(1-1/149, 1)
+  )
+
+})
+
+test_that("policy_eval() handles abundant censoring.", {
+
+  ## right-censoring for full but 1 subject at stage 3.
+  set.seed(1)
+  x1 <- runif(n = 1e2, min = -1, max = 1)
+  a1 <- c(rep(1, 50), rep(2, 50))
+  x2 <- runif(n = 1e2, min = -1, max = 1)
+  a2 <- c(rep(3, 50), rep(4, 50))
+  x3 <- runif(n = 1e2, min = -1, max = 1)
+  y <- a1 * x1 + a2 * x2 + runif(n = 1e2, min = -1, max = 1)
+  p1 <- c(rep(1, 25), rep(2, 25), rep(1, 25), rep(2, 25))
+  p2 <- c(rep(3, 25), rep(4, 25), rep(3, 25), rep(4, 25))
+  delta1 <- rbinom(n = 1e2, size = 1, prob = 1) # stage 1 non-missing indicator
+  delta2 <- rbinom(n = 1e2, size = 1, prob = 1) # stage 2 non-missing indicator
+  delta3 <- c(1, rep(0, 99))  # stage 3 non-missing indicator
+  d <- data.table(x1 = x1,
+                  a1 = a1,
+                  x2 = x2,
+                  a2 = a2,
+                  x3 = x3,
+                  y = y,
+                  p1 = p1,
+                  p2 = p2,
+                  delta1 = delta1,
+                  delta2 = delta2,
+                  delta3 = delta3)
+
+
+  pd <- policy_data(
+    data = d,
+    action = c("a1", "a2"),
+    covariates = list(x = c("x1", "x2"),
+                      p = c("p1", "p2")),
+    utility = c("y")
+  )
+
+  gf <- fit_g_functions(pd, g_models = list(g_glm(~1), g_glm(~1)))
+
+  ld <- pd$stage_data
+  ld[stage ==3, x := x3]
+
+  ld[stage == 1, delta:= delta1]
+  ld[stage == 2, delta:= delta2]
+  ld[stage == 3, delta:= delta3]
+  ld[ , delta := cumprod(delta), by = id]
+  ld[ , tmp := cumsum(delta == 0), by = id]
+  ld <- ld[tmp %in% c(0,1)]
+  ld[ , tmp := NULL]
+  ld[delta == 0, event := 2]
+  ld[ , delta := NULL]
+  ld[event == 2 & stage == 3, U := NA]
+  ld[event == 2, A := NA]
+
+  pd <- policy_data(data = ld, type = "long")
+
+  ## policy:
+  p <- policy_def(function(p) p, name = "test", reuse = TRUE)
+
+  ## no cross-fitting
+  expect_no_error(
+    pe <- policy_eval(
+      policy_data = pd,
+      policy = p,
+      q_models = list(q_degen(var = "x"), q_degen(var = "x")),
+      g_functions = gf,
+      c_models = g_empir(),
+      m_model = polle:::q_degen(var = "x"),
+      M = 1
+    )
+  )
+
+
+  ## cross-fitting
+  ## plan(sequential, split = TRUE) # browser() will work in future.apply
+  expect_error(
+    pe <- policy_eval(
+      policy_data = pd,
+      policy = p,
+      q_models = list(q_degen(var = "x"), q_degen(var = "x")),
+      g_functions = gf,
+      c_models = g_empir(),
+      m_model = polle:::q_degen(var = "x"),
+      M = 2
+    ),
+    "Unable to fit m_model: all utility outcomes are missing"
+  )
+
+
+   ## right-censoring for full but 1 subject at stage 2.
+  set.seed(1)
+  x1 <- runif(n = 1e2, min = -1, max = 1)
+  a1 <- c(rep(1, 50), rep(2, 50))
+  x2 <- runif(n = 1e2, min = -1, max = 1)
+  a2 <- c(rep(3, 50), rep(4, 50))
+  x3 <- runif(n = 1e2, min = -1, max = 1)
+  y <- a1 * x1 + a2 * x2 + runif(n = 1e2, min = -1, max = 1)
+  p1 <- c(rep(1, 25), rep(2, 25), rep(1, 25), rep(2, 25))
+  p2 <- c(rep(3, 25), rep(4, 25), rep(3, 25), rep(4, 25))
+  delta1 <- rbinom(n = 1e2, size = 1, prob = 1) # stage 1 non-missing indicator
+  delta2 <- c(1, rep(0, 99)) # stage 2 non-missing indicator
+  delta3 <- rbinom(n = 1e2, size = 1, prob = 1)  # stage 3 non-missing indicator
+  d <- data.table(x1 = x1,
+                  a1 = a1,
+                  x2 = x2,
+                  a2 = a2,
+                  x3 = x3,
+                  y = y,
+                  p1 = p1,
+                  p2 = p2,
+                  delta1 = delta1,
+                  delta2 = delta2,
+                  delta3 = delta3)
+
+
+  fpd <- policy_data(
+    data = d,
+    action = c("a1", "a2"),
+    covariates = list(x = c("x1", "x2"),
+                      p = c("p1", "p2")),
+    utility = c("y")
+  )
+
+  gf <- fit_g_functions(pd, g_models = list(g_glm(~1), g_glm(~1)))
+
+  ld <- pd$stage_data
+  ld[stage ==3, x := x3]
+
+  ld[stage == 1, delta:= delta1]
+  ld[stage == 2, delta:= delta2]
+  ld[stage == 3, delta:= delta3]
+  ld[ , delta := cumprod(delta), by = id]
+  ld[ , tmp := cumsum(delta == 0), by = id]
+  ld <- ld[tmp %in% c(0,1)]
+  ld[ , tmp := NULL]
+  ld[delta == 0, event := 2]
+  ld[ , delta := NULL]
+  ld[event == 2 & stage == 3, U := NA]
+  ld[event == 2, A := NA]
+
+  pd <- policy_data(data = ld, type = "long")
+
+})

@@ -234,6 +234,23 @@ test_that("fit_c_functions(): g_model's passed as the argument c_models are fitt
 
 })
 
+test_that("fit_c_functions() related errors to fitting the c-model.", {
+
+  set.seed(1)
+  ld <- sim_two_stage_right_cens(n = 500)
+  ld[ , absL := abs(L)]
+  ld$absL[1:10] <- as.numeric(NA)
+  pd <- policy_data(data = ld, type = "long")
+
+  expect_error(
+    fit_c_functions(policy_data = pd,
+                    c_models = list(g_glm(~ absL), g_glm(~ absL), g_glm(~ absL)),
+                    full_history = FALSE),
+    "Error fitting c_model: NA/NaN/Inf in 'x' when calling 'g_glm' with formula:\n~absL"
+  )
+
+})
+
 test_that("fit_c_functions(): returns default right-censoring model for stages where no right-censoring occur,", {
 
   set.seed(1)

@@ -35,6 +35,10 @@ fit_m_function <- function(policy_data,
     H <- get_H(his)[get_event(his) == 1, ]
     id_not_missing <- get_id(his)[get_event(his) == 1][["id"]]
 
+    if(length(id_not_missing) == 0) {
+      stop("Unable to fit m_model: all utility outcomes are missing")
+    }
+
     ## getting the observed (complete) utility:
     utility <- get_utility(policy_data)
     ## vector with non-missing entries U_i:
@@ -43,7 +47,14 @@ fit_m_function <- function(policy_data,
     stopifnot(length(U) == nrow(H))
 
     ## fitting the m-model:
-    m_model <- m_model(AH = H, V_res = U)
+    tryCatch({
+      m_model <- m_model(AH = H, V_res = U)
+    }, error = function(e) {
+      stop("Error fitting m_model: ", e$message)
+    }, warning = function(w) {
+      warning("Warning in m_model fitting: ", w$message)
+      ## Continue with the model despite warning
+    })
 
     ## setting S3 class and attributes:
     m_function <- list(
