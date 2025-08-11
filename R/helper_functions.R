@@ -77,6 +77,20 @@ get_element <- function(x, name, check_name = TRUE) {
   return(y)
 }
 
+get_col <- function(dt, col_name) {
+  if (!data.table::is.data.table(dt)) {
+    stop("Input must be a data.table")
+  }
+  if (!is.character(col_name) || length(col_name) != 1) {
+    stop("col_name must be a single character string")
+  }
+
+  if (!col_name %in% names(dt)) {
+    stop(sprintf("Column '%s' not found in data.table", col_name))
+  }
+  dt[[col_name]]
+}
+
 #' Create Random Folds of Indices
 #'
 #' @param number Integer. Number of folds to create

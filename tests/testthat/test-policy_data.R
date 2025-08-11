@@ -84,7 +84,7 @@ test_that("policy_data checks inputs",{
   )
 })
 
-test_that("policy_data checks id for type = 'wide'", {
+test_that("policy_data() checks id for type = 'wide'", {
   ## long data
   ## 3 cases: no right censoring, right censored before/at stage 1 action,
   ## right censored utility outcome (at stage 2)
@@ -156,7 +156,7 @@ test_that("policy_data handles varying actions set",{
 
 })
 
-test_that("policy_data handles varying sets of/missing covariates in a given stage",{
+test_that("policy_data() handles varying sets of/missing covariates in a given stage",{
   n <- 20
   set.seed(1)
   library("polle")
@@ -243,7 +243,7 @@ test_that("policy_data handles varying sets of/missing covariates in a given sta
 
 })
 
-test_that("policy_data melts wide data correctly in a two stage case.", {
+test_that("policy_data() melts wide data correctly in a two stage case.", {
   wide_data <- data.table(
     B = c("gr1", "gr2"),
     Z_1 = c("A", "B"),
@@ -352,7 +352,7 @@ test_that("policy_data melts wide data correctly in a two stage case.", {
   expect_error(do.call(what = "policy_data", args_copy), "Each element in 'covariates' must have length 2.")
 })
 
-test_that("policy_data melts wide data correctly in a single stage case.", {
+test_that("policy_data() melts wide data correctly in a single stage case.", {
 
   wide_data <- data.table(
     B = c("gr1", "gr2"),
@@ -528,7 +528,7 @@ test_that("policy_data melts wide data correctly in a single stage case.", {
 
 ## single stage ------------------------------------------------------------
 
-test_that("policy_data formats long data correctly for a single stage case.", {
+test_that("policy_data() formats long data correctly for a single stage case.", {
 
   ## long data:
   ld <- data.table(
@@ -659,7 +659,7 @@ test_that("policy_data formats long data correctly for a single stage case.", {
 
 # new_policy_data missing values ------------------------------------------
 
-test_that("policy_data handles missing values.", {
+test_that("policy_data() handles missing values.", {
   # long data:
   ld <- data.table(
     id = c(1,1,2,2),
@@ -709,65 +709,3 @@ test_that("policy_data handles missing values.", {
     NA
   )
 })
-
-
-# subset_id ------------------------------------------------------------------
-
-test_that("the action set is preserved when subsetting",{
-  d1 <- sim_single_stage(10, seed=1)
-  pd1 <- policy_data(d1, action = "A", covariates = c("Z"), utility = "U")
-
-  expect_error(
-    pd2 <- subset_id(pd1, id = get_id(pd1)[d1$A == "0"]),
-    NA
-  )
-
-  expect_equal(
-    get_action_set(pd1),
-    get_action_set(pd2)
-  )
-
-  invisible(capture.output(
-    expect_error(
-      print(pd2),
-      NA
-    )
-  ))
-
-})
-
-# partial -----------------------------------------------------------------
-
-test_that("partial checks input",{
-
-  d <- sim_multi_stage(5e2, seed = 1)
-  # constructing policy_data object:
-  pd <- policy_data(data = d$stage_data,
-                    baseline_data = d$baseline_data,
-                    type = "long",
-                    id = "id",
-                    stage = "stage",
-                    event = "event",
-                    action = "A",
-                    utility = "U")
-
-  expect_equal(
-    get_K(partial(pd, K = 3)),
-    3
-  )
-
-  expect_error(
-    partial(pd, K = 0),
-    "K must be an integer greater than or equal to 1."
-  )
-  expect_error(
-    partial(pd, K = 1.5),
-    "K must be an integer greater than or equal to 1."
-  )
-  expect_error(
-    partial(pd, K = "1"),
-    "K must be an integer greater than or equal to 1."
-  )
-
-})
-

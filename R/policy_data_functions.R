@@ -65,7 +65,7 @@ summary.policy_data <- function(object, probs=seq(0, 1, .25), ...) {
   bc <- paste(object$colnames$baseline_names, collapse = ", ")
   sc <- paste(object$colnames$state_names, collapse = ", ")
   stagedist <- list()
-  cens_indicator <-  any(stage_data[["event"]] == 2)
+  cens_indicator <-  any(get_element(object, "cens_indicator")[["indicator"]])
   cens_tab <- NULL
   if (!cens_indicator) {
   dt <- get_cum_rewards(object)
@@ -87,6 +87,43 @@ summary.policy_data <- function(object, probs=seq(0, 1, .25), ...) {
               cens_indicator = cens_indicator, cens_tab = cens_tab)
   class(res) <- "summary.policy_data"
   res
+}
+
+get_cum_rewards <- function(policy_data, policy=NULL) {
+  K <- get_K(policy_data)
+  n <- get_n(policy_data)
+  A <- U <- id <- stage <- NULL  # R-check glob. var.
+  dt <- policy_data$stage_data[, c("id", "stage", "event", "A", "U")]
+  setkeyv(dt, c("id", "stage"))
+  dt[, U:=cumsum(U), by=id]
+
+  count <- 0
+  policy_group <- pol_ind <- NULL # R-check glob. var.
+  dt[, policy_group:=0]
+  if (!is.null(policy)) {
+    if (!is.list(policy)) policy <- list(policy)
+    for (pol in policy) {
+      count <- count+1
+      d <- merge(dt, pol(policy_data), all.x = TRUE)
+      d[, pol_ind := all(d == A, na.rm = TRUE), by = "id"]
+      dt[d[["pol_ind"]] == TRUE,
+         policy_group:= count,
+         by=id]
+    }
+    dt <- subset(dt, policy_group>0)
+
+    default_lab <- paste("policy_", 1:length(policy), sep = "")
+    lab <- lapply(policy, function(pol) attributes(pol)[["name"]])
+    for (j in seq_along(lab)){
+      if(is.null(lab[[j]]))
+        lab[[j]] <- default_lab[[j]]
+    }
+    lab <- unlist(lab)
+    dt[,policy_group:=lab[policy_group]]
+  }
+  dt[, policy_group := as.character(policy_group)]
+  dt[policy_group == "0", policy_group := "all"]
+  return(dt)
 }
 
 #' Plot policy data for given policies
@@ -405,27 +442,33 @@ partial <- function(object, K)
 
 #' @export
 partial.policy_data <- function(object, K){
-  # input checks:
+  ## input checks:
   if (!is.numeric(K))
     stop("K must be an integer greater than or equal to 1.")
   if (!((K %% 1 == 0) & (K>0)))
     stop("K must be an integer greater than or equal to 1.")
 
-  # copy object to avoid reference issues in data.table
+  ## copy object to avoid reference issues in data.table
   object <- copy_policy_data(object)
 
   object_K <- get_K(object)
   if(K >= object_K)
     return(object)
 
-  # transforming the stage data:
+  ## partial not implemented for right-censored data:
+  cens_indicator <- get_element(object, "cens_indicator")
+  if (any(get_col(cens_indicator, "indicator"))) {
+    stop("partial.policy_data() not implemented for right-censored data.")
+  }
+
+  ## transforming the stage data:
   psd <- partial_stage_data(
     stage_data = object[["stage_data"]],
     K = K,
     deterministic_rewards = object[["colnames"]][["deterministic_rewards"]]
   )
 
-  # updating the object
+  ## updating the object
   object[["stage_data"]] <- psd[["stage_data"]]
   object[["dim"]][["K"]] <- K
   object[["stage_action_sets"]] <- object[["stage_action_sets"]][1:K]

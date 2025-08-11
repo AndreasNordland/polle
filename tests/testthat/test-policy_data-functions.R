@@ -1117,3 +1117,184 @@ test_that("get_utility returns NA for right-censored observations", {
   )
 
 })
+
+test_that("a policy_data object prints as expected under right censoring occur.", {
+
+  # long data
+  ## 4 cases: no right censoring, right censored before/at stage 1 action,
+  ## 2Xright censored utility outcome (at stage 2)
+  ld <- data.table(
+    id = c(1,1,2,3,3,4,4),
+    stage = c(1,2,1,1,2,1,2),
+    event = c(0,1,2,0,2,0,2),
+    A = c("0", NA, NA, "1", NA,"0", NA),
+    B = c("gr1","gr1", "gr2", "gr3", "gr3", "gr4", "gr4"),
+    Z = c("A", NA, "A", "B", NA, "B", NA),
+    L = c(1, 2, 2, 1, 3, 3,4),
+    time = c(1, 2, 0.5, 1, 1.5, 1, 1.2),
+    U = c(0, 10, 0, 0, NA, 0, NA),
+    U_A0 = c(0,0,0,0,NA, 0, NA),
+    U_A1 = c(0,0,0,0,NA, 0, NA)
+  )
+  setkey(ld, id, stage)
+  setindex(ld, event)
+
+  # baseline data:
+  bd <- data.table(
+    id = c(1,2,3,4),
+    W = c("blue", "red", "blue", "red")
+  )
+  setkey(bd, id)
+
+  pd <- policy_data(data = ld, baseline_data = bd, type = "long")
+
+  invisible(
+    capture.output(
+      expect_error(
+        print(pd),
+        NA
+      )
+    )
+  )
+
+})
+
+
+test_that("plot.policy_data() does not fail for right-censored data", {
+
+  sim_two_stage_right_cens <- function(n = 2e2,
+                                       par = c(gamma = 0.5,  beta = 1, zeta = 1),
+                                       seed = NULL,
+                                       action_model_1 = function(C_1, beta, ...)
+                                         stats::rbinom(n = NROW(C_1), size = 1, prob = lava::expit(beta * C_1)),
+                                       action_model_2 = function(C_2, beta, ...)
+                                         stats::rbinom(n = NROW(C_1), size = 1, prob = lava::expit(beta * C_2)),
+                                       deterministic_rewards = FALSE,
+                                       cens_model = function(L, zeta, ...)
+                                         stats::rbinom(n = NROW(L), size = 1, prob = lava::expit(zeta * abs(L)))) {
+    d <- sim_two_stage(n = n)
+    d$U <- d$U_1 + d$U_2 + d$U_3
+
+    pd <- policy_data(data = d,
+                      action = c("A_1", "A_2"),
+                      baseline = c("B", "BB"),
+                      covariates = list(L = c("L_1", "L_2"),
+                                        C = c("C_1", "C_2")),
+                      utility = "U")
+
+    ld <- pd$stage_data
+    ld[is.na(L), L := d[["L_3"]]]
+
+    ## simulating the discrete right-censoring:
+    delta <- rbinom(n = nrow(ld), size = 1, prob = cens_model(ld$L, zeta = par["zeta"]))
+
+    ## adapting the data to the right-censoring process:
+    ld[ , delta := delta]
+    ld[ , delta := cumprod(delta), by = id]
+    ld[ , tmp := cumsum(delta == 0), by = id]
+    ld <- ld[tmp %in% c(0,1)]
+    ld[ , tmp := NULL]
+    ld[delta == 0, event := 2]
+    ld[ , delta := NULL]
+    ld[event == 2 & stage == 3, U := NA]
+    ld[event == 2, A := NA]
+
+    return(ld)
+  }
+
+  ld <- sim_two_stage_right_cens()
+
+  pd <- policy_data(data = ld, type = "long")
+  p1 <- policy_def(1, reuse = TRUE)
+  p0 <- policy_def(0, reuse = TRUE)
+
+  pdf(NULL)
+  expect_no_error(
+    plot(pd, which = 1, policy = list(p1, p0))
+
+  )
+  dev.off()
+
+})
+
+test_that("partial.policy_data() handles right-censoring", {
+
+  sim_two_stage_right_cens <- function(n = 2e2,
+                                       par = c(gamma = 0.5,  beta = 1, zeta = 1),
+                                       seed = NULL,
+                                       action_model_1 = function(C_1, beta, ...)
+                                         stats::rbinom(n = NROW(C_1), size = 1, prob = lava::expit(beta * C_1)),
+                                       action_model_2 = function(C_2, beta, ...)
+                                         stats::rbinom(n = NROW(C_1), size = 1, prob = lava::expit(beta * C_2)),
+                                       deterministic_rewards = FALSE,
+                                       cens_model = function(L, zeta, ...)
+                                         stats::rbinom(n = NROW(L), size = 1, prob = lava::expit(zeta * abs(L)))) {
+    d <- sim_two_stage(n = n)
+    d$U <- d$U_1 + d$U_2 + d$U_3
+
+    pd <- policy_data(data = d,
+                      action = c("A_1", "A_2"),
+                      baseline = c("B", "BB"),
+                      covariates = list(L = c("L_1", "L_2"),
+                                        C = c("C_1", "C_2")),
+                      utility = "U")
+
+    ld <- pd$stage_data
+    ld[is.na(L), L := d[["L_3"]]]
+
+    ## simulating the discrete right-censoring:
+    delta <- rbinom(n = nrow(ld), size = 1, prob = cens_model(ld$L, zeta = par["zeta"]))
+
+    ## adapting the data to the right-censoring process:
+    ld[ , delta := delta]
+    ld[ , delta := cumprod(delta), by = id]
+    ld[ , tmp := cumsum(delta == 0), by = id]
+    ld <- ld[tmp %in% c(0,1)]
+    ld[ , tmp := NULL]
+    ld[delta == 0, event := 2]
+    ld[ , delta := NULL]
+    ld[event == 2 & stage == 3, U := NA]
+    ld[event == 2, A := NA]
+
+    return(ld)
+  }
+
+  ld <- sim_two_stage_right_cens()
+
+  pd <- policy_data(data = ld, type = "long")
+
+  expect_no_error(
+    pd2 <- partial(pd, K = 2)
+  )
+
+  expect_equal(pd, pd2)
+
+  expect_error(
+    pd1 <- partial(pd, K = 1),
+    "partial.policy_data\\(\\) not implemented for right-censored data."
+  )
+
+})
+
+test_that("the action set is preserved when subsetting",{
+  d1 <- sim_single_stage(10, seed=1)
+  pd1 <- policy_data(d1, action = "A", covariates = c("Z"), utility = "U")
+
+  expect_error(
+    pd2 <- subset_id(pd1, id = get_id(pd1)[d1$A == "0"]),
+    NA
+  )
+
+  expect_equal(
+    get_action_set(pd1),
+    get_action_set(pd2)
+  )
+
+  invisible(capture.output(
+    expect_error(
+      print(pd2),
+      NA
+    )
+  ))
+
+})

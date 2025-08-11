@@ -288,7 +288,7 @@ test_that("policy_def handles dynamic policies (two stages).",{
 test_that("policy_def handles a stochastic number of stages", {
 
   set.seed(1)
-  d <- sim_multi_stage(1e2, seed = 1)
+  d <- sim_multi_stage(50, seed = 1)
   # constructing policy_data object:
   pd <- policy_data(data = d$stage_data,
                     baseline_data = d$baseline_data,

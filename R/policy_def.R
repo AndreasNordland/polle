@@ -333,43 +333,6 @@ dynamic_policy <- function(fun){
   return(f)
 }
 
-get_cum_rewards <- function(policy_data, policy=NULL) {
-  K <- get_K(policy_data)
-  n <- get_n(policy_data)
-  A <- U <- id <- stage <- NULL  # R-check glob. var.
-  dt <- policy_data$stage_data[, c("id", "stage", "A", "U")]
-  setkeyv(dt, c("id", "stage"))
-  dt[, U:=cumsum(U), by=id]
-
-  count <- 0
-  policy_group <- pol_ind <- NULL # R-check glob. var.
-  dt[, policy_group:=0]
-  if (!is.null(policy)) {
-    if (!is.list(policy)) policy <- list(policy)
-    for (pol in policy) {
-      count <- count+1
-      d <- merge(dt, pol(policy_data), all.x = TRUE)
-      d[, pol_ind := all(d == A, na.rm = TRUE), by = "id"]
-      dt[d[["pol_ind"]] == TRUE,
-         policy_group:= count,
-         by=id]
-    }
-    dt <- subset(dt, policy_group>0)
-
-    default_lab <- paste("policy_", 1:length(policy), sep = "")
-    lab <- lapply(policy, function(pol) attributes(pol)[["name"]])
-    for (j in seq_along(lab)){
-      if(is.null(lab[[j]]))
-        lab[[j]] <- default_lab[[j]]
-    }
-    lab <- unlist(lab)
-    dt[,policy_group:=lab[policy_group]]
-  }
-  dt[, policy_group := as.character(policy_group)]
-  dt[policy_group == "0", policy_group := "all"]
-  return(dt)
-}
-
 policy_g_functions <- function(g_functions, name = "pgf"){
   force(g_functions)
 
