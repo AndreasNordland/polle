@@ -709,3 +709,29 @@ test_that("policy_eval with target 'subgroup' returns NA when the subgroup count
   )
 
 })
+
+test_that("policy_eval runs with policy_learn using quantile_prob_thres ", {
+
+  d1 <- sim_single_stage(1e3, seed=1)
+  pd1 <- policy_data(d1, action = "A", covariates = c("Z"), utility = "U")
+
+  qs <- c(0.25, 0.5, 0.75)
+
+  learn1 <- policy_learn(type = "blip",
+                         control = control_blip(
+                           blip_models = q_glm(~ .),
+                           quantile_prob_threshold = qs
+                         ))
+  expect_error(
+    pe1 <- policy_eval(
+      policy_data = pd1,
+      policy_learn = learn1,
+      target = "subgroup",
+      g_models = g_glm(~ 1),
+      q_models = q_glm(~ A * (.)),
+      M = 2
+    ),
+    NA
+  )
+
+})

@@ -878,12 +878,12 @@ policy_eval_cross <- function(args,
   min_subgroup_size <- get_element(args, "min_subgroup_size")
   n <- get_n(policy_data)
   id <- get_id(policy_data)
-  policy_learn <- get_element(args, "policy_learn")
-  if (!is.null(policy_learn)) {
-    n_thres <- length(get_element(attr(policy_learn, "pl_args"), "threshold"))
-  } else {
-    n_thres <- 1
-  }
+  ## policy_learn <- get_element(args, "policy_learn")
+  ## if (!is.null(policy_learn)) {
+  ##   n_thres <- length(get_element(attr(policy_learn, "pl_args"), "threshold"))
+  ## } else {
+  ##   n_thres <- 1
+  ## }
 
   ## setting up the folds:
   folds <- split(sample(1:n, n), rep(1:M, length.out = n))
@@ -922,14 +922,16 @@ policy_eval_cross <- function(args,
   ))
 
   ## collecting the cross-fitted policy actions (sorted):
-  policy_actions <- NULL
-  if (n_thres == 1) {
-    policy_actions <- lapply(
-      cross_fits, function(x) get_element(x, "policy_actions")
-    )
-    policy_actions <- rbindlist(policy_actions)
+  policy_actions <- lapply(
+    cross_fits, function(x) get_element(x, "policy_actions", check_name = FALSE)
+  )
+  policy_actions <- rbindlist(policy_actions)
+  if (nrow(policy_actions)>0) {
     setkey(policy_actions, "id", "stage")
+  } else {
+    policy_actions <- NULL
   }
+
 
   ## collecting the subgroup indicator (sorted):
   subgroup_indicator <- NULL
