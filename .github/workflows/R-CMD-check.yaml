@@ -54,10 +54,10 @@ jobs:
           args: 'c("--ignore-vignettes")'
           build_args: 'c("--no-build-vignettes")'
 
-      - name: Upload check results
+      - name: Slow tests
         if: success()
         run: |
-          make test
+          make test-slow
 
       # - name: Upload check results
       #   if: failure()

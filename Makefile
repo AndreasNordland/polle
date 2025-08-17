@@ -13,6 +13,6 @@ test-pkg: # tests locally installed version package
 	@echo 'devtools::test(".")' | $(R)
 
 test-slow:
-	@echo 'testthat::test_dir("tests/slowtest")' | $(R)
+	 @$(R) -f tests/slowtest.R
 
 test: test-pkg test-slow
