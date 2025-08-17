@@ -54,6 +54,11 @@ jobs:
           args: 'c("--ignore-vignettes")'
           build_args: 'c("--no-build-vignettes")'
 
+      - name: Upload check results
+        if: success()
+        run: |
+          make test
+
       # - name: Upload check results
       #   if: failure()
       #   uses: actions/upload-artifact@main
