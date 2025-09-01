@@ -1193,16 +1193,18 @@ test_that("policy_eval() handles abundant censoring.", {
 
 
   ## cross-fitting
-  ## plan(sequential, split = TRUE) # browser() will work in future.apply
+  plan(sequential, split = TRUE) # browser() will work in future.apply
   expect_error(
-    pe <- policy_eval(
-      policy_data = pd,
-      policy = p,
-      q_models = list(q_degen(var = "x"), q_degen(var = "x")),
-      g_functions = gf,
-      c_models = g_empir(),
-      m_model = polle:::q_degen(var = "x"),
-      M = 2
+    suppressWarnings(
+      pe <- policy_eval(
+        policy_data = pd,
+        policy = p,
+        q_models = list(q_degen(var = "x"), q_degen(var = "x")),
+        g_functions = gf,
+        c_models = g_empir(),
+        m_model = polle:::q_degen(var = "x"),
+        M = 2
+      )
     ),
     "Unable to fit m_model: all utility outcomes are missing"
   )

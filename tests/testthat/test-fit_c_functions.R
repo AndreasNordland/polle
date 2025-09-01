@@ -254,7 +254,7 @@ test_that("fit_c_functions() related errors to fitting the c-model.", {
 test_that("fit_c_functions(): returns default right-censoring model for stages where no right-censoring occur,", {
 
   set.seed(1)
-  ld <- sim_two_stage_right_cens(n = 500, cens_model_2 = function(L, ...) rep(1, length(L)))
+  ld <- sim_two_stage_right_cens(n = 500, cens_model_2 = function(L, ...) rep(1, length(L))) # no right-censoring at stage 2
   ld[ , absL := abs(L)]
   pd <- policy_data(data = ld, type = "long")
 

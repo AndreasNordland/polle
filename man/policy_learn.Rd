@@ -8,8 +8,8 @@
 \title{Create Policy Learner}
 \usage{
 policy_learn(
-  type = "ql",
-  control = list(),
+  type = "blip",
+  control = control_blip(),
   alpha = 0,
   threshold = NULL,
   full_history = FALSE,

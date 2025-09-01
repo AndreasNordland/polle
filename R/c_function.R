@@ -76,26 +76,12 @@ predict.c_function <- function(object, new_history, ...){
   }
 
   if (!all(complete.cases(surv))){
-    if(!is.null(stage)){
-      mes <- paste("The c-function predictions at stage ",
-                   stage,
-                   " have missing values.",
-                   sep = "")
-    } else {
-      mes <- "The c-function predictions have missing values."
-    }
+    mes <- "The c-function predictions have missing values."
     stop(mes)
   }
 
   if (!all((surv) >= 0 & (surv <= 1))){
-    if(!is.null(stage)){
-      mes <- paste("The c-function predictions at stage ",
-                   stage,
-                   " are not in [0,1].",
-                   sep = "")
-    } else {
-      mes <- "The c-function predictions are not in [0,1]."
-    }
+    mes <- "The c-function predictions are not in [0,1]."
     stop(mes)
   }
 
@@ -106,6 +92,21 @@ predict.c_function <- function(object, new_history, ...){
   return(c_values)
 }
 
+#' Fit Censoring Functions
+#'
+#' Fits right-censoring models for each stage or a single model across all stages.
+#'
+#' @param policy_data Policy data object created by [policy_data()]
+#' @param c_models Single c_model or list of K+1 c_models
+#' @param full_history Logical; use full history (TRUE) or Markov-type history (FALSE)
+#'
+#' @return List of fitted censoring functions with class "c_functions"
+#'
+#' @details
+#' The function handles two scenarios:
+#' * Multiple models: One model per stage (length K+1)
+#' * Single model: Same model applied across all stages
+#'
 #' @export
 fit_c_functions <- function(policy_data, c_models, full_history = FALSE){
   K <- get_K(policy_data)

@@ -19,8 +19,37 @@ update_c_formula <- function(formula, time, time2, event, H) {
   return(formula)
 }
 
+#' @title c_model class object
+#'
+#' @description
+#' Provides constructors for right-censoring models.
+#' Main constructors include:
+#' * `c_cox()`: Cox proportional hazards model
+#' * `c_no_censoring()`: Model for scenarios without censoring
+#' The constructors are used as input for [policy_eval()] and [policy_learn()].
+#'
+#' @param formula An object of class [formula] specifying the design matrix for
+#' the right-censoring model. Use [get_history_names()] to view the available
+#' variable names.
+#' @param offset offsets for Cox model, see [mets::phreg()]
+#' @param weights weights for Cox score equations, see [mets::phreg()]
+#' @param ... Additional arguments passed to the model.
+#' @details
+#' \code{c_cox()} is a wrapper of [mets::phreg()] (Cox proportional hazard model).\cr
+#' @returns
+#' A c-model object (function) with arguments:
+#' * event: censoring events
+#' * time: start time
+#' * time2: end time
+#' * H: history matrix
+#' @seealso [get_history_names()].
+#' @docType class
+#' @name c_model
+NULL
+
 ## Cox model interface
 
+#' @rdname c_model
 #' @export
 c_cox <- function(formula = ~.,
                   offset = NULL,
@@ -34,7 +63,11 @@ c_cox <- function(formula = ~.,
   c_cox <- function(event, time, time2, H) {
     ## setting the reponse of the formula to Surv(time = time, time2 = time2, event == 2):
     ## note that time, time2 and event are added to the formula environment
-    formula <- update_c_formula(formula = formula, time = time, time2 = time2, event = event, H = H)
+    formula <- update_c_formula(formula = formula,
+                                time = time,
+                                time2 = time2,
+                                event = event,
+                                H = H)
     args_cox <- append(list(formula = formula,
                             data = H,
                             offset = offset,
@@ -67,11 +100,13 @@ c_cox <- function(formula = ~.,
 #' @export
 predict.c_cox <- function(object, new_H, new_time, ...){
   model <- get_element(object, "model")
-  ch <- targeted:::cumhaz(object = model, newdata = new_H, times = new_time, individual.time = TRUE, ...)
+
+  ch <- targeted::cumhaz(object = model, newdata = new_H, times = new_time, individual.time = TRUE, ...)
   surv <- as.vector(get_element(ch, "surv"))
   return(surv)
 }
 
+#' @rdname c_model
 #' @export
 c_no_censoring <- function(){
 

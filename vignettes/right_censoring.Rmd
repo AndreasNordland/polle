@@ -7,7 +7,7 @@ output:
     toc_depth: 2
     mathjax: "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML.js"
 vignette: >
-  %\VignetteIndexEntry{optimal_subgroup}
+  %\VignetteIndexEntry{right_censoring}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 bibliography: ref.bib  

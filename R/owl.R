@@ -97,9 +97,10 @@ dtrlearn2_owl <- function(policy_data,
   # (cross-)fitting the g-functions:
   g_functions_cf <- NULL
   if (!is.null(folds) & cross_fit_g_models == TRUE){
-    g_cf <- fit_g_functions_cf(
+    g_cf <- crossfit_function(
       policy_data = policy_data,
-      g_models = g_models,
+      fun = fit_g_functions,
+      models = g_models,
       full_history = g_full_history,
       folds = folds,
       save_cross_fit_models = save_cross_fit_models,
@@ -107,6 +108,7 @@ dtrlearn2_owl <- function(policy_data,
     )
     g_functions_cf <- getElement(g_cf, "functions")
     g_values <- getElement(g_cf, "values")
+    valid_ids <- getElement(g_cf, "valid_ids")
     rm(g_cf)
   } else {
     if (is.null(g_functions)){

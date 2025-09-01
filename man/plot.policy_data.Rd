@@ -49,10 +49,11 @@ pd3 <- policy_data(data = d3$stage_data,
                    event = "event",
                    action = "A",
                    utility = "U")
+pd3 <- partial(pd3, K = 3)
 
 # specifying two static policies:
-p0 <- policy_def(c(1,1,0,0), name = "p0")
-p1 <- policy_def(c(1,0,0,0), name = "p1")
+p0 <- policy_def(c(1,1,0), name = "p0")
+p1 <- policy_def(c(1,0,0), name = "p1")
 
 plot(pd3)
 plot(pd3, policy = list(p0, p1))

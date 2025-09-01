@@ -548,7 +548,7 @@ g_xgboost <- function(formula = ~.,
   ml <- function(formula = A~., objective,
                  params, nrounds, max_depth,
                  eta, nthread){
-    targeted::ml_model$new(formula,
+    targeted::learner$new(formula,
                            info = "xgBoost",
                            estimate = function(x, y) {
                              xgboost::xgboost(

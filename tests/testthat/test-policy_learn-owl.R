@@ -126,10 +126,10 @@ test_that("policy_learn with type owl runs as intended", {
                                       C = c("C_1", "C_2")),
                     utility = c("U_1", "U_2", "U_3"))
 
-  pl <- policy_learn(type = "ptl",
-                     control = control_ptl(),
+  pl <- policy_learn(type = "owl",
+                     control = control_owl(),
                      L = 2,
-                     alpha = 0.3,
+                     alpha = 0,
                      save_cross_fit_models = TRUE)
 
   po <- pl(pd,
@@ -149,7 +149,6 @@ test_that("policy_learn with type owl runs as intended", {
   expect_true(
     all(complete.cases(get_policy(po)(pd)))
   )
-
 
 })
 
@@ -175,4 +174,3 @@ test_that("input to policy_learn with type owl handles incorrect input in a mult
   expect_error(policy_eval(policy_data = pd,
                            policy_learn = pl), "owl is only implemented for a fixed number of stages.")
 })
-

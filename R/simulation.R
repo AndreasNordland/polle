@@ -457,12 +457,11 @@ sim_multi_stage <- function(n,
   stage_data <- do.call(what  = "rbind", l["stage_data",])
   stage_data <- as.data.table(stage_data)
   U <- exit <- entry <- A <- X <- event <- U_A0 <- U_A1 <-  NULL
+
   stage_data[, U := (exit - entry) + shift(ifelse(!is.na(A), -X * A, 0), fill = 0)]
   stage_data[event %in% c(0), U_A0 := 0]
   stage_data[event %in% c(0), U_A1 := -X]
-  stage_data[event %in% c(2), U := 0]
-  stage_data[event %in% c(2), U_A0 := 0]
-  stage_data[event %in% c(2), U_A1 := 0]
+  stage_data[event == 2, event := 1]
   stage_data[, A := as.character(A)]
 
   setnames(stage_data, "exit", "t")

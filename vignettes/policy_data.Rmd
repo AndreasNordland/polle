@@ -187,6 +187,7 @@ In some cases we are only interested in analyzing a subset of the decision stage
 ```{r partial}
 pd3 <- partial(pd, K = 3)
 pd3
+
 ```
 
 

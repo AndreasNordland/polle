@@ -30,6 +30,15 @@
 #' If a single model is provided, the model is reused at every stage.
 #' @param q_full_history Similar to g_full_history.
 #' @param save_q_functions Similar to save_g_functions.
+#' @param c_functions Fitted c-model/censoring probability model objects. Preferably, use \code{c_models}.
+#' @param c_models List of right-censoring probability models, see [c_model].
+#' @param c_full_history Similar to g_full_history.
+#' @param save_c_functions Similar to save_g_functions.
+#' @param m_function Fitted outcome model object for stage K+1. Preferably, use \code{m_model}.
+#' @param m_model Outcome model for the utility at stage K+1. Only used if the final utility
+#' contribution is missing/has been right-censored
+#' @param m_full_history Similar to g_full_history.
+#' @param save_m_function Similar to save_g_functions.
 #' @param target Character string. Either "value" or "subgroup". If "value",
 #' the target parameter is the policy value.
 #' If "subgroup", the target parameter
@@ -397,7 +406,7 @@ model_input_checks <- function(policy_data,
   cens_indicator <- get_element(policy_data, "cens_indicator")
   terminal_indicator <- get_element(policy_data, "terminal_indicator")
   if (any(cens_indicator[["indicator"]]) &&
-      any(terminal_indicator[stage <= get_K(policy_data),][["indicator"]])) {
+      any(terminal_indicator[get("stage") <= get_K(policy_data),][["indicator"]])) {
     stop("policy_eval is not implemented for both right-censoring and a stochastic number of action stages.")
   }
   if (any(cens_indicator[["indicator"]])){
@@ -405,7 +414,7 @@ model_input_checks <- function(policy_data,
       stop("Right-censoring events (event = 2) occur in the policy data. Please provide either c_functions or c_models.")
     }
   }
-  missing <- cens_indicator[stage == (get_K(policy_data)+1),][["indicator"]]
+  missing <- cens_indicator[get("stage") == (get_K(policy_data)+1),][["indicator"]]
   if (missing == TRUE) {
     if ((is.null(m_model) && is.null(m_function))) {
       stop("Right-censoring events (event = 2) occur at stage K+1 in the policy data. Please provide either m_function or m_model.")
