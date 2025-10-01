@@ -149,8 +149,7 @@ test_that("policy_learn with type drql works as intended", {
 
   expect_error(
     policy_eval(policy_data = pd, policy_learn = qv),
-    "object 'X' not found when calling 'q_glm' with formula:
-V_res ~ X"
+    "Error in qv_model: variable 'X' is not found in data when calling 'q_glm' with formula: ~X"
   )
 
   qv <- policy_learn(
@@ -159,8 +158,7 @@ V_res ~ X"
   )
   expect_error(
     policy_eval(policy_data = pd, policy_learn = qv),
-    "object 'X' not found when calling 'q_glm' with formula:
-V_res ~ X"
+    "Error in qv_model: variable 'X' is not found in data when calling 'q_glm' with formula: ~X"
   )
 
   # q_glm formula default is A * (.), and A is not used when fitting the
@@ -172,9 +170,9 @@ V_res ~ X"
 
   expect_error(
     policy_eval(policy_data = pd, policy_learn = qv),
-    "object 'A' not found when calling 'q_glm' with formula:
-V_res ~ A \\+ L \\+ C \\+ BB \\+ B \\+ A:L \\+ A:C \\+ A:BB \\+ A:B"
+    "Error in qv_model: variable 'A' is not found in data when calling 'q_glm' with formula: ~A \\+ L \\+ C \\+ BB \\+ B \\+ A:L \\+ A:C \\+ A:BB \\+ A:B"
   )
+
 })
 
 test_that("policy_learn with type drql handles varying action sets", {

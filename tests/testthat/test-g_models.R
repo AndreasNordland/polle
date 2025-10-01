@@ -198,35 +198,44 @@ test_that("g_models checks formula input", {
     reuse = FALSE
   )
 
-  expect_error(policy_eval(
-    policy_data = pd,
-    policy = p_dynamic,
-    g_models = g_glm(formula = A ~ X)
-  ), "object 'X' not found when calling 'g_glm' with formula:\n~X")
+  expect_error(
+    policy_eval(policy_data = pd,
+                policy = p_dynamic,
+                g_models = g_glm(formula = A ~ X)),
+    "variable 'X' is not found in data when calling 'g_glm' with formula: ~X"
+  )
 
-  expect_error(policy_eval(
-    policy_data = pd,
-    policy = p_dynamic,
-    g_models = g_sl(formula = a ~ X)
-  ), "object 'X' not found when calling model.frame with formula:\n~X")
+  expect_error(
+    policy_eval(
+      policy_data = pd,
+      policy = p_dynamic,
+      g_models = g_sl(formula = a ~ X)),
+    "variable 'X' is not found in data when calling 'g_sl' with formula: ~X"
+  )
 
-  expect_error(policy_eval(
-    policy_data = pd,
-    policy = p_dynamic,
-    g_models = g_rf(formula = ~X)
-  ), "object 'X' not found when calling model.frame with formula:\n~X")
+  expect_error(
+    policy_eval(
+      policy_data = pd,
+      policy = p_dynamic,
+      g_models = g_rf(formula = ~X)),
+    "variable 'X' is not found in data when calling 'g_rf' with formula: ~X"
+  )
 
-  expect_error(policy_eval(
-    policy_data = pd,
-    policy = p_dynamic,
-    g_models = g_glmnet(formula = ~X)
-  ), "object 'X' not found when calling model.frame with formula:\n~X")
+  expect_error(
+    policy_eval(
+      policy_data = pd,
+      policy = p_dynamic,
+      g_models = g_glmnet(formula = ~X)),
+    "variable 'X' is not found in data when calling 'g_glmnet' with formula: ~X"
+  )
 
-  expect_error(policy_eval(
-    policy_data = pd,
-    policy = p_dynamic,
-    g_models = g_empir(formula = ~X)
-  ), "The g-model formula ~X is invalid.")
+  expect_error(
+    policy_eval(
+      policy_data = pd,
+      policy = p_dynamic,
+      g_models = g_empir(formula = ~X)),
+    "variable 'X' is not found in data when calling 'g_empir' with formula: ~X"
+  )
 
 })
 

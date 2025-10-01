@@ -1,17 +1,3 @@
-check_q_formula <- function(formula, data) {
-  tt <- terms(formula, data = data)
-  if (length(attr(tt, "term.labels")) > 0) {
-    formula <- reformulate(attr(tt, "term.labels"), response = NULL)
-    tt <- terms(formula, data = data)
-    v <- all.vars(tt)
-    if (!all(v %in% colnames(data))) {
-      mes <- deparse(formula)
-      mes <- paste("The Q-model formula", mes, "is invalid.")
-      stop(mes)
-    }
-  }
-}
-
 update_q_formula <- function(formula, data, V_res) {
   tt <- terms(formula, data = data)
   if (length(attr(tt, "term.labels")) == 0) {
@@ -19,7 +5,6 @@ update_q_formula <- function(formula, data, V_res) {
   } else {
     formula <- reformulate(attr(tt, "term.labels"), response = "V_res")
   }
-
   return(formula)
 }
 
@@ -157,6 +142,7 @@ q_glm <- function(formula = ~ A*.,
 
   q_glm <- function(AH, V_res, ...) {
     data <- AH
+    check_formula(formula = formula, data = data, call = "q_glm")
     formula <- update_q_formula(formula = formula, data = data, V_res = V_res)
     args_glm <- list(
       formula = formula,
@@ -165,10 +151,12 @@ q_glm <- function(formula = ~ A*.,
       model = model,
       na.action = na.action
     )
+
     args_glm <- append(args_glm, dotdotdot)
-    model <- tryCatch(do.call(what = "glm", args = args_glm),
+    model <- tryCatch(
+      do.call(what = "glm", args = args_glm),
       error = function(e) e
-      )
+    )
     if (inherits(model, "error")) {
       model$message <-
         paste0(model$message, " when calling 'q_glm' with formula:\n",
@@ -207,6 +195,7 @@ q_glmnet <- function(formula = ~ A*.,
   dotdotdot <- list(...)
 
   q_glmnet <- function(AH, V_res, ...) {
+    check_formula(formula = formula, data = AH, call = "q_glmnet")
     des <- get_design(formula, data=AH)
     y <- V_res
     args_glmnet <- c(list(y = y, x = des$x,
@@ -281,6 +270,7 @@ q_rf <- function(formula = ~.,
     })
 
   q_rf <- function(AH, V_res, ...) {
+    check_formula(formula = formula, data = AH, call = "q_rf")
     des <- get_design(formula, data=AH)
     data <- data.frame(V_res, des$x)
     res <- NULL; best <- 1
@@ -336,6 +326,7 @@ q_sl <- function(formula = ~ .,
   force(env)
   dotdotdot <- list(...)
   q_sl <- function(AH, V_res, folds = NULL, ...) {
+    check_formula(formula = formula, data = AH, call = "q_sl")
     des <- get_design(formula, data=AH)
     if (missing(V_res) || is.null(V_res))
       V_res <- get_response(formula, data=AH)
@@ -450,7 +441,8 @@ q_xgboost <- function(formula = ~.,
   ml_models <- lapply(ml_args, function(par) do.call(ml, par))
 
   q <- function(AH, V_res, ...) {
-    # formatting data:
+    ## formatting data:
+    check_formula(formula = formula, data = AH, call = "q_xgboost")
     des <- get_design(formula, data=AH)
     if (missing(V_res) || is.null(V_res))
       V_res <- get_response(formula, data=AH)
