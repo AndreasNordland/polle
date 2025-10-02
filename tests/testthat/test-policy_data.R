@@ -523,11 +523,6 @@ test_that("policy_data() melts wide data correctly in a single stage case.", {
   )
 })
 
-
-# policy_data long data ---------------------------------------------------------------
-
-## single stage ------------------------------------------------------------
-
 test_that("policy_data() formats long data correctly for a single stage case.", {
 
   ## long data:
@@ -657,8 +652,6 @@ test_that("policy_data() formats long data correctly for a single stage case.", 
 
 })
 
-# new_policy_data missing values ------------------------------------------
-
 test_that("policy_data() handles missing values.", {
   # long data:
   ld <- data.table(
@@ -708,4 +701,37 @@ test_that("policy_data() handles missing values.", {
     policy_data(data = ld, baseline_data = bd, type = "long"),
     NA
   )
+})
+
+test_that("policy_data() runs without covariates.", {
+
+  ## long data without covariates:
+  ld <- data.table(
+    id = c(1,1,2,2),
+    stage = c(1,2,1,2),
+    event = c(0,1,0,1),
+    A = c(0, NA, 1, NA),
+    U = c(0, 10, 0, 5),
+    U_A0 = rep(0, 4),
+    U_A1 = rep(0, 4)
+  )
+  setkey(ld, id, stage)
+  setindex(ld, event)
+
+  expect_error(
+    pd <- policy_data(data = ld,  type = "long"),
+    NA
+  )
+
+  ## wide data without covariates:
+  wide_data <- data.table(
+    treat = c(0,1),
+    outcome = c(10, 5)
+  )
+
+  expect_error(
+    pd <- policy_data(data = wide_data, action = "treat", utility = "outcome", covariates = list()),
+    NA
+  )
+
 })

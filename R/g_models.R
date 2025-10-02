@@ -274,7 +274,6 @@ g_glm <- function(formula = ~.,
   g_glm <- function(A, H, action_set){
     check_formula(formula = formula, data = H, call = "g_glm")
     formula <- update_g_formula(formula, A, H)
-
     args_glm <- append(list(formula = formula,
                             data = H,
                             family = family,
@@ -299,7 +298,7 @@ g_glm <- function(formula = ~.,
     return(m)
   }
 
-                                        # setting class:
+  ## setting class:
   g_glm <- new_g_model(g_glm)
 
   return(g_glm)

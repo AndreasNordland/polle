@@ -409,25 +409,25 @@ q_xgboost <- function(formula = ~.,
                  params, nrounds, max_depth,
                  eta, nthread){
     targeted::learner$new(formula,
-                           info = "xgBoost",
-                           estimate = function(x, y) {
-                             xgboost::xgboost(
-                               data = x, label = y,
-                               objective = objective,
-                               params = params,
-                               nrounds = nrounds,
-                               max_depth = max_depth,
-                               eta = eta,
-                               nthread = nthread,
-                               verbose = 0, print_every = 0)
-                           })
+                          info = "xgBoost",
+                          estimate = function(x, y) {
+                            xgboost::xgboost(
+                                       data = x, label = y,
+                                       objective = objective,
+                                       params = params,
+                                       nrounds = nrounds,
+                                       max_depth = max_depth,
+                                       eta = eta,
+                                       nthread = nthread,
+                                       verbose = 0, print_every = 0)
+                          })
   }
 
   ml_args <- expand.list(
-      nrounds = nrounds,
-      max_depth = max_depth,
-      eta = eta
-    )
+    nrounds = nrounds,
+    max_depth = max_depth,
+    eta = eta
+  )
   cv_par <- ml_args
   ml_args <- lapply(ml_args, function(p){
     p <- append(p,

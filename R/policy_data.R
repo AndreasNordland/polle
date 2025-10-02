@@ -382,6 +382,9 @@ policy_data <- function(data, baseline_data,
     if (!is.null(time2)) {
       stop("time and time2 is not used when type = 'wide'. Please set to NULL.")
     }
+    if (missing(covariates)) {
+      covariates <- list()
+    }
 
     # formatting the wide data:
     md <- melt_wide_data(

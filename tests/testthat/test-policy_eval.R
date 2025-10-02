@@ -1363,3 +1363,63 @@ test_that("policy_eval with target = 'value' runs when performing repeated cross
     ref_IC
   )
 })
+
+test_that("policy_eval() runs without covariates.", {
+
+  a <- c(rep(1, 50), rep(2, 50))
+  y <- a * 2
+  d <- data.table(a = a, y = y)
+  rm(a, y)
+  pd <- policy_data(
+    data = d,
+    action = "a",
+    utility = c("y")
+  )
+  p <- policy_def("2", name = "test")
+
+  expect_no_error(
+    pe <- policy_eval(
+      policy_data = pd,
+      policy = p,
+      q_models = q_glm(~A),
+      g_models = g_glm(~1)
+    )
+  )
+
+  ref_pe <- mean((d$a == "2") / 0.5 * d$y)
+  ref_IC <- matrix((d$a == "2") / 0.5 * (d$y - 4) + 4 - ref_pe)
+
+  expect_equal(
+    coef(pe) |> unname(),
+    ref_pe
+  )
+
+  expect_equal(
+    IC(pe),
+    ref_IC,
+    tolerance = 1e-14
+  )
+
+  expect_no_error(
+    pe <- policy_eval(
+      policy_data = pd,
+      policy = p,
+      q_models = q_glm(~1),
+      g_models = g_glm(~1)
+    )
+  )
+
+  ref_pe <- mean((d$a == "2") / 0.5 * d$y)
+  ref_IC <- matrix((d$a == "2") / 0.5 * (d$y - 3) + 3 - ref_pe)
+
+  expect_equal(
+    coef(pe) |> unname(),
+    ref_pe
+  )
+
+  expect_equal(
+    IC(pe),
+    ref_IC,
+    tolerance = 1e-14
+  )
+})
