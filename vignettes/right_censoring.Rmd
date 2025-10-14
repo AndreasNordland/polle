@@ -192,7 +192,7 @@ pe <- policy_eval(
 pe
 ```
 
-opoo```{r pl}
+```{r pl}
 pe <- policy_eval(
   policy_data = pd,
   policy_learn = policy_learn(type = "blip", control = control_blip()),

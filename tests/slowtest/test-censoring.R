@@ -1,3 +1,5 @@
+future::plan("multicore")
+
 library(mets)
 # Check single-stage policy estimation under right-
 sim1 <- function(n=5e3, teff=log(0.5), tau=1, ...) {
@@ -67,8 +69,8 @@ polle_riskreg <- function(data, tau, ...) {
 }
 
 
-onerun <- function(..., tau=1) {
-    d <- sim1(..., tau = tau)
+onerun <- function(..., tau = 1, teff = log(0.5)) {
+    d <- sim1(..., teff = teff, tau = tau)
     coxs <- mets::phreg(mets::Event(time, status) ~ mets::strata(a), data = d)
     pr <- predict(coxs, # stratified cox P(T>1 | A=a)
         time = tau,
@@ -89,14 +91,14 @@ onerun <- function(..., tau=1) {
         mean((y * status / pr0$surv)[a == 0]),
         mean((y * status / pr0$surv)[a == 1])
     ))
-    true <- c(1 - exp(-tau), 1 - exp(-0.5 * tau))
+    true <- c(1 - exp(-tau), 1 - exp(-exp(teff) * tau))
     # latent time
     # with(d, c(mean(time0[a == 0] < tau), mean(time0[a == 1] < tau)))
     res <- c(
         true,
         est_ipw,
         coef(est),
-        1-pr$surv,
+        1 - pr$surv,
         diag(vcov(est)) * .5,
         pr$se.surv[, 1]
     )
@@ -112,13 +114,48 @@ onerun <- function(..., tau=1) {
     return(res)
 }
 
-onerun()
 
-res <- lava::sim(onerun, 50, args=list(n=1000))
+res1 <- lava::sim(onerun, 50, args=list(n=2000))
+s0 <- summary(res1,
+    est = c("polle.0", "cox.0", "ipw.0"),
+    se = c("se.polle.0", "se.cox.0", NA),
+    true = res1[1, 1]
+    )
+s1 <- summary(res1,
+    est = c("polle.1", "cox.1", "ipw.1"),
+    se = c("se.polle.1", "se.cox.1", NA),
+    true = res1[1, 2]
+    )
 
-s <- summary(res[, -(1:2)],
+bias.delta <- 1e-2
+tinytest::expect_true(all(s0["Bias", ] < bias.delta))
+tinytest::expect_true(all(s1["Bias", ] < bias.delta))
 
+norm.delta <- 0.25
+r0 <- abs(1 - s0["SE", 1:2] / s0["SD", 1:2])
+r1 <- abs(1 - s1["SE", 1:2] / s1["SD", 1:2])
+tinytest::expect_true(all(r0 < norm.delta))
+tinytest::expect_true(all(r1 < norm.delta))
 
-                 ]
+# under the null
+res0 <- lava::sim(onerun, 50, args=list(n=2000, teff=0))
+s0 <- summary(res0,
+    est = c("polle.0", "cox.0", "ipw.0"),
+    se = c("se.polle.0", "se.cox.0", NA),
+    true = res0[1, 1]
+    )
+s1 <- summary(res0,
+    est = c("polle.1", "cox.1", "ipw.1"),
+    se = c("se.polle.1", "se.cox.1", NA),
+    true = res0[1, 2]
+    )
 
-d <- sim1()
+bias.delta <- 1e-3
+tinytest::expect_true(all(s0["Bias", ] < bias.delta))
+tinytest::expect_true(all(s1["Bias", ] < bias.delta))
+
+norm.delta <- 0.25
+r0 <- abs(1 - s0["SE", 1:2] / s0["SD", 1:2])
+r1 <- abs(1 - s1["SE", 1:2] / s1["SD", 1:2])
+tinytest::expect_true(all(r0 < norm.delta))
+tinytest::expect_true(all(r1 < norm.delta))
