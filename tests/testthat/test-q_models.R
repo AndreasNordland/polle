@@ -51,18 +51,53 @@ test_that("q_models checks formula input", {
     reuse = FALSE
   )
 
+  ## glm
   expect_error(policy_eval(policy_data = pd,
                            policy = p_dynamic,
-                           q_models = q_glm(formula = Y~X)))
+                           q_models = q_glm(formula = Y~X)),
+               "variable 'X' is not found in data when calling 'q_glm' with formula: ~X")
+  expect_no_error(policy_eval(policy_data = pd,
+                           policy = p_dynamic,
+                           q_models = q_glm(formula = ~ns(C))))
+
+  ## xgboost
   expect_error(policy_eval(policy_data = pd,
                            policy = p_dynamic,
-                           q_models = q_sl(formula = res~X)))
-  expect_error(policy_eval(policy_data = pd,
-                           policy = p_dynamic,
-                           q_models = q_rf(formula = V_res~X * (.))))
-  expect_error(policy_eval(policy_data = pd,
-                           policy = p_dynamic,
-                           q_models = q_glmnet(formula = Y~X)))
+                           q_models = q_xgboost(formula = Y~X, nrounds = 2)),
+               "variable 'X' is not found in data when calling 'q_xgboost' with formula: ~X")
+
+})
+
+test_that("q_models checks formula input 2", {
+
+  d <- sim_single_stage(200, seed = 1)
+  pd <- policy_data(d,
+                    action = "A",
+                    covariates = list("Z", "B", "L"),
+                    utility = "U"
+                    )
+
+  pl <- policy_learn(
+    type = "blip",
+    control = control_blip(blip_models = q_glm(formula = ~ A*.))
+  )
+  expect_error(
+    po <- pl(pd, q_models = q_glm(), g_models = g_glm()),
+    "Error in blip_model: variable 'A' is not found in data when calling 'q_glm' with formula: ~A \\+ Z \\+ B \\+ L \\+ A:Z \\+ A:B \\+ A:L"
+  )
+
+  ## A in global environment (formula defined in the global environment):
+  A <- d$A
+
+  pl <- policy_learn(
+    type = "blip",
+    control = control_blip(blip_models = q_glm(formula = ~ A*.))
+  )
+  expect_error(
+    po <- pl(pd, q_models = q_glm(), g_models = g_glm()),
+    "Error in blip_model: variable 'A' is not found in data when calling 'q_glm' with formula: ~A \\+ Z \\+ B \\+ L \\+ A:Z \\+ A:B \\+ A:L"
+  )
+
 })
 
 test_that("q_rf formats data correctly via the formula",{

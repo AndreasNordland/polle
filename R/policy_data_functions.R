@@ -78,7 +78,7 @@ summary.policy_data <- function(object, probs=seq(0, 1, .25), ...) {
   } else {
     cens_st <- stage_data[event == 2,][, c("stage"), with = FALSE]
     colnames(cens_st) <- c("stage")
-    cens_tab <- cens_st[,.(n = .N), by = "stage"]
+    cens_tab <- cens_st[ , list(n = .N), by = "stage"]
     cens_tab <- cens_tab[order(stage),]
     cens_tab <- as.data.frame(cens_tab)
   }
@@ -152,10 +152,11 @@ get_cum_rewards <- function(policy_data, policy=NULL) {
 #'                    event = "event",
 #'                    action = "A",
 #'                    utility = "U")
+#' pd3 <- partial(pd3, K = 3)
 #'
 #' # specifying two static policies:
-#' p0 <- policy_def(c(1,1,0,0), name = "p0")
-#' p1 <- policy_def(c(1,0,0,0), name = "p1")
+#' p0 <- policy_def(c(1,1,0), name = "p0")
+#' p1 <- policy_def(c(1,0,0), name = "p1")
 #'
 #' plot(pd3)
 #' plot(pd3, policy = list(p0, p1))
@@ -954,10 +955,9 @@ get_utility <- function(object)
 #' @export
 get_utility.policy_data <- function(object){
   stage_data <- get_stage_data(object)
-  id <- U <- NULL
-  U <- stage_data[, list(U = sum(U), event2 = any(event == 2)), id]
-  U[event2 == TRUE, U := NA]
-  U[ , event2 := NULL]
+  U <- stage_data[, list(U = sum(get("U")), event2 = any(get("event") == 2)), by = get("id")]
+  U[get("event2") == TRUE, U := NA]
+  set(U, j = "event2", value = NULL)
   return(U)
 }
 
@@ -1065,8 +1065,7 @@ get_id_stage.policy_data <- function(object, event_set = c(0)){
 
   stage_data <- get_stage_data(object)
   id_stage_names <- c("id", "stage")
-
-  id_stage <- stage_data[event %in% event_set, ][, id_stage_names, with = FALSE]
+  id_stage <- stage_data[get("event") %in% event_set, ][, id_stage_names, with = FALSE]
 
   return(id_stage)
 }
@@ -1190,6 +1189,12 @@ get_stage_action_sets.policy_data <- function(object){
   return(stage_action_sets)
 }
 
+#' Get event indicators
+#'
+#' \code{get_event} returns the event indicators for given IDs
+#' stages
+#' @param object Object of class [policy_data] or [history].
+#' @returns [data.table::data.table] with keys id and stage.
 #' @export
 get_event <- function(object)
   UseMethod("get_event")

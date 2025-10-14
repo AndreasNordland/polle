@@ -186,10 +186,10 @@ new_policy_data <- function(stage_data,
   }
 
   ## creating a right-censoring indicator for each stage (K+1):
-  cens_indicator <- stage_data[, .(indicator = any(event == 2)), by = c("stage")]
+  cens_indicator <- stage_data[, list(indicator = any(event == 2)), by = c("stage")]
 
   ## creating a terminal event indicator for each stage (K+1):
-  terminal_indicator <- stage_data[, .(indicator = any(event == 1)), by = c("stage")]
+  terminal_indicator <- stage_data[, list(indicator = any(event == 1)), by = c("stage")]
 
   object <- list(
     stage_data = stage_data,
@@ -381,6 +381,9 @@ policy_data <- function(data, baseline_data,
     }
     if (!is.null(time2)) {
       stop("time and time2 is not used when type = 'wide'. Please set to NULL.")
+    }
+    if (missing(covariates)) {
+      covariates <- list()
     }
 
     # formatting the wide data:
@@ -650,8 +653,8 @@ melt_wide_data <- function(wide_data,
   stage_data <- stage_data[!(is.na(A) & is.na(U)), ]
   stage_data[is.na(A), event := 1]
   ## setting time and time2 to NA:
-  stage_data[ , time := as.numeric(NA)]
-  stage_data[ , time2 := as.numeric(NA)]
+  set(stage_data, j = "time", value = as.numeric(NA))
+  set(stage_data, j = "time2", value = as.numeric(NA))
 
   # setting keys:
   setkeyv(stage_data, c("id", "stage"))

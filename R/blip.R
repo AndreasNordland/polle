@@ -28,7 +28,12 @@ fit_blip_function <- function(history, Z, blip_model, valid_ids) {
   # fitting the blip-model:
   z <- Z[, stage_action_set]
   blip <- z[, 2] - z[, 1]
-  blip_model <- blip_model(AH = H, V_res = blip, folds = folds)
+
+  blip_model <- tryCatch({
+    blip_model(AH = H, V_res = blip, folds = folds)
+  }, error = function(e) {
+    stop("Error in blip_model: ", conditionMessage(e))
+  })
 
   blip_function <- list(
     blip_model = blip_model,

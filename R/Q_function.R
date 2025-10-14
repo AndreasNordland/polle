@@ -36,7 +36,7 @@ fit_Q_function <- function(history, Q, q_model) {
   V_res <- V_res[missing_ == FALSE]
   AH <- AH[missing_ == FALSE, ]
 
-  # fitting the (residual) Q-model
+  ## fitting the (residual) Q-model
   q_model <- q_model(V_res = V_res, AH = AH)
 
   q_function <- list(
@@ -72,6 +72,11 @@ predict.Q_function <- function(object, new_history, ...) {
 
   id_stage <- get_id_stage(new_history)
   new_H <- get_H(new_history)
+  if (ncol(new_H) == 0) {
+    ## preventing empty data.table
+    new_H <- data.table(dummy = rep(as.numeric(NA), nrow(id_stage)))
+  }
+
   new_AH_names <- c("A", names(new_H))
 
   ## checks

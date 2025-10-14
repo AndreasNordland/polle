@@ -391,7 +391,7 @@ dr_subgroup <- function(K,
 
   ## (n X action_set) matrix with entries  g(a)
   g_values <- merge(policy_actions, g_values, all.x = TRUE)
-  g_values[ , d := NULL]
+  set(g_values, j = "d", value = NULL)
   G <- as.matrix(g_values[, -c("id", "stage"), with = FALSE])
   ## replace values with 1 whenever  D[,1] == 0:
   G[ D[,1] == 0,] <- 1

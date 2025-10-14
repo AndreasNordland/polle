@@ -143,7 +143,7 @@ sim_two_stage <- function(n = 1e4,
                           action_model_1 = function(C_1, beta, ...)
                             stats::rbinom(n = NROW(C_1), size = 1, prob = lava::expit(beta * C_1)),
                           action_model_2 = function(C_2, beta, ...)
-                            stats::rbinom(n = NROW(C_1), size = 1, prob = lava::expit(beta * C_2)),
+                            stats::rbinom(n = NROW(C_2), size = 1, prob = lava::expit(beta * C_2)),
                           deterministic_rewards = FALSE){
   if (!is.null(seed)) set.seed(seed)
 
@@ -457,12 +457,11 @@ sim_multi_stage <- function(n,
   stage_data <- do.call(what  = "rbind", l["stage_data",])
   stage_data <- as.data.table(stage_data)
   U <- exit <- entry <- A <- X <- event <- U_A0 <- U_A1 <-  NULL
+
   stage_data[, U := (exit - entry) + shift(ifelse(!is.na(A), -X * A, 0), fill = 0)]
   stage_data[event %in% c(0), U_A0 := 0]
   stage_data[event %in% c(0), U_A1 := -X]
-  stage_data[event %in% c(2), U := 0]
-  stage_data[event %in% c(2), U_A0 := 0]
-  stage_data[event %in% c(2), U_A1 := 0]
+  stage_data[event == 2, event := 1]
   stage_data[, A := as.character(A)]
 
   setnames(stage_data, "exit", "t")

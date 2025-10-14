@@ -85,6 +85,11 @@ predict.g_function <- function(object, new_history, ...){
   id_stage <- get_id_stage(new_history)
   new_H <- get_H(new_history)
 
+  if (ncol(new_H) == 0) {
+    ## preventing empty data.table
+    new_H <- data.table(dummy = rep(as.numeric(NA),nrow(id_stage)))
+  }
+
   # checks
   if(!all(stage_action_set %in% action_set))
     stop("The fitted stage action set is not a subset of the new action set.")

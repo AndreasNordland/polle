@@ -13,8 +13,8 @@ fit_m_function <- function(policy_data,
 
   ## check if missing final outcomes occur (at stage K+1)
   missing <- get_element(policy_data, "cens_indicator")
-  indicator <- NULL
-  missing <- missing[stage == (K+1), .(indicator)]
+  indicator <- stage <- NULL
+  missing <- missing[get("stage") == (K+1), list(get("indicator"))]
   missing <- unlist(missing)
 
   if (missing == FALSE){
@@ -94,7 +94,7 @@ predict.m_function <- function(object, new_policy_data, ...) {
   new_H <- get_H(new_history)
 
   q_values <- id_stage
-  q_values <- q_values[, Q := predict(m_model, new_AH = new_H)]
+  set(q_values, j = "Q", value = predict(m_model, new_AH = new_H))
 
   return(q_values)
 }

@@ -25,12 +25,17 @@ fit_QV_function <- function(history, Z, qv_model, valid_ids) {
       )
   }
 
-  # fitting the QV-model:
+   ## fitting the QV-model:
   qv_model <- apply(
     Z[, stage_action_set],
     MARGIN = 2,
     function(z) {
-      qv_model(V_res = z, AH = H, folds = folds)
+      model <- tryCatch({
+        qv_model(V_res = z, AH = H, folds = folds)
+      }, error = function(e) {
+        stop("Error in qv_model: ", conditionMessage(e))
+      })
+      return(model)
     }
   )
   names(qv_model) <- paste("QV_", stage_action_set, sep = "")
