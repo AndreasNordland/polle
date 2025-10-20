@@ -42,6 +42,6 @@ Suggests:
     testthat (>= 3.0),
     ggplot2
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 BugReports: https://github.com/AndreasNordland/polle/issues
 VignetteBuilder: knitr
