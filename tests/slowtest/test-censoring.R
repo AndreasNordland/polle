@@ -87,11 +87,14 @@ onerun <- function(..., tau = 1, teff = log(0.5)) {
         time = pmin(d$time, tau),
         individual.time = TRUE,
         newdata = data.frame(a = rep(1, nrow(d))), se = FALSE
-    )
+        )
+
+
     est_ipw <- with(d, c(
         mean((y * status / pr0$surv)[a == 0]),
         mean((y * status / pr0$surv)[a == 1])
-    ))
+        ))
+
     true <- c(1 - exp(-tau), 1 - exp(-exp(teff) * tau))
     # latent time
     # with(d, c(mean(time0[a == 0] < tau), mean(time0[a == 1] < tau)))
@@ -100,7 +103,7 @@ onerun <- function(..., tau = 1, teff = log(0.5)) {
         est_ipw,
         coef(est),
         1 - pr$surv,
-        diag(vcov(est)) * .5,
+        diag(vcov(est))  ** 0.5,
         pr$se.surv[, 1]
     )
     names(res) <-
