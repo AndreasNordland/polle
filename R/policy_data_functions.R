@@ -955,7 +955,7 @@ get_utility <- function(object)
 #' @export
 get_utility.policy_data <- function(object){
   stage_data <- get_stage_data(object)
-  U <- stage_data[, list(U = sum(get("U")), event2 = any(get("event") == 2)), by = get("id")]
+  U <- stage_data[, list(U = sum(get("U")), event2 = any(get("event") == 2)), by = "id"]
   U[get("event2") == TRUE, U := NA]
   set(U, j = "event2", value = NULL)
   return(U)

@@ -1111,9 +1111,26 @@ test_that("get_utility returns NA for right-censored observations", {
   ld <- sim_single_stage_right_cens(n = 5e2, type = "interval")
   pd <- policy_data(data = ld, type = "long", action = "A", time = "time", time2 = "time2")
 
+  util <- get_utility(pd)
+
+  expect_equal(
+    c("id", "U"),
+    colnames(util)
+  )
+
+  expect_equal(
+    key(util),
+    "id"
+  )
+
   expect_equal(
     ld[ , list(na = any(event == 2)), by = id][["na"]],
     is.na(get_utility(pd)[["U"]])
+  )
+
+  expect_equal(
+    ld[ , list(na = any(event == 2), U = sum(U)), by = id][na == FALSE,][["U"]],
+    get_utility(pd)[["U"]][!is.na(get_utility(pd)[["U"]])]
   )
 
 })
