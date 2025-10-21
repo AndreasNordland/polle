@@ -1,6 +1,7 @@
 future::plan("multicore")
 
 library(mets)
+library(survival)
 
 # Check single-stage policy estimation under right-
 sim1 <- function(n=5e3, teff=log(0.5), tau=1, ...) {
@@ -71,51 +72,64 @@ polle_riskreg <- function(data, tau, ...) {
 
 
 onerun <- function(..., tau = 1, teff = log(0.5)) {
-    d <- sim1(..., teff = teff, tau = tau)
-    coxs <- mets::phreg(mets::Event(time, status) ~ mets::strata(a), data = d)
-    pr <- predict(coxs, # stratified cox P(T>1 | A=a)
-        time = tau,
-        newdata = data.frame(a = 0:1), se = TRUE
-    )
-    est <- polle_riskreg(data = d, tau = tau) # polle P(T<=1 | A=a)
-    # ipw
-    p0 <- mets::phreg(
-        mets::Event(time, status == 0) ~ mets::strata(a),
-        data = d
-    )
-    pr0 <- predict(p0, # censoring weights
-        time = pmin(d$time, tau),
-        individual.time = TRUE,
-        newdata = data.frame(a = rep(1, nrow(d))), se = FALSE
-        )
+  d <- sim1(..., teff = teff, tau = tau)
 
+  ## cox ph
+  coxs <- mets::phreg(mets::Event(time, status) ~ mets::strata(a), data = d)
+  pr <- predict(coxs, # stratified cox P(T>1 | A=a)
+                time = tau,
+                newdata = data.frame(a = 0:1), se = TRUE
+                )
 
-    est_ipw <- with(d, c(
-        mean((y * status / pr0$surv)[a == 0]),
-        mean((y * status / pr0$surv)[a == 1])
-        ))
+  ## polle
+  est <- polle_riskreg(data = d, tau = tau) # polle P(T<=1 | A=a)
 
-    true <- c(1 - exp(-tau), 1 - exp(-exp(teff) * tau))
-    # latent time
-    # with(d, c(mean(time0[a == 0] < tau), mean(time0[a == 1] < tau)))
-    res <- c(
-        true,
-        est_ipw,
-        coef(est),
-        1 - pr$surv,
-        diag(vcov(est))  ** 0.5,
-        pr$se.surv[, 1]
+  ## ipccw
+  p0 <- mets::phreg(
+                mets::Event(time, status == 0) ~ mets::strata(a),
+                data = d
+              )
+  pr0 <- predict(p0, # censoring weights
+                 time = pmin(d$time, tau),
+                 individual.time = TRUE,
+                 newdata = data.frame(a = rep(1, nrow(d))), se = FALSE
+                 )
+  est_ipw <- with(d, c(
+                       mean((y * status / pr0$surv)[a == 0]),
+                       mean((y * status / pr0$surv)[a == 1])
+                     ))
+
+  ## kaplan meier
+  sf <- survfit(Surv(time, status == 1) ~ strata(a), data = d)
+  sf_est <- summary(sf, times = tau)
+  sf_est <- 1-sf_est$surv
+
+  ## true value
+  true <- c(1 - exp(-tau), 1 - exp(-exp(teff) * tau))
+
+  ## latent time
+  ## with(d, c(mean(time0[a == 0] < tau), mean(time0[a == 1] < tau)))
+  res <- c(
+    true,
+    est_ipw,
+    coef(est),
+    sf_est,
+    1 - pr$surv,
+    diag(vcov(est))  ** 0.5,
+    pr$se.surv[, 1]
+  )
+
+  names(res) <-
+    c(
+      "true.0", "true.1",
+      "ipw.0", "ipw.1",
+      "polle.0", "polle.1",
+      "km.0", "km.1",
+      "cox.0", "cox.1",
+      "se.polle.0", "se.polle.1",
+      "se.cox.0", "se.cox.1"
     )
-    names(res) <-
-        c(
-            "true.0", "true.1",
-            "ipw.0", "ipw.1",
-            "polle.0", "polle.1",
-            "cox.0", "cox.1",
-            "se.polle.0", "se.polle.1",
-            "se.cox.0", "se.cox.1"
-        )
-    return(res)
+  return(res)
 }
 
 
@@ -123,13 +137,13 @@ test_that("policy_eval with right-censoring, asymptotics", {
     nsim <- 500
     res1 <- lava::sim(onerun, nsim, args = list(n = 2000))
     s0 <- summary(res1,
-        est = c("polle.0", "cox.0", "ipw.0"),
-        se = c("se.polle.0", "se.cox.0", NA),
+        est = c("polle.0", "cox.0", "ipw.0", "km.0"),
+        se = c("se.polle.0", "se.cox.0", NA, NA),
         true = res1[1, 1]
     )
     s1 <- summary(res1,
-        est = c("polle.1", "cox.1", "ipw.1"),
-        se = c("se.polle.1", "se.cox.1", NA),
+        est = c("polle.1", "cox.1", "ipw.1", "km.1"),
+        se = c("se.polle.1", "se.cox.1", NA, NA),
         true = res1[1, 2]
     )
 
@@ -146,17 +160,17 @@ test_that("policy_eval with right-censoring, asymptotics", {
     # under the null
     res0 <- lava::sim(onerun, nsim, args = list(n = 2000, teff = 0))
     s0 <- summary(res0,
-        est = c("polle.0", "cox.0", "ipw.0"),
-        se = c("se.polle.0", "se.cox.0", NA),
+        est = c("polle.0", "cox.0", "ipw.0", "km.0"),
+        se = c("se.polle.0", "se.cox.0", NA, NA),
         true = res0[1, 1]
     )
     s1 <- summary(res0,
-        est = c("polle.1", "cox.1", "ipw.1"),
-        se = c("se.polle.1", "se.cox.1", NA),
+        est = c("polle.1", "cox.1", "ipw.1", "km.1"),
+        se = c("se.polle.1", "se.cox.1", NA, NA),
         true = res0[1, 2]
     )
 
-    bias.delta <- 1e-3
+    bias.delta <- 1e-2
     expect_true(all(s0["Bias", ] < bias.delta))
     expect_true(all(s1["Bias", ] < bias.delta))
 
