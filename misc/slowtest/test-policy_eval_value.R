@@ -4,7 +4,7 @@ library(data.table)
 library(lava)
 library(future.apply)
 
-
+set.seed(1)
 
 par0 <- list(a = 0, b = 0, c = 0) # no treatment effect
 sim_d <- function(n,

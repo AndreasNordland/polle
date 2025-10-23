@@ -3,6 +3,8 @@ future::plan("multicore")
 library(mets)
 library(survival)
 
+set.seed(1)
+
 # Check single-stage policy estimation under right-
 sim1 <- function(n=5e3, teff=log(0.5), tau=1, ...) {
   x <- rnorm(n)
