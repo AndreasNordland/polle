@@ -7,4 +7,6 @@
 ^inst/logo$
 ^docs$
 ^doc$
+_cache$
+_files$
 ^Meta$
