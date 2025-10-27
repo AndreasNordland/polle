@@ -3,7 +3,10 @@
 .Rdata
 .httr-oauth
 .DS_Store
-
+docs
+*_cache
+*_files
+inst/logo
 tests/*.Rdata
 tests/*.Rds
 inst/examples/*Rds

@@ -4,5 +4,7 @@
 ^LICENSE\.md$
 ^README\.Rmd$
 ^\.github$
+^inst/logo$
+^docs$
 ^doc$
 ^Meta$
