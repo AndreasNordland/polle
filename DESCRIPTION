@@ -28,8 +28,6 @@ Imports:
     survival,
     targeted (>= 0.6),
     DynTxRegime
-Remotes:
-    kkholst/targeted@main
 Suggests:
     DTRlearn2,
     glmnet (>= 4.1-6),
