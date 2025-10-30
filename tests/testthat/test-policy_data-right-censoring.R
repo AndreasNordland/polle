@@ -291,9 +291,3 @@ test_that("policy_data formats right censored wide data correctly in the single 
 
 
 })
-
-test_that("policy_data returns an error for wide data with multiple stages",{
-
-  ## todo
-
-})
