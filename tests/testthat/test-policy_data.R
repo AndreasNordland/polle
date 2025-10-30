@@ -265,8 +265,8 @@ test_that("policy_data() melts wide data correctly in a two stage case.", {
     Z = c("A","C",NA,"B","D",NA),
     L = c(1,3,NA,2,4,NA),
     U = c(0,0,10,0,0,5),
-    U_A0 = rep(0, 6),
-    U_A1 = rep(0, 6)
+    U_A0 = c(0,0,NA,0,0,NA),
+    U_A1 = c(0,0,NA,0,0,NA)
   )
   setkey(target_stage_data, id, stage)
   setindex(target_stage_data, event)
@@ -311,7 +311,7 @@ test_that("policy_data() melts wide data correctly in a two stage case.", {
     L = c(1,3,NA,2,4,NA),
     U = c(10,7,-2,5,3,1),
     U_A0 = c(1.5,3.5,NA,2.5,4.5,NA),
-    U_A1 = rep(0, 6)
+    U_A1 = c(0,0,NA,0,0,NA)
   )
   setkey(target_stage_data, id, stage)
   setindex(target_stage_data, event)
@@ -373,8 +373,8 @@ test_that("policy_data() melts wide data correctly in a single stage case.", {
     Z = c("A", NA, "B", NA),
     L = c(1, NA, 2, NA),
     U = c(0, 10, 0, 5),
-    U_A0 = rep(0, 4),
-    U_A1 = rep(0, 4)
+    U_A0 = c(0,NA,0,NA),
+    U_A1 = c(0,NA,0,NA)
   )
   setkey(target_stage_data, id, stage)
   setindex(target_stage_data, event)
@@ -730,6 +730,11 @@ test_that("policy_data() runs without covariates.", {
   )
 
   expect_error(
+    pd <- policy_data(data = wide_data, action = "treat", utility = "outcome", covariates = list()),
+    NA
+  )
+
+   expect_error(
     pd <- policy_data(data = wide_data, action = "treat", utility = "outcome", covariates = list()),
     NA
   )
