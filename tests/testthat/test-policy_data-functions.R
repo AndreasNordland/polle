@@ -280,7 +280,7 @@ test_that("full_history() returns the history associated with the event process 
   ref <- data.table(
     id = c(3,4),
     stage = c(2,2),
-    U_bar = as.numeric(c(NA, NA)),
+    U_bar = as.numeric(c(0.4, 0.6)),
     U_A0 = c(0,0),
     U_A1 = c(0,0)
   )
@@ -373,7 +373,7 @@ test_that("full_history() returns the history associated with the event process 
   ref <- data.table(
     id = c(1,2,3,4,5),
     stage = c(1,1,1,1,1),
-    U_bar = c(0.1, 0.3, 0.4, 0.6,0.4),
+    U_bar = c(0.1, 0.3, 0.4, 0.6, 0),
     U_A0 = c(0,0,0,0,0),
     U_A1 = c(0,0,0,0,0)
   )
@@ -434,7 +434,7 @@ test_that("full_history() returns the history associated with the event process 
   ref <- data.table(
     id = c(1,3,4),
     stage = c(2,2,2),
-    U_bar = c(0.3, NA, NA),
+    U_bar = c(0.1, 0.4, 0.6),
     U_A0 = c(0,0,0),
     U_A1 = c(0,0,0)
   )
@@ -672,7 +672,7 @@ test_that("stage_state_history() returns the history associated with the event p
   ref <- data.table(
     id = c(3,4),
     stage = c(2,2),
-    U_bar = as.numeric(c(NA, NA)),
+    U_bar = as.numeric(c(0.4, 0.6)),
     U_A0 = c(0,0),
     U_A1 = c(0,0)
   )
@@ -807,7 +807,7 @@ test_that("stage_state_history() returns the history associated with the event p
   ref <- data.table(
     id = c(1,3,4),
     stage = c(2,2,2),
-    U_bar = as.numeric(c(0.3,NA, NA)),
+    U_bar = as.numeric(c(0.1,0.4, 0.6)),
     U_A0 = c(0,0,0),
     U_A1 = c(0,0,0)
   )

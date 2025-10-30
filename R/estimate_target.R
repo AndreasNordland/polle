@@ -77,17 +77,18 @@ event_matrix <- function(events, event_set) {
 
 #' Calculate censoring probability matrix
 #'
-#' @details the probability for right-censored/missing events is set to 1
+#' @details the probability for missing events/terminal events is set to 1
 #' (in order to avoid division by 0)
 #'
 #' @param c_values data.table containing id, stage, surv_time, and surv_time2
 #' @param M matrix of missing event indicators
+#' @param E matrix of terminal event indicators
 #' @param n integer, number of subjects
 #' @param K integer, number of stages
 #'
 #' @return matrix of censoring probabilities. Dimensions (n X (K+1)).
 #' @noRd
-cens_prob_matrix <- function(c_values, M, n, K) {
+cens_prob_matrix <- function(c_values, M, E, n, K) {
   if (!is.null(c_values)){
     if (!data.table::is.data.table(c_values)) {
       stop("c_values must be a data.table")
@@ -103,8 +104,9 @@ cens_prob_matrix <- function(c_values, M, n, K) {
     surv_time2 <- dcast(c_values, id ~ stage,
                         value.var = "surv_time2")[, -c("id"), with = FALSE]
     C <- as.matrix(surv_time2 / surv_time)
-    ## set probabilities to 1 for missing events:
+    ## set probabilities to 1 for missing and terminal events:
     C[M == 1] <- 1
+    C[E == 1] <- 1
 
     ## check for invalid values:
     if (any(is.na(C)) || any(is.infinite(C))) {
@@ -362,7 +364,7 @@ dr_subgroup <- function(K,
   E <- event_matrix(events = events, event_set = c(1))
 
   ## (n X K+1) matrix with entries Delta_k:
-  D <- event_matrix(events = events, event_set = c(0,1))
+  D <- event_matrix(events = events, event_set = c(0, 1))
 
   ## getting the utility vector U:
   U <- utility[["U"]]
@@ -374,7 +376,7 @@ dr_subgroup <- function(K,
   U[D[,2] == 0] <- 0
 
   ## (n X K+1) matrix with entries C_k(H_k):
-  C <- cens_prob_matrix(c_values = c_values, M = M, n = nrow(id), K = K)
+  C <- cens_prob_matrix(c_values = c_values, M = M, E = E, n = nrow(id), K = K)
 
   ## (n X action_set) matrix with entries  I(A = a)
   II <- matrix(nrow = nrow(id), ncol = length(action_set))
@@ -491,28 +493,12 @@ dr_value <- function(K,
   ## (n X K+1) matrix with terminal event indicators
   E <- event_matrix(events = events, event_set = c(1))
 
-  ## (n X K+1) matrix with entries Delta_k (non-censoring/non-missing indicators):
-  D <- event_matrix(events = events, event_set = c(0,1))
-
-  ## test: REMOVE
-  test <- dcast(events, id ~ stage, value.var = "event")
-  test <- test[ , -c("id"), with = FALSE]
-  test <- (test != 2) * 1.0
-  ## fill NA values with 0:
-  ## (occur under right-censoring or a stochastic number of stages)
-  test <- apply(
-    test,
-    MARGIN = 2,
-    function(v) {
-      v[is.na(v)] <- 0
-      return(v)
-    }
-  )
-  stopifnot(all(D == test))
-  rm(test)
+  ## (n X K+1) matrix with entries Delta_k
+  ## (non-censoring/non-missing indicators):
+  D <- event_matrix(events = events, event_set = c(0, 1)) # c(0,1)
 
   ## (n X K+1) matrix with entries C_k(H_k) (non-censoring probabilities):
-  C <- cens_prob_matrix(c_values = c_values, M = M, n = nrow(id), K = K)
+  C <- cens_prob_matrix(c_values = c_values, M = M, E = E, n = nrow(id), K = K)
 
   ## (n X K+1) matrix with entries I(d_k(H_k) = A_k)
   ## I(d_{K+1}(H_{K+1}) = A_{K+1}) = 1:
@@ -531,20 +517,32 @@ dr_value <- function(K,
                           E = E,
                           action_set = action_set)
 
-  ## (n X (K+2)) matrix with columns Q_k(H_{k,i}, d_k(H_{k,i})) (outcome regression values):
+  ## (n X (K+2)) matrix with columns Q_k(H_{k,i}, d_k(H_{k,i}))
+  ## (outcome regression values):
   Q <- policy_action_outcome_matrix(q_values = q_values,
                                     m_values = m_values,
                                     U = U,
                                     policy_actions = policy_actions,
                                     id = id,
                                     D = D,
-                                    action_set)
+                                    action_set = action_set)
+
+  ## browser()
+
+  ## print("helloe")
+
+  ## tmp <- pd$stage_data[id %in% c(1, 2, 4, 6, 23)]
+  ## tmp2 <- Z[c(1, 2, 4, 6, 23)]
+
+  ## Q[c(1, 2, 4, 6, 23),]
 
   ## calculating the doubly robust score:
   Zd <- Q[, 1]
-  for (k in 1:(K+1)) {
-    Zd <- Zd + ipw_weight(D[, 1:k], C[, 1:k]) * ipw_weight(II[, 1:k], G[, 1:k]) * (Q[, k + 1] - Q[, k])
+  for (k in 1:(K + 1)) {
+      Zd <- Zd + ipw_weight(D[, 1:k], C[, 1:k]) * ipw_weight(II[, 1:k], G[, 1:k]) * (Q[, k + 1] - Q[, k])
   }
+
+  ## tmp3 <- Zd[c(1, 2, 4, 6, 23)]
 
   ## calculating the IPW and OR scores:
   Zd_ipw <- ipw_weight(D[, 1:k], C[, 1:k]) * ipw_weight(II, G = G) * ifelse(is.na(U), 0, U)
