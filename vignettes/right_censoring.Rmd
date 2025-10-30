@@ -183,9 +183,11 @@ pd <- policy_data(data = ld, type = "long", action = "A", time = "time", time2 =
 pe <- policy_eval(
   policy_data = pd,
   policy = policy_def(1),
-  m_model = q_glm(~.),
-  m_full_history = FALSE,
-  c_models = c_cox(formula = ~ Z)
+  m_model = q_glm(~ .),
+  m_full_history = TRUE,
+  c_models = list(c_cox(formula = ~ Z_1),
+                  c_cox(formula = ~ Z_2*A_1)),
+  c_full_history = TRUE
 )
 pe
 ```
