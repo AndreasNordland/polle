@@ -1,0 +1,206 @@
+---
+title: "Right censoring/monotone coarsening"
+output:
+  rmarkdown::html_vignette:
+    fig_caption: true
+    toc: true    
+    toc_depth: 2
+    mathjax: "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML.js"
+vignette: >
+  %\VignetteIndexEntry{right_censoring}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+bibliography: ref.bib  
+---
+
+```{r lib, message = FALSE}
+library(polle)
+library(data.table)
+```
+
+## Target parameter under discrete time right-censoring/monotone coarsening
+
+For simplicity we consider a two-stage case with a binary action set
+$\{0,1\}$ at each stage and a final outcome $U$.
+
+A full observation without right censoring is given by the temporally ordered variable $O$:
+
+\begin{align*}
+O^F = \{B, X_1, A_1, X_2, A_2, X_3, U_3\},
+\end{align*}
+
+where $B$ denotes the baseline variables, $X_1, X_2, X_3$ denote the stage specific variables, $U$ denotes the outcome/utility, and $A_1, A_2$ denote the treatment actions.
+
+Now, introduce non-missingness indicators $\Delta_1, \Delta_2, \Delta_3$. Under right-censoring,
+an observation is given by
+
+\begin{align*}
+O = \{B, X_1, \Delta_1, \Delta_1 A_1, \Delta_1 X_2,  \Delta_1 \Delta_2,  \Delta_1 \Delta_2 A_2,  \Delta_1 \Delta_2 X_3,  \Delta_1 \Delta_2\Delta_3, \Delta_1 \Delta_2 \Delta_3 U\}.
+\end{align*}
+
+For convenience, $H_1 = \{B, X_1\}$, $H_2 = \{B, X_1, A_1, X_2\}$, and $H_3 = \{B, X_1, A_1, X_2, A_2, X_3\}$.
+
+The full data target parameter is still
+
+\begin{aligned}
+\mathbb{E}\left[ \left(\prod_{k=1}^2 \frac{I\{A_k = d_k(H_k\} }{g_{0,k}(H_k, A_k)} \right) U \right],
+\end{aligned}
+We assume the following (strong) sequential randomization for the right-censoring process:
+
+\begin{aligned}
+&\Delta_3 \perp U | H_3, \Delta_1 = 1, \Delta_2 = 1\\
+&\Delta_2 \perp \{A_2, X_3, \Delta_3, U\}| H_2, \Delta_1 = 1 \\
+&\Delta_1 \perp \{A_1, X_2, \Delta_2, A_2, X_3, \Delta_3, U\} | H_1.
+\end{aligned}
+
+Under these assumptions it can be shown that our observed data target parameter is equal to the full data target parameter:
+
+\begin{aligned}
+&\mathbb{E}\left[  \left(\prod_{k=1}^3 \frac{\Delta_k}{C_{0,k}(H_k)} \right) \left(\prod_{k=1}^2 \frac{I\{A_k = d_k(H_k\} }{g_{0,k}(H_k, A_k)} \right) U \right]\\ =&\mathbb{E}\left[ \left(\prod_{k=1}^2 \frac{I\{A_k = d_k(H_k\} }{g_{0,k}(H_k, A_k)} \right) U \right],
+\end{aligned}
+where
+\begin{aligned}
+C_{0,k}(h_k) = \mathbb{P}(\Delta_k = 1| H_k = h_k, \overline{\Delta}_k = 1)
+\end{aligned}
+
+and
+
+\begin{aligned}
+g_{0,1}(H_1, a_1) &= \mathbb{P}(A_1 = a_1|H_1, \Delta_1 = 1) =  \mathbb{P}(A_1 = a_1|H_1)\\
+g_{0,2}(H_2, a_2) &= \mathbb{P}(A_2 = a_2|H_2, \Delta_1 = 1, \Delta_2 = 1) = \mathbb{P}(A_2 = a_2|H_2)
+\end{aligned}
+
+
+Note the observed target parameter is also identified via the g-computation formula
+\begin{aligned}
+\mathbb{E}[Q^d_{0,1}(H_1, d_1(H_1))],
+\end{aligned}
+where
+\begin{aligned}
+Q^d_{0,1}(h_1, d_1(h_1)) &= \mathbb{E}[Q^d_{0,2}(H_2, d_2(H_2))|H_1=h_1, \Delta_1 = 1, A_1 = d(h_1)]\\
+Q^d_{0,2}(h_2, d_2(h_2)) &= \mathbb{E}[Q^d_{0,3}(H_3)|H_2 = h_2, \Delta_1 = 1, \Delta_2 = 1, A_2 = d(h_2)]\\
+Q^d_{0,3}(h_3) &= \mathbb{E}[U|H_3 = h_3, \Delta_1 = 1, \Delta_2 = 2, \Delta_3 = 1].
+\end{aligned}
+Note that the observed target parameter can be seen as a 5-step inverse probability weighting expression, and that the associated g-computation formula can be reduced to 3 steps. This would not be the case if additional information was collected between $\Delta_k$ and $A_k$.
+
+## Efficient estimation
+
+For the same reason the (un-centralized) efficient/robust score reduces to
+
+\begin{aligned}
+Z_1(d,& g, Q^d, C)(O) \\
+&= \,Q_{1}^{d}(H_1 , d_1(H_1))  \\
+&+ \sum_{r = 1}^3 \left\{ \prod_{j = 1}^{r} \frac{\Delta_j}{C_j(H_j)} \frac{I\{A_j = d_j(H_{j})\}}{g_{j}(H_j, A_j)} \right\}\left\{Q_{r+1}^{d}(H_{r+1} , d_{r+1}(H_{r+1})) - Q_{r}^{d}(H_r , d_r(H_r))\right\},
+\end{aligned}
+where we set
+\begin{aligned}
+\frac{I\{A_3 = d_3(H_{3})\}}{g_{3}(H_3, A_3)} = 1, \qquad Q_{4}^{d}(H_{4} , d_{4}(H_{4})) = U.
+\end{aligned}
+
+The above expression for the score by direct calculation of the efficient influence function for the observed target parameter or by
+utilizing a monotone coarsening argument, @tsiatis2006semiparametric or @laan2003unified.
+
+A one-step estimator based on this score is implmented in polle via policy_eval().
+
+## Adaption to continuous time right-censoring
+
+Assume that $A_1$, $A_2$, $U$ occur at time points $T_1 < T_2 < T_3$. Let $C$ denote an underlying
+censoring time point. Then we observe time points $\tilde T_k = \min(T_k, C)$ and non-misising indicators $\Delta_k = \{T_k \leq C\}$. Note that with this temporal structure $\prod_{j = 1}^k \Delta_j = \Delta_k$.
+For notational convenience we include $\tilde T_k$ in the state variable $X_k$.
+
+Now, let $C_k$ denote a survival model for the censoring process:
+
+\begin{aligned}
+C_{0,k}(\tilde T_k|H_k) = \mathbb{P}(C > T_k|H_k, C \geq \tilde T_{k-1})
+\end{aligned}
+
+\begin{aligned}
+Z_1(d,& g, Q^d, C)(O) \\
+&= \,Q_{1}^{d}(H_1 , d_1(H_1))  \\
+&+ \sum_{r = 1}^3 \left\{ \prod_{j = 1}^{r} \frac{\Delta_j}{C_j(\tilde T_j|H_j)} \frac{I\{A_j = d_j(H_{j})\}}{g_{j}(H_j, A_j)} \right\}\left\{Q_{r+1}^{d}(H_{r+1} , d_{r+1}(H_{r+1})) - Q_{r}^{d}(H_r , d_r(H_r))\right\}.
+\end{aligned}
+
+We note that this score adapted to handle continuous right-censroing is not the efficient score which incorporate the induced temporal structure. A study of the second order remainder terms yields that for correctly specified nuisance models for $g_0, Q^d_0, C_0$, under reasonable convergence rate assumptions, the associated one-step estimator has asymptotic variance as induced by the influence function $Z_1(d,g_0, Q^d_0, C_0)(O) - \mathbb{E}[Z_1(d,g_0, Q^d_0, C_0)(O)]$.
+
+## Examples
+
+```{r simdata}
+sim_single_stage_right_cens <- function(n = 2e3, zeta = c(0.7, 0.2), type = "right"){
+
+  d <- sim_single_stage(n = n)
+  pd <- policy_data(data = d,
+                    action = "A",
+                    covariates = c("Z", "L", "B"),
+                    utility = "U")
+
+  ld <- pd$stage_data
+
+  ld[stage == 1, time := 1]
+  ld[stage == 2, time := 2]
+
+  ld[stage == 2, Z := d$Z]
+  ld[stage == 2, L := d$L]
+  ld[stage == 2, B := d$B]
+
+  ## simulating the right censoring time
+  ## only depending on the baseline covariate Z:
+  C <- c(rexp(n, 1) / exp((-1) * cbind(1, as.numeric(d$Z)) %*% zeta))
+
+  ld[stage == 1, time_c := C]
+  ld[stage == 2, time_c := C]
+
+  ld[, delta := time_c >= time]
+
+  ld[delta == FALSE , event := 2]
+  ld[delta == FALSE, A := NA]
+  ld[delta == FALSE & stage == 2, U := NA]
+  ld[delta == FALSE, U_A0 := 0]
+  ld[delta == FALSE, U_A1 := 0]
+
+  ld[ , tmp := shift(delta, fill = TRUE), by = list(id)]
+  ld <- ld[tmp == TRUE, ]
+  ld[ , time := pmin(time, time_c)]
+  ld[ , time_c := NULL]
+  ld[ , tmp := NULL]
+  ld[ , delta := NULL]
+
+  if (type == "interval"){
+    ld[, time2 := time]
+    ld[, time := shift(time, fill = 0), by = list(id)]
+  }
+
+  return(ld)
+}
+```
+
+```{r simpd}
+set.seed(1)
+ld <- sim_single_stage_right_cens(n = 5e2, type = "interval")
+pd <- policy_data(data = ld, type = "long", action = "A", time = "time", time2 = "time2")
+```
+
+```{r pe}
+pe <- policy_eval(
+  policy_data = pd,
+  policy = policy_def(1),
+  m_model = q_glm(~ .),
+  m_full_history = TRUE,
+  c_models = list(c_cox(formula = ~ Z_1),
+                  c_cox(formula = ~ Z_2*A_1)),
+  c_full_history = TRUE
+)
+pe
+```
+
+```{r pl}
+pe <- policy_eval(
+  policy_data = pd,
+  policy_learn = policy_learn(type = "blip", control = control_blip()),
+  m_model = q_glm(~.),
+  m_full_history = FALSE,
+  c_models = c_cox(formula = ~ Z)
+)
+pe
+```
+
+# References

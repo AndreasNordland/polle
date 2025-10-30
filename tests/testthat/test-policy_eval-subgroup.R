@@ -1,4 +1,4 @@
-test_that("policy_eval with target = 'sub_effect' checks inputs.", {
+test_that("policy_eval with target = 'subgroup' checks inputs.", {
     d <- sim_single_stage(1e2, seed = 1)
     pd <- policy_data(d, action = "A", covariates = c("Z"), utility = "U")
     p <- policy_def(1)
@@ -21,7 +21,7 @@ test_that("policy_eval with target = 'sub_effect' checks inputs.", {
             policy_data = pd,
             policy = p,
             g_models = g_empir(),
-            target = "sub_effect"
+            target = "subgroup"
         ),
         "subgroup average treatment effect evaluation is not implemented for more than two actions."
     )
@@ -40,7 +40,7 @@ test_that("policy_eval with target = 'sub_effect' checks inputs.", {
             policy_data = pd,
             policy = p,
             g_models = g_empir(),
-            target = "sub_effect"
+            target = "subgroup"
         ),
         "subgroup average treatment effect evaluation is not implemeted for multiple stages."
     )
@@ -706,6 +706,32 @@ test_that("policy_eval with target 'subgroup' returns NA when the subgroup count
   expect_equal(
     coef(sub) |> is.na() |> unname(),
     c(TRUE, FALSE)
+  )
+
+})
+
+test_that("policy_eval runs with policy_learn using quantile_prob_thres ", {
+
+  d1 <- sim_single_stage(1e3, seed=1)
+  pd1 <- policy_data(d1, action = "A", covariates = c("Z"), utility = "U")
+
+  qs <- c(0.25, 0.5, 0.75)
+
+  learn1 <- policy_learn(type = "blip",
+                         control = control_blip(
+                           blip_models = q_glm(~ .),
+                           quantile_prob_threshold = qs
+                         ))
+  expect_error(
+    pe1 <- policy_eval(
+      policy_data = pd1,
+      policy_learn = learn1,
+      target = "subgroup",
+      g_models = g_glm(~ 1),
+      q_models = q_glm(~ A * (.)),
+      M = 2
+    ),
+    NA
   )
 
 })

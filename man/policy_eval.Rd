@@ -26,6 +26,14 @@ policy_eval(
   q_models = q_glm(),
   q_full_history = FALSE,
   save_q_functions = TRUE,
+  c_functions = NULL,
+  c_models = NULL,
+  c_full_history = FALSE,
+  save_c_functions = TRUE,
+  m_function = NULL,
+  m_model = NULL,
+  m_full_history = FALSE,
+  save_m_function = TRUE,
   target = "value",
   type = "dr",
   cross_fit_type = "pooled",
@@ -102,6 +110,23 @@ If a single model is provided, the model is reused at every stage.}
 \item{q_full_history}{Similar to g_full_history.}
 
 \item{save_q_functions}{Similar to save_g_functions.}
+
+\item{c_functions}{Fitted c-model/censoring probability model objects. Preferably, use \code{c_models}.}
+
+\item{c_models}{List of right-censoring probability models, see \link{c_model}.}
+
+\item{c_full_history}{Similar to g_full_history.}
+
+\item{save_c_functions}{Similar to save_g_functions.}
+
+\item{m_function}{Fitted outcome model object for stage K+1. Preferably, use \code{m_model}.}
+
+\item{m_model}{Outcome model for the utility at stage K+1. Only used if the final utility
+contribution is missing/has been right-censored}
+
+\item{m_full_history}{Similar to g_full_history.}
+
+\item{save_m_function}{Similar to save_g_functions.}
 
 \item{target}{Character string. Either "value" or "subgroup". If "value",
 the target parameter is the policy value.

@@ -126,10 +126,10 @@ test_that("policy_learn with type owl runs as intended", {
                                       C = c("C_1", "C_2")),
                     utility = c("U_1", "U_2", "U_3"))
 
-  pl <- policy_learn(type = "ptl",
-                     control = control_ptl(),
+  pl <- policy_learn(type = "owl",
+                     control = control_owl(),
                      L = 2,
-                     alpha = 0.3,
+                     alpha = 0,
                      save_cross_fit_models = TRUE)
 
   po <- pl(pd,
@@ -150,11 +150,14 @@ test_that("policy_learn with type owl runs as intended", {
     all(complete.cases(get_policy(po)(pd)))
   )
 
-
 })
 
 test_that("input to policy_learn with type owl handles incorrect input in a multi-stage setup.",{
   d <- sim_multi_stage(200, seed = 1)
+   ## changing administrative right-censoring events to terminal events:
+  d$stage_data[event == 2, U := 10]
+  d$stage_data[event == 2, event := 1]
+
   # constructing policy_data object:
   pd <- policy_data(data = d$stage_data,
                     baseline_data = d$baseline_data,
@@ -171,4 +174,3 @@ test_that("input to policy_learn with type owl handles incorrect input in a mult
   expect_error(policy_eval(policy_data = pd,
                            policy_learn = pl), "owl is only implemented for a fixed number of stages.")
 })
-

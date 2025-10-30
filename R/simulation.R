@@ -143,7 +143,7 @@ sim_two_stage <- function(n = 1e4,
                           action_model_1 = function(C_1, beta, ...)
                             stats::rbinom(n = NROW(C_1), size = 1, prob = lava::expit(beta * C_1)),
                           action_model_2 = function(C_2, beta, ...)
-                            stats::rbinom(n = NROW(C_1), size = 1, prob = lava::expit(beta * C_2)),
+                            stats::rbinom(n = NROW(C_2), size = 1, prob = lava::expit(beta * C_2)),
                           deterministic_rewards = FALSE){
   if (!is.null(seed)) set.seed(seed)
 
@@ -364,8 +364,8 @@ sim_multi_stage_obs <- function(a,
     exit_vec <- c(exit_vec, tau)
     event_vec <- c(event_vec, 2)
     a_vec <- c(a_vec, NA)
-    x_vec <- c(x_vec, NA)
-    x_lead_vec <- c(x_lead_vec, NA)
+    x_vec <- c(x_vec, 0)
+    x_lead_vec <- c(x_lead_vec, 0)
   }
 
   stage_data <- matrix(c(stage_vec, entry_vec, exit_vec, event_vec, a_vec, x_vec, x_lead_vec), ncol = 7, byrow = FALSE)
@@ -454,13 +454,14 @@ sim_multi_stage <- function(n,
     },
     simplify = "array"
   )
-
   stage_data <- do.call(what  = "rbind", l["stage_data",])
   stage_data <- as.data.table(stage_data)
   U <- exit <- entry <- A <- X <- event <- U_A0 <- U_A1 <-  NULL
+
   stage_data[, U := (exit - entry) + shift(ifelse(!is.na(A), -X * A, 0), fill = 0)]
   stage_data[event %in% c(0), U_A0 := 0]
   stage_data[event %in% c(0), U_A1 := -X]
+  stage_data[event == 2, event := 1]
   stage_data[, A := as.character(A)]
 
   setnames(stage_data, "exit", "t")

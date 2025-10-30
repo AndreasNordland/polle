@@ -1,6 +1,3 @@
-
-# check_data --------------------------------------------------------------
-
 test_that("check_data fails if not given a data.table with unique variables.", {
   data <- c("A", "B")
   expect_error(check_data(data), "'data' must be a data.table.")
@@ -10,8 +7,6 @@ test_that("check_data fails if not given a data.table with unique variables.", {
   data <- data.table(id = 1:10, id = 10:1)
   expect_error(check_data(data), "'data' has duplicated variable names.")
 })
-
-# Input checks ----
 
 test_that("policy_data checks inputs",{
   d <- sim_single_stage(10, seed=1)
@@ -89,9 +84,36 @@ test_that("policy_data checks inputs",{
   )
 })
 
-# policy_data wide data ---------------------------------------------------
+test_that("policy_data() checks id for type = 'wide'", {
+  ## long data
+  ## 3 cases: no right censoring, right censored before/at stage 1 action,
+  ## right censored utility outcome (at stage 2)
+  ld <- data.table(
+    id = c(1,1,2,3,3),
+    stage = c(1,2,1,1,2),
+    event = c(0,1,2,0,2),
+    A = c("0", NA, NA, "1", NA),
+    B = c("gr1","gr1", "gr2", "gr3", "gr3"),
+    Z = c("A", NA, "A", "B", NA),
+    L = c(1, 2, 2, 1, 3),
+    time = c(1, 2, 0.5, 1, 1.5),
+    U = c(0, 10, NA, 0, NA),
+    U_A0 = c(0,0,NA,0,NA),
+    U_A1 = c(0,0,NA,0,NA)
+  )
+  setkey(ld, id, stage)
+  setindex(ld, event)
 
-## two stage ---------------------------------------------------------------
+  expect_error(
+    policy_data(data = ld,
+                action = "A",
+                utility = "U",
+                covariates = c("Z"),
+                id = "id",
+                type = "wide"),
+    "'id' column in data must be unique."
+  )
+})
 
 test_that("policy_data handles varying actions set",{
   d <- sim_two_stage_multi_actions(n = 1e4)
@@ -134,7 +156,7 @@ test_that("policy_data handles varying actions set",{
 
 })
 
-test_that("policy_data handles varying sets of/missing covariates in a given stage",{
+test_that("policy_data() handles varying sets of/missing covariates in a given stage",{
   n <- 20
   set.seed(1)
   library("polle")
@@ -221,7 +243,7 @@ test_that("policy_data handles varying sets of/missing covariates in a given sta
 
 })
 
-test_that("policy_data melts wide data correctly in a two stage case.", {
+test_that("policy_data() melts wide data correctly in a two stage case.", {
   wide_data <- data.table(
     B = c("gr1", "gr2"),
     Z_1 = c("A", "B"),
@@ -237,12 +259,14 @@ test_that("policy_data melts wide data correctly in a two stage case.", {
     id = c(1,1,1,2,2,2),
     stage = c(1,2,3,1,2,3),
     event = c(0,0,1,0,0,1),
+    time = as.numeric(c(NA,NA,NA,NA,NA,NA)),
+    time2 = as.numeric(c(NA,NA,NA,NA,NA,NA)),
     A = as.character(c(0,1,NA,1,0,NA)),
     Z = c("A","C",NA,"B","D",NA),
     L = c(1,3,NA,2,4,NA),
     U = c(0,0,10,0,0,5),
-    U_A0 = rep(0, 6),
-    U_A1 = rep(0, 6)
+    U_A0 = c(0,0,NA,0,0,NA),
+    U_A1 = c(0,0,NA,0,0,NA)
   )
   setkey(target_stage_data, id, stage)
   setindex(target_stage_data, event)
@@ -257,7 +281,8 @@ test_that("policy_data melts wide data correctly in a two stage case.", {
     baseline = "B",
     utility = "outcome"
   )
-  expect_equal(pd$stage_data, target_stage_data, check.attributes = FALSE)
+  setindex(pd$stage_data, event)
+  expect_equal(pd$stage_data, target_stage_data, check.attributes = TRUE)
 
   # including deterministic rewards:
   wide_data <- data.table(
@@ -279,12 +304,14 @@ test_that("policy_data melts wide data correctly in a two stage case.", {
     id = c(1,1,1,2,2,2),
     stage = c(1,2,3,1,2,3),
     event = c(0,0,1,0,0,1),
+    time = rep(as.numeric(NA), 6),
+    time2 = rep(as.numeric(NA), 6),
     A = as.character(c(0,1,NA,1,0,NA)),
     Z = c("A","C",NA,"B","D",NA),
     L = c(1,3,NA,2,4,NA),
     U = c(10,7,-2,5,3,1),
     U_A0 = c(1.5,3.5,NA,2.5,4.5,NA),
-    U_A1 = rep(0, 6)
+    U_A1 = c(0,0,NA,0,0,NA)
   )
   setkey(target_stage_data, id, stage)
   setindex(target_stage_data, event)
@@ -300,7 +327,8 @@ test_that("policy_data melts wide data correctly in a two stage case.", {
     utility = c("outcome_1", "outcome_2", "outcome_3"),
     deterministic_rewards = list(U_A0 = c("outcome_1_A0", "outcome_2_A0"))
   )
-  expect_equal(pd$stage_data, target_stage_data, check.attributes = FALSE)
+  setindex(pd$stage_data, event)
+  expect_equal(pd$stage_data, target_stage_data, check.attributes = TRUE)
 
   # invalid inputs:
   args <- list(
@@ -322,14 +350,9 @@ test_that("policy_data melts wide data correctly in a two stage case.", {
   args_copy <- args
   args_copy$covariates$Z <- c("Z_1")
   expect_error(do.call(what = "policy_data", args_copy), "Each element in 'covariates' must have length 2.")
-
-
 })
 
-
-## single stage ------------------------------------------------------------
-
-test_that("policy_data melts wide data correctly in a single stage case.", {
+test_that("policy_data() melts wide data correctly in a single stage case.", {
 
   wide_data <- data.table(
     B = c("gr1", "gr2"),
@@ -343,65 +366,123 @@ test_that("policy_data melts wide data correctly in a single stage case.", {
     id = c(1,1,2,2),
     stage = c(1,2,1,2),
     event = c(0,1,0,1),
+    time = rep(as.numeric(NA), 4),
+    time2 = rep(as.numeric(NA), 4),
     A = c("0", NA, "1", NA),
     B = c("gr1", NA, "gr2", NA),
     Z = c("A", NA, "B", NA),
     L = c(1, NA, 2, NA),
     U = c(0, 10, 0, 5),
-    U_A0 = rep(0, 4),
-    U_A1 = rep(0, 4)
+    U_A0 = c(0,NA,0,NA),
+    U_A1 = c(0,NA,0,NA)
   )
   setkey(target_stage_data, id, stage)
   setindex(target_stage_data, event)
 
-  # except equal:
-  pd <- policy_data(data = wide_data, action = "treat", covariates = c("B", "Z", "L"), utility = "outcome")
-  expect_equal(pd$stage_data, target_stage_data, check.attributes = FALSE)
+  ## except equal:
+  pd <- policy_data(data = wide_data,
+                    action = "treat",
+                    covariates = c("B", "Z", "L"),
+                    utility = "outcome")
+  setindex(pd$stage_data, event)
+  expect_equal(pd$stage_data, target_stage_data, check.attributes = TRUE)
   rm(pd)
 
-  # duplicate variable names:
-  expect_error(policy_data(data = wide_data, action = "treat", covariates = c("B", "Z", "Z"), utility = "outcome"), "Duplicated variables: \"Z\".")
-  expect_error(policy_data(data = wide_data, action = "treat", covariates = c("B", "Z", "treat"), utility = "outcome"), "Duplicated variables: \"treat\".")
-  expect_error(policy_data(data = wide_data, action = "treat", covariates = c("B", "Z", "L"), utility = "treat"), "Duplicated variables: \"treat\".")
+  ## duplicate variable names:
+  expect_error(
+    policy_data(data = wide_data,
+                action = "treat",
+                covariates = c("B", "Z", "Z"),
+                utility = "outcome"),
+    "Duplicated variables: \"Z\"."
+  )
+  expect_error(
+    policy_data(data = wide_data,
+                action = "treat",
+                covariates = c("B", "Z", "treat"),
+                utility = "outcome"),
+    "Duplicated variables: \"treat\"."
+  )
+  expect_error(
+    policy_data(data = wide_data,
+                action = "treat",
+                covariates = c("B", "Z", "L"),
+                utility = "treat"),
+    "Duplicated variables: \"treat\"."
+  )
 
   # invalid variable names:
   wide_data_copy <- copy(wide_data)
   wide_data_copy$stage <- 1
   wide_data_copy$event <- 0
-  expect_error(policy_data(data = wide_data_copy, action = "treat", covariates = c("B", "Z", "stage"), utility = "outcome"), "'covariates' can not have named elements \"event\" or \"stage\".")
-  expect_error(policy_data(data = wide_data_copy, action = "treat", covariates = c("B", "Z", "event"), utility = "outcome"), "'covariates' can not have named elements \"event\" or \"stage\".")
+  expect_error(
+    policy_data(data = wide_data_copy,
+                action = "treat",
+                covariates = c("B", "Z", "stage"),
+                utility = "outcome"),
+    "'covariates' can not have named elements \"event\", \"stage\", \"time\", or \"time2\"."
+  )
+  expect_error(
+    policy_data(data = wide_data_copy,
+                action = "treat",
+                covariates = c("B", "Z", "event"),
+                utility = "outcome"),
+    "'covariates' can not have named elements \"event\", \"stage\", \"time\", or \"time2\"."
+  )
 
-  # id input
+  ## id input
   wide_data_copy <- copy(wide_data)
   wide_data_copy$id <- c(1,2)
   expect_error(
-    policy_data(data = wide_data_copy, action = "treat", covariates = c("B", "Z", "L"), utility = "outcome"),
+    policy_data(data = wide_data_copy,
+                action = "treat",
+                covariates = c("B", "Z", "L"),
+                utility = "outcome"),
     "'data' has a variable id, but 'id' = NULL. Please set 'id' = \"id\" or change the name of the id variable."
   )
+  pd <- policy_data(data = wide_data_copy,
+                    action = "treat",
+                    covariates = c("B", "Z", "L"),
+                    utility = "outcome",
+                    id = "id")
+  setindex(pd$stage_data, event)
   expect_equal(
-    policy_data(data = wide_data_copy, action = "treat", covariates = c("B", "Z", "L"), utility = "outcome", id = "id")$stage_data,
+    pd$stage_data,
     target_stage_data,
-    check.attributes = FALSE
+    check.attributes = TRUE
   )
   wide_data_copy$id <- NULL
   wide_data_copy$ID <- c(1,2)
+
+  pd <- policy_data(data = wide_data_copy,
+                action = "treat",
+                covariates = c("B", "Z", "L"),
+                utility = "outcome",
+                id = "ID")
+  setindex(pd$stage_data, event)
   expect_equal(
-    policy_data(data = wide_data_copy, action = "treat", covariates = c("B", "Z", "L"), utility = "outcome", id = "ID")$stage_data,
+    pd$stage_data,
     target_stage_data,
-    check.attributes = FALSE
+    check.attributes = TRUE
   )
 
-  #
-  pd <- policy_data(data = wide_data, action = "treat", covariates = c("B", "Z", "L"), utility = "outcome")
+  pd <- policy_data(data = wide_data,
+                    action = "treat",
+                    covariates = c("B", "Z", "L"),
+                    utility = "outcome")
   expect_equal(
     pd$colnames$state_names,
     c("B", "Z", "L")
   )
 
-  # expected baseline
+  ## expected baseline
   target_baseline <- data.table(id = c(1,2), B = c("gr1", "gr2"))
   setkey(target_baseline, id)
-  pd <- policy_data(data = wide_data, action = "treat", covariates = c("Z", "L"), utility = "outcome", baseline = "B")
+  pd <- policy_data(data = wide_data,
+                    action = "treat",
+                    covariates = c("Z", "L"),
+                    utility = "outcome",
+                    baseline = "B")
   expect_equal(
     pd$baseline_data,
     pd$baseline_data
@@ -412,37 +493,45 @@ test_that("policy_data melts wide data correctly in a single stage case.", {
   )
   rm(pd)
 
-  # deterministic rewards
+  ## deterministic rewards
   wide_data_copy <- copy(wide_data)
   wide_data_copy$reward_A0 <- 2
   wide_data_copy$reward_A1 <- 1
   expect_error(
-    policy_data(data = wide_data_copy, action = "treat", covariates = c("B", "Z", "L"), utility = "outcome", deterministic_rewards = list("reward_A0", "reward_A1")),
+    policy_data(data = wide_data_copy,
+                action = "treat",
+                covariates = c("B", "Z", "L"),
+                utility = "outcome",
+                deterministic_rewards = list("reward_A0", "reward_A1")),
     "'deterministic_rewards' must be a named list with names in the set 'U_A0', 'U_A1'."
   )
   expect_error(
-    policy_data(data = wide_data_copy, action = "treat", covariates = c("B", "Z", "L"), utility = "outcome", deterministic_rewards = list(U_0 = "reward_A0", U_1 = "reward_A1")),
+    policy_data(data = wide_data_copy,
+                action = "treat",
+                covariates = c("B", "Z", "L"),
+                utility = "outcome", deterministic_rewards = list(U_0 = "reward_A0", U_1 = "reward_A1")),
     "'deterministic_rewards' must be a named list with names in the set 'U_A0', 'U_A1'."
   )
-  pd <- policy_data(data = wide_data_copy, action = "treat", covariates = c("B", "Z", "L"), utility = "outcome", deterministic_rewards = list(U_A0 = "reward_A0", U_A1 = "reward_A1"))
+  pd <- policy_data(data = wide_data_copy,
+                    action = "treat",
+                    covariates = c("B", "Z", "L"),
+                    utility = "outcome",
+                    deterministic_rewards = list(U_A0 = "reward_A0", U_A1 = "reward_A1"))
   expect_identical(
     pd$stage_data[, c("U_A0", "U_A1"), with = FALSE],
     data.table(U_A0 = c(2,NA,2,NA), U_A1 = c(1,NA,1,NA))
   )
 })
 
+test_that("policy_data() formats long data correctly for a single stage case.", {
 
-# policy_data long data ---------------------------------------------------------------
-
-## single stage ------------------------------------------------------------
-
-test_that("policy_data formats long data correctly for a single stage case.", {
-
-  # long data:
+  ## long data:
   ld <- data.table(
     id = c(1,1,2,2),
     stage = c(1,2,1,2),
     event = c(0,1,0,1),
+    time = rep(as.numeric(NA), 4),
+    time2 = rep(as.numeric(NA), 4),
     A = c("0", NA, "1", NA),
     B = c("gr1", NA, "gr2", NA),
     Z = c("A", NA, "B", NA),
@@ -454,14 +543,14 @@ test_that("policy_data formats long data correctly for a single stage case.", {
   setkey(ld, id, stage)
   setindex(ld, event)
 
-  # baseline data:
+  ## baseline data:
   bd <- data.table(
     id = c(1,2),
     W = c("blue", "red")
   )
   setkey(bd, id)
 
-  # correct
+  ## correct
   expect_error(
     policy_data(data = ld, baseline_data = bd, type = "long"),
     NA
@@ -470,7 +559,7 @@ test_that("policy_data formats long data correctly for a single stage case.", {
   expect_equal(ld, pd$stage_data)
   expect_equal(bd, pd$baseline_data)
 
-  # invalid variable names
+  ## invalid variable names
   expect_error(
     policy_data(data = ld, type = "long", id = 1),
     "'id' must be a character string."
@@ -495,7 +584,7 @@ test_that("policy_data formats long data correctly for a single stage case.", {
   bd_copy <- copy(bd)
   setnames(bd_copy, "id", "ID")
 
-  # correct variable names:
+  ## correct variable names:
   expect_error(
     policy_data(
       data = ld_copy,
@@ -509,7 +598,7 @@ test_that("policy_data formats long data correctly for a single stage case.", {
     ),
     NA
   )
-  # comparison with original:
+  ## comparison with original:
   expect_identical(
     policy_data(
       data = ld_copy,
@@ -563,9 +652,7 @@ test_that("policy_data formats long data correctly for a single stage case.", {
 
 })
 
-# new_policy_data missing values ------------------------------------------
-
-test_that("policy_data handles missing values.", {
+test_that("policy_data() handles missing values.", {
   # long data:
   ld <- data.table(
     id = c(1,1,2,2),
@@ -604,7 +691,7 @@ test_that("policy_data handles missing values.", {
   ld$U <- c(NA, 10, 0, 5)
   expect_error(
     policy_data(data = ld, baseline_data = bd, type = "long"),
-    "The utility varible U has missing values"
+    "The utility variable U has missing values"
   )
   ld$U <- c(0, 10, 0, 5)
 
@@ -616,64 +703,40 @@ test_that("policy_data handles missing values.", {
   )
 })
 
+test_that("policy_data() runs without covariates.", {
 
-# subset_id ------------------------------------------------------------------
-
-test_that("the action set is preserved when subsetting",{
-  d1 <- sim_single_stage(10, seed=1)
-  pd1 <- policy_data(d1, action = "A", covariates = c("Z"), utility = "U")
+  ## long data without covariates:
+  ld <- data.table(
+    id = c(1,1,2,2),
+    stage = c(1,2,1,2),
+    event = c(0,1,0,1),
+    A = c(0, NA, 1, NA),
+    U = c(0, 10, 0, 5),
+    U_A0 = rep(0, 4),
+    U_A1 = rep(0, 4)
+  )
+  setkey(ld, id, stage)
+  setindex(ld, event)
 
   expect_error(
-    pd2 <- subset_id(pd1, id = get_id(pd1)[d1$A == "0"]),
+    pd <- policy_data(data = ld,  type = "long"),
     NA
   )
 
-  expect_equal(
-    get_action_set(pd1),
-    get_action_set(pd2)
-  )
-
-  invisible(capture.output(
-    expect_error(
-      print(pd2),
-      NA
-    )
-  ))
-
-})
-
-
-# partial -----------------------------------------------------------------
-
-test_that("partial checks input",{
-  d <- sim_multi_stage(5e2, seed = 1)
-  # constructing policy_data object:
-  pd <- policy_data(data = d$stage_data,
-                    baseline_data = d$baseline_data,
-                    type = "long",
-                    id = "id",
-                    stage = "stage",
-                    event = "event",
-                    action = "A",
-                    utility = "U")
-
-  expect_equal(
-    get_K(partial(pd, K = 3)),
-    3
+  ## wide data without covariates:
+  wide_data <- data.table(
+    treat = c(0,1),
+    outcome = c(10, 5)
   )
 
   expect_error(
-    partial(pd, K = 0),
-    "K must be an integer greater than or equal to 1."
+    pd <- policy_data(data = wide_data, action = "treat", utility = "outcome", covariates = list()),
+    NA
   )
-  expect_error(
-    partial(pd, K = 1.5),
-    "K must be an integer greater than or equal to 1."
-  )
-  expect_error(
-    partial(pd, K = "1"),
-    "K must be an integer greater than or equal to 1."
+
+   expect_error(
+    pd <- policy_data(data = wide_data, action = "treat", utility = "outcome", covariates = list()),
+    NA
   )
 
 })
-

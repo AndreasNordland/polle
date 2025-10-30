@@ -149,8 +149,7 @@ test_that("policy_learn with type drql works as intended", {
 
   expect_error(
     policy_eval(policy_data = pd, policy_learn = qv),
-    "object 'X' not found when calling 'q_glm' with formula:
-V_res ~ X"
+    "Error in qv_model: variable 'X' is not found in data when calling 'q_glm' with formula: ~X"
   )
 
   qv <- policy_learn(
@@ -159,8 +158,7 @@ V_res ~ X"
   )
   expect_error(
     policy_eval(policy_data = pd, policy_learn = qv),
-    "object 'X' not found when calling 'q_glm' with formula:
-V_res ~ X"
+    "Error in qv_model: variable 'X' is not found in data when calling 'q_glm' with formula: ~X"
   )
 
   # q_glm formula default is A * (.), and A is not used when fitting the
@@ -172,9 +170,9 @@ V_res ~ X"
 
   expect_error(
     policy_eval(policy_data = pd, policy_learn = qv),
-    "object 'A' not found when calling 'q_glm' with formula:
-V_res ~ A \\+ L \\+ C \\+ BB \\+ B \\+ A:L \\+ A:C \\+ A:BB \\+ A:B"
+    "Error in qv_model: variable 'A' is not found in data when calling 'q_glm' with formula: ~A \\+ L \\+ C \\+ BB \\+ B \\+ A:L \\+ A:C \\+ A:BB \\+ A:B"
   )
+
 })
 
 test_that("policy_learn with type drql handles varying action sets", {
@@ -339,7 +337,7 @@ test_that("policy_learn with type drql handles varying action sets", {
 
 })
 
-test_that("policy_learn with type = 'drql' works with cross_fit_g_models.", {
+test_that("policy_learn with type = 'drql' uses the cross_fit_g_models argument", {
   d <- sim_two_stage_multi_actions(n = 1e2)
   pd <- policy_data(
     data = d,
@@ -429,8 +427,13 @@ test_that("policy_learn with type = 'drql' saves cross-fitted models.", {
 })
 
 
-test_that("policy_learn with type drql handles multiple stages with varying stage action sets",{
+test_that("policy_learn with type drql handles multiple stages with varying stage action sets", {
+
   d <- sim_multi_stage(300, seed = 1)
+  ## changing administrative right-censoring events to terminal events:
+  d$stage_data[event == 2, U := 10]
+  d$stage_data[event == 2, event := 1]
+
   # constructing policy_data object:
   pd <- policy_data(data = d$stage_data,
                     baseline_data = d$baseline_data,

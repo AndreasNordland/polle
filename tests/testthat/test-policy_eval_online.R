@@ -1,4 +1,5 @@
-test_that("policy_eval_online() uses valid indexes for training and validation:",{
+test_that("policy_eval_online() uses valid indexes for training and validation:", {
+
   z <- 1:1e2
   a <- c(rep(1, 50), rep(2, 50))
   y <- a * 2
@@ -198,6 +199,7 @@ test_that("policy_eval_online has the expected output for target = 'value' in th
     ref_vcov,
     vcov(pe)
   )
+
 })
 
 test_that("policy_eval_sequential has the expected output in the single stage case for target = 'subgroup'", {
@@ -311,4 +313,5 @@ test_that("policy_eval_sequential has the expected output in the single stage ca
     ref_vcov,
     vcov(pe)
   )
+
 })

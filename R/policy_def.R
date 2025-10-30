@@ -132,7 +132,7 @@ policy_def <- function(policy_functions, full_history = FALSE, reuse = FALSE, na
   force(full_history)
   force(reuse)
 
-  # input checks
+  ## input checks
   if (!(is.logical(full_history) & (length(full_history) == 1)))
     stop("full_history must be TRUE or FALSE")
   if (!(is.logical(reuse) & (length(reuse) == 1)))
@@ -163,10 +163,10 @@ policy_def <- function(policy_functions, full_history = FALSE, reuse = FALSE, na
     K <- get_K(policy_data)
 
     if (reuse == TRUE){
-      # policy_functions as a list:
+      ## policy_functions as a list:
       policy_functions <- replicate(K, policy_functions)
     }
-    # policy_functions as list (or vector):
+    ## policy_functions as list (or vector):
     policy_functions <- c(policy_functions)
 
     if (length(policy_functions) != K)
@@ -188,7 +188,8 @@ policy_def <- function(policy_functions, full_history = FALSE, reuse = FALSE, na
       1:K,
       function(k) get_history(policy_data,
                               stage = k,
-                              full_history = full_history)
+                              full_history = full_history,
+                              event_set = c(0,2)) # action and right-censoring events
     )
     policy_actions <- mapply(
       function(sp, sh) sp(sh),
@@ -332,50 +333,15 @@ dynamic_policy <- function(fun){
   return(f)
 }
 
-get_cum_rewards <- function(policy_data, policy=NULL) {
-  K <- get_K(policy_data)
-  n <- get_n(policy_data)
-  A <- U <- id <- stage <- NULL  # R-check glob. var.
-  dt <- policy_data$stage_data[, c("id", "stage", "A", "U")]
-  setkeyv(dt, c("id", "stage"))
-  dt[, U:=cumsum(U), by=id]
-
-  count <- 0
-  policy_group <- pol_ind <- NULL # R-check glob. var.
-  dt[, policy_group:=0]
-  if (!is.null(policy)) {
-    if (!is.list(policy)) policy <- list(policy)
-    for (pol in policy) {
-      count <- count+1
-      d <- merge(dt, pol(policy_data), all.x = TRUE)
-      d[, pol_ind := all(d == A, na.rm = TRUE), by = "id"]
-      dt[d[["pol_ind"]] == TRUE,
-         policy_group:= count,
-         by=id]
-    }
-    dt <- subset(dt, policy_group>0)
-
-    default_lab <- paste("policy_", 1:length(policy), sep = "")
-    lab <- lapply(policy, function(pol) attributes(pol)[["name"]])
-    for (j in seq_along(lab)){
-      if(is.null(lab[[j]]))
-        lab[[j]] <- default_lab[[j]]
-    }
-    lab <- unlist(lab)
-    dt[,policy_group:=lab[policy_group]]
-  }
-  dt[, policy_group := as.character(policy_group)]
-  dt[policy_group == "0", policy_group := "all"]
-  return(dt)
-}
-
 policy_g_functions <- function(g_functions, name = "pgf"){
   force(g_functions)
 
   policy <- function(policy_data){
     action_set <- get_action_set(policy_data)
     g_cols <- paste("g_", action_set, sep = "")
-    g_values <- predict.nuisance_functions(g_functions, policy_data)
+    g_values <- predict.nuisance_functions(g_functions,
+                                           policy_data,
+                                           event_set = c(0,2))
 
     dd <- apply(
       g_values[ , g_cols, with = FALSE],

@@ -8,6 +8,7 @@ fit_Q_function <- function(history, Q, q_model) {
   A <- get_A(history)
   H <- get_H(history)
   AH <- cbind(A, H)
+
   # checking that the dimensions fit:
   if (nrow(AH) != length(Q))
     stop("Unable to fit Q-function.")
@@ -20,9 +21,9 @@ fit_Q_function <- function(history, Q, q_model) {
     stop(mes)
   }
 
-  # getting the historic rewards
+  ## getting the historic rewards
   U <- getElement(history, "U")
-  # calculating the residual (fitted) values
+  ## calculating the residual (fitted) values
   U_A <- apply(
     action_matrix(a = A, action_set = action_set) * U[, deterministic_rewards, with = FALSE],
     MARGIN = 1,
@@ -30,7 +31,12 @@ fit_Q_function <- function(history, Q, q_model) {
   )
   V_res <- unlist(Q - U[, "U_bar"] - U_A)
 
-  # fitting the (residual) Q-model
+  ## removing missing outcomes (censored/coarsened)
+  missing_ <- is.na(Q)
+  V_res <- V_res[missing_ == FALSE]
+  AH <- AH[missing_ == FALSE, ]
+
+  ## fitting the (residual) Q-model
   q_model <- q_model(V_res = V_res, AH = AH)
 
   q_function <- list(
@@ -56,28 +62,33 @@ print.Q_function <- function(x, ...) {
 predict.Q_function <- function(object, new_history, ...) {
   q_model <- getElement(object, "q_model")
   AH_names <- getElement(object, "AH_names")
-  # action set of the new history object
+  ## action set of the new history object
   action_set <- getElement(new_history, "action_set")
-  # stage action set of the fitted Q-function
+  ## stage action set of the fitted Q-function
   stage_action_set <- getElement(object, "stage_action_set")
   stage <- getElement(object, "stage")
-  # deterministic rewards of the new history object
+  ## deterministic rewards of the new history object
   deterministic_rewards <- getElement(new_history, "deterministic_rewards")
 
   id_stage <- get_id_stage(new_history)
   new_H <- get_H(new_history)
+  if (ncol(new_H) == 0) {
+    ## preventing empty data.table
+    new_H <- data.table(dummy = rep(as.numeric(NA), nrow(id_stage)))
+  }
+
   new_AH_names <- c("A", names(new_H))
 
-  # checks
+  ## checks
   if(!all(stage_action_set %in% action_set))
     stop("The fitted stage action set is not a subset of the new action set.")
   if (!all(AH_names %in% new_AH_names))
     stop("new_history does not contain the same column names as the original history.")
 
-  # getting the historic rewards
+  ## getting the historic rewards
   U <- new_history$U
 
-  # getting the residual predictions for the stage action set
+  ## getting the residual predictions for the stage action set
   residual_q_predictions <- sapply(
     stage_action_set,
     function(a) predict(q_model, new_AH = cbind(A = a, new_H))
@@ -117,7 +128,7 @@ q_step <- function(policy_data, k, full_history, Q, q_models) {
 
   stage <- NULL
   id <- get_id(policy_data)
-  id_k <- get_id_stage(policy_data)[stage == k]$id
+  id_k <- get_id_stage(policy_data)[stage == k][["id"]]
   idx_k <- (id %in% id_k)
   rm(stage)
 
@@ -127,12 +138,20 @@ q_step <- function(policy_data, k, full_history, Q, q_models) {
     q_model <- q_models
   }
 
-  # getting the Q-function history:
-  q_history <- get_history(policy_data, stage = k, full_history = full_history)
-  # fitting the Q-function:
+  ## getting the Q-function history for each action event:
+  q_history <- get_history(policy_data,
+                           stage = k,
+                           full_history = full_history)
+  ## fitting the Q-function:
   q_function <- fit_Q_function(q_history, Q = Q[idx_k], q_model = q_model)
-  # getting the Q-function values for each action
+  ## getting the Q-function values for each action and right-censoring event:
+  q_history <- get_history(policy_data,
+                           stage = k,
+                           full_history = full_history,
+                           event_set = c(0,2))
   q_values <- predict(q_function, new_history = q_history)
+  ## getting the ID-index for each action and right-censoring event:
+  idx_k <- (id %in% q_values[["id"]])
 
   out <- list(
     q_function = q_function,
@@ -150,12 +169,9 @@ q_step_cf <- function(folds,
                       q_models,
                       save_cross_fit_models,
                       future_args) {
-  stage <- NULL
   id <- get_id(policy_data)
-  id_k <- get_id_stage(policy_data)[stage == k]$id
-  idx_k <- (id %in% id_k)
-  rm(stage)
   K <- get_K(policy_data)
+
   future_args <- append(
     future_args,
     list(
@@ -178,9 +194,9 @@ q_step_cf <- function(folds,
         valid_id <- id[f]
         valid_policy_data <- subset_id(policy_data, valid_id)
         valid_history <- get_history(valid_policy_data,
-          stage = k,
-          full_history = full_history
-        )
+                                     stage = k,
+                                     full_history = full_history,
+                                     event_set = c(0,2))
         valid_values <- predict(train_q_function, valid_history)
 
         if (save_cross_fit_models == FALSE) {
@@ -204,6 +220,10 @@ q_step_cf <- function(folds,
   q_values <- rbindlist(q_values)
   setkeyv(q_values, c("id", "stage"))
 
+  ## getting the ID-index for each Q-value
+  ## (action and right-censoring events):
+  idx_k <- (id %in% q_values[["id"]])
+
   out <- list(
     q_functions_cf = q_functions_cf,
     q_values = q_values,
@@ -220,6 +240,7 @@ q_step_cf <- function(folds,
 #' @param policy_actions Policy actions, see [policy_def].
 #' @param q_models Outcome regression models/Q-models created by [q_glm()], [q_rf()], [q_sl()] or similar functions.
 #' @param full_history If TRUE, the full history is used to fit each Q-model. If FALSE, the single stage/"Markov type" history is used to fit each Q-model.
+#' @param m_function Function of class m_function to impute missing outcomes.
 #' @examples
 #' library("polle")
 #' ### Simulating two-stage policy data
@@ -248,7 +269,8 @@ q_step_cf <- function(folds,
 fit_Q_functions <- function(policy_data,
                             policy_actions,
                             q_models,
-                            full_history = FALSE) {
+                            full_history = FALSE,
+                            m_function = NULL) {
   K <- get_K(policy_data)
   n <- get_n(policy_data)
   action_set <- get_action_set(policy_data)
@@ -280,14 +302,20 @@ fit_Q_functions <- function(policy_data,
   # getting the IDs:
   id <- get_id(policy_data)
 
-  # getting the observed (complete) utility:
-  utility <- get_utility(policy_data)
-
-  # (n) vector with entries U_i:
-  U <- utility$U
-  # (n X K+1) matrix with entries Q_k(H_{k,i}, d_k(H_{k,i})), Q_{K+1} = U:
+  ## (n X K+1) matrix with entries
+  ## k-column = Q_k(H_{k,i}, d_k(H_{k,i})), k = 1,...,K
+  ## K+1-column = U (if no missing final outcomes) or Q_{K+1}(H_{K+1})
   Q <- matrix(nrow = n, ncol = K + 1)
-  Q[, K + 1] <- U
+  if (is.null(m_function) == TRUE){
+    ## getting the observed (complete) utility:
+    utility <- get_utility(policy_data)
+    ## (n) vector with entries U_i:
+    U <- utility$U
+    Q[, K + 1] <- U
+  } else {
+    Q_K1 <- predict(m_function, new_policy_data = policy_data)
+    Q[(id %in% Q_K1[["id"]]), K + 1] <- Q_K1[["Q"]]
+  }
 
   # fitting the Q-functions:
   q_functions <- list()
@@ -304,12 +332,11 @@ fit_Q_functions <- function(policy_data,
     q_values_k <- q_step_k$q_values
     idx_k <- q_step_k$idx_k
 
-    # getting the Q-function values under the policy
-    stage <- NULL
-    d_k <- policy_actions[stage == k, ]$d
+    # getting the Q-function values under the policy for each right-censoring and action event:
+    d_k <- merge(q_values_k, policy_actions)[["d"]]
     q_d_values_k <- get_a_values(a = d_k, action_set = action_set, values = q_values_k)$P
 
-    # inserting the Q-function values under the policy in Q
+    # inserting the Q-function values under the policy in Q:
     Q[idx_k, k] <- q_d_values_k
     Q[!idx_k, k] <- Q[!idx_k, k + 1]
   }

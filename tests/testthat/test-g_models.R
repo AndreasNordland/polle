@@ -122,9 +122,10 @@ test_that("fit_g_functions handles varying stage-action sets", {
   set.seed(1)
   folds <- list(c(1:30), 31:get_n(pd))
   expect_error(
-    gfit <- fit_g_functions_cf(folds,
+    gfit <- crossfit_function(folds = folds,
                                policy_data = pd,
-                               g_models = list(g_glm(), g_rf()),
+                               fun = fit_g_functions,
+                               models = list(g_glm(), g_rf()),
                                full_history = FALSE,
                                save_cross_fit_models = TRUE),
     NA
@@ -146,11 +147,12 @@ test_that("fit_g_function_cf saves the cross-fitted models",{
   set.seed(1)
   folds <- list(c(1:30), 31:get_n(pd))
   expect_error(
-    gfit <- fit_g_functions_cf(folds,
-                               policy_data = pd,
-                               g_models = list(g_glm(), g_rf()),
-                               full_history = FALSE,
-                               save_cross_fit_models = TRUE),
+    gfit <- crossfit_function(folds,
+                              policy_data = pd,
+                              fun = fit_g_functions,
+                              models = list(g_glm(), g_rf()),
+                              full_history = FALSE,
+                              save_cross_fit_models = TRUE),
     NA
   )
 
@@ -161,11 +163,12 @@ test_that("fit_g_function_cf saves the cross-fitted models",{
   set.seed(1)
   folds <- list(c(1:30), 31:get_n(pd))
   expect_error(
-    gfit <- fit_g_functions_cf(folds,
-                               policy_data = pd,
-                               g_models = list(g_glm(), g_rf()),
-                               full_history = FALSE,
-                               save_cross_fit_models = FALSE),
+    gfit <- crossfit_function(folds,
+                              policy_data = pd,
+                              fun = fit_g_functions,
+                              models = list(g_glm(), g_rf()),
+                              full_history = FALSE,
+                              save_cross_fit_models = FALSE),
     NA
   )
   expect_true(
@@ -175,16 +178,17 @@ test_that("fit_g_function_cf saves the cross-fitted models",{
 })
 
 test_that("g_models checks formula input", {
+
   d <- sim_two_stage(1e2, seed = 1)
   pd <- policy_data(d,
-    action = c("A_1", "A_2"),
-    baseline = c("BB", "B"),
-    covariates = list(
-      L = c("L_1", "L_2"),
-      C = c("C_1", "C_2")
-    ),
-    utility = c("U_1", "U_2", "U_3")
-  )
+                    action = c("A_1", "A_2"),
+                    baseline = c("BB", "B"),
+                    covariates = list(
+                      L = c("L_1", "L_2"),
+                      C = c("C_1", "C_2")
+                    ),
+                    utility = c("U_1", "U_2", "U_3")
+                    )
 
   p_dynamic <- policy_def(
     policy_functions = list(
@@ -194,35 +198,45 @@ test_that("g_models checks formula input", {
     reuse = FALSE
   )
 
-  expect_error(policy_eval(
-    policy_data = pd,
-    policy = p_dynamic,
-    g_models = g_glm(formula = A ~ X)
-  ), "object 'X' not found when calling 'g_glm' with formula:
-AA ~ X")
-  expect_error(policy_eval(
-    policy_data = pd,
-    policy = p_dynamic,
-    g_models = g_sl(formula = a ~ X)
-  ), "object 'X' not found when calling model.frame with formula:
-a ~ X")
-  expect_error(policy_eval(
-    policy_data = pd,
-    policy = p_dynamic,
-    g_models = g_rf(formula = ~X)
-  ), "object 'X' not found when calling model.frame with formula:
-~X")
-  expect_error(policy_eval(
-    policy_data = pd,
-    policy = p_dynamic,
-    g_models = g_glmnet(formula = ~X)
-  ), "object 'X' not found when calling model.frame with formula:
-AA ~ X")
-  expect_error(policy_eval(
-    policy_data = pd,
-    policy = p_dynamic,
-    g_models = g_empir(formula = ~X)
-  ), "The g-model formula ~X is invalid.")
+  expect_error(
+    policy_eval(policy_data = pd,
+                policy = p_dynamic,
+                g_models = g_glm(formula = A ~ X)),
+    "variable 'X' is not found in data when calling 'g_glm' with formula: ~X"
+  )
+
+  expect_error(
+    policy_eval(
+      policy_data = pd,
+      policy = p_dynamic,
+      g_models = g_sl(formula = a ~ X)),
+    "variable 'X' is not found in data when calling 'g_sl' with formula: ~X"
+  )
+
+  expect_error(
+    policy_eval(
+      policy_data = pd,
+      policy = p_dynamic,
+      g_models = g_rf(formula = ~X)),
+    "variable 'X' is not found in data when calling 'g_rf' with formula: ~X"
+  )
+
+  expect_error(
+    policy_eval(
+      policy_data = pd,
+      policy = p_dynamic,
+      g_models = g_glmnet(formula = ~X)),
+    "variable 'X' is not found in data when calling 'g_glmnet' with formula: ~X"
+  )
+
+  expect_error(
+    policy_eval(
+      policy_data = pd,
+      policy = p_dynamic,
+      g_models = g_empir(formula = ~X)),
+    "variable 'X' is not found in data when calling 'g_empir' with formula: ~X"
+  )
+
 })
 
 

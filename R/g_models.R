@@ -1,14 +1,42 @@
-check_g_formula <- function(formula, data){
+check_formula <- function(formula, data, call = "") {
   tt <- terms(formula, data = data)
-  if (length(attr(tt, "term.labels")) == 0)
-    return(NULL)
-  formula <- reformulate(attr(tt, "term.labels"), response = NULL)
-  tt <- terms(formula, data = data)
-  v <- all.vars(tt)
-  if(!all(v %in% colnames(data))){
-    mes <- deparse(formula)
-    mes <- paste("The g-model formula", mes, "is invalid.")
-    stop(mes)
+  if (length(attr(tt, "term.labels")) > 0) {
+    formula <- reformulate(attr(tt, "term.labels"), response = NULL)
+    tt <- terms(formula, data = data)
+    all_vars <- all.vars(tt)
+    data_names <- colnames(data)
+    if (!all(all_vars %in% data_names)) {
+      missing_vars <- all_vars[!all_vars %in% data_names]
+
+      if (length(missing_vars) > 0) {
+
+        formula_str <- deparse(formula, width.cutoff = 500L)
+        formula_str <- paste(formula_str, collapse = "")
+
+
+        if (length(missing_vars) == 1) {
+          missing_text <- paste0("variable '", missing_vars, "' is")
+        } else {
+          missing_text <- paste0("variables '",
+                                 paste(missing_vars, collapse = "', '"),
+                                 "' are")
+        }
+
+        call_text <- if (nchar(call) > 0) paste0("when calling '", call, "' ") else ""
+
+        error_msg <- paste0(missing_text, " not found in data ",
+                            call_text, "with formula: ", formula_str)
+
+
+        err <- simpleError(error_msg)
+        err$missing_variables <- missing_vars
+        err$available_variables <- data_names
+        err$formula <- formula
+        err$call_context <- call
+
+        stop(err)
+      }
+    }
   }
 }
 
@@ -187,7 +215,7 @@ g_empir <- function(formula = ~1, ...) {
   environment(formula) <- NULL
 
   g_empir <- function(A, H, action_set){
-    check_g_formula(formula = formula, data = H)
+    check_formula(formula = formula, data = H, call = "g_empir")
     data <- cbind(A, H)
     tmp <- calculate_prop_table(data, formula = formula)
     tab <- tmp[["tab"]]
@@ -244,8 +272,8 @@ g_glm <- function(formula = ~.,
   dotdotdot <- list(...)
 
   g_glm <- function(A, H, action_set){
+    check_formula(formula = formula, data = H, call = "g_glm")
     formula <- update_g_formula(formula, A, H)
-
     args_glm <- append(list(formula = formula,
                             data = H,
                             family = family,
@@ -254,9 +282,9 @@ g_glm <- function(formula = ~.,
                        dotdotdot)
 
     model <- tryCatch(do.call(what = "glm", args = args_glm),
-                      error = function(e) e
-    )
+                      error = function(e) e)
     if (inherits(model, "error")) {
+      formula <- delete.response(terms(formula))
       model$message <-
         paste0(model$message, " when calling 'g_glm' with formula:\n",
                format(formula))
@@ -270,7 +298,7 @@ g_glm <- function(formula = ~.,
     return(m)
   }
 
-  # setting class:
+  ## setting class:
   g_glm <- new_g_model(g_glm)
 
   return(g_glm)
@@ -296,6 +324,7 @@ g_glmnet <- function(formula = ~.,
   formula <- as.formula(formula)
   dotdotdot <- list(...)
   g_glmnet <- function(A, H, action_set){
+    check_formula(formula = formula, data = H, call = "g_glmnet")
     formula <- update_g_formula(formula, A, H)
     y <- get_response(formula, data=H)
     des <- get_design(formula, data=H)
@@ -309,6 +338,7 @@ g_glmnet <- function(formula = ~.,
                       error = function(e) e
     )
     if (inherits(model, "error")) {
+      formula <- delete.response(terms(formula))
       model$message <-
         paste0(model$message, " when calling 'g_glmnet' with formula:\n",
                format(formula))
@@ -376,6 +406,7 @@ g_rf <- function(formula = ~.,
 
   g_rf <- function(A, H, action_set) {
     A <- factor(A, levels = action_set)
+    check_formula(formula = formula, data = H, call = "g_rf")
     des <- get_design(formula, data=H)
     data <- data.frame(A, des$x)
     res <- NULL; best <- 1
@@ -436,6 +467,7 @@ g_sl <- function(formula = ~ .,
   dotdotdot <- list(...)
   g_sl <- function(A, H, action_set) {
     A <- as.numeric(factor(A, levels=action_set))-1
+    check_formula(formula = formula, data = H, call = "g_sl")
     des <- get_design(formula, data=H)
     sl_args <- append(list(Y=A,
                            X=as.data.frame(des$x),
@@ -547,19 +579,19 @@ g_xgboost <- function(formula = ~.,
   ml <- function(formula = A~., objective,
                  params, nrounds, max_depth,
                  eta, nthread){
-    targeted::ml_model$new(formula,
-                           info = "xgBoost",
-                           estimate = function(x, y) {
-                             xgboost::xgboost(
-                               data = x, label = y,
-                               objective = objective,
-                               params = params,
-                               nrounds = nrounds,
-                               max_depth = max_depth,
-                               eta = eta,
-                               nthread = nthread,
-                               verbose = 0, print_every = 0)
-                           })
+    targeted::learner$new(formula,
+                          info = "xgBoost",
+                          estimate = function(x, y) {
+                            xgboost::xgboost(
+                                       data = x, label = y,
+                                       objective = objective,
+                                       params = params,
+                                       nrounds = nrounds,
+                                       max_depth = max_depth,
+                                       eta = eta,
+                                       nthread = nthread,
+                                       verbose = 0, print_every = 0)
+                          })
   }
 
   ml_args <- expand.list(
@@ -587,6 +619,7 @@ g_xgboost <- function(formula = ~.,
     # formatting data:
     A <- factor(A, levels = action_set)
     A <- as.numeric(A) - 1
+    check_formula(formula = formula, data = H, call = "g_xgboost")
     des <- get_design(formula, data=H)
     data <- data.frame(A, des$x)
 
@@ -597,6 +630,7 @@ g_xgboost <- function(formula = ~.,
         error = function(e) e
         )
       if (inherits(cv_res, "error")) {
+        formula <- delete.response(terms(formula))
         cv_res$message <-
           paste0(cv_res$message, " when calling 'g_xgboost' with formula:\n",
                  format(formula))

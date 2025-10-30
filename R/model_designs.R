@@ -17,6 +17,7 @@ get_design <- function(formula, data) {
                     error = function(e) e
   )
   if (inherits(mf, "error")) {
+    formula <- delete.response(terms(formula))
     mf$message <-
       paste0(mf$message, " when calling model.frame with formula:\n",
              format(formula))
