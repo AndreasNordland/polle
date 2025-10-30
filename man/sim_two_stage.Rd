@@ -10,7 +10,7 @@ sim_two_stage(
   seed = NULL,
   action_model_1 = function(C_1, beta, ...) stats::rbinom(n = NROW(C_1), size = 1, prob =
     lava::expit(beta * C_1)),
-  action_model_2 = function(C_2, beta, ...) stats::rbinom(n = NROW(C_1), size = 1, prob =
+  action_model_2 = function(C_2, beta, ...) stats::rbinom(n = NROW(C_2), size = 1, prob =
     lava::expit(beta * C_2)),
   deterministic_rewards = FALSE
 )

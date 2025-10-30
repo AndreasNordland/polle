@@ -25,12 +25,17 @@ fit_QV_function <- function(history, Z, qv_model, valid_ids) {
       )
   }
 
-  # fitting the QV-model:
+   ## fitting the QV-model:
   qv_model <- apply(
     Z[, stage_action_set],
     MARGIN = 2,
     function(z) {
-      qv_model(V_res = z, AH = H, folds = folds)
+      model <- tryCatch({
+        qv_model(V_res = z, AH = H, folds = folds)
+      }, error = function(e) {
+        stop("Error in qv_model: ", conditionMessage(e))
+      })
+      return(model)
     }
   )
   names(qv_model) <- paste("QV_", stage_action_set, sep = "")
@@ -117,6 +122,9 @@ drql <- function(policy_data,
       stop("qv_models must either be a list of length K or a single QV-model.")
     }
   }
+  if (any(get_element(policy_data, "cens_indicator")[["indicator"]])){
+    stop("policy learning with type 'drql' not implemented under right-censoring/missing outcomes.")
+  }
 
   # getting the observed actions:
   actions <- get_actions(policy_data)
@@ -136,9 +144,10 @@ drql <- function(policy_data,
   g_functions_cf <- NULL
   valid_ids <- NULL
   if (!is.null(folds) && cross_fit_g_models == TRUE) {
-    g_cf <- fit_g_functions_cf(
+    g_cf <- crossfit_function(
       policy_data = policy_data,
-      g_models = g_models,
+      fun = fit_g_functions,
+      models = g_models,
       full_history = g_full_history,
       folds = folds,
       save_cross_fit_models = save_cross_fit_models,

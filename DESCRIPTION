@@ -16,7 +16,7 @@ License: Apache License (>= 2)
 Encoding: UTF-8
 LazyData: true
 Depends:
-    R (>= 4.0),
+    R (>= 4.1),
     SuperLearner
 Imports:
     data.table (>= 1.14.5),
@@ -28,11 +28,10 @@ Imports:
     survival,
     targeted (>= 0.6),
     DynTxRegime
-Remotes:
-    kkholst/targeted@main
 Suggests:
     DTRlearn2,
     glmnet (>= 4.1-6),
+    mets,
     mgcv,
     xgboost,
     knitr,
@@ -41,6 +40,6 @@ Suggests:
     testthat (>= 3.0),
     ggplot2
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 BugReports: https://github.com/AndreasNordland/polle/issues
 VignetteBuilder: knitr

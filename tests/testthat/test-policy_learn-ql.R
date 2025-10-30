@@ -6,7 +6,7 @@ test_that("get_policy.ql returns a policy", {
     utility = "U"
   )
 
-  pl <- policy_learn()
+  pl <- policy_learn(type = "ql")
   expect_error(
     {
       p <- get_policy(pl(pd, q_models = q_glm()))
@@ -32,7 +32,7 @@ test_that("get_policy_functions.ql agrees with get_policy.ql", {
                     utility = c("U_1", "U_2", "U_3"))
 
   # not full history:
-  pl <- policy_learn()
+  pl <- policy_learn(type = "ql")
   po <- pl(pd, q_models = q_glm())
 
   expect_error(
@@ -66,7 +66,7 @@ test_that("get_policy_functions.ql agrees with get_policy.ql", {
   )
 
   # full history:
-  pl <- policy_learn()
+  pl <- policy_learn(type = "ql")
   po <- pl(pd, q_models = q_glm(), q_full_history = TRUE)
   pf_1 <- get_policy_functions(po, stage = 1)
   his_1 <- get_history(pd, stage = 1,
@@ -109,7 +109,7 @@ test_that("get_policy_functions.ql handles deterministic rewards", {
                     ))
 
   # not full history:
-  pl <- policy_learn()
+  pl <- policy_learn(type = "ql")
   po <- pl(pd, q_models = q_glm())
 
   pf_1 <- get_policy_functions(po, stage = 1)
@@ -139,7 +139,7 @@ test_that("get_policy_functions.ql handles deterministic rewards", {
   )
 
   # full history:
-  pl <- policy_learn()
+  pl <- policy_learn(type = "ql")
   po <- pl(pd, q_models = q_glm(), q_full_history = TRUE)
   pf_1 <- get_policy_functions(po, stage = 1)
   his_1 <- get_history(pd, stage = 1,
@@ -182,7 +182,7 @@ test_that("get_policy_functions.ql handles partially missing deterministic rewar
                     ))
 
   # not full history:
-  pl <- policy_learn()
+  pl <- policy_learn(type = "ql")
   po <- pl(pd, q_models = q_glm())
 
   pf_1 <- get_policy_functions(po, stage = 1)
@@ -212,7 +212,7 @@ test_that("get_policy_functions.ql handles partially missing deterministic rewar
   )
 
   # full history:
-  pl <- policy_learn()
+  pl <- policy_learn(type = "ql")
   po <- pl(pd, q_models = q_glm(), q_full_history = TRUE)
   pf_1 <- get_policy_functions(po, stage = 1)
   his_1 <- get_history(pd, stage = 1,
@@ -251,7 +251,7 @@ test_that("get_policy_functions.ql handles realistic actions", {
                     utility = c("U_1", "U_2", "U_3"))
 
   # not full history:
-  pl <- policy_learn(alpha = 0.1)
+  pl <- policy_learn(alpha = 0.1, type = "ql")
   po <- pl(pd, q_models = q_glm(), g_models = g_glm())
 
   pf_1 <- get_policy_functions(po, stage = 1)
@@ -280,7 +280,7 @@ test_that("get_policy_functions.ql handles realistic actions", {
   )
 
   # full history:
-  pl <- policy_learn(alpha = 0.1)
+  pl <- policy_learn(alpha = 0.1, type = "ql")
   po <- pl(pd, q_models = q_glm(), q_full_history = TRUE, g_models = g_glm(), g_full_history = FALSE)
   pf_1 <- get_policy_functions(po, stage = 1)
   his_1 <- get_history(pd, stage = 1,
@@ -323,7 +323,7 @@ test_that("get_policy_functions.ql handles varying stage action set", {
                     utility = c("U_1", "U_2", "U_3"))
 
   # not full history:
-  pl <- policy_learn(alpha = 0.05)
+  pl <- policy_learn(alpha = 0.05, type = "ql")
   po <- pl(pd, q_models = q_glm(), g_models = list(g_glm(), g_empir()))
 
   pf_1 <- get_policy_functions(po, stage = 1)
@@ -407,7 +407,7 @@ test_that("policy_learn with type ql handles varying action sets", {
     ),
     utility = c("U_1", "U_2", "U_3")
   )
-  pl <- policy_learn()
+  pl <- policy_learn(type = "ql")
 
   expect_error(
     po <- pl(pd, q_models = q_glm()),

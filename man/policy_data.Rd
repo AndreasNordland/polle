@@ -18,6 +18,8 @@ policy_data(
   id = NULL,
   stage = NULL,
   event = NULL,
+  time = NULL,
+  time2 = NULL,
   action_set = NULL,
   verbose = FALSE
 )
@@ -64,6 +66,10 @@ The name of each element must be on the form "U_Aa" where "a" corresponds to an 
 \item{stage}{Stage number variable name.}
 
 \item{event}{Event indicator name.}
+
+\item{time}{Character string}
+
+\item{time2}{Character string}
 
 \item{action_set}{Character string. Action set across all stages.}
 

@@ -34,13 +34,35 @@ get_H <- function(history, vars = NULL){
 #' @noRd
 get_A <- function(history){
   A <- getElement(history, "A")
-  stopifnot(!is.null(A))
+
   action_name <- getElement(history, "action_name")
   stopifnot(!is.null(action_name))
 
   A <- A[[action_name]]
 
   return(A)
+}
+
+#' @export
+get_event.history <- function(object){
+  event <- get_element(object, "event")
+  stopifnot(!is.null(event))
+  event <- event[["event"]]
+  return(event)
+}
+
+get_time <- function(history){
+  time <- get_element(history, "time")
+  stopifnot(!is.null(time))
+  time <- time[["time"]]
+  return(time)
+}
+
+get_time2 <- function(history){
+  time <- get_element(history, "time")
+  stopifnot(!is.null(time))
+  time2 <- time[["time2"]]
+  return(time2)
 }
 
 #' @export
@@ -53,7 +75,7 @@ get_id.history <- function(object){
 }
 
 #' @export
-get_id_stage.history <- function(object){
+get_id_stage.history <- function(object, ...){
   H <- getElement(object, "H")
   stopifnot(!is.null(H))
   id_stage <- c("id", "stage")

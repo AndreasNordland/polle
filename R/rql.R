@@ -19,6 +19,9 @@ rql<- function(policy_data, alpha,
     if (length(q_models) != K)
       stop("q_models must either be a list of length K or a single Q-model.")
   }
+  if (any(get_element(policy_data, "cens_indicator")[["indicator"]])){
+    stop("policy learning with type 'rql' not implemented under right-censoring/missing outcomes.")
+  }
 
   # getting the IDs:
   id <- get_id(policy_data)

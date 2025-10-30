@@ -47,7 +47,10 @@ NULL
 #' Q-functions when applied to a (new) policy data object.
 #' @param object Object of class "nuisance_functions". Either \code{g_functions}
 #' or \code{q_functions} as returned by [policy_eval()] or [policy_learn()].
-#' @param new_policy_data Policy data object created by [policy_data()].
+#' @param new_policy_data Policy data object created by [policy_data()]. Action events (0),
+#' terminal events (1), or right-censoring events (2).
+#' @param event_set Subset of the events considered. Action events (0), terminal events (1), or
+#' right-censoring events (2)
 #' @param ... Additional arguments.
 #' @returns [data.table::data.table] with keys \code{id} and \code{stage} and variables \code{g_a} or \code{Q_a} for
 #' each action a in the actions set.
@@ -74,7 +77,7 @@ NULL
 #' # getting the fitted Q-function values:
 #' head(predict(get_q_functions(pe), pd))
 #' @export
-predict.nuisance_functions <- function(object, new_policy_data, ...){
+predict.nuisance_functions <- function(object, new_policy_data, event_set = c(0), ...){
   K <- get_K(new_policy_data)
   action_set <- get_action_set(new_policy_data)
   full_history <- attr(object, "full_history")
@@ -82,7 +85,8 @@ predict.nuisance_functions <- function(object, new_policy_data, ...){
   if (length(object) == K){
     history <- lapply(1:K, function(s) get_history(new_policy_data,
                                                    stage = s,
-                                                   full_history = full_history))
+                                                   full_history = full_history,
+                                                   event_set = event_set))
     values <- mapply(history,
                      object,
                      FUN = function(h, f) predict(f, h),
@@ -90,7 +94,11 @@ predict.nuisance_functions <- function(object, new_policy_data, ...){
     values <- rbindlist(values)
     setkeyv(values, c("id", "stage"))
   } else if (length(object) == 1){
-    history <- state_history(new_policy_data)
+    ## state history across all stages:
+    history <- get_history(new_policy_data,
+                           stage = NULL,
+                           full_history = FALSE,
+                           event_set = event_set)
     values <- predict(object[[1]], history)
   } else{
     stop("Provide either 1 or K nuisance functions for evaluation.")

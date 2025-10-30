@@ -286,7 +286,9 @@ test_that("policy_def handles dynamic policies (two stages).",{
 # Stochastic number of stages ---------------------------------------------
 
 test_that("policy_def handles a stochastic number of stages", {
-  d <- sim_multi_stage(1e3, seed = 1)
+
+  set.seed(1)
+  d <- sim_multi_stage(50, seed = 1)
   # constructing policy_data object:
   pd <- policy_data(data = d$stage_data,
                     baseline_data = d$baseline_data,
@@ -296,11 +298,13 @@ test_that("policy_def handles a stochastic number of stages", {
                     event = "event",
                     action = "A",
                     utility = "U")
+  pd <- partial(pd, K = 3)
 
   fun <- function(X, ...) as.character((X>0)*1)
-  res <- do.call(pd[["stage_data"]][event == 0,], what = fun)
+  res <- do.call(pd[["stage_data"]][stage <= 3][event %in% c(0,2),], what = fun)
 
-  p <- policy_def(function(X) (X>0)*1, reuse = TRUE)
+  p <- policy_def(function(X) as.character((X>0)*1), reuse = TRUE)
+
   expect_equal(
     p(pd)[["d"]],
     res

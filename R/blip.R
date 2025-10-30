@@ -28,7 +28,12 @@ fit_blip_function <- function(history, Z, blip_model, valid_ids) {
   # fitting the blip-model:
   z <- Z[, stage_action_set]
   blip <- z[, 2] - z[, 1]
-  blip_model <- blip_model(AH = H, V_res = blip, folds = folds)
+
+  blip_model <- tryCatch({
+    blip_model(AH = H, V_res = blip, folds = folds)
+  }, error = function(e) {
+    stop("Error in blip_model: ", conditionMessage(e))
+  })
 
   blip_function <- list(
     blip_model = blip_model,
@@ -75,8 +80,12 @@ blip <- function(policy_data,
                  quantile_prob_threshold,
                  g_models, g_functions, g_full_history,
                  q_models, q_full_history,
+                 c_models, c_functions, c_full_history,
+                 m_model, m_function, m_full_history,
                  blip_models, full_history,
-                 L, cross_fit_g_models,
+                 L,
+                 cross_fit_g_models,
+                 cross_fit_c_models,
                  save_cross_fit_models, future_args,
                  ...) {
   K <- get_K(policy_data)
@@ -84,17 +93,22 @@ blip <- function(policy_data,
   action_set <- get_action_set(policy_data)
   stage_action_sets <- get_stage_action_sets(policy_data)
 
-  # input checks:
-  if (!is.null(g_functions)) {
-    if (!inherits(g_functions, what = "g_functions")) {
-      stop("g-functions must be of class 'g_functions'.")
-    }
-  }
-  if (is.list(q_models)) {
-    if (length(q_models) != K) {
-      stop("q_models must either be a list of length K or a single Q-model.")
-    }
-  }
+  ## input checks:
+  model_input_checks(
+    policy_data = policy_data,
+    g_models = g_models,
+    g_functions = g_functions,
+    g_full_history = g_full_history,
+    q_models = q_models,
+    q_functions = NULL,
+    q_full_history = q_full_history,
+    c_models = c_models,
+    c_functions = c_functions,
+    c_full_history = c_full_history,
+    m_model = m_model,
+    m_function = m_function,
+    m_full_history = m_full_history
+  )
   if(is.null(blip_models))
     stop("blip_models are missing.")
   if (is.list(blip_models)) {
@@ -123,27 +137,34 @@ blip <- function(policy_data,
     quantile_prob_threshold <- unique(sort(quantile_prob_threshold))
   }
 
-  # getting the observed actions:
+  ##
+  ## collecting values as data.table's:
+  ##
+
+  ## getting the id as a data.table:
+  id <- data.table(id = get_id(policy_data))
+  setkeyv(id, "id")
+
+  ## getting the observed actions as a data.table:
   actions <- get_actions(policy_data)
 
-  # getting the observed (complete) utilities:
+  ## getting the events:
+  events <- get_event(policy_data)
+
+  ## getting the observed (complete) utilities as a data.table:
   utility <- get_utility(policy_data)
 
-  # constructing the folds for cross-fitting:
-  if (L > 1) {
-    folds <- split(sample(1:n, n), rep(1:L, length.out = n))
-    folds <- lapply(folds, sort)
-  } else {
-    folds <- NULL
-  }
+  # sampling the folds for cross-fitting:
+  folds <- sample_folds(number = L, sample_size = n)
 
-  # (cross-)fitting the g-functions:
+  ## (cross-)fitting the g-functions:
   valid_ids <- NULL
   g_functions_cf <- NULL
-  if (!is.null(folds) && cross_fit_g_models == TRUE) {
-    g_cf <- fit_g_functions_cf(
+  if (!is.null(folds) && isTRUE(cross_fit_g_models)) {
+    g_cf <- crossfit_function(
       policy_data = policy_data,
-      g_models = g_models,
+      fun = fit_g_functions,
+      models = g_models,
       full_history = g_full_history,
       folds = folds,
       save_cross_fit_models = save_cross_fit_models,
@@ -156,39 +177,127 @@ blip <- function(policy_data,
   } else {
     if (is.null(g_functions)) {
       g_functions <- fit_g_functions(policy_data,
-        g_models = g_models,
-        full_history = g_full_history
-      )
+                                     g_models = g_models,
+                                     full_history = g_full_history)
     }
     g_values <- predict(g_functions, policy_data)
   }
 
-  # fitting g-functions for determining new realistic actions:
+  ## fitting g-functions for determining new realistic actions:
   if (alpha > 0) {
     if (is.null(g_functions)) {
       g_functions <- fit_g_functions(policy_data,
-        g_models = g_models,
-        full_history = g_full_history
-      )
+                                     g_models = g_models,
+                                     full_history = g_full_history)
     }
   } else {
-    # g-functions are not saved if alpha == 0:
+    ## g-functions are not saved if alpha == 0:
     g_functions <- NULL
   }
 
-  # (n) vector with entries U_i:
-  U <- utility$U
-  # (n X K) matrix with entries I(d_k(H_k) = A_k):
-  II <- matrix(nrow = n, ncol = K)
-  # (n X K) matrix with entries g_k(A_k, H_k)
-  g_A_values <- get_a_values(a = actions$A,
-                             action_set = action_set,
-                             g_values)
-  G <- dcast(g_A_values, id ~ stage, value.var = "P")[, -c("id"), with = FALSE]
-  G <- as.matrix(G)
-  # (n X K+1) matrix with entries Q_k(H_{k,i}, d_k(H_{k,i})), Q_{K+1} = U:
-  Q <- matrix(nrow = n, ncol = K+1)
-  Q[, K+1] <- U
+  ## (cross-)fitting the c-functions:
+  c_functions_cf <- NULL
+  c_values <- NULL
+  if (!is.null(folds) && isTRUE(cross_fit_c_models) && !is.null(c_models)) {
+    c_cf <- crossfit_function(
+      policy_data = policy_data,
+      fun = fit_c_functions,
+      models = c_models,
+      full_history = c_full_history,
+      folds = folds,
+      save_cross_fit_models = save_cross_fit_models,
+      future_args = future_args
+    )
+    c_functions_cf <- getElement(c_cf, "functions")
+    c_values <- getElement(c_cf, "values")
+    rm(c_cf)
+  } else {
+    if (is.null(c_functions) && !is.null(c_models)) {
+      c_functions <- fit_c_functions(policy_data,
+                                     c_models = c_models,
+                                     full_history = c_full_history)
+    }
+    if (!is.null(c_functions)) {
+      c_values <- predict(c_functions, policy_data)
+    }
+  }
+
+  ## (cross-)fitting m-function
+  m_functions_cf <- NULL
+  m_values <- NULL
+  if (!is.null(folds) && !is.null(m_model)) {
+    m_cf <- crossfit_function(
+      policy_data = policy_data,
+      fun = fit_m_function,
+      models = m_model,
+      full_history = m_full_history,
+      folds = folds,
+      save_cross_fit_models = save_cross_fit_models,
+      future_args = future_args
+    )
+    m_functions_cf <- getElement(m_cf, "functions")
+    m_values <- getElement(m_cf, "values")
+    rm(m_cf)
+  } else {
+    if (is.null(m_function) && !is.null(m_model)) {
+      m_function <- fit_m_function(policy_data,
+                                   m_model = m_model,
+                                   full_history = m_full_history)
+    }
+    if (!is.null(m_function)) {
+      m_values <- predict(m_function, policy_data)
+    }
+  }
+
+  ##
+  ## transforming values into vectors and matrices:
+  ##
+
+  ## (n) observed utility vector U:
+  U <- utility[["U"]]
+
+  ## (n) vector indicating right-censored outcomes:
+  censored_outcomes <- is.na(U)
+
+  ## (n X K+1) matrix with entries Delta_k (cumulative non-censoring indicators):
+  D <- event_matrix(events = events, event_set = c(0,1))
+
+  ## (n X K+1) matrix with missing event indicators
+  M <- event_matrix(events = events, event_set = c(NA))
+
+  ## (n X K+1) matrix with terminal event indicators
+  E <- event_matrix(events = events, event_set = c(1))
+
+  ## (n X K+1) matrix with entries C_k(H_k) (non-censoring probabilities):
+  C <- cens_prob_matrix(c_values = c_values,
+                        M = M,
+                        n = nrow(id),
+                        K = K)
+  rm(M)
+
+  ## (n X (K+1)) matrix with columns g_k(A_k, H_k)
+  G <- action_prob_matrix(g_values = g_values,
+                          actions = actions,
+                          id = id,
+                          D = D,
+                          E = E,
+                          action_set = action_set)
+
+  ## (n X K+1) matrix with entries I(d_k(H_k) = A_k):
+  II <- policy_action_indicator_matrix(actions = NULL,
+                                       policy_actions = NULL,
+                                       id = id,
+                                       D = D,
+                                       E = E)
+
+  ## (n X K+2) matrix with entries Q_k(H_{k,i}, d_k(H_{k,i})), Q_{K+2} = U:
+  Q <- policy_action_outcome_matrix(q_values = NULL,
+                                    m_values = m_values,
+                                    U = U,
+                                    policy_actions = NULL,
+                                    id = id,
+                                    D = D,
+                                    action_set = action_set)
 
   g_cols <- paste("g_", action_set, sep = "")
   q_cols <- paste("Q_", action_set, sep = "")
@@ -227,30 +336,34 @@ blip <- function(policy_data,
       rm(q_step_cf_k)
     }
 
-    # getting the action matrix for stage k:
+    ## action matrix for stage k:
     stage <- NULL
-    A_k <- actions[stage == k, ]$A
+    actions_k <- actions[stage == k, ]
+    actions_k <- merge(q_values_k[, .SD, .SDcols = key(q_values_k)], actions_k, all.x = TRUE)
+    A_k <- actions_k$A
     IA_k <- action_matrix(A_k, action_set)
     rm(stage)
 
     # calculating the Z-matrix
     Z_1 <- Q_k <- as.matrix(q_values_k[, q_cols, with = FALSE])
-    Z_2 <- (IA_k / G[idx_k, k]) * (Q[idx_k, k + 1] - Q_k)
+    Z_2 <- (D[idx_k, k] / C[idx_k, k]) * (IA_k / G[idx_k, k]) * (Q[idx_k, k + 1] - Q_k)
     Z_3 <- 0
-    if (k != K) {
-      for (r in (k + 1):K) {
-        Z_3 <- Z_3 + ipw_weight(II[idx_k, (k + 1):r], G[idx_k, (k + 1):r]) *
-          (Q[idx_k, r + 1] - Q[idx_k, r])
-      }
-      Z_3 <- (IA_k / G[idx_k, k]) * Z_3
+
+    for (r in (k + 1):(K+1)) {
+      Z_3 <- Z_3 + ipw_weight(D[idx_k, (k + 1):r], C[idx_k, (k + 1):r]) *
+        ipw_weight(II[idx_k, (k + 1):r], G[idx_k, (k + 1):r]) *
+        (Q[idx_k, r + 1] - Q[idx_k, r])
     }
+    Z_3 <- (D[idx_k, k] / C[idx_k, k]) * (IA_k / G[idx_k, k]) * Z_3
+
     Z <- Z_1 + Z_2 + Z_3
     colnames(Z) <- action_set
 
     # getting the history for the blip model:
     blip_history_k <- get_history(policy_data,
       stage = k,
-      full_history = full_history
+      full_history = full_history,
+      event_set = c(0,2)
     )
     # fitting the blip-function:
     if (is.list(blip_models)) {
@@ -259,10 +372,9 @@ blip <- function(policy_data,
       blip_model_k <- blip_models
     }
     blip_function_k <- fit_blip_function(blip_history_k,
-      Z = Z,
-      blip_model = blip_model_k,
-      valid_ids = valid_ids
-    )
+                                         Z = Z,
+                                         blip_model = blip_model_k,
+                                         valid_ids = valid_ids)
     blip_functions[[k]] <- blip_function_k
 
     # getting the blip-function values:
@@ -314,11 +426,11 @@ blip <- function(policy_data,
 
     q_d_k <- get_a_values(a = d, action_set = action_set, q_values_k)$P
     Q[idx_k, k] <- q_d_k
-    Q[!idx_k, k] <- Q[!idx_k, k + 1]
-    II[idx_k, k] <- (A_k == d)
-    II[!idx_k, k] <- TRUE
-    G[!idx_k, k] <- TRUE
+    ii <- (A_k == d)
+    ii[is.na(A_k)] <- 1
+    II[idx_k, k] <- ii
   }
+
 
   if (length(q_functions) > 0) {
     class(q_functions) <- "nuisance_functions"
@@ -346,7 +458,8 @@ blip <- function(policy_data,
     threshold = threshold,
     quantile_prob_threshold = quantile_prob_threshold,
     K = K,
-    folds = folds
+    folds = folds,
+    Z_1 = Z_1
   )
   out <- remove_null_elements(out)
   class(out) <- c("blip", "policy_object", "list")
@@ -500,7 +613,7 @@ get_policy.blip <- function(object, threshold = NULL) {
           stop(mes)
         }
         ## evaluating the blip-functions:
-        blip_values <- predict(blip_functions, policy_data)
+        blip_values <- predict(blip_functions, policy_data, event_set = c(0,2))
 
         ## getting the stage actions (sa) associated with the blip:
         sa <- as.data.table(do.call(what = "rbind", stage_action_sets))

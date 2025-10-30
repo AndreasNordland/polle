@@ -30,6 +30,15 @@
 #' If a single model is provided, the model is reused at every stage.
 #' @param q_full_history Similar to g_full_history.
 #' @param save_q_functions Similar to save_g_functions.
+#' @param c_functions Fitted c-model/censoring probability model objects. Preferably, use \code{c_models}.
+#' @param c_models List of right-censoring probability models, see [c_model].
+#' @param c_full_history Similar to g_full_history.
+#' @param save_c_functions Similar to save_g_functions.
+#' @param m_function Fitted outcome model object for stage K+1. Preferably, use \code{m_model}.
+#' @param m_model Outcome model for the utility at stage K+1. Only used if the final utility
+#' contribution is missing/has been right-censored
+#' @param m_full_history Similar to g_full_history.
+#' @param save_m_function Similar to save_g_functions.
 #' @param target Character string. Either "value" or "subgroup". If "value",
 #' the target parameter is the policy value.
 #' If "subgroup", the target parameter
@@ -295,6 +304,10 @@ policy_eval <- function(policy_data,
                         g_full_history = FALSE, save_g_functions = TRUE,
                         q_functions = NULL, q_models = q_glm(),
                         q_full_history = FALSE, save_q_functions = TRUE,
+                        c_functions = NULL, c_models = NULL,
+                        c_full_history = FALSE, save_c_functions = TRUE,
+                        m_function = NULL, m_model = NULL,
+                        m_full_history = FALSE, save_m_function = TRUE,
                         target = "value",
                         type = "dr",
                         cross_fit_type = "pooled",
@@ -312,6 +325,7 @@ policy_eval <- function(policy_data,
   ## collecting the arguments to be passed on:
   args[["policy_data"]] <- NULL
   args[["M"]] <- NULL
+  args[["train_block_size"]] <- NULL
   args[["future_args"]] <- NULL
   args[["variance_type"]] <- NULL
   args[["cross_fit_type"]] <- NULL
@@ -349,12 +363,75 @@ policy_eval <- function(policy_data,
   return(eval)
 }
 
+model_input_checks <- function(policy_data,
+                               g_functions, g_models,
+                               g_full_history, save_g_functions,
+                               q_functions, q_models,
+                               q_full_history, save_q_functions,
+                               c_functions, c_models,
+                               c_full_history, save_c_functions,
+                               m_function, m_model,
+                               m_full_history, save_m_function) {
+  check_function <- function(func, class_name){
+    if (!is.null(func) && !inherits(func, class_name)) {
+      stop(paste(class_name, " must be of class '", class_name, "'.", sep=""))
+    }
+  }
+
+  # check function classes:
+  check_function(g_functions, "g_functions")
+  check_function(q_functions, "q_functions")
+  check_function(c_functions, "c_functions")
+  check_function(m_function, "m_function")
+
+  # check logical flags:
+  logical_checks <- function(flag, name) {
+    if (!(is.logical(flag) && length(flag) == 1)) {
+      stop(paste(name, "must be TRUE or FALSE.", sep = " "))
+    }
+  }
+
+  logical_checks(g_full_history, "g_full_history")
+  logical_checks(q_full_history, "q_full_history")
+  logical_checks(c_full_history, "c_full_history")
+  logical_checks(m_full_history, "m_full_history")
+
+  if ((is.null(g_functions) && is.null(g_models))) {
+    stop("Provide either g_functions or g_models.")
+  }
+  if ((is.null(q_functions) && is.null(q_models))) {
+    stop("Provide either q_functions or q_models.")
+  }
+
+  cens_indicator <- get_element(policy_data, "cens_indicator")
+  terminal_indicator <- get_element(policy_data, "terminal_indicator")
+  if (any(cens_indicator[["indicator"]]) &&
+      any(terminal_indicator[get("stage") <= get_K(policy_data),][["indicator"]])) {
+    stop("policy_eval is not implemented for both right-censoring and a stochastic number of action stages.")
+  }
+  if (any(cens_indicator[["indicator"]])){
+    if ((is.null(c_models) && is.null(c_functions))) {
+      stop("Right-censoring events (event = 2) occur in the policy data. Please provide either c_functions or c_models.")
+    }
+  }
+  missing <- cens_indicator[get("stage") == (get_K(policy_data)+1),][["indicator"]]
+  if (missing == TRUE) {
+    if ((is.null(m_model) && is.null(m_function))) {
+      stop("Right-censoring events (event = 2) occur at stage K+1 in the policy data. Please provide either m_function or m_model.")
+    }
+  }
+}
+
 policy_eval_input_checks <- function(policy_data,
                                      policy, policy_learn,
                                      g_functions, g_models,
                                      g_full_history, save_g_functions,
                                      q_functions, q_models,
                                      q_full_history, save_q_functions,
+                                     c_functions, c_models,
+                                     c_full_history, save_c_functions,
+                                     m_function, m_model,
+                                     m_full_history, save_m_function,
                                      target,
                                      type,
                                      cross_fit_type,
@@ -362,8 +439,9 @@ policy_eval_input_checks <- function(policy_data,
                                      M,
                                      nrep,
                                      min_subgroup_size,
-                                     future_args,
-                                     name){
+                                     future_args = list(),
+                                     name,
+                                     train_block_size = 1){
   args <- as.list(environment())
   if (!inherits(policy_data, what = "policy_data"))
     stop("policy_data must be of inherited class 'policy_data'.")
@@ -372,6 +450,17 @@ policy_eval_input_checks <- function(policy_data,
       stop("policy must be of inherited class 'policy'.")
     }
   }
+
+  model_input_checks(policy_data = policy_data,
+                     g_functions = g_functions, g_models = g_models,
+                     g_full_history = g_full_history, save_g_functions = save_g_functions,
+                     q_functions = q_functions, q_models = q_models,
+                     q_full_history = q_full_history, save_q_functions = save_q_functions,
+                     c_functions = c_functions, c_models = c_models,
+                     c_full_history = c_full_history, save_c_functions = save_c_functions,
+                     m_function = m_function, m_model = m_model,
+                     m_full_history = m_full_history, save_m_function = save_m_function)
+
   if ((is.null(policy) && is.null(policy_learn)) ||
       (!is.null(policy_learn) && !is.null(policy))) {
     stop("Provide either policy or policy_learn.")
@@ -381,22 +470,7 @@ policy_eval_input_checks <- function(policy_data,
       stop("policy_learn must be of inherited class 'policy_learn'.")
     }
   }
-  if (!is.null(g_functions)) {
-    if (!(inherits(g_functions, "g_functions"))) {
-      stop("g_functions must be of class 'g_functions'.")
-    }
-  }
-  if (!(is.logical(g_full_history) && (length(g_full_history) == 1))) {
-    stop("g_full_history must be TRUE or FALSE")
-  }
-  if (!is.null(q_functions)) {
-    if (!(inherits(q_functions, "q_functions"))) {
-      stop("q-functions must be of class 'q_functions'.")
-    }
-  }
-  if (!(is.logical(q_full_history) && (length(q_full_history) == 1))) {
-    stop("q_full_history must be TRUE or FALSE")
-  }
+
   if (!(is.numeric(M) && (length(M) == 1))) {
     stop("M must be an integer greater than 0.")
   }
@@ -477,6 +551,17 @@ policy_eval_input_checks <- function(policy_data,
     }
   }
 
+  ## train_block_size used for online/sequential validation:
+  if (!(is.numeric(train_block_size) && (length(train_block_size) == 1))) {
+    stop("train_block_size must be an integer greater than 0.")
+  }
+  if (!(train_block_size %% 1 == 0)) {
+    stop("train_block_size must be an integer greater than 0.")
+  }
+  if (train_block_size <= 0) {
+    stop("train_block_size must be an integer greater than 0.")
+  }
+
   ## editing args
   args[["target"]] <- target
   args[["type"]] <- type
@@ -500,6 +585,10 @@ policy_eval_object <- function(
     g_values = NULL,
     q_functions = NULL,
     q_values = NULL,
+    c_functions = NULL,
+    c_values = NULL,
+    m_function = NULL,
+    m_values = NULL,
     Z = NULL,
     subgroup_indicator = NULL,
     min_subgroup_size = NULL,
@@ -523,14 +612,18 @@ policy_eval_type <- function(target,
                              g_models, g_functions,
                              g_full_history, save_g_functions,
                              q_models, q_functions,
-                             min_subgroup_size,
                              q_full_history, save_q_functions,
+                             c_models, c_functions,
+                             c_full_history, save_c_functions,
+                             m_model, m_function,
+                             m_full_history, save_m_function,
+                             min_subgroup_size,
                              name) {
   ##
   ## training
   ##
 
-  ## fitting the g-functions, the q-functions and the policy/policies:
+  ## fitting the g-functions, the q-functions, c-functions, and the policy/policies:
   fits <- fit_functions(
     policy_data = train_policy_data,
     type = type,
@@ -538,13 +631,19 @@ policy_eval_type <- function(target,
     g_models = g_models, g_functions = g_functions,
     g_full_history = g_full_history,
     q_models = q_models, q_functions = q_functions,
-    q_full_history = q_full_history
+    q_full_history = q_full_history,
+    c_models = c_models, c_functions = c_functions,
+    c_full_history = c_full_history,
+    m_model = m_model, m_function = m_function,
+    m_full_history = m_full_history
   )
   rm(train_policy_data)
 
-  ## getting the fitted g-functions and Q-functions:
+  ## getting the fitted g-functions, Q-functions, and c-functions:
   g_functions <- get_element(fits, "g_functions")
   q_functions <- get_element(fits, "q_functions")
+  c_functions <- get_element(fits, "c_functions")
+  m_function <- get_element(fits, "m_function")
 
   ## getting the fitted policy/policies as a list:
   if (is.null(policy)) {
@@ -568,16 +667,32 @@ policy_eval_type <- function(target,
   ## validating
   ##
 
-                                        # getting the g-function values:
+  ## getting the id as a data.table:
+  id <- data.table(id = get_id(valid_policy_data))
+  setkeyv(id, "id")
+
+  ## getting the g-function values (for events 0):
   g_values <- NULL
   if (!is.null(g_functions)) {
-    g_values <- predict(g_functions, valid_policy_data)
+    g_values <- predict(g_functions, valid_policy_data, event_set = c(0))
   }
 
-  ## getting the Q-function values:
+  ## getting the Q-function values (for events 0,2):
   q_values <- NULL
   if (!is.null(q_functions)) {
-    q_values <- predict(q_functions, valid_policy_data)
+    q_values <- predict(q_functions, valid_policy_data, event_set = c(0,2))
+  }
+
+  ## getting the c-function values (for events 0,2):
+  c_values <- NULL
+  if (!is.null(c_functions)) {
+    c_values <- predict(c_functions, valid_policy_data)
+  }
+
+  ## getting the m-function values:
+  m_values <- NULL
+  if (!is.null(m_function)) {
+    m_values <- predict(m_function, valid_policy_data)
   }
 
   ## setting g-functions output:
@@ -589,6 +704,16 @@ policy_eval_type <- function(target,
     q_functions <- NULL
   }
 
+  ## setting the c-functions output:
+  if (save_c_functions != TRUE) {
+    c_functions <- NULL
+  }
+
+   ## setting the M-functions output:
+  if (save_m_function != TRUE) {
+    m_function <- NULL
+  }
+
   ## getting the number of stages:
   K <- get_K(valid_policy_data)
 
@@ -598,13 +723,15 @@ policy_eval_type <- function(target,
   ## getting the observed actions:
   actions <- get_actions(valid_policy_data)
 
+  ## getting the events:
+  events <- get_event(valid_policy_data)
+
   ## getting the utility:
   utility <- get_utility(valid_policy_data)
 
-
   ## calculating the target estimate for each policy:
   if (length(policy) == 1) {
-    ## getting the policy actions:
+    ## getting the policy actions for both right-censoring and action events:
     policy_actions <- policy[[1]](valid_policy_data)
 
     ## checking that the policy actions comply with the stage action sets:
@@ -617,11 +744,15 @@ policy_eval_type <- function(target,
       target = target,
       type = type,
       K = K,
+      id = id,
       action_set = action_set,
       actions = actions,
       policy_actions = policy_actions,
+      events = events,
       g_values = g_values,
       q_values = q_values,
+      c_values = c_values,
+      m_values = m_values,
       utility = utility,
       min_subgroup_size = min_subgroup_size
     )
@@ -632,7 +763,7 @@ policy_eval_type <- function(target,
     estimate_objects <- lapply(
       policy,
       function(p) {
-        ## getting the policy actions:
+        ## getting the policy actions:## getting the policy actions for both right-censoring and action events:
         policy_actions <- p(valid_policy_data)
 
         ## checking that the policy actions comply with the stage action sets:
@@ -645,11 +776,15 @@ policy_eval_type <- function(target,
           target = target,
           type = type,
           K = K,
+          id = id,
           action_set = action_set,
           actions = actions,
           policy_actions = policy_actions,
+          events = events,
           g_values = g_values,
           q_values = q_values,
+          c_values = c_values,
+          m_values = m_values,
           utility = utility,
           min_subgroup_size = min_subgroup_size
         )
@@ -708,6 +843,10 @@ policy_eval_type <- function(target,
     g_values = g_values,
     q_functions = q_functions,
     q_values = q_values,
+    c_functions = c_functions,
+    c_values = c_values,
+    m_function = m_function,
+    m_values = m_values,
     Z = Z,
     subgroup_indicator = subgroup_indicator,
     min_subgroup_size = min_subgroup_size,
@@ -748,12 +887,12 @@ policy_eval_cross <- function(args,
   min_subgroup_size <- get_element(args, "min_subgroup_size")
   n <- get_n(policy_data)
   id <- get_id(policy_data)
-  policy_learn <- get_element(args, "policy_learn")
-  if (!is.null(policy_learn)) {
-    n_thres <- length(get_element(attr(policy_learn, "pl_args"), "threshold"))
-  } else {
-    n_thres <- 1
-  }
+  ## policy_learn <- get_element(args, "policy_learn")
+  ## if (!is.null(policy_learn)) {
+  ##   n_thres <- length(get_element(attr(policy_learn, "pl_args"), "threshold"))
+  ## } else {
+  ##   n_thres <- 1
+  ## }
 
   ## setting up the folds:
   folds <- split(sample(1:n, n), rep(1:M, length.out = n))
@@ -792,14 +931,16 @@ policy_eval_cross <- function(args,
   ))
 
   ## collecting the cross-fitted policy actions (sorted):
-  policy_actions <- NULL
-  if (n_thres == 1) {
-    policy_actions <- lapply(
-      cross_fits, function(x) get_element(x, "policy_actions")
-    )
-    policy_actions <- rbindlist(policy_actions)
+  policy_actions <- lapply(
+    cross_fits, function(x) get_element(x, "policy_actions", check_name = FALSE)
+  )
+  policy_actions <- rbindlist(policy_actions)
+  if (nrow(policy_actions)>0) {
     setkey(policy_actions, "id", "stage")
+  } else {
+    policy_actions <- NULL
   }
+
 
   ## collecting the subgroup indicator (sorted):
   subgroup_indicator <- NULL
@@ -999,6 +1140,29 @@ policy_eval_cross <- function(args,
   } else {
     q_values <- NULL
   }
+  ## collecting the cross-fitted c- and m-values (sorted):
+  c_values <- lapply(
+    cross_fits,
+    function(x) get_element(x, "c_values", check_name = FALSE)
+  )
+  null_c_values <- unlist(lapply(c_values, is.null))
+  if (!all(null_c_values)) {
+    c_values <- data.table::rbindlist(c_values)
+    setkey(c_values, "id", "stage")
+  } else {
+    c_values <- NULL
+  }
+  m_values <- lapply(
+    cross_fits,
+    function(x) get_element(x, "m_values", check_name = FALSE)
+  )
+  null_m_values <- unlist(lapply(m_values, is.null))
+  if (!all(null_m_values)) {
+    m_values <- data.table::rbindlist(m_values)
+    setkey(m_values, "id", "stage")
+  } else {
+    m_values <- NULL
+  }
 
   ## sorting id:
   id <- id[order(id)]
@@ -1014,6 +1178,8 @@ policy_eval_cross <- function(args,
     policy_actions = policy_actions,
     g_values = g_values,
     q_values = q_values,
+    c_values = c_values,
+    m_values = m_values,
     cross_fits = cross_fits,
     folds = folds,
     name = name,

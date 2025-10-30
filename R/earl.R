@@ -65,6 +65,9 @@ dyntxregime_earl <- function(policy_data,
 
   if (L != 1)
     stop("L must be 1 when using earl (no cross-fitting)")
+  if (any(get_element(policy_data, "cens_indicator")[["indicator"]])){
+    stop("policy learning with type 'earl' not implemented under right-censoring/missing outcomes.")
+  }
 
   # getting the observed actions:
   actions <- get_actions(policy_data)

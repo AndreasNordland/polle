@@ -85,6 +85,11 @@ predict.g_function <- function(object, new_history, ...){
   id_stage <- get_id_stage(new_history)
   new_H <- get_H(new_history)
 
+  if (ncol(new_H) == 0) {
+    ## preventing empty data.table
+    new_H <- data.table(dummy = rep(as.numeric(NA),nrow(id_stage)))
+  }
+
   # checks
   if(!all(stage_action_set %in% action_set))
     stop("The fitted stage action set is not a subset of the new action set.")
@@ -202,7 +207,7 @@ fit_g_functions <- function(policy_data, g_models, full_history = FALSE){
                           SIMPLIFY = FALSE)
     names(g_functions) <- paste("stage_", 1:K, sep = "")
   } else{
-    history <- state_history(policy_data)
+    history <- get_history(policy_data, stage = NULL, full_history = FALSE)
     g_functions <- list(all_stages = fit_g_function(history, g_models))
   }
 
@@ -210,103 +215,6 @@ fit_g_functions <- function(policy_data, g_models, full_history = FALSE){
   attr(g_functions, "full_history") <- full_history
 
   return(g_functions)
-}
-
-#' Cross-fit g-functions
-#'
-#' \code{fit_g_functions_cf} is used to cross-fit a list of g-models
-#'
-#' @param folds List of vectors of indices for each validation fold, see examples.
-#' @param policy_data Policy data object created by [policy_data()].
-#' @param g_models Propensity models/g-models created by [g_glm()], [g_rf()], [g_sl()] or similar functions.
-#' @param full_history If TRUE, the full history is used to fit each g-model. If FALSE, the single stage/"Markov type" history is used to fit each g-model.
-#' @param save_cross_fit_models Logical. Should the cross-fitted models be saved.
-#' @param future_args arguments passed to [future.apply::future_lapply].
-#' @examples
-#' #' library("polle")
-#' ### Two stage:
-#' d <- sim_two_stage(2e3, seed=1)
-#' pd <- policy_data(d,
-#'                   action = c("A_1", "A_2"),
-#'                   baseline = c("B"),
-#'                   covariates = list(L = c("L_1", "L_2"),
-#'                                     C = c("C_1", "C_2")),
-#'                   utility = c("U_1", "U_2", "U_3"))
-#' pd
-#'
-#' # creating 2 folds (indices for each validation fold):
-#' folds <- split(sample(1:get_n(pd), get_n(pd)), rep(1:2, length.out = get_n(pd)))
-#'
-#' # fitting a single g-model across all stages for each fold:
-#' g_functions <- fit_g_functions_cf(folds = folds,
-#'                                   policy_data = pd,
-#'                                   g_models = g_glm(),
-#'                                   full_history = FALSE,
-#'                                   save_cross_fit_models = TRUE)
-#' g_functions
-#' # fitting a g-model for each stage for each fold (in parallel):
-#' future::plan("multisession")
-#' g_functions <- fit_g_functions_cf(folds = folds,
-#'                                   policy_data = pd,
-#'                                   g_models = list(g_glm(), g_glm()),
-#'                                   full_history = TRUE,
-#'                                   save_cross_fit_models = TRUE)
-#' future::plan("sequential")
-#' g_functions$functions
-#' @noRd
-fit_g_functions_cf <- function(folds,
-                               policy_data,
-                               g_models,
-                               full_history,
-                               save_cross_fit_models,
-                               future_args = list(future.seed = TRUE)){
-  id <- get_id(policy_data)
-  K <- policy_data$dim$K
-
-  future_args <- append(
-    future_args,
-    list(X = folds,
-         FUN = function(f){
-           train_id <- id[-f]
-           train_policy_data <- subset_id(policy_data, train_id)
-           if (train_policy_data$dim$K != K)
-             stop("The number of stages K varies across the training policy data folds.")
-           train_g_functions <- fit_g_functions(policy_data = train_policy_data,
-                                                g_models = g_models,
-                                                full_history = full_history)
-
-           valid_id <- id[f]
-           valid_policy_data <- subset_id(policy_data, valid_id)
-           valid_g_values <- predict(train_g_functions, valid_policy_data)
-
-           if (save_cross_fit_models == FALSE)
-             train_g_functions <- NULL
-
-           out <- list(
-             train_g_functions = train_g_functions,
-             valid_g_values = valid_g_values,
-             valid_id = valid_id
-           )
-           return(out)
-         })
-  )
-
-  fit_cf <- do.call(what = future.apply::future_lapply, future_args)
-  fit_cf <- simplify2array(fit_cf)
-
-  functions <- fit_cf["train_g_functions", ]
-  values <- fit_cf["valid_g_values", ]
-  valid_ids <- fit_cf["valid_id", ]
-
-  values <- rbindlist(values)
-  setkeyv(values, c("id", "stage"))
-
-  out <- list(
-    functions = functions,
-    values = values,
-    valid_ids = valid_ids
-  )
-  return(out)
 }
 
 #' @title Get g-functions

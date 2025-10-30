@@ -1,4 +1,5 @@
 test_that("fit_q_functions handles varying stage-action sets", {
+
   d <- sim_two_stage_multi_actions(n = 1e2)
   expect_error(
     pd <- policy_data(data = d,
@@ -9,12 +10,13 @@ test_that("fit_q_functions handles varying stage-action sets", {
                       utility = c("U_1", "U_2", "U_3")),
     NA
   )
+
   p <- policy_def(
     c("yes", "no")
   )
 
   expect_error(
-    qfit <- fit_Q_functions(pd, policy_actions = p(pd), q_models = list(q_glm(), q_glm()), full_history = FALSE),
+    qfit <- fit_Q_functions(pd, policy_actions = p(pd), q_models = list(q_glm(), q_glm()), full_history = FALSE, m_function = NULL),
     NA
   )
   expect_error(
@@ -49,18 +51,53 @@ test_that("q_models checks formula input", {
     reuse = FALSE
   )
 
+  ## glm
   expect_error(policy_eval(policy_data = pd,
                            policy = p_dynamic,
-                           q_models = q_glm(formula = Y~X)))
+                           q_models = q_glm(formula = Y~X)),
+               "variable 'X' is not found in data when calling 'q_glm' with formula: ~X")
+  expect_no_error(policy_eval(policy_data = pd,
+                           policy = p_dynamic,
+                           q_models = q_glm(formula = ~ns(C))))
+
+  ## xgboost
   expect_error(policy_eval(policy_data = pd,
                            policy = p_dynamic,
-                           q_models = q_sl(formula = res~X)))
-  expect_error(policy_eval(policy_data = pd,
-                           policy = p_dynamic,
-                           q_models = q_rf(formula = V_res~X * (.))))
-  expect_error(policy_eval(policy_data = pd,
-                           policy = p_dynamic,
-                           q_models = q_glmnet(formula = Y~X)))
+                           q_models = q_xgboost(formula = Y~X, nrounds = 2)),
+               "variable 'X' is not found in data when calling 'q_xgboost' with formula: ~X")
+
+})
+
+test_that("q_models checks formula input 2", {
+
+  d <- sim_single_stage(200, seed = 1)
+  pd <- policy_data(d,
+                    action = "A",
+                    covariates = list("Z", "B", "L"),
+                    utility = "U"
+                    )
+
+  pl <- policy_learn(
+    type = "blip",
+    control = control_blip(blip_models = q_glm(formula = ~ A*.))
+  )
+  expect_error(
+    po <- pl(pd, q_models = q_glm(), g_models = g_glm()),
+    "Error in blip_model: variable 'A' is not found in data when calling 'q_glm' with formula: ~A \\+ Z \\+ B \\+ L \\+ A:Z \\+ A:B \\+ A:L"
+  )
+
+  ## A in global environment (formula defined in the global environment):
+  A <- d$A
+
+  pl <- policy_learn(
+    type = "blip",
+    control = control_blip(blip_models = q_glm(formula = ~ A*.))
+  )
+  expect_error(
+    po <- pl(pd, q_models = q_glm(), g_models = g_glm()),
+    "Error in blip_model: variable 'A' is not found in data when calling 'q_glm' with formula: ~A \\+ Z \\+ B \\+ L \\+ A:Z \\+ A:B \\+ A:L"
+  )
+
 })
 
 test_that("q_rf formats data correctly via the formula",{
@@ -137,7 +174,8 @@ test_that("q_sl can find user-defined learners",{
   expect_error(
     qfun <- polle:::fit_Q_functions(pd,
                                     p(pd),
-                                    q_sl(SL.library = "SL.test", env = env)),
+                                    q_sl(SL.library = "SL.test", env = env),
+                                    m_function = NULL),
     NA)
 
 })

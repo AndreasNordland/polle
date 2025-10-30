@@ -31,6 +31,7 @@ control_owl <- function(policy_vars = NULL,
                         c = 2^(-2:2),
                         sigma = c(0.03,0.05,0.07),
                         s = 2.^(-2:2),
+
                         m = 4){
   control <- as.list(environment())
   return(control)
@@ -73,6 +74,9 @@ dtrlearn2_owl <- function(policy_data,
     if ((!is.list(policy_vars)) | (length(policy_vars) != K))
       stop("policy_vars must be a list of length K, when full_history = TRUE.")
   }
+  if (any(get_element(policy_data, "cens_indicator")[["indicator"]])){
+    stop("policy learning with type 'owl' not implemented under right-censoring/missing outcomes.")
+  }
 
   # getting the observed actions:
   actions <- get_actions(policy_data)
@@ -93,9 +97,10 @@ dtrlearn2_owl <- function(policy_data,
   # (cross-)fitting the g-functions:
   g_functions_cf <- NULL
   if (!is.null(folds) & cross_fit_g_models == TRUE){
-    g_cf <- fit_g_functions_cf(
+    g_cf <- crossfit_function(
       policy_data = policy_data,
-      g_models = g_models,
+      fun = fit_g_functions,
+      models = g_models,
       full_history = g_full_history,
       folds = folds,
       save_cross_fit_models = save_cross_fit_models,
@@ -103,6 +108,7 @@ dtrlearn2_owl <- function(policy_data,
     )
     g_functions_cf <- getElement(g_cf, "functions")
     g_values <- getElement(g_cf, "values")
+    valid_ids <- getElement(g_cf, "valid_ids")
     rm(g_cf)
   } else {
     if (is.null(g_functions)){
