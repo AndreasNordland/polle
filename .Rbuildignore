@@ -3,7 +3,12 @@
 ^\.Rproj\.user$
 ^data-raw$
 ^LICENSE\.md$
+^README\.Rmd$
 ^\.github$
+^inst/logo$
+^docs$
 ^doc$
+_cache$
+_files$
 ^Meta$
 ^misc$
