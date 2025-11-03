@@ -271,7 +271,6 @@ blip <- function(policy_data,
   ## (n X K+1) matrix with entries C_k(H_k) (non-censoring probabilities):
   C <- cens_prob_matrix(c_values = c_values,
                         M = M,
-                        E = E,
                         n = nrow(id),
                         K = K)
   rm(M)

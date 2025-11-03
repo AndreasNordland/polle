@@ -51,8 +51,8 @@ new_policy_data <- function(stage_data,
     }
   }
   if ((time_indicator == TRUE) & (time2_indicator == TRUE)) {
-    if (!all(stage_data[["time"]] < stage_data[["time2"]])) {
-      stop("time2 must be greater and time for all pairwise elements.")
+    if (!all(stage_data[["time"]] <= stage_data[["time2"]])) {
+      stop("time2 must be greater than or equal to time for all pairwise elements.")
     }
   }
   ## if time is provided, but time2 is not
@@ -127,7 +127,7 @@ new_policy_data <- function(stage_data,
     if (verbose == TRUE){
       message(mes)
     }
-    stage_data[, (missing_deterministic_reward_names) := 0]
+    stage_data[(stage <= K), (missing_deterministic_reward_names) := 0]
   }
   if (!all(sapply(stage_data[, deterministic_reward_names, with = FALSE], function(col) is.numeric(col)))){
     mes <- paste(deterministic_reward_names, collapse = ", ")
@@ -360,11 +360,8 @@ policy_data <- function(data, baseline_data,
     if (!missing(baseline_data)) {
       stop("When 'type'=wide' set 'baseline_data' to NULL and use 'baseline' instead.")
     }
-    if (!is.null(time)) {
-      stop("time and time2 is not used when type = 'wide'. Please set to NULL.")
-    }
     if (!is.null(time2)) {
-      stop("time and time2 is not used when type = 'wide'. Please set to NULL.")
+      stop("time2 is not used when type = 'wide'. Please set to NULL.")
     }
     if (missing(covariates)) {
       covariates <- list()
@@ -375,6 +372,7 @@ policy_data <- function(data, baseline_data,
       data,
       id = id,
       action = action,
+      time = time,
       covariates = covariates,
       utility = utility,
       baseline = baseline,
@@ -451,16 +449,23 @@ check_data <- function(data){
 melt_wide_data <- function(wide_data,
                            id,
                            action,
+                           time,
                            covariates,
                            baseline,
                            utility,
                            deterministic_rewards){
-
   ## checking the form of the variable inputs:
   ## id:
   if (!is.null(id)){
     if (!(is.character(id) & (length(id) == 1))){
       mes <- "'id' must be a character string."
+      stop(mes)
+    }
+  }
+  ## time:
+  if (!is.null(time)){
+    if (!(is.character(time) & (length(time) == 1))){
+      mes <- "'time' must be a character string."
       stop(mes)
     }
   }
@@ -548,6 +553,16 @@ melt_wide_data <- function(wide_data,
     }
   }
 
+  ## checking time:
+  if (!is.null(time)){
+    if(!(time %in% colnames(wide_data))){
+      stop("invalid time variable (not in data)")
+    }
+    if (anyDuplicated(wide_data[[time]])){
+      stop("'time' column in data must be unique.")
+    }
+  }
+
   ## checking if 'data' contains all non-NA variable names:
   tmp <- unlist(c(id, action, covariates, baseline, utility, deterministic_rewards))
   tmp <- tmp[!is.na(tmp)]
@@ -596,6 +611,16 @@ melt_wide_data <- function(wide_data,
     }
   }
 
+  ## setting default time(s) at stages k <= K:
+  if (!is.null(time)) {
+    for (i in seq(K)) {
+      tt <- paste0("_", time, "_", i)
+      stopifnot(!any(tt %in% names(wide_data)))
+      wide_data[, (tt) := 0]
+      time <- c(tt, time)
+    }
+  }
+
   ## augmenting wide_data to handle NA covariates entries:
   for (l in seq_along(covariates)){
     na_idx <- is.na(covariates[[l]])
@@ -617,12 +642,15 @@ melt_wide_data <- function(wide_data,
   ## melting stage data:
   stage <- A <- U <- event <- NULL
   measure <- append(list("A" = action), covariates)
+  if (!is.null(time)) {
+    measure <- append(measure, list("time" = time))
+  }
   measure <- append(measure, list("U" = utility))
   if (!is.null(deterministic_rewards)){
     measure <- append(measure, deterministic_rewards)
   }
   # selecting subset:
-  sel <- unlist(c(id, action, covariates, utility, deterministic_rewards))
+  sel <- unlist(c(id, action, time, covariates, utility, deterministic_rewards))
   sel <- sel[!is.na(sel)]
   stage_data <- subset(wide_data, select = sel)
   # converts to long data:
@@ -634,10 +662,14 @@ melt_wide_data <- function(wide_data,
   stage_data[ , A := as.character(A)]
   # setting the event variable:
   stage_data[!is.na(A), event := 0]
-  stage_data <- stage_data[!(is.na(A) & is.na(U)), ]
   stage_data[is.na(A), event := 1]
-  ## setting time and time2 to NA:
-  set(stage_data, j = "time", value = as.numeric(NA))
+  stage_data[(is.na(A) & is.na(U)), event := 2]
+
+  ## setting time to NA if missing.
+  ## setting time2 to NA
+  if (is.null(time)) {
+    set(stage_data, j = "time", value = as.numeric(NA))
+  }
   set(stage_data, j = "time2", value = as.numeric(NA))
 
   # setting keys:

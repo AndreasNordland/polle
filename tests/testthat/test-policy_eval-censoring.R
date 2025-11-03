@@ -694,7 +694,6 @@ test_that("policy_eval returns the expected c_functions output when using c-mode
 })
 
 
-
 test_that("policy_eval with target 'subgroup' has the correct output under right-censoring.", {
 
   ## right-censoring at every stage:
