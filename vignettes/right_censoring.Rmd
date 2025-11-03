@@ -124,32 +124,32 @@ We note that this score adapted to handle continuous right-censoring is not the 
 
 ## Terminal events
 
-As in the associated package manuscript, terminal events may occur.
+Terminal events may occur, resulting in a stochastic number of stages. However, auxiliary data can be constructed, and the methodology for a fixed-stage problem can be applied, taking into account the degenerate distribution of the new data.
 
-![Figure caption](figures/right_cens_figure.svg)
+Let $\epsilon_1$ and $\epsilon_2$ be terminal-event indicators included in the state covariates $X_1$
+and $X_22$. Recall that $X_1$ and $X_2$ also include utility contributions $U_1$ and $U_2$, and
+that the complete utility is $U = U_1 + U_2 + U_3$.
 
-
-To deal with this, the methodology for a fixed stage problem can be applied to auxiliary data.
-
-For example, if a terminal event occurs at stage 2 we observe
+If a terminal event occurs at stage 2 we observe
 
 \begin{align*}
-O^\ast = \{B, X_1, U_1, \Delta_1, \Delta_1 A_1, \Delta_1 X_2, \Delta_1 U_2\}.
+O^\ast = \{B, X_1, \Delta_1, \Delta_1 A_1, \Delta_1 X_2, \Delta_1 U_2\}.
 \end{align*}
-
-Note that we here explicitly write $U_1$ and $U_2$. Remember that in full generality $U = U_1 + U_2$ if we observe a terminal event at stage $2$.
 
 We then construct auxiliary data
 
 \begin{align*}
-\{\Delta_2 = 0,  A_2 = a^\dagger, X_3 = \emptyset,  \Delta_3 = 0,  U_3 = 0\}
+\{\Delta_2 = 1,  A_2 = a^\dagger, X_3 = \emptyset,  \Delta_3 = 0,  U_3 = 0\}
 \end{align*}
 
-and calculate the (un-centralized) doubly robust score using that if a terminal event happens at stage 2
+and calculate the (un-centralized) doubly robust score using that if a terminal
+event happens at stage 2, i.e., that $\epsilon_2 = 1$:
 
 \begin{align*}
-&C_2(H_2) = C_3(H_3) = 1\\
-&Q_2^d(H_2, a^\dagger) = Q_3^d(H_3) = Q_4^d(H_4) = U_1 + U_2 = U
+&C_2(H_2, \epsilon_2 = 1) = C_3(H_3, \epsilon_2 = 1) = 1\\
+&g_2(H_2, \epsilon_2 = 1) = 1\\
+&Q_2^d(H_2, \epsilon_2 = 1, a^\dagger) = Q_3^d(H_3, \epsilon_2 = 1) = Q_4^d(H_4,
+\epsilon_2 = 1) = U_1 + U_2 = U
 \end{align*}
 
 
