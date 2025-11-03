@@ -1173,7 +1173,7 @@ test_that("policy_eval() handles abundant censoring.", {
 
 
   ## cross-fitting
-  plan(sequential, split = TRUE) # browser() will work in future.apply
+  ## plan(sequential, split = TRUE) # browser() will work in future.apply
   expect_error(
     suppressWarnings(
       pe <- policy_eval(
@@ -1245,30 +1245,8 @@ test_that("policy_eval() handles abundant censoring.", {
 
 })
 
-
-## test_that("policy_eval returns error when right-censoring occur for a stochastic number of stages", {
-
-##   set.seed(1)
-##   ld <- sim_two_stage_right_cens(n = 1e2)
-##   ld <- ld[-2, ]
-##   ld[, stage := 1:.N, by = list(id)]
-
-##   pd <- policy_data(data = ld, type = "long", action = "A", time = "time", time2 = "time2")
-
-##   expect_error(
-##     policy_eval(
-##       policy_data = pd,
-##       policy = policy_def(1, reuse = TRUE),
-##       m_model = q_glm(~1),
-##       m_full_history = FALSE,
-##       c_models = g_glm(~1)
-##     ),
-##     "policy_eval is not implemented for both right-censoring and a stochastic number of action stages."
-##   )
-## })
-
-test_that("policy_eval with target 'value' has the expected output for the two-stage case under right-censoring and terminal events.", {
-
+test_that("policy_eval with target 'value' has the expected output
+for the two-stage case under right-censoring and terminal events.", {
 
   ## right-censoring at every stage, but no death:
   set.seed(1)
@@ -1331,7 +1309,7 @@ test_that("policy_eval with target 'value' has the expected output for the two-s
 
   ## g-functions:
   gf <- fit_g_functions(policy_data = pd,
-                  g_models = list(g_glm(~1), g_glm(~1)))
+                        g_models = list(g_glm(~1), g_glm(~1)))
   tmp <- predict(gf, pd)
 
   g1 <- ld[stage == 1 & event == 0, mean(A == "1")]
@@ -1404,7 +1382,7 @@ test_that("policy_eval with target 'value' has the expected output for the two-s
 
   ## stage 3 Q-values
   expect_true(
-      all(pe$m_values$Q == (d$x3 + d$u1 + d$u2)[d$delta1 == 1 & d$delta2 == 1])
+    all(pe$m_values$Q == (d$x3 + d$u1 + d$u2)[d$delta1 == 1 & d$delta2 == 1])
   )
 
   expect_equal(
@@ -1443,20 +1421,20 @@ test_that("policy_eval with target 'value' has the expected output for the two-s
   death2 <- rbinom(n = 1e2, size = 1, prob = 0.2) # stage 2 death indicator
   u2 <- runif(n = 1e2, min = -1, max = 1) - death2 * runif(n = 1e2, min = 0, max = 1)
   d <- data.table(
-      x1 = x1,
-      a1 = a1,
-      x2 = x2,
-      a2 = a2,
-      x3 = x3,
-      p1 = p1,
-      p2 = p2,
-      u1 = u1,
-      u2 = u2,
-      u3 = u3,
-      delta1 = delta1,
-      delta2 = delta2,
-      delta3 = delta3,
-      death2 = death2
+    x1 = x1,
+    a1 = a1,
+    x2 = x2,
+    a2 = a2,
+    x3 = x3,
+    p1 = p1,
+    p2 = p2,
+    u1 = u1,
+    u2 = u2,
+    u3 = u3,
+    delta1 = delta1,
+    delta2 = delta2,
+    delta3 = delta3,
+    death2 = death2
   )
 
   pd <- policy_data(
@@ -1510,7 +1488,7 @@ test_that("policy_eval with target 'value' has the expected output for the two-s
 
   ## g-functions:
   gf <- fit_g_functions(policy_data = pd,
-                  g_models = list(g_glm(~1), g_glm(~1)))
+                        g_models = list(g_glm(~1), g_glm(~1)))
   tmp <- predict(gf, pd)
 
   g1 <- ld[stage == 1 & event == 0, mean(A == "1")]
@@ -1544,7 +1522,7 @@ test_that("policy_eval with target 'value' has the expected output for the two-s
     (d$death2 == 0) * (d$delta1 == 1) / c1 * (d$a1 == d$p1) /
     (g1 * (d$a1 == "1") + g2 * (d$a1 == "2")) * ((d$x2 + d$u2) - d$x1) +
     (d$death2 == 1) * (d$delta1 == 1) / c1 * (d$a1 == d$p1) /
-    (g1 * (d$a1 == "1") + g2 * (d$a1 == "2")) * ((d$u1 + d$u2) - d$x1) +
+    (g1 * (d$a1 == "1") + g2 * (d$a1 == "2")) * (d$u2 - d$x1) +
     ## stage 2 dr score
     (d$death2 == 0) * (d$delta1 == 1) / c1 * (d$a1 == d$p1) /
     (g1 * (d$a1 == "1") + g2 * (d$a1 == "2")) *
@@ -1574,8 +1552,15 @@ test_that("policy_eval with target 'value' has the expected output for the two-s
     c_functions = cf
   )
 
-  head(pe$IC + pe$coef)
-  head(Z)
+  expect_equal(
+    coef(pe) |> unname(),
+    ref_pe
+  )
+
+  expect_equal(
+    IC(pe),
+    matrix(ref_IC)
+  )
 
 
 })
