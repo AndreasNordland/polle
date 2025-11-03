@@ -1561,6 +1561,4 @@ for the two-stage case under right-censoring and terminal events.", {
     IC(pe),
     matrix(ref_IC)
   )
-
-
 })
