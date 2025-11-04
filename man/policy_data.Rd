@@ -33,33 +33,32 @@ policy_data(
 
 \item{baseline_data}{\link{data.frame} or \link[data.table:data.table]{data.table::data.table}; see Examples.}
 
-\item{type}{Character string. If "wide", \code{data} is considered to be on wide format.
-If "long", \code{data} is considered to be on long format; see Examples.}
+\item{type}{Character string. If "wide", \code{data} is considered to be on
+wide format. If "long", \code{data} is considered to be on long format; see
+Examples.}
 
 \item{action}{Action variable name(s). Character vector or character string.
-\itemize{
-\item A vector is valid for wide data. The length of the vector determines the number of stages (K).
-\item A string is valid for single stage wide data or long data.
-}}
+\itemize{ \item A vector is valid for wide data. The length of the vector
+determines the number of stages (K). \item A string is valid for single
+stage wide data or long data. }}
 
-\item{covariates}{Stage specific covariate name(s). Character vector or named list of character vectors.
-\itemize{
-\item A vector is valid for single stage wide data or long data.
-\item A named list is valid for multiple stages wide data. Each element
-must be a character vector with length K. Each vector can contain NA
-elements, if a covariate is not available for the given stage(s).
-}}
+\item{covariates}{Stage specific covariate name(s). Character vector or named
+list of character vectors. \itemize{ \item A vector is valid for single
+stage wide data or long data. \item A named list is valid for multiple
+stages wide data. Each element must be a character vector with length K.
+Each vector can contain NA elements, if a covariate is not available for
+the given stage(s). }}
 
 \item{utility}{Utility/Reward variable name(s). Character string or vector.
-\itemize{
-\item A string is valid for long data and wide data with a single final utility.
-\item A vector is valid for wide data with incremental rewards. Must have length K+1; see Examples.
-}}
+\itemize{ \item A string is valid for long data and wide data with a single
+final utility. \item A vector is valid for wide data with incremental
+rewards. Must have length K+1; see Examples. }}
 
 \item{baseline}{Baseline covariate name(s). Character vector.}
 
-\item{deterministic_rewards}{Deterministic reward variable name(s). Named list of character vectors of length K.
-The name of each element must be on the form "U_Aa" where "a" corresponds to an action in the action set.}
+\item{deterministic_rewards}{Deterministic reward variable name(s). Named
+list of character vectors of length K. The name of each element must be on
+the form "U_Aa" where "a" corresponds to an action in the action set.}
 
 \item{id}{ID variable name. Character string.}
 
@@ -73,7 +72,8 @@ The name of each element must be on the form "U_Aa" where "a" corresponds to an 
 
 \item{action_set}{Character string. Action set across all stages.}
 
-\item{verbose}{Logical. If TRUE, formatting comments are printed to the console.}
+\item{verbose}{Logical. If TRUE, formatting comments are printed to the
+console.}
 
 \item{x}{Object to be printed.}
 
@@ -86,23 +86,19 @@ The name of each element must be on the form "U_Aa" where "a" corresponds to an 
 \item{probs}{numeric vector (probabilities)}
 }
 \value{
-\code{policy_data()} returns an object of class "policy_data".
-The object is a list containing the following elements:
-\item{\code{stage_data}}{\link[data.table:data.table]{data.table::data.table} containing the id, stage number, event
-indicator, action (\eqn{A_k}), state covariates
-(\eqn{X_k}), reward (\eqn{U_k}), and the
-deterministic rewards.}
-\item{\code{baseline_data}}{\link[data.table:data.table]{data.table::data.table} containing the id and baseline
-covariates (\eqn{B}).}
-\item{\code{colnames}}{List containing the state covariate names, baseline
-covariate names, and the deterministic reward variable
-names.}
-\item{\code{action_set}}{Sorted character vector describing the action set, i.e.,
-the possible actions at all stages.}
+\code{policy_data()} returns an object of class "policy_data". The
+object is a list containing the following elements:
+\item{\code{stage_data}}{\link[data.table:data.table]{data.table::data.table} containing the id, stage
+number, event indicator, action (\eqn{A_k}), state covariates (\eqn{X_k}),
+reward (\eqn{U_k}), and the deterministic rewards.}
+\item{\code{baseline_data}}{\link[data.table:data.table]{data.table::data.table} containing the id and
+baseline covariates (\eqn{B}).} \item{\code{colnames}}{List containing the
+state covariate names, baseline covariate names, and the deterministic
+reward variable names.} \item{\code{action_set}}{Sorted character vector
+describing the action set, i.e., the possible actions at all stages.}
 \item{\code{stage_action_sets}}{List of sorted character vectors describing
-the observed actions at each stage.}
-\item{\code{dim}}{List containing the number of observations (n) and the
-number of stages (K).}
+the observed actions at each stage.} \item{\code{dim}}{List containing the
+number of observations (n) and the number of stages (K).}
 }
 \description{
 \code{policy_data()} creates a policy data object which
@@ -110,33 +106,24 @@ is used as input to \code{\link[=policy_eval]{policy_eval()}} and \code{\link[=p
 evaluation and data adaptive policy learning.
 }
 \details{
-Each observation has the sequential form
-\deqn{O= {B, U_1, X_1, A_1, ..., U_K, X_K, A_K, U_{K+1}},}
-for a possibly stochastic number of stages K.
-\itemize{
-\item \eqn{B} is a vector of baseline covariates.
-\item \eqn{U_k} is the reward at stage k (not influenced by the action \eqn{A_k}).
-\item \eqn{X_k} is a vector of state covariates summarizing the state at stage k.
-\item \eqn{A_k} is the categorical action at stage k.
-}
-The utility is given by the sum of the rewards, i.e.,
-\eqn{U = \sum_{k = 1}^{K+1} U_k}.
+Each observation has the sequential form \deqn{O= {B, U_1, X_1, A_1,
+  ..., U_K, X_K, A_K, U_{K+1}},} for a possibly stochastic number of stages
+K. \itemize{ \item \eqn{B} is a vector of baseline covariates. \item
+\eqn{U_k} is the reward at stage k (not influenced by the action
+\eqn{A_k}). \item \eqn{X_k} is a vector of state covariates summarizing the
+state at stage k. \item \eqn{A_k} is the categorical action at stage k. }
+The utility is given by the sum of the rewards, i.e., \eqn{U = \sum_{k =
+  1}^{K+1} U_k}.
 }
 \section{S3 generics}{
-
-The following S3 generic functions are available for an object of
-class \code{policy_data}:
-\describe{
-\item{\code{\link[=partial]{partial()}}}{ Trim the maximum number
-of stages in a \code{policy_data} object.}
+ The following S3 generic functions are available for an
+object of class \code{policy_data}: \describe{ \item{\code{\link[=partial]{partial()}}}{ Trim the
+maximum number of stages in a \code{policy_data} object.}
 \item{\code{\link[=subset_id]{subset_id()}}}{ Subset a a \code{policy_data} object on ID.}
-\item{\code{\link[=get_history]{get_history()}}}{ Summarize the history and action at
-a given stage.}
+\item{\code{\link[=get_history]{get_history()}}}{ Summarize the history and action at a given stage.}
 \item{\code{\link[=get_history_names]{get_history_names()}}}{ Get history variable names.}
 \item{\code{\link[=get_actions]{get_actions()}}}{ Get the action at every stage.}
-\item{\code{\link[=get_utility]{get_utility()}}}{Get the utility.}
-\item{\code{\link[=plot]{plot()}}}{Plot method.}
-}
+\item{\code{\link[=get_utility]{get_utility()}}}{Get the utility.} \item{\code{\link[=plot]{plot()}}}{Plot method.} }
 }
 
 \examples{

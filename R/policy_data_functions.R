@@ -545,7 +545,8 @@ full_history <- function(object, stage, event_set){
   action_set <- get_action_set(object)
   stage_action_sets <- get_stage_action_sets(object)
   deterministic_rewards <- get_element(object_colnames, "deterministic_rewards")
-  stage_ <- stage; rm(stage)
+  stage_ <- stage
+  rm(stage)
 
   if (stage_ > (K+1)) {
     stop("The stage number must be lower or equal to K+1.")
@@ -569,8 +570,13 @@ full_history <- function(object, stage, event_set){
   if (nrow(AH) == 0) {
     stop("empty history for the given stage and event_set.")
   }
+
   ## transforming the data from long to wide format:
-  AH <- dcast(AH, id ~ stage, value.var = AH_names[-c(1,2)])
+  AH <- dcast(AH, id ~ stage, value.var = AH_names[-c(1, 2)])
+  if (length(AH_names[-c(1, 2)]) == 1) {
+    colnames(AH)[-1] <- paste(AH_names[-c(1, 2)], colnames(AH)[-1], sep = "_")
+  }
+
   ## inserting stage column:
   AH[, stage := stage_]
   ## merging the stage specific histories and the the baseline data by reference:
