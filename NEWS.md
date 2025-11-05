@@ -1,3 +1,6 @@
+# polle 1.6.1
+    - policy learning and evaluation under right-censoring/missing outcome
+
 # polle 1.6.0
     - online estimation/sequential validation for (subgroup) policy evaluation
     - improved functionality for subgroup analysis (subgroup average treatment effect)
