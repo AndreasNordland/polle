@@ -222,86 +222,70 @@ new_policy_data <- function(stage_data,
 #'
 #' @param data [data.frame] or [data.table::data.table]; see Examples.
 #' @param baseline_data [data.frame] or [data.table::data.table]; see Examples.
-#' @param type Character string. If "wide", \code{data} is considered to be on wide format.
-#' If "long", \code{data} is considered to be on long format; see Examples.
+#' @param type Character string. If "wide", \code{data} is considered to be on
+#'   wide format. If "long", \code{data} is considered to be on long format; see
+#'   Examples.
 #' @param action Action variable name(s). Character vector or character string.
-#' \itemize{
-#'   \item A vector is valid for wide data. The length of the vector determines the number of stages (K).
-#'   \item A string is valid for single stage wide data or long data.
-#' }
-#' @param covariates Stage specific covariate name(s). Character vector or named list of character vectors.
-#' \itemize{
-#'   \item A vector is valid for single stage wide data or long data.
-#'   \item A named list is valid for multiple stages wide data. Each element
-#'   must be a character vector with length K. Each vector can contain NA
-#'   elements, if a covariate is not available for the given stage(s).
-#' }
-#' @param utility  Utility/Reward variable name(s). Character string or vector.
-#' \itemize{
-  #'   \item A string is valid for long data and wide data with a single final utility.
-  #'   \item A vector is valid for wide data with incremental rewards. Must have length K+1; see Examples.
-#' }
+#'   \itemize{ \item A vector is valid for wide data. The length of the vector
+#'   determines the number of stages (K). \item A string is valid for single
+#'   stage wide data or long data. }
+#' @param covariates Stage specific covariate name(s). Character vector or named
+#'   list of character vectors. \itemize{ \item A vector is valid for single
+#'   stage wide data or long data. \item A named list is valid for multiple
+#'   stages wide data. Each element must be a character vector with length K.
+#'   Each vector can contain NA elements, if a covariate is not available for
+#'   the given stage(s). }
+#' @param utility Utility/Reward variable name(s). Character string or vector.
+#'   \itemize{ \item A string is valid for long data and wide data with a single
+#'   final utility. \item A vector is valid for wide data with incremental
+#'   rewards. Must have length K+1; see Examples. }
 #' @param baseline Baseline covariate name(s). Character vector.
-#' @param deterministic_rewards Deterministic reward variable name(s). Named list of character vectors of length K.
-#' The name of each element must be on the form "U_Aa" where "a" corresponds to an action in the action set.
+#' @param deterministic_rewards Deterministic reward variable name(s). Named
+#'   list of character vectors of length K. The name of each element must be on
+#'   the form "U_Aa" where "a" corresponds to an action in the action set.
 #' @param id ID variable name. Character string.
 #' @param stage Stage number variable name.
 #' @param event Event indicator name.
 #' @param time Character string
 #' @param time2 Character string
 #' @param action_set Character string. Action set across all stages.
-#' @param verbose Logical. If TRUE, formatting comments are printed to the console.
+#' @param verbose Logical. If TRUE, formatting comments are printed to the
+#'   console.
 #' @param digits Minimum number of digits to be printed.
 #' @param x Object to be printed.
 #' @param object Object of class [policy_data]
 #' @param probs numeric vector (probabilities)
 #' @param ... Additional arguments passed to print.
-#' @details
-#' Each observation has the sequential form
-#' \deqn{O= {B, U_1, X_1, A_1, ..., U_K, X_K, A_K, U_{K+1}},}
-#' for a possibly stochastic number of stages K.
-#' \itemize{
-#'  \item \eqn{B} is a vector of baseline covariates.
-#'  \item \eqn{U_k} is the reward at stage k (not influenced by the action \eqn{A_k}).
-#'  \item \eqn{X_k} is a vector of state covariates summarizing the state at stage k.
-#'  \item \eqn{A_k} is the categorical action at stage k.
-#' }
-#' The utility is given by the sum of the rewards, i.e.,
-#' \eqn{U = \sum_{k = 1}^{K+1} U_k}.
-#' @returns
-#' \code{policy_data()} returns an object of class "policy_data".
-#' The object is a list containing the following elements:
-#' \item{\code{stage_data}}{[data.table::data.table] containing the id, stage number, event
-#'                           indicator, action (\eqn{A_k}), state covariates
-#'                           (\eqn{X_k}), reward (\eqn{U_k}), and the
-#'                           deterministic rewards.}
-#' \item{\code{baseline_data}}{[data.table::data.table] containing the id and baseline
-#'                             covariates (\eqn{B}).}
-#' \item{\code{colnames}}{List containing the state covariate names, baseline
-#'                        covariate names, and the deterministic reward variable
-#'                        names.}
-#' \item{\code{action_set}}{Sorted character vector describing the action set, i.e.,
-#'                          the possible actions at all stages.}
-#' \item{\code{stage_action_sets}}{List of sorted character vectors describing
-#'                                 the observed actions at each stage.}
-#' \item{\code{dim}}{List containing the number of observations (n) and the
-#'                   number of stages (K).}
-#' @section S3 generics:
-#' The following S3 generic functions are available for an object of
-#' class \code{policy_data}:
-#' \describe{
-#' \item{[partial()]}{ Trim the maximum number
-#'                              of stages in a \code{policy_data} object.}
-#' \item{[subset_id()]}{ Subset a a \code{policy_data} object on ID.}
-#' \item{[get_history()]}{ Summarize the history and action at
-#'                                    a given stage.}
-#' \item{[get_history_names()]}{ Get history variable names.}
-#' \item{[get_actions()]}{ Get the action at every stage.}
-#' \item{[get_utility()]}{Get the utility.}
-#' \item{[plot()]}{Plot method.}
-#' }
-#' @seealso
-#' [policy_eval()], [policy_learn()], [copy_policy_data()]
+#' @details Each observation has the sequential form \deqn{O= {B, U_1, X_1, A_1,
+#'   ..., U_K, X_K, A_K, U_{K+1}},} for a possibly stochastic number of stages
+#'   K. \itemize{ \item \eqn{B} is a vector of baseline covariates. \item
+#'   \eqn{U_k} is the reward at stage k (not influenced by the action
+#'   \eqn{A_k}). \item \eqn{X_k} is a vector of state covariates summarizing the
+#'   state at stage k. \item \eqn{A_k} is the categorical action at stage k. }
+#'   The utility is given by the sum of the rewards, i.e., \eqn{U = \sum_{k =
+#'   1}^{K+1} U_k}.
+#' @returns \code{policy_data()} returns an object of class "policy_data". The
+#'   object is a list containing the following elements:
+#'   \item{\code{stage_data}}{[data.table::data.table] containing the id, stage
+#'   number, event indicator, action (\eqn{A_k}), state covariates (\eqn{X_k}),
+#'   reward (\eqn{U_k}), and the deterministic rewards.}
+#'   \item{\code{baseline_data}}{[data.table::data.table] containing the id and
+#'   baseline covariates (\eqn{B}).} \item{\code{colnames}}{List containing the
+#'   state covariate names, baseline covariate names, and the deterministic
+#'   reward variable names.} \item{\code{action_set}}{Sorted character vector
+#'   describing the action set, i.e., the possible actions at all stages.}
+#'   \item{\code{stage_action_sets}}{List of sorted character vectors describing
+#'   the observed actions at each stage.} \item{\code{dim}}{List containing the
+#'   number of observations (n) and the number of stages (K).}
+#' @section S3 generics: The following S3 generic functions are available for an
+#'   object of class \code{policy_data}: \describe{ \item{[partial()]}{ Trim the
+#'   maximum number of stages in a \code{policy_data} object.}
+#'   \item{[subset_id()]}{ Subset a a \code{policy_data} object on ID.}
+#'   \item{[get_history()]}{ Summarize the history and action at a given stage.}
+#'   \item{[get_history_names()]}{ Get history variable names.}
+#'   \item{[get_actions()]}{ Get the action at every stage.}
+#'   \item{[get_utility()]}{Get the utility.} \item{[plot()]}{Plot method.} }
+#' @seealso [policy_eval()], [policy_learn()], [copy_policy_data()]
 #' @examples
 #' library("polle")
 #' ### Single stage: Wide data

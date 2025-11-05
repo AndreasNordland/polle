@@ -46,9 +46,14 @@ fit_m_function <- function(policy_data,
     stopifnot(any(!is.na(U)))
     stopifnot(length(U) == nrow(H))
 
+    ## getting the historic rewards/utility contributions
+    U_bar <- get_element(his, "U")[get("id") %in% id_not_missing, ][["U_bar"]]
+    ## calculating the residual utility:
+    V_res <- U - U_bar
+
     ## fitting the m-model:
     tryCatch({
-      m_model <- m_model(AH = H, V_res = U)
+      m_model <- m_model(AH = H, V_res = V_res)
     }, error = function(e) {
       stop("Error fitting m_model: ", e$message)
     }, warning = function(w) {
@@ -82,9 +87,9 @@ predict.m_function <- function(object, new_policy_data, ...) {
 
   ## creating the event history object:
   new_history <- get_history(new_policy_data,
-                     full_history = full_history,
-                     stage = K+1,
-                     event_set = c(0,1,2))
+                             full_history = full_history,
+                             stage = K+1,
+                             event_set = c(0,1,2))
 
 
   m_model <- getElement(object, "m_model")
@@ -93,8 +98,14 @@ predict.m_function <- function(object, new_policy_data, ...) {
   id_stage <- get_id_stage(new_history)
   new_H <- get_H(new_history)
 
+  ## setting up output
   q_values <- id_stage
-  set(q_values, j = "Q", value = predict(m_model, new_AH = new_H))
+  ## getting residual predictions
+  res_pred <- predict(m_model, new_AH = new_H)
+  ## getting historic rewards
+  U_bar <- get_element(new_history, "U")[["U_bar"]]
+
+  set(q_values, j = "Q", value = U_bar + res_pred)
 
   return(q_values)
 }

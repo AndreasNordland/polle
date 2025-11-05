@@ -693,26 +693,6 @@ test_that("policy_eval returns the expected c_functions output when using c-mode
 
 })
 
-test_that("policy_eval returns error when right-censoring occur for a stochastic number of stages", {
-
-  set.seed(1)
-  ld <- sim_two_stage_right_cens(n = 1e2)
-  ld <- ld[-2, ]
-  ld[, stage := 1:.N, by = list(id)]
-
-  pd <- policy_data(data = ld, type = "long", action = "A", time = "time", time2 = "time2")
-
-  expect_error(
-    policy_eval(
-      policy_data = pd,
-      policy = policy_def(1, reuse = TRUE),
-      m_model = q_glm(~1),
-      m_full_history = FALSE,
-      c_models = g_glm(~1)
-    ),
-    "policy_eval is not implemented for both right-censoring and a stochastic number of action stages."
-  )
-})
 
 test_that("policy_eval with target 'subgroup' has the correct output under right-censoring.", {
 
@@ -1193,7 +1173,7 @@ test_that("policy_eval() handles abundant censoring.", {
 
 
   ## cross-fitting
-  plan(sequential, split = TRUE) # browser() will work in future.apply
+  ## plan(sequential, split = TRUE) # browser() will work in future.apply
   expect_error(
     suppressWarnings(
       pe <- policy_eval(
@@ -1263,4 +1243,443 @@ test_that("policy_eval() handles abundant censoring.", {
 
   pd <- policy_data(data = ld, type = "long")
 
+})
+
+test_that("policy_eval with target 'value' has the expected output
+for the two-stage case under right-censoring and terminal events.", {
+
+  ## right-censoring at every stage, but no death:
+  set.seed(1)
+  x1 <- runif(n = 1e2, min = -1, max = 1)
+  u1 <- runif(n = 1e2, min = -1, max = 1)
+  a1 <- c(rep(1, 50), rep(2, 50))
+  x2 <- runif(n = 1e2, min = -1, max = 1)
+  u2 <- runif(n = 1e2, min = -1, max = 1)
+  a2 <- c(rep(3, 50), rep(4, 50))
+  x3 <- runif(n = 1e2, min = -1, max = 1)
+  u3 <- a1 * x1 + a2 * x2 + runif(n = 1e2, min = -1, max = 1)
+  p1 <- c(rep(1, 25), rep(2, 25), rep(1, 25), rep(2, 25))
+  p2 <- c(rep(3, 25), rep(4, 25), rep(3, 25), rep(4, 25))
+  delta1 <- rbinom(n = 1e2, size = 1, prob = 0.8) # stage 1 non-missing indicator
+  delta2 <- rbinom(n = 1e2, size = 1, prob = 0.8) # stage 2 non-missing indicator
+  delta3 <- rbinom(n = 1e2, size = 1, prob = 0.8) # stage 3 non-missing indicator
+  d <- data.table(x1 = x1,
+                  a1 = a1,
+                  x2 = x2,
+                  a2 = a2,
+                  x3 = x3,
+                  p1 = p1,
+                  p2 = p2,
+                  u1 = u1,
+                  u2 = u2,
+                  u3 = u3,
+                  delta1 = delta1,
+                  delta2 = delta2,
+                  delta3 = delta3)
+
+  pd <- policy_data(
+    data = d,
+    action = c("a1", "a2"),
+    covariates = list(x = c("x1", "x2"),
+                      p = c("p1", "p2")),
+    utility = c("u1", "u2", "u3")
+  )
+
+  gf <- fit_g_functions(pd, g_models = list(g_glm(~1), g_glm(~1)))
+
+  ld <- pd$stage_data
+  ld[stage ==3, x := x3]
+
+  ld[stage == 1, delta:= delta1]
+  ld[stage == 2, delta:= delta2]
+  ld[stage == 3, delta:= delta3]
+  ld[ , delta := cumprod(delta), by = id]
+  ld[ , tmp := cumsum(delta == 0), by = id]
+  ld <- ld[tmp %in% c(0,1)]
+  ld[ , tmp := NULL]
+  ld[delta == 0, event := 2]
+  ld[ , delta := NULL]
+  ld[event == 2 & stage == 3, U := NA]
+  ld[event == 2, A := NA]
+
+  pd <- policy_data(data = ld, type = "long")
+
+  ## policy:
+  p <- policy_def(function(p) p, name = "test", reuse = TRUE)
+
+  ## g-functions:
+  gf <- fit_g_functions(policy_data = pd,
+                        g_models = list(g_glm(~1), g_glm(~1)))
+  tmp <- predict(gf, pd)
+
+  g1 <- ld[stage == 1 & event == 0, mean(A == "1")]
+  g2 <- ld[stage == 1 & event == 0, mean(A == "2")]
+  g3 <- ld[stage == 2 & event == 0, mean(A == "3")]
+  g4 <- ld[stage == 2 & event == 0, mean(A == "4")]
+  expect_equal(
+    c(g1, g2, g3, g4),
+    apply(tmp[, 3:6, with = FALSE], 2, function(x) max(unique(x))) |> unname()
+  )
+  rm(tmp)
+
+  ## c-functions:
+  cf <- fit_c_functions(policy_data = pd,
+                        c_models = g_glm(~1))
+  tmp <- predict(cf, pd)
+  c1 <- 1-ld[, list(mean(event == 2))][[1]]
+  expect_equal(
+    unique(tmp$surv_time),
+    1
+  )
+  expect_equal(
+    tmp$surv_time2 |> unique(),
+    c1
+  )
+
+  Z <- (d$x1 + d$u1) +
+    (d$delta1 == 1) / c1 *
+    (d$a1 == d$p1) / (g1 * (d$a1 == "1") +
+                      g2 *
+                      (d$a1 == "2")) * ((d$x2 + d$u2) - d$x1) +
+    (d$delta1 == 1) / c1 * (d$a1 == d$p1) / (g1 * (d$a1 == "1") +
+                                             g2 * (d$a1 == "2")) *
+    (d$delta2 == 1) / c1 *
+    (d$a2 == d$p2) / (g3 * (d$a2 == "3") +
+                      g4 * (d$a2 == "4")) * (d$x3 - d$x2) +
+    (d$delta1 == 1) / c1 * (d$a1 == d$p1) / (g1 * (d$a1 == "1") +
+                                             g2 * (d$a1 == "2")) *
+    (d$delta2 == 1) / c1 * (d$a2 == d$p2) / (g3 * (d$a2 == "3") +
+                                             g4 * (d$a2 == "4")) *
+    (d$delta3 == 1) / c1 * (d$u3 - d$x3)
+
+  ref_pe <- mean(Z)
+  ref_IC <-  Z - ref_pe
+
+  ##
+  ## no cross-fitting
+  ##
+
+  pe <- policy_eval(
+    policy_data = pd,
+    policy = p,
+    q_models = list(q_degen(var = "x"), q_degen(var = "x")),
+    m_model = q_degen(var = "x"),
+    g_functions = gf,
+    c_functions = cf
+  )
+
+  ## stage 1 Q-values
+  expect_true(
+    all(pe$q_values[stage == 1]$Q_1 == (d$x1 + d$u1)),
+    all(pe$q_values[stage == 1]$Q_2 == (d$x1 + d$u1))
+  )
+
+  ## stage 2 Q-values
+  expect_true(
+    all(pe$q_values[stage == 2]$Q_3 == (d$x2 + d$u1 + d$u2)[d$delta1 == 1]),
+    all(pe$q_values[stage == 2]$Q_4 == (d$x2 + d$u1 + d$u2)[d$delta1 == 1])
+  )
+
+  ## stage 3 Q-values
+  expect_true(
+    all(pe$m_values$Q == (d$x3 + d$u1 + d$u2)[d$delta1 == 1 & d$delta2 == 1])
+  )
+
+  expect_equal(
+    pe$name,
+    names(coef(pe))
+  )
+  expect_equal(
+    pe$name,
+    c("E[U(d)]: d=test")
+  )
+
+  expect_equal(
+    coef(pe) |> unname(),
+    ref_pe
+  )
+
+  expect_equal(
+    IC(pe),
+    matrix(ref_IC)
+  )
+
+  rm(list = ls())
+  ## right-censoring at every stage, and death at stage 2:
+  set.seed(1)
+  x1 <- runif(n = 1e2, min = -1, max = 1)
+  u1 <- runif(n = 1e2, min = -1, max = 1)
+  a1 <- c(rep(1, 50), rep(2, 50))
+  x2 <- runif(n = 1e2, min = -1, max = 1)
+  a2 <- c(rep(3, 50), rep(4, 50))
+  x3 <- runif(n = 1e2, min = -1, max = 1)
+  u3 <- a1 * x1 + a2 * x2 + runif(n = 1e2, min = -1, max = 1)
+  p1 <- c(rep(1, 25), rep(2, 25), rep(1, 25), rep(2, 25))
+  p2 <- c(rep(3, 25), rep(4, 25), rep(3, 25), rep(4, 25))
+  delta1 <- rbinom(n = 1e2, size = 1, prob = 0.8) # stage 1 non-missing indicator
+  delta2 <- rbinom(n = 1e2, size = 1, prob = 0.8) # stage 2 non-missing indicator
+  delta3 <- rbinom(n = 1e2, size = 1, prob = 0.8) # stage 3 non-missing indicator
+  death2 <- rbinom(n = 1e2, size = 1, prob = 0.2) # stage 2 death indicator
+  u2 <- runif(n = 1e2, min = -1, max = 1) - death2 * runif(n = 1e2, min = 0, max = 1)
+  d <- data.table(
+    x1 = x1,
+    a1 = a1,
+    x2 = x2,
+    a2 = a2,
+    x3 = x3,
+    p1 = p1,
+    p2 = p2,
+    u1 = u1,
+    u2 = u2,
+    u3 = u3,
+    delta1 = delta1,
+    delta2 = delta2,
+    delta3 = delta3,
+    death2 = death2
+  )
+
+  pd <- policy_data(
+      data = d,
+      action = c("a1", "a2"),
+      covariates = list(
+          x = c("x1", "x2"),
+          p = c("p1", "p2")
+      ),
+      utility = c("u1", "u2", "u3")
+  )
+
+  ## policy:
+  p <- policy_def(function(p) p, name = "test", reuse = TRUE)
+
+  ld <- pd$stage_data
+  ld[stage ==3, x := x3]
+
+  ld[stage == 1, delta:= delta1]
+  ld[stage == 2, delta:= delta2]
+  ld[stage == 3, delta := delta3]
+
+  ld[, death := 0]
+  ld[stage == 2, death := death2]
+
+  ld[, delta := cumprod(delta), by = id]
+  ld[, nondeath := cumprod(!death), by = id]
+
+  ld[, tmp := cumsum(delta == 0), by = id]
+  ld[, tmp2 := cumsum(nondeath == 0), by = id]
+
+  ld <- ld[tmp %in% c(0, 1)]
+  ld <- ld[tmp2 %in% c(0, 1)]
+
+  ld[, tmp := NULL]
+  ld[, tmp2 := NULL]
+
+  ld[delta == 0, event := 2]
+  ld[death == 1, event := 1] # death before censoring
+
+  ld[, delta := NULL]
+  ld[, death := NULL]
+  ld[, nondeath := NULL]
+
+  ld[event == 2 & stage == 3, U := NA]
+  ld[event == 2, A := NA]
+  ld[event == 1, A := NA]
+
+  pd <- policy_data(data = ld, type = "long")
+
+  ## g-values
+  g1 <- ld[stage == 1 & event == 0, mean(A == "1")]
+  g2 <- ld[stage == 1 & event == 0, mean(A == "2")]
+  g3 <- ld[stage == 2 & event == 0, mean(A == "3")]
+  g4 <- ld[stage == 2 & event == 0, mean(A == "4")]
+
+  ## c-values:
+  c1 <- 1-ld[, list(mean(event == 2))][[1]]
+
+  Z <- (
+    ## Q1
+    (d$x1 + d$u1) +
+    ## stage 1 dr score
+    (d$death2 == 0) * (d$delta1 == 1) / c1 * (d$a1 == d$p1) /
+    (g1 * (d$a1 == "1") + g2 * (d$a1 == "2")) * ((d$x2 + d$u2) - d$x1) +
+    (d$death2 == 1) * (d$delta1 == 1) / c1 * (d$a1 == d$p1) /
+    (g1 * (d$a1 == "1") + g2 * (d$a1 == "2")) * (d$u2 - d$x1) +
+    ## stage 2 dr score
+    (d$death2 == 0) * (d$delta1 == 1) / c1 * (d$a1 == d$p1) /
+    (g1 * (d$a1 == "1") + g2 * (d$a1 == "2")) *
+    (d$delta2 == 1) / c1 *
+    (d$a2 == d$p2) / (g3 * (d$a2 == "3") + g4 * (d$a2 == "4")) * (d$x3 - d$x2) +
+    ## stage 3 dr score
+    (d$death2 == 0) * (d$delta1 == 1) / c1 * (d$a1 == d$p1) / (g1 * (d$a1 == "1") +
+                                                               g2 * (d$a1 == "2")) *
+    (d$delta2 == 1) / c1 * (d$a2 == d$p2) / (g3 * (d$a2 == "3") +
+                                             g4 * (d$a2 == "4")) *
+    (d$delta3 == 1) / c1 * (d$u3 - d$x3)
+  )
+
+  ref_pe <- mean(Z)
+  ref_IC <-  Z - ref_pe
+
+  ##
+  ## no cross-fitting
+  ##
+
+  pe <- policy_eval(
+    policy_data = pd,
+    policy = p,
+    q_models = list(q_degen(var = "x"), q_degen(var = "x")),
+    m_model = q_degen(var = "x"),
+    g_models =  list(g_glm(~1), g_glm(~1)),
+    c_models = g_glm(~1)
+  )
+
+  expect_equal(
+    coef(pe) |> unname(),
+    ref_pe
+  )
+
+  expect_equal(
+      IC(pe),
+      matrix(ref_IC)
+  )
+
+  rm(list =ls())
+  ## right-censoring at every stage, and death at stage 1 and 2:
+  set.seed(1)
+  x1 <- runif(n = 1e2, min = -1, max = 1)
+  u1 <- runif(n = 1e2, min = -1, max = 1)
+  a1 <- c(rep(1, 50), rep(2, 50))
+  x2 <- runif(n = 1e2, min = -1, max = 1)
+  a2 <- c(rep(3, 50), rep(4, 50))
+  x3 <- runif(n = 1e2, min = -1, max = 1)
+  u3 <- a1 * x1 + a2 * x2 + runif(n = 1e2, min = -1, max = 1)
+  p1 <- c(rep(1, 25), rep(2, 25), rep(1, 25), rep(2, 25))
+  p2 <- c(rep(3, 25), rep(4, 25), rep(3, 25), rep(4, 25))
+  delta1 <- rbinom(n = 1e2, size = 1, prob = 0.8) # stage 1 non-missing indicator
+  delta2 <- rbinom(n = 1e2, size = 1, prob = 0.8) # stage 2 non-missing indicator
+  delta3 <- rbinom(n = 1e2, size = 1, prob = 0.8) # stage 3 non-missing indicator
+  death1 <- rbinom(n = 1e2, size = 1, prob = 0.1) # stage 1 death indicator
+  death2 <- rbinom(n = 1e2, size = 1, prob = 0.2) # stage 2 death indicator
+  u2 <- runif(n = 1e2, min = -1, max = 1) - death2 * runif(n = 1e2, min = 0, max = 1)
+  d <- data.table(
+    x1 = x1,
+    a1 = a1,
+    x2 = x2,
+    a2 = a2,
+    x3 = x3,
+    p1 = p1,
+    p2 = p2,
+    u1 = u1,
+    u2 = u2,
+    u3 = u3,
+    delta1 = delta1,
+    delta2 = delta2,
+    delta3 = delta3,
+    death1 = death1,
+    death2 = death2
+  )
+
+  pd <- policy_data(
+      data = d,
+      action = c("a1", "a2"),
+      covariates = list(
+          x = c("x1", "x2"),
+          p = c("p1", "p2")
+      ),
+      utility = c("u1", "u2", "u3")
+  )
+
+  ## policy:
+  p <- policy_def(function(p) p, name = "test", reuse = TRUE)
+
+  ld <- pd$stage_data
+  ld[stage ==3, x := x3]
+
+  ld[stage == 1, delta:= delta1]
+  ld[stage == 2, delta:= delta2]
+  ld[stage == 3, delta := delta3]
+
+  ld[, death := 0]
+  ld[stage == 1, death := death1]
+  ld[stage == 2, death := death2]
+
+  ld[, delta := cumprod(delta), by = id]
+  ld[, nondeath := cumprod(!death), by = id]
+
+  ld[, tmp := cumsum(delta == 0), by = id]
+  ld[, tmp2 := cumsum(nondeath == 0), by = id]
+
+  ld <- ld[tmp %in% c(0, 1)]
+  ld <- ld[tmp2 %in% c(0, 1)]
+
+  ld[, tmp := NULL]
+  ld[, tmp2 := NULL]
+
+  ld[delta == 0, event := 2]
+  ld[death == 1, event := 1] # death before censoring
+
+  ld[, delta := NULL]
+  ld[, death := NULL]
+  ld[, nondeath := NULL]
+
+  ld[event == 2 & stage == 3, U := NA]
+  ld[event == 2, A := NA]
+  ld[event == 1, A := NA]
+
+  pd <- policy_data(data = ld, type = "long")
+
+  ## g-values
+  g1 <- ld[stage == 1 & event == 0, mean(A == "1")]
+  g2 <- ld[stage == 1 & event == 0, mean(A == "2")]
+  g3 <- ld[stage == 2 & event == 0, mean(A == "3")]
+  g4 <- ld[stage == 2 & event == 0, mean(A == "4")]
+
+  ## c-values:
+  c1 <- 1-ld[, list(mean(event == 2))][[1]]
+
+  ## Q1
+  Z <- (d$death1 == 0) * (d$x1 + d$u1)
+  Z <- Z + (d$death1 == 1) * (d$u1)
+  ## stage 1 dr score
+  Z <- Z + (d$death1 == 0) * (d$death2 == 0) * (d$delta1 == 1) / c1 * (d$a1 == d$p1) /
+    (g1 * (d$a1 == "1") + g2 * (d$a1 == "2")) * ((d$x2 + d$u2) - d$x1)
+  Z <- Z + (d$death1 == 0) * (d$death2 == 1) * (d$delta1 == 1) / c1 * (d$a1 == d$p1) /
+    (g1 * (d$a1 == "1") + g2 * (d$a1 == "2")) * (d$u2 - d$x1)
+  ## stage 2 dr score
+  Z <- Z + (d$death1 == 0) * (d$death2 == 0) * (d$delta1 == 1) / c1 *
+    (d$a1 == d$p1) / (g1 * (d$a1 == "1") + g2 * (d$a1 == "2")) *
+    (d$delta2 == 1) / c1 *
+    (d$a2 == d$p2) / (g3 * (d$a2 == "3") + g4 * (d$a2 == "4")) * (d$x3 - d$x2)
+    ## stage 3 dr score
+  Z <- Z + (d$death1 == 0) * (d$death2 == 0) *
+    (d$delta1 == 1) / c1 *
+    (d$a1 == d$p1) / (g1 * (d$a1 == "1") + g2 * (d$a1 == "2")) *
+    (d$delta2 == 1) / c1 *
+    (d$a2 == d$p2) / (g3 * (d$a2 == "3") + g4 * (d$a2 == "4")) *
+    (d$delta3 == 1) / c1 * (d$u3 - d$x3)
+
+  ref_pe <- mean(Z)
+  ref_IC <-  Z - ref_pe
+
+  ##
+  ## no cross-fitting
+  ##
+
+  pe <- policy_eval(
+    policy_data = pd,
+    policy = p,
+    q_models = list(q_degen(var = "x"), q_degen(var = "x")),
+    m_model = q_degen(var = "x"),
+    g_models =  list(g_glm(~1), g_glm(~1)),
+    c_models = g_glm(~1)
+  )
+
+  expect_equal(
+    coef(pe) |> unname(),
+    ref_pe
+  )
+
+  expect_equal(
+      IC(pe),
+      matrix(ref_IC)
+  )
 })

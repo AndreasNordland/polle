@@ -362,7 +362,7 @@ dr_subgroup <- function(K,
   E <- event_matrix(events = events, event_set = c(1))
 
   ## (n X K+1) matrix with entries Delta_k:
-  D <- event_matrix(events = events, event_set = c(0,1))
+  D <- event_matrix(events = events, event_set = c(0, 1))
 
   ## getting the utility vector U:
   U <- utility[["U"]]
@@ -492,24 +492,7 @@ dr_value <- function(K,
   E <- event_matrix(events = events, event_set = c(1))
 
   ## (n X K+1) matrix with entries Delta_k (non-censoring/non-missing indicators):
-  D <- event_matrix(events = events, event_set = c(0,1))
-
-  ## test: REMOVE
-  test <- dcast(events, id ~ stage, value.var = "event")
-  test <- test[ , -c("id"), with = FALSE]
-  test <- (test != 2) * 1.0
-  ## fill NA values with 0:
-  ## (occur under right-censoring or a stochastic number of stages)
-  test <- apply(
-    test,
-    MARGIN = 2,
-    function(v) {
-      v[is.na(v)] <- 0
-      return(v)
-    }
-  )
-  stopifnot(all(D == test))
-  rm(test)
+  D <- event_matrix(events = events, event_set = c(0, 1))
 
   ## (n X K+1) matrix with entries C_k(H_k) (non-censoring probabilities):
   C <- cens_prob_matrix(c_values = c_values, M = M, n = nrow(id), K = K)
@@ -531,7 +514,8 @@ dr_value <- function(K,
                           E = E,
                           action_set = action_set)
 
-  ## (n X (K+2)) matrix with columns Q_k(H_{k,i}, d_k(H_{k,i})) (outcome regression values):
+  ## (n X (K+2)) matrix with columns Q_k(H_{k,i}, d_k(H_{k,i}))
+  ## (outcome regression values):
   Q <- policy_action_outcome_matrix(q_values = q_values,
                                     m_values = m_values,
                                     U = U,

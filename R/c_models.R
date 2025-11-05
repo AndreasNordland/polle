@@ -124,7 +124,7 @@ c_no_censoring <- function(){
 
 #' @export
 predict.c_no_censoring <- function(object, new_H, new_time, ...){
-  n <- nrow(new_H)
+  n <- length(new_time)
   surv <- rep(1, times = n)
   return(surv)
 }

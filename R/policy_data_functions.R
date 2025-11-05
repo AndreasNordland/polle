@@ -545,7 +545,8 @@ full_history <- function(object, stage, event_set){
   action_set <- get_action_set(object)
   stage_action_sets <- get_stage_action_sets(object)
   deterministic_rewards <- get_element(object_colnames, "deterministic_rewards")
-  stage_ <- stage; rm(stage)
+  stage_ <- stage
+  rm(stage)
 
   if (stage_ > (K+1)) {
     stop("The stage number must be lower or equal to K+1.")
@@ -569,8 +570,13 @@ full_history <- function(object, stage, event_set){
   if (nrow(AH) == 0) {
     stop("empty history for the given stage and event_set.")
   }
+
   ## transforming the data from long to wide format:
-  AH <- dcast(AH, id ~ stage, value.var = AH_names[-c(1,2)])
+  AH <- dcast(AH, id ~ stage, value.var = AH_names[-c(1, 2)])
+  if (length(AH_names[-c(1, 2)]) == 1) {
+    colnames(AH)[-1] <- paste(AH_names[-c(1, 2)], colnames(AH)[-1], sep = "_")
+  }
+
   ## inserting stage column:
   AH[, stage := stage_]
   ## merging the stage specific histories and the the baseline data by reference:
@@ -587,8 +593,8 @@ full_history <- function(object, stage, event_set){
   A <- AH[ , A_names, with = FALSE]
   H <- AH[, c(action_name) := NULL]
 
-  ## getting the deterministic utility contributions
-  U <- stage_data[stage <= stage_][, U_bar := sum(U), id]
+  ## getting the deterministic utility contributions:
+  U <- stage_data[stage <= stage_][, U_bar := sum(U * (event != 1), na.rm = TRUE), id]
   U <- U[event %in% event_set][stage == stage_,]
   U_names <- c("id", "stage", "U_bar", deterministic_rewards)
   U <- U[ , U_names, with = FALSE]
@@ -632,7 +638,8 @@ stage_state_history <- function(object, stage, event_set){
   baseline_names <- get_element(object,"colnames") |> get_element("baseline_names")
   action_set <- get_action_set(object)
   stage_action_sets <- get_stage_action_sets(object)
-  deterministic_rewards <- get_element(object, "colnames") |> get_element("deterministic_rewards")
+  deterministic_rewards <- get_element(object, "colnames") |>
+    get_element("deterministic_rewards")
   stage_ <- stage; rm(stage)
 
   if (stage_ > (K+1)) {
@@ -661,8 +668,9 @@ stage_state_history <- function(object, stage, event_set){
   A_names <- c("id", "stage", "A")
   A <- AH[,  A_names, with = FALSE]
   H <- AH[, c("A") := NULL]
-  ## getting the accumulated utility and deterministic utility contributions at the given stage:
-  U <- stage_data[stage <= stage_][, U_bar := sum(U), by = "id"]
+
+  ## summing the past utility contributions execept for terminal events:
+  U <- stage_data[stage <= stage_][, U_bar := sum(U * (event != 1), na.rm = TRUE), by = "id"]
   U <- U[event %in% event_set][stage == stage_,]
   U_names <- c("id", "stage", "U_bar", deterministic_rewards)
   U <- U[, U_names, with = FALSE]

@@ -120,7 +120,39 @@ Z_1(d,& g, Q^d, C)(O) \\
 &+ \sum_{r = 1}^3 \left\{ \prod_{j = 1}^{r} \frac{\Delta_j}{C_j(\tilde T_j|H_j)} \frac{I\{A_j = d_j(H_{j})\}}{g_{j}(H_j, A_j)} \right\}\left\{Q_{r+1}^{d}(H_{r+1} , d_{r+1}(H_{r+1})) - Q_{r}^{d}(H_r , d_r(H_r))\right\}.
 \end{aligned}
 
-We note that this score adapted to handle continuous right-censroing is not the efficient score which incorporate the induced temporal structure. A study of the second order remainder terms yields that for correctly specified nuisance models for $g_0, Q^d_0, C_0$, under reasonable convergence rate assumptions, the associated one-step estimator has asymptotic variance as induced by the influence function $Z_1(d,g_0, Q^d_0, C_0)(O) - \mathbb{E}[Z_1(d,g_0, Q^d_0, C_0)(O)]$.
+We note that this score adapted to handle continuous right-censoring is not the efficient score which incorporate the induced temporal structure. A study of the second order remainder terms yields that for correctly specified nuisance models for $g_0, Q^d_0, C_0$, under reasonable convergence rate assumptions, the associated one-step estimator has asymptotic variance as induced by the influence function $Z_1(d,g_0, Q^d_0, C_0)(O) - \mathbb{E}[Z_1(d,g_0, Q^d_0, C_0)(O)]$.
+
+## Terminal events
+
+Terminal events may occur, resulting in a stochastic number of stages. However, auxiliary data can be constructed, and the methodology for a fixed-stage problem can be applied, taking into account the degenerate distribution of the new data.
+
+Let $\epsilon_1$ and $\epsilon_2$ be terminal-event indicators included in the state covariates $X_1$
+and $X_22$. Recall that $X_1$ and $X_2$ also include utility contributions $U_1$ and $U_2$, and
+that the complete utility is $U = U_1 + U_2 + U_3$.
+
+If a terminal event occurs at stage 2 we observe
+
+\begin{align*}
+O^\ast = \{B, X_1, \Delta_1, \Delta_1 A_1, \Delta_1 X_2, \Delta_1 U_2\}.
+\end{align*}
+
+We then construct auxiliary data
+
+\begin{align*}
+\{\Delta_2 = 1,  A_2 = a^\dagger, X_3 = \emptyset,  \Delta_3 = 0,  U_3 = 0\}
+\end{align*}
+
+and calculate the (un-centralized) doubly robust score using that if a terminal
+event happens at stage 2, i.e., that $\epsilon_2 = 1$:
+
+\begin{align*}
+&C_2(H_2, \epsilon_2 = 1) = C_3(H_3, \epsilon_2 = 1) = 1\\
+&g_2(H_2, \epsilon_2 = 1) = 1\\
+&Q_2^d(H_2, \epsilon_2 = 1, a^\dagger) = Q_3^d(H_3, \epsilon_2 = 1) = Q_4^d(H_4,
+\epsilon_2 = 1) = U_1 + U_2 = U
+\end{align*}
+
+
 
 ## Examples
 

@@ -405,10 +405,6 @@ model_input_checks <- function(policy_data,
 
   cens_indicator <- get_element(policy_data, "cens_indicator")
   terminal_indicator <- get_element(policy_data, "terminal_indicator")
-  if (any(cens_indicator[["indicator"]]) &&
-      any(terminal_indicator[get("stage") <= get_K(policy_data),][["indicator"]])) {
-    stop("policy_eval is not implemented for both right-censoring and a stochastic number of action stages.")
-  }
   if (any(cens_indicator[["indicator"]])){
     if ((is.null(c_models) && is.null(c_functions))) {
       stop("Right-censoring events (event = 2) occur in the policy data. Please provide either c_functions or c_models.")

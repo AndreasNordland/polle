@@ -734,9 +734,4 @@ test_that("policy_data() runs without covariates.", {
     NA
   )
 
-   expect_error(
-    pd <- policy_data(data = wide_data, action = "treat", utility = "outcome", covariates = list()),
-    NA
-  )
-
 })
