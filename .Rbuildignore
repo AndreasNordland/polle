@@ -12,3 +12,4 @@ _cache$
 _files$
 ^Meta$
 ^misc$
+^_pkgdown\.yml$
