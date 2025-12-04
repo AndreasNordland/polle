@@ -129,9 +129,8 @@ new_g_model <- function(g_model){
 #' task and the corresponding learning objective, see [xgboost::xgboost].
 #' @param nrounds (Only used by \code{g_xgboost}) max number of boosting iterations.
 #' @param max_depth (Only used by \code{g_xgboost}) maximum depth of a tree.
-#' @param eta (Only used by \code{g_xgboost}) learning rate.
+#' @param learning_rate (Only used by \code{g_xgboost}) learning rate.
 #' @param nthread (Only used by \code{g_xgboost}) number of threads.
-#' @param params (Only used by \code{g_xgboost}) list of parameters.
 #' @param ... Additional arguments passed to [glm()], [glmnet::glmnet],
 #' [ranger::ranger] or [SuperLearner::SuperLearner].
 #' @details
@@ -564,47 +563,57 @@ predict.g_sl <- function(object, new_H, ...) {
 
 #' @rdname g_model
 #' @export
-g_xgboost <- function(formula = ~.,
+g_xgboost <- function(formula = ~ .,
                       objective = "binary:logistic",
-                      params = list(),
                       nrounds,
                       max_depth = 6,
-                      eta = 0.3,
+                      learning_rate = NULL,
                       nthread = 1,
-                      cv_args=list(nfolds=3, rep=1)) {
+                      cv_args = list(nfolds = 3, rep = 1),
+                      ...) {
   if (!requireNamespace("xgboost")) stop("Package 'xgboost' required")
   formula <- as.formula(formula)
   environment(formula) <- NULL
+  dotdotdot <- list()
 
-  ml <- function(formula = A~., objective,
-                 params, nrounds, max_depth,
-                 eta, nthread){
+  ml <- function(formula = A ~ .,
+                 objective,
+                 nrounds,
+                 max_depth,
+                 learning_rate,
+                 nthread,
+                 dotdotdot) {
+
     targeted::learner$new(formula,
                           info = "xgBoost",
                           estimate = function(x, y) {
-                            xgboost::xgboost(
-                                       data = x, label = y,
-                                       objective = objective,
-                                       params = params,
-                                       nrounds = nrounds,
-                                       max_depth = max_depth,
-                                       eta = eta,
-                                       nthread = nthread,
-                                       verbose = 0, print_every = 0)
+                            xgb_args <- list(
+                              x = quote(x), # avoid embedding data in call
+                              y = quote(y),
+                              objective = objective,
+                              nrounds = nrounds,
+                              max_depth = max_depth,
+                              learning_rate = learning_rate,
+                              nthread = nthread,
+                              verbosity = 0,
+                              print_every = 0
+                            )
+                            xgb_args <- append(xgb_args, dotdotdot)
+                            do.call(xgboost::xgboost, args = xgb_args)
                           })
   }
 
   ml_args <- expand.list(
     nrounds = nrounds,
     max_depth = max_depth,
-    eta = eta
+    learning_rate = learning_rate
   )
   cv_par <- ml_args
-  ml_args <- lapply(ml_args, function(p){
+  ml_args <- lapply(ml_args, function(p) {
     p <- append(p,
                 list(
                   objective = objective,
-                  params = params,
+                  dotdotdot = dotdotdot,
                   nthread = nthread
                 ))
     return(p)
@@ -619,6 +628,7 @@ g_xgboost <- function(formula = ~.,
     # formatting data:
     A <- factor(A, levels = action_set)
     A <- as.numeric(A) - 1
+    A <- as.logical(A)
     check_formula(formula = formula, data = H, call = "g_xgboost")
     des <- get_design(formula, data=H)
     data <- data.frame(A, des$x)

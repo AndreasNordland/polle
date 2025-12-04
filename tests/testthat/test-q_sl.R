@@ -11,7 +11,8 @@ test_that("q_sl with discreteSL = TRUE picks the learner with the lowest cvrisk.
   set.seed(1)
   qfun <- polle:::fit_Q_functions(pd,
                                   p(pd),
-                                  q_sl(SL.library = c("SL.ranger", "SL.xgboost"), discreteSL = TRUE))
+                                  q_sl(SL.library = c("SL.ranger", "SL.glm"),
+                                       discreteSL = TRUE))
 
   expect_true(
     all(qfun$stage_1$q_model$model$coef %in% c(0,1)),

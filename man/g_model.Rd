@@ -43,12 +43,12 @@ g_sl(
 g_xgboost(
   formula = ~.,
   objective = "binary:logistic",
-  params = list(),
   nrounds,
   max_depth = 6,
-  eta = 0.3,
+  learning_rate = NULL,
   nthread = 1,
-  cv_args = list(nfolds = 3, rep = 1)
+  cv_args = list(nfolds = 3, rep = 1),
+  ...
 )
 }
 \arguments{
@@ -94,15 +94,13 @@ a list containing character vectors, see \link[SuperLearner:SuperLearner]{SuperL
 for algorithms with non-zero coefficients in the super learner object.}
 
 \item{objective}{(Only used by \code{g_xgboost}) specify the learning
-task and the corresponding learning objective, see \link[xgboost:xgb.train]{xgboost::xgboost}.}
-
-\item{params}{(Only used by \code{g_xgboost}) list of parameters.}
+task and the corresponding learning objective, see \link[xgboost:xgboost]{xgboost::xgboost}.}
 
 \item{nrounds}{(Only used by \code{g_xgboost}) max number of boosting iterations.}
 
 \item{max_depth}{(Only used by \code{g_xgboost}) maximum depth of a tree.}
 
-\item{eta}{(Only used by \code{g_xgboost}) learning rate.}
+\item{learning_rate}{(Only used by \code{g_xgboost}) learning rate.}
 
 \item{nthread}{(Only used by \code{g_xgboost}) number of threads.}
 }
@@ -126,7 +124,7 @@ penalized maximum likelihood).\cr
 When multiple hyper-parameters are given, the
 model with the lowest cross-validation error is selected.\cr
 \code{g_sl()} is a wrapper of \link[SuperLearner:SuperLearner]{SuperLearner::SuperLearner} (ensemble model).\cr
-\code{g_xgboost()} is a wrapper of \link[xgboost:xgb.train]{xgboost::xgboost}.
+\code{g_xgboost()} is a wrapper of \link[xgboost:xgboost]{xgboost::xgboost}.
 }
 \examples{
 library("polle")

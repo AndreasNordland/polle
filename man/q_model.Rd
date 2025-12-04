@@ -46,12 +46,12 @@ q_sl(
 q_xgboost(
   formula = ~.,
   objective = "reg:squarederror",
-  params = list(),
   nrounds,
   max_depth = 6,
-  eta = 0.3,
+  learning_rate = NULL,
   nthread = 1,
-  cv_args = list(nfolds = 3, rep = 1)
+  cv_args = list(nfolds = 3, rep = 1),
+  ...
 )
 }
 \arguments{
@@ -104,15 +104,13 @@ for algorithms with non-zero coefficients in the super learner object.}
 the lowest cross-validated risk.}
 
 \item{objective}{(Only used by \code{q_xgboost}) specify the learning
-task and the corresponding learning objective, see \link[xgboost:xgb.train]{xgboost::xgboost}.}
-
-\item{params}{(Only used by \code{q_xgboost}) list of parameters.}
+task and the corresponding learning objective, see \link[xgboost:xgboost]{xgboost::xgboost}.}
 
 \item{nrounds}{(Only used by \code{q_xgboost}) max number of boosting iterations.}
 
 \item{max_depth}{(Only used by \code{q_xgboost}) maximum depth of a tree.}
 
-\item{eta}{(Only used by \code{q_xgboost}) learning rate.}
+\item{learning_rate}{(Only used by \code{q_xgboost}) learning rate.}
 
 \item{nthread}{(Only used by \code{q_xgboost}) number of threads.}
 }
@@ -134,7 +132,7 @@ penalized maximum likelihood).\cr
 When multiple hyper-parameters are given, the
 model with the lowest cross-validation error is selected.\cr
 \code{q_sl()} is a wrapper of \link[SuperLearner:SuperLearner]{SuperLearner::SuperLearner} (ensemble model).
-\code{q_xgboost()} is a wrapper of \link[xgboost:xgb.train]{xgboost::xgboost}.
+\code{q_xgboost()} is a wrapper of \link[xgboost:xgboost]{xgboost::xgboost}.
 }
 \examples{
 library("polle")
