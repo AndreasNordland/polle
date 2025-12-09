@@ -63,17 +63,22 @@ c_cox <- function(formula = ~.,
   c_cox <- function(event, time, time2, H) {
     ## setting the reponse of the formula to Surv(time = time, time2 = time2, event == 2):
     ## note that time, time2 and event are added to the formula environment
-    formula <- update_c_formula(formula = formula,
-                                time = time,
-                                time2 = time2,
-                                event = event,
-                                H = H)
-    args_cox <- append(list(formula = formula,
-                            data = H,
-                            offset = offset,
-                            weights = weights),
-                       dotdotdot)
-
+    formula <- update_c_formula(
+        formula = formula,
+        time = time,
+        time2 = time2,
+        event = event,
+        H = H
+    )
+    args_cox <- append(
+        list(
+            formula = formula,
+            data = cbind(H, time, time2, event),
+            offset = offset,
+            weights = weights
+        ),
+        dotdotdot
+    )
     model <- tryCatch(do.call(mets::phreg, args = args_cox),
                       error = function(e) e
                       )
