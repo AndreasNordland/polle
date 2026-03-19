@@ -72,6 +72,8 @@ NULL
 #' @param name Character string.
 #' @param natural_action Logical. If TRUE, the natural/observed action
 #' variable will be passeed to the policy functions.
+#' @param stage_number Logical. If TRUE, the stage number is passed to the
+#' policy functions.
 #' @returns Function of class \code{"policy"}. The function takes a
 #' [policy_data] object as input and returns a [data.table::data.table]
 #' with keys \code{id} and \code{stage} and action variable \code{d}.
@@ -133,7 +135,8 @@ policy_def <- function(policy_functions,
                        full_history = FALSE,
                        reuse = FALSE,
                        name = NULL,
-                       natural_action = FALSE){
+                       natural_action = FALSE,
+                       stage_number = FALSE){
   force(policy_functions)
   force(full_history)
   force(reuse)
@@ -182,7 +185,9 @@ policy_def <- function(policy_functions,
       policy_functions,
       function(pf){
         if (inherits(pf, what = "function")){
-          pf <- dynamic_policy(fun = pf, natural_action = natural_action)
+          pf <- dynamic_policy(fun = pf,
+                               natural_action = natural_action,
+                               stage_number = stage_number)
         } else {
           pf <- static_policy(action = pf)
         }
@@ -323,7 +328,7 @@ static_policy <- function(action, name=paste0("a=",action)) {
 #' # applying the dynamic policy at stage 2:
 #' head(dynamic_policy(fun = function(C_1, C_2) (C_1>1) & (C_2>1))(his))
 #' @noRd
-dynamic_policy <- function(fun, natural_action){
+dynamic_policy <- function(fun, natural_action, stage_number) {
 
   if (!"..." %in% names(formals(fun))) {
     formals(fun) <- c(formals(fun), alist(...=))
@@ -333,6 +338,10 @@ dynamic_policy <- function(fun, natural_action){
     args <- get_H(history)
     if (isTRUE(natural_action)){
       args <- cbind(A = get_A(history), args)
+    }
+    if (isTRUE(stage_number)) {
+      stage <- get_id_stage(history)[["stage"]]
+      args <- cbind(stage = stage, args)
     }
     action <- do.call(what = "fun", args = args)
     action <- as.character(action)
