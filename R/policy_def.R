@@ -70,6 +70,8 @@ NULL
 #' input to the policy functions.
 #' @param reuse If TRUE, the policy function is reused at every stage.
 #' @param name Character string.
+#' @param natural_action Logical. If TRUE, the natural/observed action
+#' variable will be passeed to the policy functions.
 #' @returns Function of class \code{"policy"}. The function takes a
 #' [policy_data] object as input and returns a [data.table::data.table]
 #' with keys \code{id} and \code{stage} and action variable \code{d}.
@@ -127,7 +129,11 @@ NULL
 #' )
 #' p2_dynamic(pd2)
 #' @export
-policy_def <- function(policy_functions, full_history = FALSE, reuse = FALSE, name = NULL){
+policy_def <- function(policy_functions,
+                       full_history = FALSE,
+                       reuse = FALSE,
+                       name = NULL,
+                       natural_action = FALSE){
   force(policy_functions)
   force(full_history)
   force(reuse)
@@ -176,7 +182,7 @@ policy_def <- function(policy_functions, full_history = FALSE, reuse = FALSE, na
       policy_functions,
       function(pf){
         if (inherits(pf, what = "function")){
-          pf <- dynamic_policy(fun = pf)
+          pf <- dynamic_policy(fun = pf, natural_action = natural_action)
         } else {
           pf <- static_policy(action = pf)
         }
@@ -282,6 +288,7 @@ static_policy <- function(action, name=paste0("a=",action)) {
 #' user-specifed function.
 #' @param fun Function with arguments associated with variables a given history
 #' object, see example. The function must return a vector of character strings.
+#' @param natural_action Logical
 #' @returns function with arguments \code{history}. Specifically,
 #' \code{history} is a history object, see [history]. When evaluated, the
 #' function returns a [data.table::data.table] with keys \code{id} and \code{stage} and
@@ -316,17 +323,21 @@ static_policy <- function(action, name=paste0("a=",action)) {
 #' # applying the dynamic policy at stage 2:
 #' head(dynamic_policy(fun = function(C_1, C_2) (C_1>1) & (C_2>1))(his))
 #' @noRd
-dynamic_policy <- function(fun){
+dynamic_policy <- function(fun, natural_action){
 
   if (!"..." %in% names(formals(fun))) {
     formals(fun) <- c(formals(fun), alist(...=))
   }
 
   f <- function(history){
-    pol <- get_id_stage(history)
-    action <- do.call(what = "fun", args = get_H(history))
+    args <- get_H(history)
+    if (isTRUE(natural_action)){
+      args <- cbind(A = get_A(history), args)
+    }
+    action <- do.call(what = "fun", args = args)
     action <- as.character(action)
     d <- NULL
+    pol <- get_id_stage(history)
     pol[, d := action]
     return(pol)
   }
