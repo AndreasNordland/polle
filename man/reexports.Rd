@@ -13,7 +13,7 @@ These objects are imported from other packages. Follow the links
 below to see their documentation.
 
 \describe{
-  \item{lava}{\code{\link[lava:estimate.default]{estimate}}, \code{\link[lava]{IC}}}
+  \item{lava}{\code{\link[lava:estimate.default]{estimate}}, \code{\link[lava:IC.default]{IC}}}
 
   \item{SuperLearner}{\code{\link[SuperLearner:write.screen.template]{All}}}
 }}

@@ -317,3 +317,54 @@ test_that("policy_def handles a stochastic number of stages", {
   )
 
 })
+
+test_that("policy_def gets access to the naturally chosen access and the stage number", {
+  d <- sim_two_stage(2e3, seed=1)
+  pd <- policy_data(d,
+                    action = c("A_1", "A_2"),
+                    baseline = c("BB", "B"),
+                    covariates = list(L = c("L_1", "L_2"),
+                                      C = c("C_1", "C_2")),
+                    utility = c("U_1", "U_2", "U_3"))
+
+  p <- policy_def(function(A){A},
+                  reuse = TRUE,
+                  natural_action = TRUE)
+
+  pa <- p(pd)
+  a <- get_actions(pd)
+  setnames(a, new = "d", old = "A")
+
+  expect_equal(
+    a,
+    pa
+  )
+
+  p <- policy_def(function(A, L){ifelse(L>0, A, "1")},
+                  reuse = TRUE,
+                  natural_action = TRUE)
+
+  pa <- p(pd)
+  his <- get_history(pd)$H
+  A <- get_actions(pd)$A
+  ref_pa <-  ifelse(his$L > 0, A, "1")
+  expect_equal(
+    ref_pa,
+    pa$d
+  )
+
+  p <- policy_def(function(A, stage){ifelse(stage == 1, A, "1")},
+                  reuse = TRUE,
+                  natural_action = TRUE,
+                  stage_number = TRUE)
+  pa <- p(pd)
+  his <- get_history(pd)$H
+  A <- get_actions(pd)$A
+  ref_pa <-  ifelse(his$stage == 1, A, "1")
+
+  expect_equal(
+    ref_pa,
+    pa$d
+  )
+
+})
