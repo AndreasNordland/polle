@@ -55,6 +55,6 @@ jobs:
           build_args: 'c("--no-build-vignettes")'
 
       - name: Slow tests
-        if: success() && github.ref == 'refs/heads/main'
+        if: success() && github.ref == 'refs/heads/master'
         run: make test-slow
 
