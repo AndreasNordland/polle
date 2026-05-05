@@ -54,6 +54,10 @@ jobs:
           args: 'c("--ignore-vignettes")'
           build_args: 'c("--no-build-vignettes")'
 
+      - name: Install polle
+        if: success() && github.ref == 'refs/heads/master'
+        run: R CMD INSTALL .
+
       - name: Slow tests
         if: success() && github.ref == 'refs/heads/master'
         run: make test-slow
