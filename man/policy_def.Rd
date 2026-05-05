@@ -4,7 +4,14 @@
 \alias{policy_def}
 \title{Define Policy}
 \usage{
-policy_def(policy_functions, full_history = FALSE, reuse = FALSE, name = NULL)
+policy_def(
+  policy_functions,
+  full_history = FALSE,
+  reuse = FALSE,
+  name = NULL,
+  natural_action = FALSE,
+  stage_number = FALSE
+)
 }
 \arguments{
 \item{policy_functions}{A single function/character string or a list of
@@ -17,6 +24,12 @@ input to the policy functions.}
 \item{reuse}{If TRUE, the policy function is reused at every stage.}
 
 \item{name}{Character string.}
+
+\item{natural_action}{Logical. If TRUE, the natural/observed action
+variable will be passeed to the policy functions.}
+
+\item{stage_number}{Logical. If TRUE, the stage number is passed to the
+policy functions.}
 }
 \value{
 Function of class \code{"policy"}. The function takes a

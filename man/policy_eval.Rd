@@ -421,5 +421,5 @@ parameters, The Econometrics Journal, Volume 21, Issue 1, 1 February 2018,
 Pages C1–C68, \doi{10.1111/ectj.12097}.
 }
 \seealso{
-\link[lava:IC]{lava::IC}, \link[lava:estimate.default]{lava::estimate.default}.
+\link[lava:IC.default]{lava::IC}, \link[lava:estimate.default]{lava::estimate.default}.
 }
