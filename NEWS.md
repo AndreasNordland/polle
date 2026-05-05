@@ -1,3 +1,7 @@
+# polle 1.6.3
+    - policy_def() gains natural_action and stage_number arguments
+    - bug fix: c_cox() now passes time, time2 and event to mets::phreg
+
 # polle 1.6.1
     - policy learning and evaluation under right-censoring/missing outcome
 
