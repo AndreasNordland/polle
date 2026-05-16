@@ -1,3 +1,6 @@
+# polle 1.6.4
+    - new citation, <doi:10.18637/jss.v116.i04>, Journal of Statistical Software
+
 # polle 1.6.3
     - policy_def() gains natural_action and stage_number arguments
     - bug fix: c_cox() now passes time, time2 and event to mets::phreg

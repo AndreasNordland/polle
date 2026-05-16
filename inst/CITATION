@@ -1,23 +1,16 @@
-author1 <- "Andreas Nordland and Klaus K. Holst"
-year1 <- 2022
-journal1 <- "arXiv"
-title1 <- "Policy Learning with the polle package"
-doi1 <- "10.48550/arXiv.2212.02335"
-textver1 <- paste(author1, " (", year1, "). ",
-                  title1, ". ", journal1,
-                  ##", ", volume1, " (", number1 ,")",
-                  ##", pp. ", pages1,
-                  ". doi: ", doi1, ".", sep="")
-
-citHeader("To cite 'polle' in publications use:")
-
-bibentry(bibtype="Misc",
-         title = title1,
-         author = author1,
-         year = year1,
-         ## volume = volume1,
-         ## number = number1,
-         ## pages = pages1,
-         publisher = journal1,
-         doi = doi1,
-         textVersion = textver1)
+bibentry(bibtype = "Article",
+         title        = "Policy Learning with the {polle} Package",
+         author       = c(person(given = "Andreas",
+                                 family = "Nordland",
+                                 email = "andreasnordland@gmail.com"),
+                          person(given = c("Klaus", "K\\\"ahler"),
+                                 family = "Holst",
+                                 email = "kkzh@novonordisk.com")),
+         journal      = "Journal of Statistical Software",
+         year         = "2026",
+         volume       = "116",
+         number       = "4",
+         pages        = "1--51",
+         doi          = "10.18637/jss.v116.i04",
+         header       = "To cite polle in publications use:"
+         )
