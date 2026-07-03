@@ -346,7 +346,7 @@ ptl <- function(policy_data,
 
   # setting outputs:
   if (length(q_functions) > 0) {
-    class(q_functions) <- "nuisance_functions"
+    class(q_functions) <- c("q_functions", "nuisance_functions")
     attr(q_functions, "full_history") <- q_full_history
     names(q_functions) <- paste("stage_", 1:K, sep = "")
   } else {
