@@ -20,13 +20,13 @@ Depends:
     SuperLearner
 Imports:
     data.table (>= 1.14.5),
-    lava (>= 1.7.2.1),
+    lava (>= 1.9.2),
     future.apply,
     progressr,
     methods,
     policytree (>= 1.2.0),
     survival,
-    targeted (>= 0.6),
+    targeted (>= 0.8),
     DynTxRegime
 Suggests:
     DTRlearn2,
@@ -40,6 +40,6 @@ Suggests:
     testthat (>= 3.0),
     ggplot2
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 BugReports: https://github.com/AndreasNordland/polle/issues
 VignetteBuilder: knitr
+Config/roxygen2/version: 8.0.0

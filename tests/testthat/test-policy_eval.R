@@ -507,7 +507,7 @@ test_that("policy_eval with target = 'value' agrees with targeted::cate in the s
   ca_dml2 <- targeted::cate(
     cate.model = A ~ 1,
     response.model = U ~ A * Z,
-    propensity.model = A ~ Z,
+    treatment.model = A ~ Z,
     data = d,
     nfolds = 2,
     second.order = FALSE,
@@ -1250,7 +1250,7 @@ test_that("conditional.policy_eval agrees with targeted::cate", {
   ca <- targeted::cate(
     cate.model = A ~ factor(B) - 1,
     response.model = U ~ A * Z,
-    propensity.model = A ~ 1,
+    treatment.model = A ~ 1,
     second.order = FALSE,
     data = d,
     nfolds = 1,

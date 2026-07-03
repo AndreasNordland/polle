@@ -48,10 +48,9 @@ print.policy_eval <- function(x,
                               digits = 4L,
                               width = 35L,
                               std.error = TRUE,
-                              level = 0.95,
                               p.value = TRUE,
                               ...) {
-  est <- estimate(x, level = level, ...)
+  est <- estimate(x, ...)
   print(
     est,
     digits = digits,
@@ -62,20 +61,12 @@ print.policy_eval <- function(x,
   )
 }
 
-
-#' @rdname policy_eval
-#' @export
-summary.policy_eval <- function(object, ...) {
-  lava::estimate(object, ...)
-}
-
 #' @rdname policy_eval
 #' @export
 estimate.policy_eval <- function(x,
                                  labels = get_element(x,
                                                       "name",
                                                       check_name = FALSE),
-                                 level = 0.95,
                                  ...) {
   p <- length(coef(x))
   if (is.null(labels)) {
@@ -101,7 +92,6 @@ estimate.policy_eval <- function(x,
                    coef = coef(x),
                    IC = ic,
                    labels = labels,
-                   level = level,
                    ...
                  )
   }

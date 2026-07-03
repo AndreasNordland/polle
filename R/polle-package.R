@@ -4,9 +4,7 @@
 ## usethis namespace: start
 ##' @importFrom lava IC estimate
 ##' @importFrom SuperLearner All
-##' @importFrom stats predict gaussian binomial glm as.formula nls model.frame
-##'   model.matrix reformulate predict.glm terms update .getXlevels addmargins
-##'   coef delete.response complete.cases model.response na.pass aggregate vcov var
+##' @importFrom stats predict gaussian binomial glm as.formula nls model.frame model.matrix reformulate predict.glm terms update .getXlevels addmargins coef delete.response complete.cases model.response na.pass aggregate vcov var
 ##' @importFrom methods formalArgs
 ##' @importFrom utils tail capture.output
 ##' @importFrom survival survfit Surv

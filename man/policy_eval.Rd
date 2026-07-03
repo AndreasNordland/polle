@@ -7,7 +7,6 @@
 \alias{IC.policy_eval}
 \alias{vcov.policy_eval}
 \alias{print.policy_eval}
-\alias{summary.policy_eval}
 \alias{estimate.policy_eval}
 \alias{merge.policy_eval}
 \alias{+.policy_eval}
@@ -51,24 +50,9 @@ policy_eval(
 
 \method{vcov}{policy_eval}(object, ...)
 
-\method{print}{policy_eval}(
-  x,
-  digits = 4L,
-  width = 35L,
-  std.error = TRUE,
-  level = 0.95,
-  p.value = TRUE,
-  ...
-)
+\method{print}{policy_eval}(x, digits = 4L, width = 35L, std.error = TRUE, p.value = TRUE, ...)
 
-\method{summary}{policy_eval}(object, ...)
-
-\method{estimate}{policy_eval}(
-  x,
-  labels = get_element(x, "name", check_name = FALSE),
-  level = 0.95,
-  ...
-)
+\method{estimate}{policy_eval}(x, labels = get_element(x, "name", check_name = FALSE), ...)
 
 \method{merge}{policy_eval}(x, y, ..., paired = TRUE)
 
@@ -168,14 +152,14 @@ Either "stacked", or "pooled", see details. (Only used if \code{M > 1} and targe
 
 \item{std.error}{Logical. Should the std.error be printed.}
 
-\item{level}{Numeric. Level of confidence limits.}
-
 \item{p.value}{Logical. Should the p.value for associated confidence level be printed.}
 
 \item{labels}{Name(s) of the estimate(s).}
 
 \item{paired}{\code{TRUE} indicates that the estimates are based on
 the same data sample.}
+
+\item{level}{Numeric. Level of confidence limits.}
 }
 \value{
 \code{policy_eval()} returns an object of class "policy_eval".
@@ -421,5 +405,5 @@ parameters, The Econometrics Journal, Volume 21, Issue 1, 1 February 2018,
 Pages C1–C68, \doi{10.1111/ectj.12097}.
 }
 \seealso{
-\link[lava:IC.default]{lava::IC}, \link[lava:estimate.default]{lava::estimate.default}.
+\link[lava:IC]{lava::IC}, \link[lava:estimate.default]{lava::estimate.default}.
 }
