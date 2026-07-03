@@ -735,3 +735,77 @@ test_that("policy_eval runs with policy_learn using quantile_prob_thres ", {
   )
 
 })
+
+test_that("get_q_functions() from a learned blip policy is a reusable q_functions object (target = 'subgroup')", {
+  set.seed(1)
+  n <- 200
+  a <- rbinom(n, 1, 0.5)
+  x <- rnorm(n)
+  z <- rbinom(n, 1, 0.5)
+  y <- 1 + a + x - a * x + z + rnorm(n)
+  d <- data.frame(y = y, a = a, x = x, z = z)
+
+  pd <- policy_data(
+    data = d,
+    action = "a",
+    covariates = c("x", "z"),
+    utility = "y"
+  )
+
+  ## direct subgroup evaluation with a fixed policy (baseline sanity check)
+  p1 <- policy_def(function(x) (x > 0) * 1)
+  expect_no_error(
+    pe1 <- policy_eval(
+      pd,
+      policy = p1,
+      q_models = q_glm(~ A * x * z),
+      g_models = g_glm(~ 1),
+      target = "subgroup"
+    )
+  )
+
+  ## learn a subgroup (blip) policy and evaluate it
+  pl1 <- policy_learn(
+    type = "blip",
+    control = control_blip(blip_models = q_glm(~ x + z))
+  )
+  expect_no_error(
+    pe_pl1 <- policy_eval(
+      pd,
+      policy_learn = pl1,
+      q_models = q_glm(~ A * x * z),
+      g_models = g_glm(~ 1),
+      target = "subgroup"
+    )
+  )
+
+  ## extract the learned policy and the fitted nuisance functions
+  po1 <- get_policy(pe_pl1)
+  gf <- get_g_functions(pe_pl1)
+  qf <- get_q_functions(pe_pl1)
+
+  ## the extracted nuisance functions must carry their documented classes.
+  ## g_functions currently does; q_functions currently does NOT
+  ## (bug under investigation: blip policy object drops the "q_functions" class).
+  expect_true(inherits(gf, "g_functions"))
+  expect_true(inherits(qf, "q_functions"))
+
+  ## reuse the learned policy + fitted nuisance functions to evaluate the
+  ## subgroup effect on the x > 0 subset. Currently errors with
+  ## "q_functions must be of class 'q_functions'." due to the class above.
+  pd_subset <- policy_data(
+    data = d[d$x > 0, ],
+    action = "a",
+    covariates = c("x", "z"),
+    utility = "y"
+  )
+  expect_no_error(
+    pe_pl1_subset <- policy_eval(
+      policy_data = pd_subset,
+      policy = po1,
+      q_functions = qf,
+      g_functions = gf,
+      target = "subgroup"
+    )
+  )
+})
