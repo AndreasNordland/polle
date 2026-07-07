@@ -109,7 +109,7 @@ summary.policy_eval <- function(object, contrast = TRUE, labels = NULL, ...) {
   }
   est <- lava::estimate(NULL,
                         coef = parts[["coef"]],
-                        IC = ic,
+                        IC = parts[["IC"]],
                         labels = labels)
   return(est)
 }
