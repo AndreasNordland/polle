@@ -324,6 +324,38 @@ policy_action_outcome_matrix <- function(q_values, m_values, U, policy_actions, 
   return(Q)
 }
 
+## internal: per-subgroup potential outcome means E[U(a)|d] and their
+## influence curves. For each column of `subgroup_indicator` (a subgroup) the
+## two means E[U(a2)|d] and E[U(a1)|d] are computed from the doubly robust
+## scores Z (Z[, 2] and Z[, 1]) and stored as adjacent coefficients. The
+## subgroup average treatment effect is the contrast of these two means. Returns
+## `coef` (length 2 * ncol(subgroup_indicator)) and `IC` (n x 2 * ncol).
+subgroup_means <- function(Z, subgroup_indicator, min_subgroup_size) {
+  res <- lapply(
+    seq_len(ncol(subgroup_indicator)),
+    function(j) {
+      si <- subgroup_indicator[, j]
+      ps <- mean(si)
+      ## E[U(a2)|subgroup] and E[U(a1)|subgroup]:
+      m2 <- mean(Z[si, 2])
+      m1 <- mean(Z[si, 1])
+      ## influence curves for the two means:
+      ic2 <- 1 / ps * si * (Z[, 2] - m2)
+      ic1 <- 1 / ps * si * (Z[, 1] - m1)
+      if (sum(si) < min_subgroup_size) {
+        m2 <- m1 <- as.numeric(NA)
+        ic2 <- ic1 <- rep(as.numeric(NA), length(si))
+      }
+      list(coef = c(m2, m1), IC = cbind(ic2, ic1))
+    }
+  )
+  coef <- unlist(lapply(res, function(x) x[["coef"]]))
+  IC <- do.call(what = "cbind", lapply(res, function(x) x[["IC"]]))
+  IC <- unname(IC)
+
+  return(list(coef = coef, IC = IC))
+}
+
 dr_subgroup <- function(K,
                         id,
                         action_set,
@@ -424,41 +456,23 @@ dr_subgroup <- function(K,
     !all(is.na(Z))
   )
 
-  ## calculating the doubly robust blip score:
-  blip <- Z[, 2] - Z[, 1]
-
   ## calculating the subgroup indicator for each treatment:
   subgroup_indicator <- (policy_actions[["d"]] == action_set[2])
   subgroup_indicator <- cbind(subgroup_indicator, !subgroup_indicator)
   subgroup_indicator <- unname(subgroup_indicator)
 
-  res <- apply(
-    subgroup_indicator,
-    MARGIN = 2,
-    FUN = function(si){
-      ## calculating the subgroup average treatment effect:
-      sate <- mean(blip[si])
-      ## calculating the influence curve for the subgroup average treatment effect:
-      IC <- 1 / mean(si) * si *
-        (blip - sate)
-
-      ss <- sum(si)
-      if (ss < min_subgroup_size) {
-        sate <- as.numeric(NA)
-        IC <- rep(as.numeric(NA), length(si))
-      } 
-
-      out <- list(sate = sate, IC = IC)
-    },
-    simplify = FALSE
+  ## calculating the per-subgroup potential outcome means E[U(a)|d=k] and their
+  ## influence curves. The subgroup average treatment effect is obtained as the
+  ## contrast E[U(a2)|d=k] - E[U(a1)|d=k] (see summary.policy_eval):
+  sm <- subgroup_means(
+    Z = Z,
+    subgroup_indicator = subgroup_indicator,
+    min_subgroup_size = min_subgroup_size
   )
-  sate <- lapply(res, function(x) get_element(x, "sate")) |> unlist()
-  IC <- lapply(res, function(x) get_element(x, "IC"))
-  IC <- do.call(what = "cbind", IC)
 
   out <- list(
-    coef = sate,
-    IC = IC,
+    coef = sm[["coef"]],
+    IC = sm[["IC"]],
     Z = Z,
     subgroup_indicator = subgroup_indicator
   )

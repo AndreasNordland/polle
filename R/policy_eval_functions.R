@@ -19,27 +19,90 @@ check_actions <- function(actions, policy_data){
   }
 }
 
-#' @rdname policy_eval
-#' @export
-coef.policy_eval <- function(object, ...) {
-  return(get_element(object, "coef"))
+## internal: contrast matrix mapping the 4 per-subgroup potential outcome means
+## of each policy to the 2 subgroup average treatment effects, i.e. for each
+## policy block [E[U(a2)|d=a2], E[U(a1)|d=a2], E[U(a2)|d=a1], E[U(a1)|d=a1]] the
+## two rows compute E[U(a2)|d=a2] - E[U(a1)|d=a2] and
+## E[U(a2)|d=a1] - E[U(a1)|d=a1].
+subgroup_contrast_matrix <- function(n_mean) {
+  n_pol <- n_mean / 4L
+  C <- matrix(0, nrow = 2L * n_pol, ncol = n_mean)
+  for (k in seq_len(n_pol)) {
+    col0 <- 4L * (k - 1L)
+    row0 <- 2L * (k - 1L)
+    C[row0 + 1L, col0 + 1L] <- 1
+    C[row0 + 1L, col0 + 2L] <- -1
+    C[row0 + 2L, col0 + 3L] <- 1
+    C[row0 + 2L, col0 + 4L] <- -1
+  }
+  return(C)
+}
+
+## internal: extract the coefficients, influence curve, variance and labels of a
+## policy_eval object, applying the subgroup contrast when requested. For
+## target = "subgroup" the object stores the 4 per-subgroup potential outcome
+## means per policy; with contrast = TRUE these are collapsed to the 2 subgroup
+## average treatment effects (the quantities reported by default). For
+## target = "value" the coefficients are returned as stored.
+policy_eval_parts <- function(object, contrast = TRUE) {
+  target <- get_element(object, "target")
+  coef <- get_element(object, "coef")
+  IC <- get_element(object, "IC", check_name = FALSE)
+  vcov <- get_element(object, "vcov", check_name = FALSE)
+  ## normalise a stored diagonal vcov vector to a matrix:
+  if (!is.null(vcov) && !is.matrix(vcov)) {
+    vcov <- diag(vcov, nrow = length(vcov))
+  }
+  labels <- get_element(object, "name", check_name = FALSE)
+
+  if (identical(target, "subgroup") && isTRUE(contrast)) {
+    ## the contrast matrix pairs adjacent means (E[U(a2)|d=k] - E[U(a1)|d=k]),
+    ## so compute the contrasts by direct differencing of the paired columns
+    ## rather than via C %*% coef. A matrix product would propagate the NA of an
+    ## empty/below-minimum subgroup into the other contrasts because 0 * NA = NA
+    ## in R.
+    odd <- seq.int(1L, length(coef), by = 2L)
+    coef <- coef[odd] - coef[odd + 1L]
+    if (!is.null(IC)) {
+      IC <- IC[, odd, drop = FALSE] - IC[, odd + 1L, drop = FALSE]
+    }
+    if (!is.null(vcov)) {
+      C <- subgroup_contrast_matrix(nrow(vcov))
+      vcov <- C %*% vcov %*% t(C)
+    }
+    labels <- get_element(object, "contrast_name", check_name = FALSE)
+  }
+  names(coef) <- labels
+
+  return(list(coef = coef, IC = IC, vcov = vcov, labels = labels))
 }
 
 #' @rdname policy_eval
 #' @export
-IC.policy_eval <- function(x, ...) {
-  res <- cbind(get_element(x, "IC", check_name = FALSE))
-  return(res)
+coef.policy_eval <- function(object, contrast = TRUE, ...) {
+  return(policy_eval_parts(object, contrast = contrast)[["coef"]])
 }
 
 #' @rdname policy_eval
 #' @export
-vcov.policy_eval <- function(object, ...) {
-  ic <- IC(object)
-  if (is.null(ic))
+IC.policy_eval <- function(x, contrast = TRUE, ...) {
+  ic <- policy_eval_parts(x, contrast = contrast)[["IC"]]
+  if (is.null(ic)) {
     return(NULL)
-  n <- nrow(ic)
-  return(crossprod(ic)/(n*n))
+  }
+  return(cbind(ic))
+}
+
+#' @rdname policy_eval
+#' @export
+vcov.policy_eval <- function(object, contrast = TRUE, ...) {
+  parts <- policy_eval_parts(object, contrast = contrast)
+  ic <- parts[["IC"]]
+  if (!is.null(ic)) {
+    n <- nrow(ic)
+    return(crossprod(ic) / (n * n))
+  }
+  return(parts[["vcov"]])
 }
 
 #' @rdname policy_eval
@@ -63,39 +126,47 @@ print.policy_eval <- function(x,
 
 #' @rdname policy_eval
 #' @export
-estimate.policy_eval <- function(x,
-                                 labels = get_element(x,
-                                                      "name",
-                                                      check_name = FALSE),
-                                 ...) {
-  p <- length(coef(x))
+summary.policy_eval <- function(object, contrast = TRUE, labels = NULL, ...) {
+  parts <- policy_eval_parts(object, contrast = contrast)
   if (is.null(labels)) {
-    target <- get_element(x, "target")
-    if (p == 1) {
-      labels <- target
-    } else {
-      labels <- paste0(target, seq(p))
+    labels <- parts[["labels"]]
+    if (is.null(labels)) {
+      p <- length(parts[["coef"]])
+      target <- get_element(object, "target")
+      if (p == 1) {
+        labels <- target
+      } else {
+        labels <- paste0(target, seq(p))
+      }
     }
   }
-  ic <- IC(x)
+  ic <- parts[["IC"]]
+  ## the additional arguments (...) are deliberately not forwarded to
+  ## lava::estimate(): the returned estimate object can be updated in a
+  ## subsequent step (e.g. to change the confidence level). This also avoids
+  ## passing the 'contrast' argument on to lava::estimate().
   if (is.null(ic)) {
     est <- lava::estimate(
-                   NULL,
-                   coef = coef(x),
-                   vcov = vcov(x),
-                   labels = labels,
-                   ...
-                 )
+      NULL,
+      coef = parts[["coef"]],
+      vcov = parts[["vcov"]],
+      labels = labels
+    )
   } else {
     est <- lava::estimate(
-                   NULL,
-                   coef = coef(x),
-                   IC = ic,
-                   labels = labels,
-                   ...
-                 )
+      NULL,
+      coef = parts[["coef"]],
+      IC = ic,
+      labels = labels
+    )
   }
   return(est)
+}
+
+#' @rdname policy_eval
+#' @export
+estimate.policy_eval <- function(x, labels = NULL, contrast = TRUE, ...) {
+  return(summary(x, contrast = contrast, labels = labels, ...))
 }
 
 #' @rdname policy_eval

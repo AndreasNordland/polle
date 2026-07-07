@@ -7,10 +7,13 @@
 \alias{IC.policy_eval}
 \alias{vcov.policy_eval}
 \alias{print.policy_eval}
+\alias{summary.policy_eval}
 \alias{estimate.policy_eval}
 \alias{merge.policy_eval}
 \alias{+.policy_eval}
+\alias{coef.policy_eval_online}
 \alias{vcov.policy_eval_online}
+\alias{summary.policy_eval_online}
 \title{Policy Evaluation}
 \usage{
 policy_eval(
@@ -44,21 +47,27 @@ policy_eval(
   name = NULL
 )
 
-\method{coef}{policy_eval}(object, ...)
+\method{coef}{policy_eval}(object, contrast = TRUE, ...)
 
-\method{IC}{policy_eval}(x, ...)
+\method{IC}{policy_eval}(x, contrast = TRUE, ...)
 
-\method{vcov}{policy_eval}(object, ...)
+\method{vcov}{policy_eval}(object, contrast = TRUE, ...)
 
 \method{print}{policy_eval}(x, digits = 4L, width = 35L, std.error = TRUE, p.value = TRUE, ...)
 
-\method{estimate}{policy_eval}(x, labels = get_element(x, "name", check_name = FALSE), ...)
+\method{summary}{policy_eval}(object, contrast = TRUE, labels = NULL, ...)
+
+\method{estimate}{policy_eval}(x, labels = NULL, contrast = TRUE, ...)
 
 \method{merge}{policy_eval}(x, y, ..., paired = TRUE)
 
 \method{+}{policy_eval}(x, ...)
 
+\method{coef}{policy_eval_online}(object, ...)
+
 \method{vcov}{policy_eval_online}(object, ...)
+
+\method{summary}{policy_eval_online}(object, labels = NULL, contrast = TRUE, ...)
 }
 \arguments{
 \item{policy_data}{Policy data object created by \code{\link[=policy_data]{policy_data()}}.}
@@ -140,9 +149,16 @@ Either "stacked", or "pooled", see details. (Only used if \code{M > 1} and targe
 
 \item{future_args}{Arguments passed to \code{\link[future.apply:future_apply]{future.apply::future_apply()}}.}
 
-\item{name}{Character string.}
+\item{name}{Character string. When \code{target = "subgroup"} a character
+vector of length 2 naming the two subgroup average treatment effects
+\eqn{E[U(a_2)-U(a_1)|d], d = 1/0}.}
 
 \item{object, x, y}{Objects of class "policy_eval".}
+
+\item{contrast}{Logical. Only used when \code{target = "subgroup"}. If
+\code{TRUE} (default) the subgroup average treatment effects
+\eqn{E[U(a_2)-U(a_1)|d]} are reported; if \code{FALSE} the underlying
+per-subgroup potential outcome means \eqn{E[U(a)|d]} are reported.}
 
 \item{...}{Additional arguments.}
 
@@ -158,14 +174,15 @@ Either "stacked", or "pooled", see details. (Only used if \code{M > 1} and targe
 
 \item{paired}{\code{TRUE} indicates that the estimates are based on
 the same data sample.}
-
-\item{level}{Numeric. Level of confidence limits.}
 }
 \value{
 \code{policy_eval()} returns an object of class "policy_eval".
 The object is a list containing the following elements:
-\item{\code{coef}}{Numeric vector. The estimated target parameter:
-policy value or subgroup average treatment effect.}
+\item{\code{coef}}{Numeric vector. The estimated target parameter: the
+policy value, or (when \code{target = "subgroup"}) the per-subgroup
+potential outcome means \eqn{E[U(a)|d]}. The subgroup average treatment
+effects \eqn{E[U(a_2)-U(a_1)|d]} are obtained as contrasts of these means,
+see \code{summary()}, \code{coef()} and \code{estimate()}.}
 \item{\code{IC}}{Numeric matrix. Estimated influence curve associated with
 \code{coef}.}
 \item{\code{type}}{Character string. The type of evaluation ("dr", "ipw",

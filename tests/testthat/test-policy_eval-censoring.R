@@ -784,6 +784,15 @@ test_that("policy_eval with target 'subgroup' has the correct output under right
 
   expect_equal(
     names(sub$coef),
+    c(
+      "E[U(2)|d=2]: d=p",
+      "E[U(1)|d=2]: d=p",
+      "E[U(2)|d=1]: d=p",
+      "E[U(1)|d=1]: d=p"
+    )
+  )
+  expect_equal(
+    names(coef(sub)),
     c("E[U(2)-U(1)|d=2]: d=p", "E[U(2)-U(1)|d=1]: d=p")
   )
 
@@ -902,6 +911,15 @@ test_that("policy_eval with target 'subgroup' has the correct output under right
 
   expect_equal(
     names(sub$coef),
+    c(
+      "E[U(2)|d=2]: d=p",
+      "E[U(1)|d=2]: d=p",
+      "E[U(2)|d=1]: d=p",
+      "E[U(1)|d=1]: d=p"
+    )
+  )
+  expect_equal(
+    names(coef(sub)),
     c("E[U(2)-U(1)|d=2]: d=p", "E[U(2)-U(1)|d=1]: d=p")
   )
 
@@ -927,6 +945,15 @@ test_that("policy_eval with target 'subgroup' has the correct output under right
 
   expect_equal(
     names(sub$coef),
+    c(
+      "E[U(2)|d=2]: d=p",
+      "E[U(1)|d=2]: d=p",
+      "E[U(2)|d=1]: d=p",
+      "E[U(1)|d=1]: d=p"
+    )
+  )
+  expect_equal(
+    names(coef(sub)),
     c("E[U(2)-U(1)|d=2]: d=p", "E[U(2)-U(1)|d=1]: d=p")
   )
 
@@ -1018,6 +1045,15 @@ test_that("policy_eval with target 'subgroup' has the correct output under right
 
   expect_equal(
     names(sub$coef),
+    c(
+      "E[U(2)|d=2]: d=p",
+      "E[U(1)|d=2]: d=p",
+      "E[U(2)|d=1]: d=p",
+      "E[U(1)|d=1]: d=p"
+    )
+  )
+  expect_equal(
+    names(coef(sub)),
     c("E[U(2)-U(1)|d=2]: d=p", "E[U(2)-U(1)|d=1]: d=p")
   )
 

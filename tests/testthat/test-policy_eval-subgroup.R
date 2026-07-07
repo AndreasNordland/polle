@@ -170,8 +170,23 @@ test_that("policy_eval with target 'sub_effect' has the correct outputs: test1."
       pe$name,
       names(pe$coef)
     )
+    ## the object stores the 4 per-subgroup potential outcome means:
     expect_equal(
       pe$name,
+      c(
+        "E[U(1)|d=1]: d=test",
+        "E[U(0)|d=1]: d=test",
+        "E[U(1)|d=0]: d=test",
+        "E[U(0)|d=0]: d=test"
+      )
+    )
+    ## the subgroup average treatment effects reported by default:
+    expect_equal(
+      names(coef(pe)),
+      c("E[U(1)-U(0)|d=1]: d=test", "E[U(1)-U(0)|d=0]: d=test")
+    )
+    expect_equal(
+      pe$contrast_name,
       c("E[U(1)-U(0)|d=1]: d=test", "E[U(1)-U(0)|d=0]: d=test")
     )
   }
@@ -300,6 +315,15 @@ test_that("policy_eval with target 'subgroup' has the correct outputs: test2.", 
 
     expect_equal(
       names(sub$coef),
+      c(
+        "E[U(2)|d=2]: d=p",
+        "E[U(1)|d=2]: d=p",
+        "E[U(2)|d=1]: d=p",
+        "E[U(1)|d=1]: d=p"
+      )
+    )
+    expect_equal(
+      names(coef(sub)),
       c("E[U(2)-U(1)|d=2]: d=p", "E[U(2)-U(1)|d=1]: d=p")
     )
 
@@ -329,6 +353,84 @@ test_that("policy_eval with target 'subgroup' has the correct outputs: test2.", 
         IC(sub),
         cbind(ref_IC, ref_IC_comp) |> unname()
     )
+})
+
+test_that("policy_eval with target 'subgroup' exposes the 4 means and 2 contrasts via the contrast argument.", {
+    z <- 1:1e2
+    a <- c(rep(1, 50), rep(2, 50))
+    y <- a * 2
+    p <- c(rep(1, 25), rep(2, 25), rep(1, 25), rep(2, 25))
+    d <- data.table(z = z, a = a, y = y, p = p)
+    rm(a, z, y)
+    pd <- policy_data(
+        data = d,
+        action = "a",
+        covariates = c("z", "p"),
+        utility = c("y")
+    )
+    pol <- policy_def(function(p) p, name = "p")
+
+    ref_Z <- cbind(
+        (d$a == 1) / 0.5 * (d$y - d$z) + d$z,
+        (d$a == 2) / 0.5 * (d$y - d$z) + d$z
+    )
+    ## the 4 per-subgroup potential outcome means
+    ## [E[U(2)|d=2], E[U(1)|d=2], E[U(2)|d=1], E[U(1)|d=1]]:
+    ref_means <- c(
+        mean(ref_Z[d$p == 2, 2]),
+        mean(ref_Z[d$p == 2, 1]),
+        mean(ref_Z[d$p == 1, 2]),
+        mean(ref_Z[d$p == 1, 1])
+    )
+
+    ref_IC <- cbind(
+      2 * (d$p == 2) * (ref_Z[, 2] - ref_means[1]),
+      2 * (d$p == 2) * (ref_Z[, 1] - ref_means[2]),
+      2 * (d$p == 1) * (ref_Z[, 2] - ref_means[3]),
+      2 * (d$p == 1) * (ref_Z[, 1] - ref_means[4])
+    )
+    ## the 2 subgroup average treatment effects reported by default:
+    ref_contrasts <- c(ref_means[1] - ref_means[2], ref_means[3] - ref_means[4])
+
+    sub <- policy_eval(
+        target = "subgroup",
+        policy_data = pd,
+        policy = pol,
+        q_models = polle:::q_degen(var = "z"),
+        g_models = g_glm(~1)
+    )
+
+    ## the object stores the 4 means and the two labellings:
+    expect_equal(unname(sub$coef), ref_means)
+    expect_length(sub$name, 4)
+    expect_length(sub$contrast_name, 2)
+
+    ## coef() returns the 2 contrasts by default and the 4 means with
+    ## contrast = FALSE:
+    expect_equal(unname(coef(sub)), ref_contrasts)
+    expect_equal(names(coef(sub)), sub$contrast_name)
+    expect_equal(unname(coef(sub, contrast = FALSE)), ref_means)
+    expect_equal(names(coef(sub, contrast = FALSE)), sub$name)
+
+    ## the value of the estimate does not depend on the contrast argument:
+    expect_equal(coef(sub), coef(estimate(sub)))
+
+    ## summary() mirrors coef(): 2 contrasts by default, 4 means otherwise:
+    expect_equal(unname(coef(summary(sub))), ref_contrasts)
+    expect_equal(names(coef(summary(sub))), sub$contrast_name)
+    expect_equal(unname(coef(summary(sub, contrast = FALSE))), ref_means)
+    expect_equal(names(coef(summary(sub, contrast = FALSE))), sub$name)
+
+    ## the influence curve / variance also follow the contrast argument:
+    expect_equal(ncol(IC(sub)), 2)
+    expect_equal(ncol(IC(sub, contrast = FALSE)), 4)
+    expect_equal(dim(vcov(sub)), c(2L, 2L))
+    expect_equal(dim(vcov(sub, contrast = FALSE)), c(4L, 4L))
+    expect_equal(
+      IC(sub, contrast = FALSE),
+      ref_IC
+    )
+
 })
 
 test_that("policy_eval with target 'subgroup' returns NA when no subjects are in the subgroup.", {
@@ -468,6 +570,19 @@ test_that("policy_eval with target 'subgroup' works with policy_learning with mu
   ref_sub1_eta101 <- mean(ref_blip[d$p2 == 1])
   ref_IC1_eta101 <- (d$p2 == 1) * (ref_blip - ref_sub1_eta101)
 
+  ## the object stores the 4 per-subgroup potential outcome means per policy:
+  mean_names <- c(
+    "E[U(2)|d=2]: d=blip(eta=50)", "E[U(1)|d=2]: d=blip(eta=50)",
+    "E[U(2)|d=1]: d=blip(eta=50)", "E[U(1)|d=1]: d=blip(eta=50)",
+    "E[U(2)|d=2]: d=blip(eta=101)", "E[U(1)|d=2]: d=blip(eta=101)",
+    "E[U(2)|d=1]: d=blip(eta=101)", "E[U(1)|d=1]: d=blip(eta=101)"
+  )
+  ## the subgroup average treatment effects reported by default:
+  contrast_names <- c(
+    "E[U(2)-U(1)|d=2]: d=blip(eta=50)", "E[U(2)-U(1)|d=1]: d=blip(eta=50)",
+    "E[U(2)-U(1)|d=2]: d=blip(eta=101)", "E[U(2)-U(1)|d=1]: d=blip(eta=101)"
+  )
+
   pl <- policy_learn(
     type = "blip",
     threshold = c(50, 101),
@@ -493,8 +608,12 @@ test_that("policy_eval with target 'subgroup' works with policy_learning with mu
 
   expect_equal(
     sub$name,
-    c("E[U(2)-U(1)|d=2]: d=blip(eta=50)", "E[U(2)-U(1)|d=1]: d=blip(eta=50)",
-      "E[U(2)-U(1)|d=2]: d=blip(eta=101)", "E[U(2)-U(1)|d=1]: d=blip(eta=101)")
+    mean_names
+  )
+
+  expect_equal(
+    names(coef(sub)),
+    contrast_names
   )
 
   expect_equal(
@@ -540,8 +659,12 @@ test_that("policy_eval with target 'subgroup' works with policy_learning with mu
 
   expect_equal(
     sub$name,
-    c("E[U(2)-U(1)|d=2]: d=blip(eta=50)", "E[U(2)-U(1)|d=1]: d=blip(eta=50)",
-      "E[U(2)-U(1)|d=2]: d=blip(eta=101)", "E[U(2)-U(1)|d=1]: d=blip(eta=101)")
+    mean_names
+  )
+
+  expect_equal(
+    names(coef(sub)),
+    contrast_names
   )
 
   expect_equal(
@@ -584,8 +707,12 @@ test_that("policy_eval with target 'subgroup' works with policy_learning with mu
 
   expect_equal(
     sub$name,
-    c("E[U(2)-U(1)|d=2]: d=blip(eta=50)", "E[U(2)-U(1)|d=1]: d=blip(eta=50)",
-      "E[U(2)-U(1)|d=2]: d=blip(eta=101)", "E[U(2)-U(1)|d=1]: d=blip(eta=101)")
+    mean_names
+  )
+
+  expect_equal(
+    names(coef(sub)),
+    contrast_names
   )
 
   ref_sub2_eta50_fold1 <- mean(ref_blip[sub$folds[[1]]][d$p1[sub$folds[[1]]] == 2])

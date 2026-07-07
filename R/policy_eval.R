@@ -59,21 +59,29 @@
 #' @param nrep Number of repetitions of cross-fitting (estimates averaged over repeated cross-fittings)
 #' @param min_subgroup_size Minimum number of observations in the evaluated subgroup (Only used if target = "subgroup").
 #' @param future_args Arguments passed to [future.apply::future_apply()].
-#' @param name Character string.
+#' @param name Character string. When \code{target = "subgroup"} a character
+#' vector of length 2 naming the two subgroup average treatment effects
+#' \eqn{E[U(a_2)-U(a_1)|d], d = 1/0}.
 #' @param object,x,y Objects of class "policy_eval".
 #' @param labels Name(s) of the estimate(s).
+#' @param contrast Logical. Only used when \code{target = "subgroup"}. If
+#' \code{TRUE} (default) the subgroup average treatment effects
+#' \eqn{E[U(a_2)-U(a_1)|d]} are reported; if \code{FALSE} the underlying
+#' per-subgroup potential outcome means \eqn{E[U(a)|d]} are reported.
 #' @param paired \code{TRUE} indicates that the estimates are based on
 #' the same data sample.
 #' @param digits Integer. Number of printed digits.
 #' @param width Integer. Width of printed parameter name.
 #' @param std.error Logical. Should the std.error be printed.
-#' @param level Numeric. Level of confidence limits.
 #' @param p.value Logical. Should the p.value for associated confidence level be printed.
 #' @param ... Additional arguments.
 #' @return \code{policy_eval()} returns an object of class "policy_eval".
 #' The object is a list containing the following elements:
-#' \item{\code{coef}}{Numeric vector. The estimated target parameter:
-#' policy value or subgroup average treatment effect.}
+#' \item{\code{coef}}{Numeric vector. The estimated target parameter: the
+#' policy value, or (when \code{target = "subgroup"}) the per-subgroup
+#' potential outcome means \eqn{E[U(a)|d]}. The subgroup average treatment
+#' effects \eqn{E[U(a_2)-U(a_1)|d]} are obtained as contrasts of these means,
+#' see \code{summary()}, \code{coef()} and \code{estimate()}.}
 #' \item{\code{IC}}{Numeric matrix. Estimated influence curve associated with
 #' \code{coef}.}
 #' \item{\code{type}}{Character string. The type of evaluation ("dr", "ipw",
@@ -505,6 +513,7 @@ policy_eval_input_checks <- function(policy_data,
   } else {
     stop("target must be either 'value' or 'subgroup'.")
   }
+  contrast_name <- NULL
   if (!is.null(name)) {
     name <- as.character(name)
     if (target == "value") {
@@ -516,6 +525,9 @@ policy_eval_input_checks <- function(policy_data,
       if (length(name) != 2) {
         stop("name must be a character vector of length 2 when target = 'subgroup'.")
       }
+      ## a user supplied name labels the two subgroup average treatment effects:
+      contrast_name <- name
+      name <- NULL
     }
   }
   type <- tolower(type)
@@ -533,18 +545,30 @@ policy_eval_input_checks <- function(policy_data,
   }
 
   ## editing name:
-  if (is.null(name)) {
-    if (target == "value") {
+  if (target == "value") {
+    if (is.null(name)) {
       name <- "E[U(d)]"
     }
+  }
 
-    if (target == "subgroup") {
-      as <- get_action_set(policy_data)
-      name1 <- paste0("E[U(", as[2], ")-U(", as[1], ")|d=", as[2], "]")
-      name2 <- paste0("E[U(", as[2], ")-U(", as[1], ")|d=", as[1], "]")
-      name <- c(name1, name2)
-      rm(as, name1, name2)
+  if (target == "subgroup") {
+    as <- get_action_set(policy_data)
+    ## the coefficients are the 4 per-subgroup potential outcome means per
+    ## policy: [E[U(a2)|d=a2], E[U(a1)|d=a2], E[U(a2)|d=a1], E[U(a1)|d=a1]]:
+    name <- c(
+      paste0("E[U(", as[2], ")|d=", as[2], "]"),
+      paste0("E[U(", as[1], ")|d=", as[2], "]"),
+      paste0("E[U(", as[2], ")|d=", as[1], "]"),
+      paste0("E[U(", as[1], ")|d=", as[1], "]")
+    )
+    ## the two subgroup average treatment effects (reported by default):
+    if (is.null(contrast_name)) {
+      contrast_name <- c(
+        paste0("E[U(", as[2], ")-U(", as[1], ")|d=", as[2], "]"),
+        paste0("E[U(", as[2], ")-U(", as[1], ")|d=", as[1], "]")
+      )
     }
+    rm(as)
   }
 
   ## train_block_size used for online/sequential validation:
@@ -562,6 +586,7 @@ policy_eval_input_checks <- function(policy_data,
   args[["target"]] <- target
   args[["type"]] <- type
   args[["name"]] <- name
+  args[["contrast_name"]] <- contrast_name
 
   return(args)
 }
@@ -573,6 +598,7 @@ policy_eval_object <- function(
     target,
     id,
     name,
+    contrast_name = NULL,
     coef_ipw = NULL,
     coef_or = NULL,
     policy_actions = NULL,
@@ -614,7 +640,8 @@ policy_eval_type <- function(target,
                              m_model, m_function,
                              m_full_history, save_m_function,
                              min_subgroup_size,
-                             name) {
+                             name,
+                             contrast_name = NULL) {
   ##
   ## training
   ##
@@ -657,6 +684,13 @@ policy_eval_type <- function(target,
                      paste0(name, ": d=", pn)
                    })
     name <- unlist(name)
+    if (!is.null(contrast_name)) {
+      contrast_name <- lapply(pol_names,
+                              function(pn){
+                                paste0(contrast_name, ": d=", pn)
+                              })
+      contrast_name <- unlist(contrast_name)
+    }
   }
 
   ##
@@ -846,7 +880,8 @@ policy_eval_type <- function(target,
     Z = Z,
     subgroup_indicator = subgroup_indicator,
     min_subgroup_size = min_subgroup_size,
-    name = name
+    name = name,
+    contrast_name = contrast_name
   )
 
   return(out)
@@ -913,6 +948,7 @@ policy_eval_cross <- function(args,
 
   ## collecting the paramenter name(s):
   name <- get_element(cross_fits[[1]], "name")
+  contrast_name <- get_element(cross_fits[[1]], "contrast_name", check_name = FALSE)
   
   ## collecting the ids from each fold (unsorted):
   id <- unlist(lapply(
@@ -1008,12 +1044,12 @@ policy_eval_cross <- function(args,
       )
     }
     if (cross_fit_type == "pooled") {
-      ## calculating the subgroup average treatment effect estimate:
-      coef <- apply(subgroup_indicator,
-                    MARGIN = 2,
-                    function(x) mean((Z[, 2] - Z[, 1])[x])
-                    )
-      coef[!(subgroup_size >= min_subgroup_size)] <- as.numeric(NA)
+      ## per-subgroup potential outcome means (pooled doubly robust scores):
+      coef <- subgroup_means(
+        Z = Z,
+        subgroup_indicator = subgroup_indicator,
+        min_subgroup_size = min_subgroup_size
+      )[["coef"]]
 
     }
     n_coef <- length(coef)
@@ -1050,30 +1086,23 @@ policy_eval_cross <- function(args,
   if (target == "subgroup") {
     if (variance_type == "stacked") {
       IC <- lapply(
-        cross_fits, function(x) IC(x)
+        cross_fits, function(x) get_element(x, "IC")
       )
       IC <- do.call(what = "rbind", IC)
       IC <- IC[order(id), , drop = FALSE]
     }
     if (variance_type == "pooled") {
-      tmp <- apply(subgroup_indicator,
-                   MARGIN = 2,
-                   function(x) mean((Z[, 2] - Z[, 1])[x])
-                   )
-      IC <- matrix(nrow = n, ncol = n_coef)
-      for (j in 1:n_coef) {
-        ic <- 1 / mean(subgroup_indicator[, j]) *
-          subgroup_indicator[, j] * ((Z[, 2] - Z[, 1]) - tmp[j])
-        IC[, j] <- ic
-      }
-      IC[ ,!(subgroup_size >= min_subgroup_size)] <- NA
-      rm(ic, tmp)
+      IC <- subgroup_means(
+        Z = Z,
+        subgroup_indicator = subgroup_indicator,
+        min_subgroup_size = min_subgroup_size
+      )[["IC"]]
     }
     if (variance_type == "complete") {
       args[["train_policy_data"]] <- policy_data
       args[["valid_policy_data"]] <- policy_data
       pe <- do.call(what = policy_eval_type, args = args)
-      IC <- IC(pe)
+      IC <- get_element(pe, "IC")
       rm(pe)
     }
   }
@@ -1179,6 +1208,7 @@ policy_eval_cross <- function(args,
     cross_fits = cross_fits,
     folds = folds,
     name = name,
+    contrast_name = contrast_name,
     variance_type = variance_type,
     cross_fit_type = cross_fit_type,
     subgroup_indicator = subgroup_indicator
@@ -1237,8 +1267,12 @@ policy_eval_rep <- function(nrep,
       variance_type = variance_type,
       future_args = future_args
     )
-    name <- get_element(pe, "name")
-    out <- list(coef=coef(pe), IC=IC(pe), name = name)
+    out <- list(
+      coef = get_element(pe, "coef"),
+      IC = get_element(pe, "IC"),
+      name = get_element(pe, "name"),
+      contrast_name = get_element(pe, "contrast_name", check_name = FALSE)
+    )
     return(out)
   }
 
@@ -1255,6 +1289,7 @@ policy_eval_rep <- function(nrep,
   rep_fits <- do.call(what = future.apply::future_lapply, rep_args)
 
   name <- get_element(rep_fits[[1]], "name")
+  contrast_name <- get_element(rep_fits[[1]], "contrast_name", check_name = FALSE)
 
   coef <- lapply(rep_fits, function(x) get_element(x, "coef"))
   coef <- do.call(what = "rbind", coef)
@@ -1270,6 +1305,7 @@ policy_eval_rep <- function(nrep,
     target = get_element(args, "target"),
     id = get_id(policy_data),
     name = name,
+    contrast_name = contrast_name,
     variance_type = variance_type,
     cross_fit_type = cross_fit_type,
     min_subgroup_size = get_element(args, "min_subgroup_size")
