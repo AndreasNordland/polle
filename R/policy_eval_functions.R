@@ -19,26 +19,7 @@ check_actions <- function(actions, policy_data){
   }
 }
 
-## internal: contrast matrix mapping the 4 per-subgroup potential outcome means
-## of each policy to the 2 subgroup average treatment effects, i.e. for each
-## policy block [E[U(a2)|d=a2], E[U(a1)|d=a2], E[U(a2)|d=a1], E[U(a1)|d=a1]] the
-## two rows compute E[U(a2)|d=a2] - E[U(a1)|d=a2] and
-## E[U(a2)|d=a1] - E[U(a1)|d=a1].
-subgroup_contrast_matrix <- function(n_mean) {
-  n_pol <- n_mean / 4L
-  C <- matrix(0, nrow = 2L * n_pol, ncol = n_mean)
-  for (k in seq_len(n_pol)) {
-    col0 <- 4L * (k - 1L)
-    row0 <- 2L * (k - 1L)
-    C[row0 + 1L, col0 + 1L] <- 1
-    C[row0 + 1L, col0 + 2L] <- -1
-    C[row0 + 2L, col0 + 3L] <- 1
-    C[row0 + 2L, col0 + 4L] <- -1
-  }
-  return(C)
-}
-
-## internal: extract the coefficients, influence curve, variance and labels of a
+## internal: extract the coefficients, influence curve, and labels of a
 ## policy_eval object, applying the subgroup contrast when requested. For
 ## target = "subgroup" the object stores the 4 per-subgroup potential outcome
 ## means per policy; with contrast = TRUE these are collapsed to the 2 subgroup
@@ -47,34 +28,20 @@ subgroup_contrast_matrix <- function(n_mean) {
 policy_eval_parts <- function(object, contrast = TRUE) {
   target <- get_element(object, "target")
   coef <- get_element(object, "coef")
-  IC <- get_element(object, "IC", check_name = FALSE)
-  vcov <- get_element(object, "vcov", check_name = FALSE)
-  ## normalise a stored diagonal vcov vector to a matrix:
-  if (!is.null(vcov) && !is.matrix(vcov)) {
-    vcov <- diag(vcov, nrow = length(vcov))
-  }
+  IC <- get_element(object, "IC")
   labels <- get_element(object, "name", check_name = FALSE)
 
   if (identical(target, "subgroup") && isTRUE(contrast)) {
-    ## the contrast matrix pairs adjacent means (E[U(a2)|d=k] - E[U(a1)|d=k]),
-    ## so compute the contrasts by direct differencing of the paired columns
-    ## rather than via C %*% coef. A matrix product would propagate the NA of an
-    ## empty/below-minimum subgroup into the other contrasts because 0 * NA = NA
-    ## in R.
     odd <- seq.int(1L, length(coef), by = 2L)
     coef <- coef[odd] - coef[odd + 1L]
     if (!is.null(IC)) {
       IC <- IC[, odd, drop = FALSE] - IC[, odd + 1L, drop = FALSE]
     }
-    if (!is.null(vcov)) {
-      C <- subgroup_contrast_matrix(nrow(vcov))
-      vcov <- C %*% vcov %*% t(C)
-    }
     labels <- get_element(object, "contrast_name", check_name = FALSE)
   }
   names(coef) <- labels
 
-  return(list(coef = coef, IC = IC, vcov = vcov, labels = labels))
+  return(list(coef = coef, IC = IC, labels = labels))
 }
 
 #' @rdname policy_eval
@@ -102,7 +69,7 @@ vcov.policy_eval <- function(object, contrast = TRUE, ...) {
     n <- nrow(ic)
     return(crossprod(ic) / (n * n))
   }
-  return(parts[["vcov"]])
+  return(NULL)
 }
 
 #' @rdname policy_eval
@@ -140,26 +107,10 @@ summary.policy_eval <- function(object, contrast = TRUE, labels = NULL, ...) {
       }
     }
   }
-  ic <- parts[["IC"]]
-  ## the additional arguments (...) are deliberately not forwarded to
-  ## lava::estimate(): the returned estimate object can be updated in a
-  ## subsequent step (e.g. to change the confidence level). This also avoids
-  ## passing the 'contrast' argument on to lava::estimate().
-  if (is.null(ic)) {
-    est <- lava::estimate(
-      NULL,
-      coef = parts[["coef"]],
-      vcov = parts[["vcov"]],
-      labels = labels
-    )
-  } else {
-    est <- lava::estimate(
-      NULL,
-      coef = parts[["coef"]],
-      IC = ic,
-      labels = labels
-    )
-  }
+  est <- lava::estimate(NULL,
+                        coef = parts[["coef"]],
+                        IC = ic,
+                        labels = labels)
   return(est)
 }
 
