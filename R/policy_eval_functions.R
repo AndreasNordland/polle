@@ -28,7 +28,7 @@ check_actions <- function(actions, policy_data){
 policy_eval_parts <- function(object, contrast = TRUE) {
   target <- get_element(object, "target")
   coef <- get_element(object, "coef")
-  IC <- get_element(object, "IC")
+  IC <- get_element(object, "IC", check_name = FALSE)
   labels <- get_element(object, "name", check_name = FALSE)
 
   if (identical(target, "subgroup") && isTRUE(contrast)) {
@@ -107,10 +107,19 @@ summary.policy_eval <- function(object, contrast = TRUE, labels = NULL, ...) {
       }
     }
   }
-  est <- lava::estimate(NULL,
-                        coef = parts[["coef"]],
-                        IC = parts[["IC"]],
-                        labels = labels)
+  ic <- parts[["IC"]]
+  if (!is.null(ic)) {
+    est <- lava::estimate(NULL,
+                          coef = parts[["coef"]],
+                          IC = ic,
+                          labels = labels)
+
+  } else {
+    est <- lava::estimate(NULL,
+                          coef = parts[["coef"]],
+                          IC = FALSE),
+    vcov = NULL)
+}
   return(est)
 }
 
