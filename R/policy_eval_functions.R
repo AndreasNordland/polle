@@ -115,11 +115,11 @@ summary.policy_eval <- function(object, contrast = TRUE, labels = NULL, ...) {
                           labels = labels)
 
   } else {
-    est <- lava::estimate(NULL,
-                          coef = parts[["coef"]],
-                          IC = FALSE),
-    vcov = NULL)
-}
+    browser()
+    est <- lava::estimate(coef = parts[["coef"]],
+                          IC = NULL,
+                          vcov = NULL)
+  }
   return(est)
 }
 
