@@ -325,9 +325,9 @@ policy_action_outcome_matrix <- function(q_values, m_values, U, policy_actions, 
 }
 
 ## internal: per-subgroup potential outcome means E[U(a)|d] and their
-## influence curves. For each column of `subgroup_indicator` (a subgroup) the
+## influence curves. For each column of `subgroup_indicator` (d) the
 ## two means E[U(a2)|d] and E[U(a1)|d] are computed from the doubly robust
-## scores Z (Z[, 2] and Z[, 1]) and stored as adjacent coefficients. The
+## scores Z and stored as adjacent coefficients. The
 ## subgroup average treatment effect is the contrast of these two means. Returns
 ## `coef` (length 2 * ncol(subgroup_indicator)) and `IC` (n x 2 * ncol).
 subgroup_means <- function(Z, subgroup_indicator, min_subgroup_size) {
