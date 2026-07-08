@@ -459,9 +459,8 @@ dr_subgroup <- function(K,
   subgroup_indicator <- cbind(subgroup_indicator, !subgroup_indicator)
   subgroup_indicator <- unname(subgroup_indicator)
 
-  ## calculating the per-subgroup potential outcome means E[U(a)|d=k] and their
-  ## influence curves. The subgroup average treatment effect is obtained as the
-  ## contrast E[U(a2)|d=k] - E[U(a1)|d=k] (see summary.policy_eval):
+  ## calculating the per-subgroup potential outcome means E[U(a)|d] and their
+  ## influence curves.
   sm <- subgroup_means(
     Z = Z,
     subgroup_indicator = subgroup_indicator,
