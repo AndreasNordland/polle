@@ -827,7 +827,8 @@ test_that("policy_learn with type 'blip' has the correct outputs for the stochas
 
   expect_equal(
     IC(pe),
-    matrix(ref_IC)
+    matrix(ref_IC),
+    check.attributes = FALSE
   )
 
   expect_equal(
@@ -840,9 +841,7 @@ test_that("policy_learn with type 'blip' has the correct outputs for the stochas
     ref_pe_ipw
   )
 
-  ##
   ## cross-fitting
-  ##
 
   pe <- policy_eval(
     policy_data = pd,
@@ -868,7 +867,8 @@ test_that("policy_learn with type 'blip' has the correct outputs for the stochas
 
   expect_equal(
     IC(pe),
-    matrix(ref_IC)
+    matrix(ref_IC),
+    check.attributes = FALSE
   )
 
   expect_equal(
@@ -880,6 +880,5 @@ test_that("policy_learn with type 'blip' has the correct outputs for the stochas
     get_element(pe, "coef_ipw"),
     ref_pe_ipw
   )
-
 
 })

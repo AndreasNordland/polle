@@ -57,9 +57,7 @@ test_that("policy_eval with target 'subgroup' agrees with targeted::cate.", {
     pd <- policy_data(d, action = "A", covariates = c("Z"), utility = "U")
     p <- policy_def(function(Z) (Z > 0) * 1)
 
-    ##
     ## no cross-fitting:
-    ##
 
     pe <- policy_eval(
         policy_data = pd,
@@ -88,14 +86,13 @@ test_that("policy_eval with target 'subgroup' agrees with targeted::cate.", {
     )
 
     expect_equal(
-        IC(pe) |> unname(),
+      IC(pe) |> unname(),
       IC(ca)[, c("factor(d)1", "factor(d)0"), drop=FALSE] |>
-      unname()
+      unname(),
+      check.attributes = FALSE
     )
 
-    ##
     ## cross-fitting: pooled estimate and variance
-    ##
 
     set.seed(1)
     pe <- policy_eval(
@@ -125,9 +122,10 @@ test_that("policy_eval with target 'subgroup' agrees with targeted::cate.", {
     )
 
     expect_equal(
-      IC(pe),
+      IC(pe) |> unname(),
       IC(ca)[, c("factor(d)1", "factor(d)0")] |>
-      unname()
+      unname(),
+      check.attributes = FALSE
     )
 
 })
@@ -291,9 +289,7 @@ test_that("policy_eval with target 'subgroup' has the correct outputs: test2.", 
     ref_IC <- 2 * (d$p == 2) * (ref_blip - ref_sub)
     ref_IC_comp <- 2 * (d$p == 1) * (ref_blip - ref_sub_comp)
 
-    ##
     ## no cross-fitting
-    ##
 
     sub <- policy_eval(
         target = "subgroup",
@@ -309,8 +305,9 @@ test_that("policy_eval with target 'subgroup' has the correct outputs: test2.", 
     )
 
     expect_equal(
-        IC(sub),
-        cbind(ref_IC, ref_IC_comp) |> unname()
+      IC(sub) |> unname(),
+      cbind(ref_IC, ref_IC_comp) |> unname(),
+      check.attributes = FALSE
     )
 
     expect_equal(
@@ -327,9 +324,7 @@ test_that("policy_eval with target 'subgroup' has the correct outputs: test2.", 
       c("E[U(2)-U(1)|d=2]: d=p", "E[U(2)-U(1)|d=1]: d=p")
     )
 
-    ##
     ## cross-fitting
-    ##
 
     ## in each training, the empirical propensity is no longer 0.5
     ## instead a g_model is fitted on the complete data:
@@ -350,8 +345,9 @@ test_that("policy_eval with target 'subgroup' has the correct outputs: test2.", 
     )
 
     expect_equal(
-        IC(sub),
-        cbind(ref_IC, ref_IC_comp) |> unname()
+      IC(sub) |> unname(),
+      cbind(ref_IC, ref_IC_comp) |> unname(),
+      check.attributes = FALSE
     )
 })
 
@@ -427,8 +423,9 @@ test_that("policy_eval with target 'subgroup' exposes the 4 means and 2 contrast
     expect_equal(dim(vcov(sub)), c(2L, 2L))
     expect_equal(dim(vcov(sub, contrast = FALSE)), c(4L, 4L))
     expect_equal(
-      IC(sub, contrast = FALSE),
-      ref_IC
+      IC(sub, contrast = FALSE) |> unname(),
+      ref_IC,
+      check.attributes = FALSE
     )
 
 })
@@ -474,7 +471,8 @@ test_that("policy_eval with target 'subgroup' returns NA when no subjects are in
 
   expect_equal(
     unname(IC(sub)[,1,drop=FALSE]),
-    cbind(rep(as.numeric(NA), 1e2))
+    cbind(rep(as.numeric(0), 1e2)),
+    check.attributes = FALSE
   )
 
   expect_no_error(
@@ -504,7 +502,7 @@ test_that("policy_eval with target 'subgroup' returns NA when no subjects are in
 
   expect_equal(
     unname(IC(sub)[,1,drop=FALSE]),
-    cbind(rep(as.numeric(NA), 1e2))
+    cbind(rep(as.numeric(0), 1e2))
   )
 
   expect_no_error(
@@ -530,7 +528,8 @@ test_that("policy_eval with target 'subgroup' returns NA when no subjects are in
 
   expect_equal(
     unname(IC(sub)[,1,drop=FALSE]),
-    cbind(rep(as.numeric(NA), 1e2))
+    cbind(rep(as.numeric(0), 1e2)),
+    check.attributes = FALSE
   )
 
   expect_no_error(
@@ -622,8 +621,12 @@ test_that("policy_eval with target 'subgroup' works with policy_learning with mu
   )
 
   expect_equal(
-    IC(sub),
-    cbind(ref_IC2_eta50, ref_IC1_eta50, rep(as.numeric(NA), 1e2), ref_IC1_eta101) |> unname()
+    IC(sub) |> unname(),
+    cbind(ref_IC2_eta50,
+          ref_IC1_eta50,
+          rep(as.numeric(0), 1e2),
+          ref_IC1_eta101) |> unname(),
+    check.attributes = FALSE
   )
 
   expect_equal(
@@ -673,8 +676,9 @@ test_that("policy_eval with target 'subgroup' works with policy_learning with mu
   )
 
   expect_equal(
-    IC(sub),
-    cbind(ref_IC2_eta50, ref_IC1_eta50, rep(as.numeric(NA), 1e2), ref_IC1_eta101) |> unname()
+    IC(sub) |> unname(),
+    cbind(ref_IC2_eta50, ref_IC1_eta50, rep(as.numeric(0), 1e2), ref_IC1_eta101) |> unname(),
+    check.attributes = FALSE
   )
 
   expect_equal(

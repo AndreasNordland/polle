@@ -19,17 +19,17 @@ check_actions <- function(actions, policy_data){
   }
 }
 
-## internal: extract the coefficients, influence curve, and labels of a
-## policy_eval object
+## internal: construct an lava::estimate object from policy_eval object
 ## For target = "subgroup" the object stores the 4 per-subgroup potential outcome
 ## means per policy; with contrast = TRUE these are collapsed to the 2 subgroup
 ## average treatment effects (the quantities reported by default). For
 ## target = "value" the coefficients are returned as stored.
-policy_eval_parts <- function(object, contrast = TRUE) {
+policy_eval_estimate <- function(object, contrast) {
   target <- get_element(object, "target")
   coef <- get_element(object, "coef")
   IC <- get_element(object, "IC", check_name = FALSE)
   labels <- get_element(object, "name", check_name = FALSE)
+  id <- get_element(object, "id")
 
   if (identical(target, "subgroup") && isTRUE(contrast)) {
     odd <- seq.int(1L, length(coef), by = 2L)
@@ -39,37 +39,40 @@ policy_eval_parts <- function(object, contrast = TRUE) {
     }
     labels <- get_element(object, "contrast_name", check_name = FALSE)
   }
-  names(coef) <- labels
 
-  return(list(coef = coef, IC = IC, labels = labels))
+  if (!is.null(IC)) {
+    est <- lava::estimate(NULL,
+                          coef = coef,
+                          IC = IC,
+                          labels = labels,
+                          id = id)
+
+  } else {
+    est <- lava::estimate(NULL,
+                          coef = coef,
+                          vcov = NA,
+                          labels = labels)
+  }
+
+  return(est)
 }
 
 #' @rdname policy_eval
 #' @export
 coef.policy_eval <- function(object, contrast = TRUE, ...) {
-  return(policy_eval_parts(object, contrast = contrast)[["coef"]])
+  coef(policy_eval_estimate(object, contrast = contrast))
 }
 
 #' @rdname policy_eval
 #' @export
 IC.policy_eval <- function(x, contrast = TRUE, ...) {
-  ic <- policy_eval_parts(x, contrast = contrast)[["IC"]]
-  if (is.null(ic)) {
-    return(NULL)
-  }
-  return(cbind(ic))
+  IC(policy_eval_estimate(x, contrast = contrast))
 }
 
 #' @rdname policy_eval
 #' @export
 vcov.policy_eval <- function(object, contrast = TRUE, ...) {
-  parts <- policy_eval_parts(object, contrast = contrast)
-  ic <- parts[["IC"]]
-  if (!is.null(ic)) {
-    n <- nrow(ic)
-    return(crossprod(ic) / (n * n))
-  }
-  return(NULL)
+  vcov(policy_eval_estimate(object, contrast = contrast))
 }
 
 #' @rdname policy_eval
@@ -93,39 +96,14 @@ print.policy_eval <- function(x,
 
 #' @rdname policy_eval
 #' @export
-summary.policy_eval <- function(object, contrast = TRUE, labels = NULL, ...) {
-  parts <- policy_eval_parts(object, contrast = contrast)
-  if (is.null(labels)) {
-    labels <- parts[["labels"]]
-    if (is.null(labels)) {
-      p <- length(parts[["coef"]])
-      target <- get_element(object, "target")
-      if (p == 1) {
-        labels <- target
-      } else {
-        labels <- paste0(target, seq(p))
-      }
-    }
-  }
-  ic <- parts[["IC"]]
-  if (!is.null(ic)) {
-    est <- lava::estimate(NULL,
-                          coef = parts[["coef"]],
-                          IC = ic,
-                          labels = labels)
-
-  } else {
-    est <- lava::estimate(NULL,
-                          coef = parts[["coef"]],
-                          vcov = NA)
-  }
-  return(est)
+summary.policy_eval <- function(object, contrast = TRUE, ...) {
+  policy_eval_estimate(object, contrast = contrast)
 }
 
 #' @rdname policy_eval
 #' @export
-estimate.policy_eval <- function(x, labels = NULL, contrast = TRUE, ...) {
-  return(summary(x, contrast = contrast, labels = labels, ...))
+estimate.policy_eval <- function(x, ...) {
+  summary(x, contrast = TRUE)
 }
 
 #' @rdname policy_eval
@@ -142,12 +120,6 @@ estimate.policy_eval <- function(x, labels = NULL, contrast = TRUE, ...) {
     do.call(estimate, c(list(p),est_args)))
   m <- do.call("merge", c(m, list(paired=paired)))
   return(m)
-}
-
-#' @rdname policy_eval
-#' @export
-"+.policy_eval" <- function(x,...) {
-  merge(x, ...)
 }
 
 #' @title Conditional Policy Evaluation
@@ -215,7 +187,7 @@ conditional.policy_eval <- function(object, policy_data, baseline) {
 
   by <- baseline_data[, baseline, with = FALSE]
   agg <- aggregate(z, by = by, mean)
-  coef <- agg[["V1"]]
+  coef <- agg[, 2]
 
   n <- get_n(policy_data)
   groups <- agg[[baseline]]

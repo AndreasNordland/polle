@@ -10,7 +10,6 @@
 \alias{summary.policy_eval}
 \alias{estimate.policy_eval}
 \alias{merge.policy_eval}
-\alias{+.policy_eval}
 \alias{coef.policy_eval_online}
 \alias{vcov.policy_eval_online}
 \alias{summary.policy_eval_online}
@@ -57,11 +56,9 @@ policy_eval(
 
 \method{summary}{policy_eval}(object, contrast = TRUE, labels = NULL, ...)
 
-\method{estimate}{policy_eval}(x, labels = NULL, contrast = TRUE, ...)
+\method{estimate}{policy_eval}(x, labels = NULL, ...)
 
 \method{merge}{policy_eval}(x, y, ..., paired = TRUE)
-
-\method{+}{policy_eval}(x, ...)
 
 \method{coef}{policy_eval_online}(object, ...)
 

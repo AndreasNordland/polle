@@ -366,8 +366,9 @@ test_that("policy_eval runs on a subset of the data with missing actions from th
     0
   )
   expect_equal(
-    IC(pe2_ipw),
-    matrix(rep(0, get_n(pd2)))
+    IC(pe2_ipw) |> unname(),
+    matrix(rep(0, get_n(pd2))),
+    check.attributes = FALSE
   )
 
   ## or
@@ -387,6 +388,9 @@ test_that("policy_eval runs on a subset of the data with missing actions from th
   expect_equal(
     IC(pe2_or),
     NULL
+  )
+  expect_no_error(
+    summary(pe2_or)
   )
 })
 
@@ -583,8 +587,9 @@ test_that("policy_eval with target 'value' has the correct outputs in the single
   )
 
   expect_equal(
-    IC(pe),
-    matrix(ref_IC)
+    IC(pe) |> unname(),
+    matrix(ref_IC),
+    check.attributes = FALSE
   )
 
   ##
@@ -618,8 +623,9 @@ test_that("policy_eval with target 'value' has the correct outputs in the single
   )
 
   expect_equal(
-    IC(pe),
-    matrix(ref_IC)
+    IC(pe) |> unname(),
+    matrix(ref_IC),
+    check.attributes = FALSE
   )
 
   ##
@@ -666,8 +672,9 @@ test_that("policy_eval with target 'value' has the correct outputs in the single
   )
 
   expect_equal(
-    IC(pe),
-    matrix(ref_IC)
+    IC(pe) |> unname(),
+    matrix(ref_IC),
+    check.attributes = FALSE
   )
 
   ##
@@ -693,8 +700,9 @@ test_that("policy_eval with target 'value' has the correct outputs in the single
   )
 
   expect_equal(
-    IC(pe),
-    matrix(ref_IC)
+    IC(pe) |> unname(),
+    matrix(ref_IC),
+    check.attributes = FALSE
   )
 })
 
@@ -804,8 +812,9 @@ test_that("policy_eval() using policy_learn() has the correct output", {
     coef(pe) |> unname()
   )
   expect_equal(
-    IC(pe),
-    ref_IC
+    IC(pe) |> unname(),
+    ref_IC,
+    check.attributes = FALSE
   )
 })
 
@@ -879,8 +888,9 @@ test_that("policy_eval with target 'value' has the correct outputs for the fixed
   )
 
   expect_equal(
-    IC(pe),
-    matrix(ref_IC)
+    IC(pe)  |> unname(),
+    matrix(ref_IC),
+    check.attributes = FALSE
   )
 
 })
@@ -967,8 +977,9 @@ test_that("policy_eval with target 'value' has the correct outputs for the stoch
   )
 
   expect_equal(
-    IC(pe),
-    matrix(ref_IC)
+    IC(pe) |> unname(),
+    matrix(ref_IC),
+    check.attributes = FALSE
   )
 
   expect_equal(
@@ -1008,8 +1019,9 @@ test_that("policy_eval with target 'value' has the correct outputs for the stoch
   )
 
   expect_equal(
-    IC(pe),
-    matrix(ref_IC)
+    IC(pe) |> unname(),
+    matrix(ref_IC),
+    check.attributes = FALSE
   )
 
   expect_equal(
@@ -1263,7 +1275,8 @@ test_that("conditional.policy_eval agrees with targeted::cate", {
 
   expect_equal(
     IC(est) |> matrix(),
-    ca$estimate$IC[, "factor(B)0"] |> unname() |> matrix()
+    ca$estimate$IC[, "factor(B)0"] |> unname() |> matrix(),
+    check.attributes = FALSE
   )
 })
 
@@ -1305,8 +1318,9 @@ test_that("policy_eval with target = 'value' runs when performing repeated cross
   )
 
   expect_equal(
-    IC(pe),
-    matrix(ref_IC)
+    IC(pe) |> unname(),
+    matrix(ref_IC),
+    check.attributes = FALSE
   )
 
   z <- 1:1e2
@@ -1359,8 +1373,9 @@ test_that("policy_eval with target = 'value' runs when performing repeated cross
   )
 
   expect_equal(
-    IC(pe),
-    ref_IC
+    IC(pe) |> unname(),
+    ref_IC,
+    check.attributes = FALSE
   )
 })
 
@@ -1389,15 +1404,26 @@ test_that("policy_eval() runs without covariates.", {
   ref_pe <- mean((d$a == "2") / 0.5 * d$y)
   ref_IC <- matrix((d$a == "2") / 0.5 * (d$y - 4) + 4 - ref_pe)
 
-  expect_equal(
-    coef(pe) |> unname(),
-    ref_pe
+  expect_warning(
+    coef_pe <- coef(pe),
+    "IC does not have mean zero"
   )
 
   expect_equal(
-    IC(pe),
+    coef_pe |> unname(),
+    ref_pe
+  )
+
+  expect_warning(
+    ic_pe <- IC(pe),
+    "IC does not have mean zero"
+  )
+
+  expect_equal(
+    ic_pe |> unname(),
     ref_IC,
-    tolerance = 1e-14
+    tolerance = 1e-14,
+    check.attributes = FALSE
   )
 
   expect_no_error(
@@ -1418,8 +1444,9 @@ test_that("policy_eval() runs without covariates.", {
   )
 
   expect_equal(
-    IC(pe),
+    IC(pe) |> unname(),
     ref_IC,
-    tolerance = 1e-14
+    tolerance = 1e-14,
+    check.attributes = FALSE
   )
 })
