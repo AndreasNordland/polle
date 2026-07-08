@@ -383,9 +383,7 @@ dr_subgroup <- function(K,
     stop(mes)
   }
 
-  ##
   ## calculating the doubly robust score for each treatment
-  ##
 
   ## (n X K+1) matrix with missing event indicators
   M <- event_matrix(events = events, event_set = c(NA))
@@ -548,9 +546,7 @@ dr_value <- function(K,
   Zd_ipw <- ipw_weight(D[, 1:k], C[, 1:k]) * ipw_weight(II, G = G) * ifelse(is.na(U), 0, U)
   Zd_or <- Q[, 1]
 
-  ##
   ## output checks
-  ##
 
   stopifnot(
     all(!is.na(Zd)),
@@ -575,9 +571,7 @@ or_value <- function(K,
                      q_values,
                      ...) {
 
-  ##
   ## calculating the outcome regression score
-  ##
 
   # (n X K) matrix with entries Q_k(d_k(H_k), H_k)
   q_d_values <- get_a_values(
@@ -615,9 +609,7 @@ ipw_value <- function(K,
                       g_values,
                       utility,
                       ...) {
-  ##
   ## calculating the inverse probability score
-  ##
 
   # (n) vector with entries U_i:
   U <- utility$U
@@ -648,9 +640,7 @@ ipw_value <- function(K,
 
   Zd_ipw <- ipw_weight(II, G = G) * U
 
-  ##
   ## output checks
-  ##
 
   stopifnot(
     !all(is.na(Zd_ipw))
