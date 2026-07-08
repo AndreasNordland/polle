@@ -20,8 +20,8 @@ check_actions <- function(actions, policy_data){
 }
 
 ## internal: extract the coefficients, influence curve, and labels of a
-## policy_eval object, applying the subgroup contrast when requested. For
-## target = "subgroup" the object stores the 4 per-subgroup potential outcome
+## policy_eval object
+## For target = "subgroup" the object stores the 4 per-subgroup potential outcome
 ## means per policy; with contrast = TRUE these are collapsed to the 2 subgroup
 ## average treatment effects (the quantities reported by default). For
 ## target = "value" the coefficients are returned as stored.
@@ -115,10 +115,9 @@ summary.policy_eval <- function(object, contrast = TRUE, labels = NULL, ...) {
                           labels = labels)
 
   } else {
-    browser()
-    est <- lava::estimate(coef = parts[["coef"]],
-                          IC = NULL,
-                          vcov = NULL)
+    est <- lava::estimate(NULL,
+                          coef = parts[["coef"]],
+                          vcov = NA)
   }
   return(est)
 }
