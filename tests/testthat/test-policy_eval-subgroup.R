@@ -46,7 +46,6 @@ test_that("policy_eval with target = 'subgroup' checks inputs.", {
     )
 })
 
-
 test_that("policy_eval with target 'subgroup' agrees with targeted::cate.", {
     n <- 1e3
     Z <- rnorm(n = n)
@@ -204,19 +203,6 @@ test_that("policy_eval with target 'sub_effect' has the correct outputs: test1."
   )
   test_output(pe)
 
-  expect_no_error(
-    pe <- policy_eval(
-      policy_data = pd,
-      policy = p,
-      target = "subgroup",
-      name = c("group1", "group2")
-    )
-  )
-  expect_equal(
-    names(coef(pe)),
-    c("group1: d=test", "group2: d=test")
-  )
-
   ## cross-fitting: stacked estimator
   set.seed(1)
   expect_no_error(
@@ -313,15 +299,15 @@ test_that("policy_eval with target 'subgroup' has the correct outputs: test2.", 
     expect_equal(
       names(sub$coef),
       c(
-        "E[U(2)|d=2]: d=p",
-        "E[U(1)|d=2]: d=p",
         "E[U(2)|d=1]: d=p",
-        "E[U(1)|d=1]: d=p"
+        "E[U(1)|d=1]: d=p",
+        "E[U(2)|d=0]: d=p",
+        "E[U(1)|d=0]: d=p"
       )
     )
     expect_equal(
       names(coef(sub)),
-      c("E[U(2)-U(1)|d=2]: d=p", "E[U(2)-U(1)|d=1]: d=p")
+      c("E[U(2)-U(1)|d=1]: d=p", "E[U(2)-U(1)|d=0]: d=p")
     )
 
     ## cross-fitting
@@ -571,15 +557,15 @@ test_that("policy_eval with target 'subgroup' works with policy_learning with mu
 
   ## the object stores the 4 per-subgroup potential outcome means per policy:
   mean_names <- c(
-    "E[U(2)|d=2]: d=blip(eta=50)", "E[U(1)|d=2]: d=blip(eta=50)",
     "E[U(2)|d=1]: d=blip(eta=50)", "E[U(1)|d=1]: d=blip(eta=50)",
-    "E[U(2)|d=2]: d=blip(eta=101)", "E[U(1)|d=2]: d=blip(eta=101)",
-    "E[U(2)|d=1]: d=blip(eta=101)", "E[U(1)|d=1]: d=blip(eta=101)"
+    "E[U(2)|d=0]: d=blip(eta=50)", "E[U(1)|d=0]: d=blip(eta=50)",
+    "E[U(2)|d=1]: d=blip(eta=101)", "E[U(1)|d=1]: d=blip(eta=101)",
+    "E[U(2)|d=0]: d=blip(eta=101)", "E[U(1)|d=0]: d=blip(eta=101)"
   )
   ## the subgroup average treatment effects reported by default:
   contrast_names <- c(
-    "E[U(2)-U(1)|d=2]: d=blip(eta=50)", "E[U(2)-U(1)|d=1]: d=blip(eta=50)",
-    "E[U(2)-U(1)|d=2]: d=blip(eta=101)", "E[U(2)-U(1)|d=1]: d=blip(eta=101)"
+    "E[U(2)-U(1)|d=1]: d=blip(eta=50)", "E[U(2)-U(1)|d=0]: d=blip(eta=50)",
+    "E[U(2)-U(1)|d=1]: d=blip(eta=101)", "E[U(2)-U(1)|d=0]: d=blip(eta=101)"
   )
 
   pl <- policy_learn(
@@ -930,13 +916,120 @@ test_that("get_q_functions() from a learned blip policy is a reusable q_function
     covariates = c("x", "z"),
     utility = "y"
   )
-  expect_no_error(
-    pe_pl1_subset <- policy_eval(
-      policy_data = pd_subset,
-      policy = po1,
-      q_functions = qf,
-      g_functions = gf,
-      target = "subgroup"
+    expect_no_error(
+      pe_pl1_subset <- policy_eval(
+        policy_data = pd_subset,
+        policy = po1,
+        q_functions = qf,
+        g_functions = gf,
+        target = "subgroup"
+      )
     )
+})
+
+test_that("policy_eval target = 'subgroup' returns a summary table via summary(return_table = TRUE)", {
+  z <- 1:1e2
+  a <- c(rep(1, 50), rep(2, 50))
+  y <- a * 2
+  p1 <- c(rep(1, 50), rep(2, 50))
+  p2 <- rep(1, 100)
+  d <- data.table(z = z, a = a, y = y, p1 = p1, p2 = p2)
+  pd <- policy_data(
+    data = d,
+    action = "a",
+    covariates = c("z", "p1", "p2"),
+    utility = c("y")
+  )
+
+  pl <- policy_learn(
+    type = "blip",
+    threshold = c(50, 101),
+    control = control_blip(blip_models = polle:::q_degen(var = "z"))
+  )
+
+  ## no cross-fitting: policy_object is stored so threshold is populated.
+  sub <- policy_eval(
+    target = "subgroup",
+    policy_data = pd,
+    policy_learn = pl,
+    q_models = polle:::q_degen(var = "z"),
+    g_models = g_glm(~1)
+  )
+
+  stop("test not finished")
+
+  ct <- sub$coef_table
+  expect_true(data.table::is.data.table(ct))
+  expect_equal(
+    names(ct),
+    c("policy", "threshold", "subgroup", "term",
+      "estimate", "se", "subgroup_prop", "contrast")
+  )
+
+  ## both views are stored: 4 means x 2 policies (contrast = FALSE) and
+  ## 2 subgroup average treatment effects x 2 policies (contrast = TRUE):
+  expect_equal(sum(!ct$contrast), 8L)
+  expect_equal(sum(ct$contrast), 4L)
+
+  ## the per-subgroup means agree with the stored coefficients:
+  mean_rows <- ct[ct$contrast == FALSE, ]
+  ## term + policy round-trip back to the stored coefficient names:
+  expect_equal(
+    paste0(mean_rows$term, ": d=", mean_rows$policy),
+    sub$name
+  )
+  expect_equal(mean_rows$estimate, unname(sub$coef))
+  expect_equal(mean_rows$se, unname(sqrt(diag(vcov(sub, contrast = FALSE)))))
+
+  ## the contrast rows agree with the default reported estimates:
+  contrast_rows <- ct[ct$contrast == TRUE, ]
+  expect_equal(contrast_rows$estimate, unname(coef(sub)))
+  expect_equal(contrast_rows$se, unname(sqrt(diag(vcov(sub, contrast = TRUE)))))
+
+  ## the threshold is populated from the stored policy object (M = 1):
+  expect_equal(mean_rows$threshold, rep(c(50, 101), each = 4))
+  expect_equal(contrast_rows$threshold, rep(c(50, 101), each = 2))
+
+  ## policy and subgroup labels:
+  expect_equal(unique(ct$policy), c("blip(eta=50)", "blip(eta=101)"))
+  expect_equal(mean_rows$subgroup, rep(c("d=2", "d=2", "d=1", "d=1"), 2))
+  expect_equal(contrast_rows$subgroup, rep(c("d=2", "d=1"), 2))
+
+  ## subgroup proportions (col. [d==2, d==1] per policy):
+  expect_equal(mean_rows$subgroup_prop, c(0.5, 0.5, 0.5, 0.5, 0, 0, 1, 1))
+  expect_equal(contrast_rows$subgroup_prop, c(0.5, 0.5, 0, 1))
+
+  ## summary(return_table = TRUE) respects the contrast argument:
+  st_true <- summary(sub, return_table = TRUE, contrast = TRUE)
+  expect_true(all(st_true$contrast))
+  expect_equal(st_true$estimate, unname(coef(sub)))
+
+  st_false <- summary(sub, return_table = TRUE, contrast = FALSE)
+  expect_false(any(st_false$contrast))
+  expect_equal(st_false$estimate, unname(sub$coef))
+
+  ## cross-fitting: the policy object is not stored, so the threshold column
+  ## is not populated (NA), but the estimates/proportions are still present.
+  gf <- fit_g_functions(pd, g_models = g_glm(~1))
+  set.seed(1)
+  subc <- policy_eval(
+    target = "subgroup",
+    policy_data = pd,
+    policy_learn = pl,
+    q_models = polle:::q_degen(var = "z"),
+    g_functions = gf,
+    cross_fit_type = "pooled",
+    variance_type = "pooled",
+    M = 2
+  )
+  ctc <- subc$coef_table
+  expect_true(all(is.na(ctc$threshold)))
+  expect_equal(
+    ctc[ctc$contrast == TRUE, ]$estimate,
+    unname(coef(subc))
+  )
+  expect_equal(
+    ctc[ctc$contrast == FALSE, ]$subgroup_prop,
+    c(0.5, 0.5, 0.5, 0.5, 0, 0, 1, 1)
   )
 })

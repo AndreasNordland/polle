@@ -681,7 +681,13 @@ get_policy.blip <- function(object, threshold = NULL) {
 
       ## setting class and attributes:
       name <- paste0("blip(eta=", round(th, 3), ")")
-      policy <- new_policy(policy, name = name)
+      meta <- c(type = "blip",
+                K = K,
+                threshold = th,
+                alpha = alpha)
+      policy <- new_policy(policy,
+                           name = name,
+                           meta = meta)
 
       return(policy)
     }

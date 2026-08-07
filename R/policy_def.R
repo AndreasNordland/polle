@@ -1,5 +1,6 @@
-new_policy <- function(fun, name){
+new_policy <- function(fun, name, meta = NULL){
   attr(fun, "name") <- name
+  attr(fun, "meta") <- meta
   class(fun) <- c("policy", "function")
 
   return(fun)

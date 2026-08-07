@@ -59,9 +59,6 @@
 #' @param nrep Number of repetitions of cross-fitting (estimates averaged over repeated cross-fittings)
 #' @param min_subgroup_size Minimum number of observations in the evaluated subgroup (Only used if target = "subgroup").
 #' @param future_args Arguments passed to [future.apply::future_apply()].
-#' @param name Character string. When \code{target = "subgroup"} a character
-#' vector of length 2 naming the two subgroup average treatment effects
-#' \eqn{E[U(a_2)-U(a_1)|d], d = 1/0}.
 #' @param object,x,y Objects of class "policy_eval".
 #' @param labels Name(s) of the estimate(s).
 #' @param contrast Logical. Only used when \code{target = "subgroup"}. If
@@ -241,14 +238,13 @@
 #' pd1
 #'
 #' # defining a static policy (A=1):
-#' pl1 <- policy_def(1)
+#' pl1 <- policy_def(1, name = "A=1")
 #'
 #' # evaluating the policy:
 #' pe1 <- policy_eval(policy_data = pd1,
 #'                    policy = pl1,
 #'                    g_models = g_glm(),
-#'                    q_models = q_glm(),
-#'                    name = "A=1 (glm)")
+#'                    q_models = q_glm())
 #'
 #' # summarizing the estimated value of the policy:
 #' # (equivalent to summary(pe1)):
@@ -271,8 +267,8 @@
 #'                       q_models = q_rf(),
 #'                       name = "A=1 (rf)")
 #'
-#' # merging the two estimates (equivalent to pe1 + pe1_rf):
-#' (est1 <- merge(pe1, pe1_rf))
+#' # merging the two estimates:
+#' (est1 <- estimate(merge(pe1, pe1_rf), labels = c("glm", "rf")))
 #' coef(est1)
 #' head(IC(est1))
 #'
@@ -299,8 +295,7 @@
 #'                    policy_learn = pl2,
 #'                    q_models = q_glm(),
 #'                    g_models = g_glm(),
-#'                    M = 2, # number of folds for cross-fitting
-#'                    name = "drql")
+#'                    M = 2) # number of folds for cross-fitting
 #' # summarizing the estimated value of the policy:
 #' pe2
 #'
@@ -323,8 +318,7 @@ policy_eval <- function(policy_data,
                         M = 1,
                         nrep = 1,
                         min_subgroup_size = 1,
-                        future_args = list(future.seed=TRUE),
-                        name = NULL
+                        future_args = list(future.seed=TRUE)
                         ) {
   ## argument input checks:
   args <- as.list(environment())
@@ -444,7 +438,6 @@ policy_eval_input_checks <- function(policy_data,
                                      nrep,
                                      min_subgroup_size,
                                      future_args = list(),
-                                     name,
                                      train_block_size = 1){
   args <- as.list(environment())
   if (!inherits(policy_data, what = "policy_data"))
@@ -474,7 +467,6 @@ policy_eval_input_checks <- function(policy_data,
       stop("policy_learn must be of inherited class 'policy_learn'.")
     }
   }
-
   if (!(is.numeric(M) && (length(M) == 1))) {
     stop("M must be an integer greater than 0.")
   }
@@ -513,23 +505,6 @@ policy_eval_input_checks <- function(policy_data,
   } else {
     stop("target must be either 'value' or 'subgroup'.")
   }
-  contrast_name <- NULL
-  if (!is.null(name)) {
-    name <- as.character(name)
-    if (target == "value") {
-      if (length(name) != 1) {
-        stop("name must be a character string.")
-      }
-    }
-    if (target == "subgroup") {
-      if (length(name) != 2) {
-        stop("name must be a character vector of length 2 when target = 'subgroup'.")
-      }
-      ## a user supplied name labels the two subgroup average treatment effects:
-      contrast_name <- name
-      name <- NULL
-    }
-  }
   type <- tolower(type)
   if (length(type) != 1) {
     stop("type must be a character string.")
@@ -542,33 +517,6 @@ policy_eval_input_checks <- function(policy_data,
     type <- "or"
   } else {
     stop("type must be either 'dr', 'ipw' or  'or'.")
-  }
-
-  ## editing name:
-  if (target == "value") {
-    if (is.null(name)) {
-      name <- "E[U(d)]"
-    }
-  }
-
-  if (target == "subgroup") {
-    as <- get_action_set(policy_data)
-    ## the coefficients are the 4 per-subgroup potential outcome means per
-    ## policy: [E[U(a2)|d=a2], E[U(a1)|d=a2], E[U(a2)|d=a1], E[U(a1)|d=a1]]:
-    name <- c(
-      paste0("E[U(", as[2], ")|d=", as[2], "]"),
-      paste0("E[U(", as[1], ")|d=", as[2], "]"),
-      paste0("E[U(", as[2], ")|d=", as[1], "]"),
-      paste0("E[U(", as[1], ")|d=", as[1], "]")
-    )
-    ## the two subgroup average treatment effects (reported by default):
-    if (is.null(contrast_name)) {
-      contrast_name <- c(
-        paste0("E[U(", as[2], ")-U(", as[1], ")|d=", as[2], "]"),
-        paste0("E[U(", as[2], ")-U(", as[1], ")|d=", as[1], "]")
-      )
-    }
-    rm(as)
   }
 
   ## train_block_size used for online/sequential validation:
@@ -585,8 +533,6 @@ policy_eval_input_checks <- function(policy_data,
   ## editing args
   args[["target"]] <- target
   args[["type"]] <- type
-  args[["name"]] <- name
-  args[["contrast_name"]] <- contrast_name
 
   return(args)
 }
@@ -598,6 +544,7 @@ policy_eval_object <- function(
     target,
     id,
     name,
+    meta,
     contrast_name = NULL,
     coef_ipw = NULL,
     coef_or = NULL,
@@ -639,9 +586,7 @@ policy_eval_type <- function(target,
                              c_full_history, save_c_functions,
                              m_model, m_function,
                              m_full_history, save_m_function,
-                             min_subgroup_size,
-                             name,
-                             contrast_name = NULL) {
+                             min_subgroup_size) {
   ##
   ## training
   ##
@@ -674,23 +619,6 @@ policy_eval_type <- function(target,
   }
   if (inherits(policy, what = "policy")) {
     policy <- list(policy)
-  }
-  ## appending policy names:
-  pol_names <- lapply(policy, function(x) attr(x, which = "name", exact = TRUE))
-  pol_names <- unlist(pol_names)
-  if (!is.null(pol_names)){
-    name <- lapply(pol_names,
-                   function(pn){
-                     paste0(name, ": d=", pn)
-                   })
-    name <- unlist(name)
-    if (!is.null(contrast_name)) {
-      contrast_name <- lapply(pol_names,
-                              function(pn){
-                                paste0(contrast_name, ": d=", pn)
-                              })
-      contrast_name <- unlist(contrast_name)
-    }
   }
 
   ##
@@ -759,69 +687,52 @@ policy_eval_type <- function(target,
   ## getting the utility:
   utility <- get_utility(valid_policy_data)
 
-  ## calculating the target estimate for each policy:
+  ## getting the policy actions (for a single policy):
+  policy_actions <- NULL
   if (length(policy) == 1) {
-    ## getting the policy actions for both right-censoring and action events:
+    ## actions for both right-censoring and action events:
     policy_actions <- policy[[1]](valid_policy_data)
-
-    ## checking that the policy actions comply with the stage action sets:
-    check_actions(
-      actions = policy_actions,
-      policy_data = valid_policy_data
-    )
-
-    estimate_objects <- estimate_target(
-      target = target,
-      type = type,
-      K = K,
-      id = id,
-      action_set = action_set,
-      actions = actions,
-      policy_actions = policy_actions,
-      events = events,
-      g_values = g_values,
-      q_values = q_values,
-      c_values = c_values,
-      m_values = m_values,
-      utility = utility,
-      min_subgroup_size = min_subgroup_size
-    )
-    estimate_objects <- list(estimate_objects)
-  } else {
-    policy_actions <- NULL
-
-    estimate_objects <- lapply(
-      policy,
-      function(p) {
-        ## getting the policy actions:## getting the policy actions for both right-censoring and action events:
-        policy_actions <- p(valid_policy_data)
-
-        ## checking that the policy actions comply with the stage action sets:
-        check_actions(
-          actions = policy_actions,
-          policy_data = valid_policy_data
-        )
-
-        out <- estimate_target(
-          target = target,
-          type = type,
-          K = K,
-          id = id,
-          action_set = action_set,
-          actions = actions,
-          policy_actions = policy_actions,
-          events = events,
-          g_values = g_values,
-          q_values = q_values,
-          c_values = c_values,
-          m_values = m_values,
-          utility = utility,
-          min_subgroup_size = min_subgroup_size
-        )
-        return(out)
-      }
-    )
   }
+
+  ## calculating the target estimate for each policy:
+  estimate_objects <- lapply(
+    policy,
+    function(p) {
+      ## getting the policy actions for both right-censoring and action events:
+      pa <- p(valid_policy_data)
+
+      ## checking that the policy actions comply with the stage action sets:
+      check_actions(
+        actions = pa,
+        policy_data = valid_policy_data
+      )
+
+      ## getting policy name and meta information
+      pn <- attr(p, which = "name", exact = TRUE)
+      pm <- attr(p, which = "meta", exact = TRUE)
+
+      out <- estimate_target(
+        target = target,
+        type = type,
+        K = K,
+        id = id,
+        action_set = action_set,
+        actions = actions,
+        policy_actions = pa,
+        policy_name = pn,
+        policy_meta = pm,
+        events = events,
+        g_values = g_values,
+        q_values = q_values,
+        c_values = c_values,
+        m_values = m_values,
+        utility = utility,
+        min_subgroup_size = min_subgroup_size
+      )
+      return(out)
+    }
+  )
+
 
   subgroup_indicator <- NULL
   Z <- NULL
@@ -851,13 +762,10 @@ policy_eval_type <- function(target,
   IC <- lapply(estimate_objects, function(eb) get_element(eb, "IC"))
   IC <- do.call(what = "cbind", IC)
 
-  ## if (target == "subgroup" & length(coef) > 1) {
-  ##   ## Reorder coefficients so all thresholds for d=1 are presented first
-  ##   ## followied by d=0
-  ##   idx <- seq_len(length(coef) / 2) * 2 - 1
-  ##   coef <- coef[c(idx, idx + 1)]
-  ##   IC <- IC[, c(idx, idx + 1)]
-  ## }
+  ## collecting names and meta information
+  name <- unlist(lapply(estimate_objects, function(eb) get_element(eb, "name")))
+  contrast_name <- unlist(lapply(estimate_objects, function(eb) get_element(eb, "contrast_name", check_name = FALSE)))
+  meta <- data.table::rbindlist(lapply(estimate_objects, function(eb) get_element(eb, "meta")))
 
   out <- policy_eval_object(
     coef = coef,
@@ -881,7 +789,8 @@ policy_eval_type <- function(target,
     subgroup_indicator = subgroup_indicator,
     min_subgroup_size = min_subgroup_size,
     name = name,
-    contrast_name = contrast_name
+    contrast_name = contrast_name,
+    meta = meta
   )
 
   return(out)
@@ -946,10 +855,11 @@ policy_eval_cross <- function(args,
   cross_fits <- do.call(what = future.apply::future_lapply, cross_args)
 
 
-  ## collecting the paramenter name(s):
+  ## collecting the paramenter name(s) and meta information:
   name <- get_element(cross_fits[[1]], "name")
   contrast_name <- get_element(cross_fits[[1]], "contrast_name", check_name = FALSE)
-  
+  meta <- get_element(cross_fits[[1]], "meta", check_name = FALSE)
+
   ## collecting the ids from each fold (unsorted):
   id <- unlist(lapply(
     cross_fits,
@@ -1209,6 +1119,7 @@ policy_eval_cross <- function(args,
     folds = folds,
     name = name,
     contrast_name = contrast_name,
+    meta = meta,
     variance_type = variance_type,
     cross_fit_type = cross_fit_type,
     subgroup_indicator = subgroup_indicator
@@ -1271,7 +1182,8 @@ policy_eval_rep <- function(nrep,
       coef = get_element(pe, "coef"),
       IC = get_element(pe, "IC"),
       name = get_element(pe, "name"),
-      contrast_name = get_element(pe, "contrast_name", check_name = FALSE)
+      contrast_name = get_element(pe, "contrast_name", check_name = FALSE),
+      meta = get_element(pe, "meta", check_name = FALSE)
     )
     return(out)
   }
@@ -1290,6 +1202,7 @@ policy_eval_rep <- function(nrep,
 
   name <- get_element(rep_fits[[1]], "name")
   contrast_name <- get_element(rep_fits[[1]], "contrast_name", check_name = FALSE)
+  meta <- get_element(rep_fits[[1]], "meta", check_name = FALSE)
 
   coef <- lapply(rep_fits, function(x) get_element(x, "coef"))
   coef <- do.call(what = "rbind", coef)
@@ -1305,6 +1218,7 @@ policy_eval_rep <- function(nrep,
     target = get_element(args, "target"),
     id = get_id(policy_data),
     name = name,
+    meta = meta,
     contrast_name = contrast_name,
     variance_type = variance_type,
     cross_fit_type = cross_fit_type,

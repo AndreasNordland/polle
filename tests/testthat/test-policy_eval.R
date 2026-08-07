@@ -233,30 +233,6 @@ test_that("policy_eval checks inputs.", {
     )
   })
   rm(mm)
-
-  ## names
-  nn <- list("test", NULL, 1, TRUE)
-  lapply(nn, function(n) {
-    expect_error(
-      policy_eval(
-        policy_data = pd,
-        policy = p,
-        name = n
-      ),
-      NA
-    )
-  })
-
-  nn <- list(c(1, 2), list())
-  lapply(nn, function(n) {
-    expect_error(
-      policy_eval(
-        policy_data = pd,
-        policy = p,
-        name = n
-      )
-    )
-  })
 })
 
 test_that("policy_eval handles combinations of nuisance models and functions correctly.", {
@@ -1450,3 +1426,40 @@ test_that("policy_eval() runs without covariates.", {
     check.attributes = FALSE
   )
 })
+
+test_that("policy_eval target = 'value' returns a table via summary(return_table = TRUE).", {
+  d <- sim_single_stage(n = 2e2, seed = 1)
+  pd <- policy_data(d, action = "A", covariates = c("Z", "L"), utility = "U")
+
+  ## named policy: the policy label is parsed into the `policy` column.
+  pe <- policy_eval(pd, policy = policy_def(1, name = "all_treated"),
+                    target = "value")
+
+  stop("test not finished")
+
+  ct <- pe$coef_table
+  expect_true(data.table::is.data.table(ct))
+  expect_equal(
+    names(ct),
+    c("policy", "threshold", "subgroup", "term",
+      "estimate", "se", "subgroup_prop", "contrast")
+  )
+  expect_equal(nrow(ct), 1L)
+  expect_equal(ct$term, "E[U(d)]")
+  expect_equal(ct$policy, "all_treated")
+  expect_equal(ct$estimate, unname(coef(pe)))
+  expect_equal(ct$se, unname(sqrt(diag(vcov(pe)))))
+  ## value target has no subgroup / threshold / contrast:
+  expect_true(is.na(ct$subgroup))
+  expect_true(is.na(ct$threshold))
+  expect_true(is.na(ct$subgroup_prop))
+  expect_false(ct$contrast)
+
+  ## summary(return_table = TRUE) returns the coef_table for the value target:
+  expect_equal(summary(pe, return_table = TRUE), ct)
+
+  ## an unnamed policy leaves the policy column as NA:
+  pe0 <- policy_eval(pd, policy = policy_def(1), target = "value")
+  expect_true(is.na(pe0$coef_table$policy))
+})
+

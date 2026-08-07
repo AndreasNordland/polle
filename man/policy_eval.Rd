@@ -54,9 +54,9 @@ policy_eval(
 
 \method{print}{policy_eval}(x, digits = 4L, width = 35L, std.error = TRUE, p.value = TRUE, ...)
 
-\method{summary}{policy_eval}(object, contrast = TRUE, labels = NULL, ...)
+\method{summary}{policy_eval}(object, contrast = TRUE, return_table = FALSE, ...)
 
-\method{estimate}{policy_eval}(x, labels = NULL, ...)
+\method{estimate}{policy_eval}(x, ...)
 
 \method{merge}{policy_eval}(x, y, ..., paired = TRUE)
 
@@ -167,10 +167,14 @@ per-subgroup potential outcome means \eqn{E[U(a)|d]} are reported.}
 
 \item{p.value}{Logical. Should the p.value for associated confidence level be printed.}
 
-\item{labels}{Name(s) of the estimate(s).}
+\item{return_table}{Logical. Used by \code{summary()}. If \code{TRUE} the
+\code{coef_table} \link[data.table:data.table]{data.table::data.table} is returned (filtered to the view
+selected by \code{contrast}) instead of the default \link[lava:estimate]{lava::estimate} object.}
 
 \item{paired}{\code{TRUE} indicates that the estimates are based on
 the same data sample.}
+
+\item{labels}{Name(s) of the estimate(s).}
 }
 \value{
 \code{policy_eval()} returns an object of class "policy_eval".
@@ -212,6 +216,14 @@ Each column represents a different subgroup threshold.}
 for cross-fitting.}
 \item{\code{cross_fit_type}}{Character string.}
 \item{\code{variance_type}}{Character string.}
+\item{\code{coef_table}}{\link[data.table:data.table]{data.table::data.table} summarising the estimates
+by \code{policy}, \code{threshold} (blip/ptl policy learners, only populated
+when \code{M = 1}), \code{subgroup} and \code{term}, with columns
+\code{estimate}, \code{se} and \code{subgroup_prop} (the proportion of
+observations in the subgroup). For \code{target = "subgroup"} both the
+per-subgroup potential outcome means (\code{contrast = FALSE}) and the
+subgroup average treatment effects (\code{contrast = TRUE}) are included; see
+\code{summary()}.}
 }
 \description{
 \code{policy_eval()} is used to estimate

@@ -5,6 +5,8 @@ estimate_target <- function(target = "value",
                             action_set,
                             actions,
                             policy_actions,
+                            policy_name,
+                            policy_meta,
                             events,
                             g_values,
                             q_values,
@@ -361,6 +363,8 @@ dr_subgroup <- function(K,
                         action_set,
                         actions,
                         policy_actions,
+                        policy_name,
+                        policy_meta,
                         events,
                         g_values,
                         q_values,
@@ -467,11 +471,49 @@ dr_subgroup <- function(K,
     min_subgroup_size = min_subgroup_size
   )
 
+  ## naming:
+  as <- action_set
+  ## the coefficients are the 4 per-subgroup potential outcome means per
+  ## policy: [E[U(a2)|d=1], E[U(a1)|d=1], E[U(a2)|d=0], E[U(a1)|d=0]]:
+  name <- c(
+    paste0("E[U(", as[2], ")|d=", 1, "]"),
+    paste0("E[U(", as[1], ")|d=", 1, "]"),
+    paste0("E[U(", as[2], ")|d=", 0, "]"),
+    paste0("E[U(", as[1], ")|d=", 0, "]")
+  )
+  ## the two subgroup average treatment effects (reported by default):
+  contrast_name <- c(
+    paste0("E[U(", as[2], ")-U(", as[1], ")|d=", 1, "]"),
+    paste0("E[U(", as[2], ")-U(", as[1], ")|d=", 0, "]")
+  )
+  ## appending policy names:
+  if (!is.null(policy_name)){
+    name <- paste0(name, ": d=", policy_name)
+    contrast_name <- paste0(contrast_name, ": d=", policy_name)
+  }
+
+  ## collecting meta information
+  meta <- data.table(
+    target = c(
+      paste0("E[U(", as[2], ")]"),
+      paste0("E[U(", as[1], ")]"),
+      paste0("E[U(", as[2], ")]"),
+      paste0("E[U(", as[1], ")]")
+    ),
+    action = c(as[2], as[1], as[2], as[1]),
+    subgroup = c(1, 1, 0, 0)
+  )
+  meta <- cbind(meta,
+                  as.data.table(as.list(policy_meta)))
+
   out <- list(
     coef = sm[["coef"]],
     IC = sm[["IC"]],
     Z = Z,
-    subgroup_indicator = subgroup_indicator
+    subgroup_indicator = subgroup_indicator,
+    name = name,
+    contrast_name = contrast_name,
+    meta = meta
   )
 
   return(out)
@@ -483,6 +525,8 @@ dr_value <- function(K,
                      action_set,
                      actions,
                      policy_actions,
+                     policy_name,
+                     policy_meta,
                      events,
                      g_values,
                      q_values,
@@ -545,8 +589,22 @@ dr_value <- function(K,
   Zd_ipw <- ipw_weight(D[, 1:k], C[, 1:k]) * ipw_weight(II, G = G) * ifelse(is.na(U), 0, U)
   Zd_or <- Q[, 1]
 
-  ## output checks
+  ## naming:
+  name <- "E[U(d)]"
 
+  ## appending policy names:
+  if (!is.null(policy_name)){
+    name <- paste0(name, ": d=", policy_name)
+  }
+
+  ## collecting meta information
+  meta <- data.table(
+    target = c("E[U(d)]")
+  )
+  meta <- cbind(meta,
+                  as.data.table(as.list(policy_meta)))
+
+  ## output checks:
   stopifnot(
     all(!is.na(Zd)),
     all(!is.na(Zd_ipw)),
@@ -557,7 +615,9 @@ dr_value <- function(K,
     coef = mean(Zd),
     IC = Zd - mean(Zd),
     coef_ipw = mean(Zd_ipw),
-    coef_or = mean(Zd_or)
+    coef_or = mean(Zd_or),
+    name = name,
+    meta = meta
   )
 
   return(out)
@@ -567,6 +627,8 @@ or_value <- function(K,
                      action_set,
                      actions,
                      policy_actions,
+                     policy_name,
+                     policy_meta,
                      q_values,
                      ...) {
 
@@ -586,6 +648,21 @@ or_value <- function(K,
 
   Zd_or <- Q[, 1]
 
+  ## naming:
+  name <- "E[U(d)]"
+
+  ## appending policy names:
+  if (!is.null(policy_name)){
+    name <- paste0(name, ": d=", policy_name)
+  }
+
+  ## collecting meta information
+  meta <- data.table(
+    target = c("E[U(d)]")
+  )
+  meta <- cbind(meta,
+                  as.data.table(as.list(policy_meta)))
+
   ##
   ## output checks
   ##
@@ -596,7 +673,9 @@ or_value <- function(K,
 
   out <- list(
     coef = mean(Zd_or),
-    IC = NULL
+    IC = NULL,
+    name = name,
+    meta = meta
   )
   return(out)
 }
@@ -605,6 +684,8 @@ ipw_value <- function(K,
                       action_set,
                       actions,
                       policy_actions,
+                      policy_name,
+                      policy_meta,
                       g_values,
                       utility,
                       ...) {
@@ -639,6 +720,21 @@ ipw_value <- function(K,
 
   Zd_ipw <- ipw_weight(II, G = G) * U
 
+  ## naming:
+  name <- "E[U(d)]"
+
+  ## appending policy names:
+  if (!is.null(policy_name)){
+    name <- paste0(name, ": d=", policy_name)
+  }
+
+  ## collecting meta information
+  meta <- data.table(
+    target = c("E[U(d)]")
+  )
+  meta <- cbind(meta,
+                  as.data.table(as.list(policy_meta)))
+
   ## output checks
 
   stopifnot(
@@ -647,7 +743,9 @@ ipw_value <- function(K,
 
   out <- list(
     coef = mean(Zd_ipw),
-    IC = Zd_ipw - mean(Zd_ipw)
+    IC = Zd_ipw - mean(Zd_ipw),
+    name = name,
+    meta = meta
   )
   return(out)
 }
