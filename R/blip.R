@@ -689,8 +689,7 @@ get_policy.blip <- function(object, threshold = NULL) {
       ## column types when coerced to a data.table.
       if (is.null(quantile_prob_threshold)) {
         name <- paste0("blip(eta=", round(th, 3), ")")
-        input_meta <- list(type = "blip",
-                           K = K,
+        input_meta <- list(policy = "blip",
                            alpha = alpha,
                            threshold = th)
         output_meta <- NULL
@@ -701,8 +700,7 @@ get_policy.blip <- function(object, threshold = NULL) {
         thr_sel <- sort(unique(unname(threshold_selection)))
         qp <- quantile_prob_threshold[match(th, thr_sel)]
         name <- paste0("blip(q=", round(qp, 3), ")")
-        input_meta <- list(type = "blip",
-                           K = K,
+        input_meta <- list(policy = "blip",
                            alpha = alpha,
                            quantile_prob_threshold = unname(qp))
         output_meta <- list(threshold = th)

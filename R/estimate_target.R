@@ -496,12 +496,6 @@ dr_subgroup <- function(K,
 
   ## collecting meta information
   input_meta <- data.table(
-    target = c(
-      paste0("E[U(", as[2], ")]"),
-      paste0("E[U(", as[1], ")]"),
-      paste0("E[U(", as[2], ")]"),
-      paste0("E[U(", as[1], ")]")
-    ),
     action = c(as[2], as[1], as[2], as[1]),
     subgroup = c(1, 1, 0, 0)
   )
@@ -606,11 +600,7 @@ dr_value <- function(K,
   }
 
   ## collecting meta information
-  input_meta <- data.table(
-    target = c("E[U(d)]")
-  )
-  input_meta <- cbind(input_meta,
-                      as.data.table(as.list(policy_input_meta)))
+  input_meta <- as.data.table(as.list(policy_input_meta))
   output_meta <- NULL
   if (!is.null(policy_output_meta)) {
     output_meta <- as.data.table(as.list(policy_output_meta))
@@ -671,11 +661,7 @@ or_value <- function(K,
   }
 
   ## collecting meta information
-  input_meta <- data.table(
-    target = c("E[U(d)]")
-  )
-  input_meta <- cbind(input_meta,
-                      as.data.table(as.list(policy_input_meta)))
+  input_meta <- as.data.table(as.list(policy_input_meta))
   output_meta <- NULL
   if (!is.null(policy_output_meta)) {
     output_meta <- as.data.table(as.list(policy_output_meta))
@@ -749,11 +735,7 @@ ipw_value <- function(K,
   }
 
   ## collecting meta information
-  input_meta <- data.table(
-    target = c("E[U(d)]")
-  )
-  input_meta <- cbind(input_meta,
-                      as.data.table(as.list(policy_input_meta)))
+  input_meta <- as.data.table(as.list(policy_input_meta))
   output_meta <- NULL
   if (!is.null(policy_output_meta)) {
     output_meta <- as.data.table(as.list(policy_output_meta))
