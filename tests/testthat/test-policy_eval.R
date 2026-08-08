@@ -1479,38 +1479,162 @@ test_that("policy_eval() runs without covariates.", {
   )
 })
 
-test_that("policy_eval target = 'value' returns a table via summary(return_table = TRUE).", {
+test_that("policy_eval target = 'value' summary table has the expected schema", {
+  ## ------------------------------------------------------------------
+  ## user-defined policy (no policy input_meta): only the fixed prefix
+  ## columns are emitted.
+  ## ------------------------------------------------------------------
   d <- sim_single_stage(n = 2e2, seed = 1)
   pd <- policy_data(d, action = "A", covariates = c("Z", "L"), utility = "U")
 
-  ## named policy: the policy label is parsed into the `policy` column.
-  pe <- policy_eval(pd, policy = policy_def(1, name = "all_treated"),
+  pe <- policy_eval(pd,
+                    policy = policy_def(1, name = "all_treated"),
                     target = "value")
-
   ct <- summary(pe, return_table = TRUE)
+
   expect_true(data.table::is.data.table(ct))
-
-  ## the fixed prefix of the coef_table schema:
-  fixed_cols <- c("policy", "term", "action", "subgroup",
-                  "subgroup_prop", "estimate", "se", "contrast")
-  expect_equal(head(names(ct), length(fixed_cols)), fixed_cols)
-
+  expect_equal(names(ct), c("name", "estimate", "se"))
   expect_equal(nrow(ct), 1L)
-  expect_equal(ct$term, "E[U(d)]")
-  expect_equal(ct$policy, "all_treated")
+  expect_equal(ct$name, "E[U(d)]: d=all_treated")
   expect_equal(ct$estimate, unname(coef(pe)))
   expect_equal(ct$se, unname(sqrt(diag(vcov(pe)))))
-  ## value target has no subgroup / action / subgroup_prop / contrast:
-  expect_true(is.na(ct$subgroup))
-  expect_true(is.na(ct$action))
-  expect_true(is.na(ct$subgroup_prop))
-  expect_false(ct$contrast)
 
   ## the contrast argument is ignored for target = "value":
   expect_equal(summary(pe, return_table = TRUE, contrast = FALSE), ct)
 
-  ## an unnamed policy leaves the policy column as NA:
+  ## an unnamed policy_def still produces a well-formed row (only the
+  ## policy suffix in the name changes):
   pe0 <- policy_eval(pd, policy = policy_def(1), target = "value")
-  expect_true(is.na(summary(pe0, return_table = TRUE)$policy))
+  ct0 <- summary(pe0, return_table = TRUE)
+  expect_equal(names(ct0), c("name", "estimate", "se"))
+  expect_equal(nrow(ct0), 1L)
+})
+
+test_that("policy_eval target = 'value' summary table has the expected schema for blip", {
+  z <- 1:1e2
+  a <- c(rep(1, 50), rep(2, 50))
+  y <- a * 2
+  p1 <- c(rep(1, 50), rep(2, 50))
+  p2 <- rep(1, 100)
+  d <- data.table(z = z, a = a, y = y, p1 = p1, p2 = p2)
+  pd <- policy_data(
+    data = d,
+    action = "a",
+    covariates = c("z", "p1", "p2"),
+    utility = c("y")
+  )
+
+  ## ------------------------------------------------------------------
+  ## blip with a single user-supplied threshold:
+  ## ------------------------------------------------------------------
+  pl1 <- policy_learn(
+    type = "blip",
+    threshold = 50,
+    control = control_blip(blip_models = polle:::q_degen(var = "z"))
+  )
+  pe1 <- policy_eval(
+    target = "value",
+    policy_data = pd,
+    policy_learn = pl1,
+    q_models = polle:::q_degen(var = "z"),
+    g_models = g_glm(~1)
+  )
+  t1 <- summary(pe1, return_table = TRUE)
+
+  expect_true(data.table::is.data.table(t1))
+  expect_equal(names(t1),
+               c("name", "estimate", "se", "policy", "alpha", "threshold"))
+  expect_equal(nrow(t1), 1L)
+  expect_equal(t1$name, "E[U(d)]: d=blip(eta=50)")
+  expect_equal(t1$policy, "blip")
+  expect_equal(t1$threshold, 50)
+  expect_equal(t1$estimate, unname(coef(pe1)))
+  expect_equal(t1$se, unname(sqrt(diag(vcov(pe1)))))
+  expect_null(pe1$output_meta)
+
+  ## ------------------------------------------------------------------
+  ## blip with multiple user-supplied thresholds:
+  ## ------------------------------------------------------------------
+  pl2 <- policy_learn(
+    type = "blip",
+    threshold = c(50, 101),
+    control = control_blip(blip_models = polle:::q_degen(var = "z"))
+  )
+  pe2 <- policy_eval(
+    target = "value",
+    policy_data = pd,
+    policy_learn = pl2,
+    q_models = polle:::q_degen(var = "z"),
+    g_models = g_glm(~1)
+  )
+  t2 <- summary(pe2, return_table = TRUE)
+
+  expect_equal(names(t2),
+               c("name", "estimate", "se", "policy", "alpha", "threshold"))
+  expect_equal(nrow(t2), 2L)
+  expect_equal(t2$threshold, c(50, 101))
+  expect_equal(t2$name,
+               c("E[U(d)]: d=blip(eta=50)", "E[U(d)]: d=blip(eta=101)"))
+  expect_equal(t2$estimate, unname(coef(pe2)))
+  expect_equal(t2$se, unname(sqrt(diag(vcov(pe2)))))
+  expect_null(pe2$output_meta)
+
+  ## ------------------------------------------------------------------
+  ## blip with a quantile probability threshold (dynamic threshold):
+  ## ------------------------------------------------------------------
+  pl3 <- policy_learn(
+    type = "blip",
+    control = control_blip(
+      blip_models = polle:::q_degen(var = "z"),
+      quantile_prob_threshold = c(0.25, 0.75)
+    )
+  )
+  pe3 <- policy_eval(
+    target = "value",
+    policy_data = pd,
+    policy_learn = pl3,
+    q_models = polle:::q_degen(var = "z"),
+    g_models = g_glm(~1)
+  )
+  t3 <- summary(pe3, return_table = TRUE)
+
+  ## schema: `quantile_prob_threshold` replaces `threshold` in input_meta;
+  ## `threshold` lives on output_meta instead.
+  expect_equal(names(t3),
+               c("name", "estimate", "se",
+                 "policy", "alpha", "quantile_prob_threshold"))
+  expect_false("threshold" %in% names(t3))
+  expect_equal(nrow(t3), 2L)
+  expect_equal(t3$quantile_prob_threshold, c(0.25, 0.75))
+  expect_true(all(grepl("blip\\(q=", t3$name)))
+  expect_equal(t3$estimate, unname(coef(pe3)))
+  expect_equal(t3$se, unname(sqrt(diag(vcov(pe3)))))
+
+  ## output_meta carries the fold-realised numeric threshold(s):
+  expect_true(data.table::is.data.table(pe3$output_meta))
+  expect_equal(names(pe3$output_meta), "threshold")
+  expect_equal(nrow(pe3$output_meta), 2L)
+
+  ## ------------------------------------------------------------------
+  ## blip under cross-fitting (M > 1) with user-supplied thresholds:
+  ## input_meta is static so the schema and columns are preserved.
+  ## ------------------------------------------------------------------
+  gf <- fit_g_functions(pd, g_models = g_glm(~1))
+  set.seed(1)
+  pe4 <- policy_eval(
+    target = "value",
+    policy_data = pd,
+    policy_learn = pl2,
+    q_models = polle:::q_degen(var = "z"),
+    g_functions = gf,
+    cross_fit_type = "pooled",
+    variance_type = "pooled",
+    M = 2
+  )
+  t4 <- summary(pe4, return_table = TRUE)
+  expect_equal(names(t4), names(t2))
+  expect_equal(nrow(t4), 2L)
+  expect_equal(t4$threshold, c(50, 101))
+  expect_equal(t4$estimate, unname(coef(pe4)))
 })
 

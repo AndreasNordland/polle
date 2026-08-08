@@ -927,7 +927,7 @@ test_that("get_q_functions() from a learned blip policy is a reusable q_function
     )
 })
 
-test_that("policy_eval target = 'subgroup' returns a summary table via summary(return_table = TRUE)", {
+test_that("policy_eval target = 'subgroup' summary table has the expected schema for blip", {
   z <- 1:1e2
   a <- c(rep(1, 50), rep(2, 50))
   y <- a * 2
@@ -941,81 +941,202 @@ test_that("policy_eval target = 'subgroup' returns a summary table via summary(r
     utility = c("y")
   )
 
-  pl <- policy_learn(
+  ## ------------------------------------------------------------------
+  ## blip with a single user-supplied threshold (no cross-fitting):
+  ## ------------------------------------------------------------------
+  pl1 <- policy_learn(
+    type = "blip",
+    threshold = 50,
+    control = control_blip(blip_models = polle:::q_degen(var = "z"))
+  )
+  sub1 <- policy_eval(
+    target = "subgroup",
+    policy_data = pd,
+    policy_learn = pl1,
+    q_models = polle:::q_degen(var = "z"),
+    g_models = g_glm(~1)
+  )
+  m1 <- summary(sub1, return_table = TRUE, contrast = FALSE)
+  c1 <- summary(sub1, return_table = TRUE, contrast = TRUE)
+
+  expect_true(data.table::is.data.table(m1))
+  expect_true(data.table::is.data.table(c1))
+
+  ## schema: means view has the fixed prefix + input_meta columns
+  ## (action, subgroup + policy-level meta: policy, alpha, threshold):
+  expect_equal(
+    names(m1),
+    c("name", "estimate", "se", "subgroup_proportion",
+      "action", "subgroup", "policy", "alpha", "threshold")
+  )
+  expect_equal(
+    names(c1),
+    c("name", "estimate", "se", "subgroup_proportion",
+      "action", "subgroup", "policy", "alpha", "threshold")
+  )
+
+  ## means: 4 rows for one policy; contrasts: 2 rows.
+  expect_equal(nrow(m1), 4L)
+  expect_equal(nrow(c1), 2L)
+
+  ## estimates / se agree with the object accessors:
+  expect_equal(m1$estimate, unname(sub1$coef))
+  expect_equal(m1$se, unname(sqrt(diag(vcov(sub1, contrast = FALSE)))))
+  expect_equal(c1$estimate, unname(coef(sub1)))
+  expect_equal(c1$se, unname(sqrt(diag(vcov(sub1, contrast = TRUE)))))
+
+  ## the row-labels come from name / contrast_name:
+  expect_equal(m1$name, sub1$name)
+  expect_equal(c1$name, sub1$contrast_name)
+
+  ## input_meta columns:
+  expect_equal(m1$action, c("2", "1", "2", "1"))
+  expect_equal(m1$subgroup, c(1, 1, 0, 0))
+  expect_equal(m1$policy, rep("blip", 4L))
+  expect_equal(m1$threshold, rep(50, 4L))
+  expect_equal(c1$subgroup, c(1, 0))
+  expect_equal(c1$threshold, rep(50, 2L))
+  ## the action column is filtered to the a2 rows in the contrast view:
+  expect_equal(c1$action, c("2", "2"))
+
+  ## subgroup_proportion matches colMeans(subgroup_indicator):
+  sp1 <- colMeans(sub1$subgroup_indicator)
+  expect_equal(m1$subgroup_proportion, rep(sp1, each = 2L))
+  expect_equal(c1$subgroup_proportion, sp1)
+
+  ## output_meta is absent when the threshold is not quantile-based:
+  expect_null(sub1$output_meta)
+
+  ## ------------------------------------------------------------------
+  ## blip with multiple user-supplied thresholds (no cross-fitting):
+  ## ------------------------------------------------------------------
+  pl2 <- policy_learn(
     type = "blip",
     threshold = c(50, 101),
     control = control_blip(blip_models = polle:::q_degen(var = "z"))
   )
-
-  ## no cross-fitting.
-  sub <- policy_eval(
+  sub2 <- policy_eval(
     target = "subgroup",
     policy_data = pd,
-    policy_learn = pl,
+    policy_learn = pl2,
     q_models = polle:::q_degen(var = "z"),
     g_models = g_glm(~1)
   )
+  m2 <- summary(sub2, return_table = TRUE, contrast = FALSE)
+  c2 <- summary(sub2, return_table = TRUE, contrast = TRUE)
 
-  means <- summary(sub, return_table = TRUE, contrast = FALSE)
-  contr <- summary(sub, return_table = TRUE, contrast = TRUE)
+  ## same schema:
+  expect_equal(
+    names(m2),
+    c("name", "estimate", "se", "subgroup_proportion",
+      "action", "subgroup", "policy", "alpha", "threshold")
+  )
 
-  expect_true(data.table::is.data.table(means))
-  expect_true(data.table::is.data.table(contr))
+  ## means: 4 rows x 2 policies = 8; contrasts: 2 rows x 2 policies = 4.
+  expect_equal(nrow(m2), 8L)
+  expect_equal(nrow(c2), 4L)
 
-  ## the fixed prefix of the coef_table schema:
-  fixed_cols <- c("policy", "term", "action", "subgroup",
-                  "subgroup_prop", "estimate", "se", "contrast")
-  expect_equal(head(names(means), length(fixed_cols)), fixed_cols)
-  expect_equal(head(names(contr), length(fixed_cols)), fixed_cols)
+  ## per-policy blocks in the expected order (sorted by threshold):
+  expect_equal(m2$threshold, rep(c(50, 101), each = 4L))
+  expect_equal(c2$threshold, rep(c(50, 101), each = 2L))
+  expect_equal(m2$action, rep(c("2", "1", "2", "1"), 2L))
+  expect_equal(m2$subgroup, rep(c(1, 1, 0, 0), 2L))
+  expect_equal(c2$subgroup, rep(c(1, 0), 2L))
 
-  ## means view: 4 rows per policy (2 subgroups x 2 actions), 2 policies:
-  expect_equal(nrow(means), 8L)
-  expect_true(all(!means$contrast))
-  expect_equal(means$estimate, unname(sub$coef))
-  expect_equal(means$se, unname(sqrt(diag(vcov(sub, contrast = FALSE)))))
+  ## the name column round-trips against the stored labels:
+  expect_equal(m2$name, sub2$name)
+  expect_equal(c2$name, sub2$contrast_name)
 
-  ## threshold is user-supplied and lives in input_meta -> variable suffix:
-  expect_true("threshold" %in% names(means))
-  expect_equal(means$threshold, rep(c(50, 101), each = 4))
+  ## subgroup_proportion: per policy, sub_indicator columns are ordered
+  ## [d==a2, d==a1]. Broadcast per action row for means; identity for
+  ## contrasts.
+  sp2 <- colMeans(sub2$subgroup_indicator)
+  expect_equal(m2$subgroup_proportion, rep(sp2, each = 2L))
+  expect_equal(c2$subgroup_proportion, sp2)
 
-  expect_equal(means$policy, rep(c("blip(eta=50)", "blip(eta=101)"), each = 4))
-  ## subgroup indicator: 1 = d==a2 block, 0 = d==a1 block
-  expect_equal(means$subgroup, rep(c(1, 1, 0, 0), 2))
-  ## action alternates a2, a1 within each subgroup block
-  expect_equal(means$action, rep(c("2", "1", "2", "1"), 2))
-  expect_equal(means$subgroup_prop, c(0.5, 0.5, 0.5, 0.5, 0, 0, 1, 1))
+  ## the specific values for this synthetic data:
+  expect_equal(m2$subgroup_proportion,
+               c(0.5, 0.5, 0.5, 0.5, 0, 0, 1, 1))
+  expect_equal(c2$subgroup_proportion, c(0.5, 0.5, 0, 1))
 
-  ## contrasts view: 2 rows per policy (subgroup 1, subgroup 0), 2 policies:
-  expect_equal(nrow(contr), 4L)
-  expect_true(all(contr$contrast))
-  expect_equal(contr$estimate, unname(coef(sub)))
-  expect_equal(contr$se, unname(sqrt(diag(vcov(sub, contrast = TRUE)))))
-  expect_equal(contr$threshold, rep(c(50, 101), each = 2))
-  expect_equal(contr$policy, rep(c("blip(eta=50)", "blip(eta=101)"), each = 2))
-  expect_equal(contr$subgroup, rep(c(1, 0), 2))
-  expect_equal(contr$subgroup_prop, c(0.5, 0.5, 0, 1))
-  expect_true(all(is.na(contr$action)))
+  ## output_meta is absent when the threshold is not quantile-based:
+  expect_null(sub2$output_meta)
 
-  ## cross-fitting: threshold is user-supplied (static input_meta) and stable
-  ## across folds; it remains populated in the coef_table.
-  gf <- fit_g_functions(pd, g_models = g_glm(~1))
-  set.seed(1)
-  subc <- policy_eval(
+  ## ------------------------------------------------------------------
+  ## blip with a quantile probability threshold (dynamic threshold):
+  ## ------------------------------------------------------------------
+  pl3 <- policy_learn(
+    type = "blip",
+    control = control_blip(
+      blip_models = polle:::q_degen(var = "z"),
+      quantile_prob_threshold = c(0.25, 0.75)
+    )
+  )
+  sub3 <- policy_eval(
     target = "subgroup",
     policy_data = pd,
-    policy_learn = pl,
+    policy_learn = pl3,
+    q_models = polle:::q_degen(var = "z"),
+    g_models = g_glm(~1)
+  )
+  m3 <- summary(sub3, return_table = TRUE, contrast = FALSE)
+  c3 <- summary(sub3, return_table = TRUE, contrast = TRUE)
+
+  ## schema: `quantile_prob_threshold` replaces `threshold` in input_meta,
+  ## and `threshold` moves to output_meta.
+  expect_equal(
+    names(m3),
+    c("name", "estimate", "se", "subgroup_proportion",
+      "action", "subgroup", "policy", "alpha", "quantile_prob_threshold")
+  )
+  expect_false("threshold" %in% names(m3))
+  expect_false("threshold" %in% names(c3))
+
+  ## the output_meta captures the fold-realised numeric threshold(s):
+  expect_true(data.table::is.data.table(sub3$output_meta))
+  expect_equal(names(sub3$output_meta), "threshold")
+  expect_equal(nrow(sub3$output_meta), 2L)
+
+  ## policy names encode the quantile probability rather than the numeric
+  ## threshold:
+  expect_true(all(grepl("blip\\(q=", m3$name)))
+  expect_true(all(grepl("blip\\(q=", c3$name)))
+  expect_equal(m3$quantile_prob_threshold, rep(c(0.25, 0.75), each = 4L))
+  expect_equal(c3$quantile_prob_threshold, rep(c(0.25, 0.75), each = 2L))
+
+  ## estimates / se agree with the object accessors:
+  expect_equal(m3$estimate, unname(sub3$coef))
+  expect_equal(c3$estimate, unname(coef(sub3)))
+  expect_equal(m3$se, unname(sqrt(diag(vcov(sub3, contrast = FALSE)))))
+  expect_equal(c3$se, unname(sqrt(diag(vcov(sub3, contrast = TRUE)))))
+
+  ## ------------------------------------------------------------------
+  ## blip under cross-fitting (M > 1) with user-supplied thresholds:
+  ## input_meta is static so the schema and columns are preserved.
+  ## ------------------------------------------------------------------
+  gf <- fit_g_functions(pd, g_models = g_glm(~1))
+  set.seed(1)
+  sub4 <- policy_eval(
+    target = "subgroup",
+    policy_data = pd,
+    policy_learn = pl2,
     q_models = polle:::q_degen(var = "z"),
     g_functions = gf,
     cross_fit_type = "pooled",
     variance_type = "pooled",
     M = 2
   )
-  ctc_means <- summary(subc, return_table = TRUE, contrast = FALSE)
-  ctc_contr <- summary(subc, return_table = TRUE, contrast = TRUE)
-  expect_equal(ctc_means$threshold, rep(c(50, 101), each = 4))
-  expect_equal(ctc_contr$estimate, unname(coef(subc)))
-  expect_equal(
-    ctc_means$subgroup_prop,
-    c(0.5, 0.5, 0.5, 0.5, 0, 0, 1, 1)
-  )
+  m4 <- summary(sub4, return_table = TRUE, contrast = FALSE)
+  c4 <- summary(sub4, return_table = TRUE, contrast = TRUE)
+  expect_equal(names(m4), names(m2))
+  expect_equal(names(c4), names(c2))
+  expect_equal(nrow(m4), 8L)
+  expect_equal(nrow(c4), 4L)
+  expect_equal(m4$threshold, rep(c(50, 101), each = 4L))
+  expect_equal(c4$threshold, rep(c(50, 101), each = 2L))
+  expect_equal(m4$estimate, unname(sub4$coef))
+  expect_equal(c4$estimate, unname(coef(sub4)))
+  sp4 <- colMeans(sub4$subgroup_indicator)
+  expect_equal(m4$subgroup_proportion, rep(sp4, each = 2L))
+  expect_equal(c4$subgroup_proportion, sp4)
 })

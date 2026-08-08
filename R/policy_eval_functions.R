@@ -57,28 +57,55 @@ policy_eval_estimate <- function(object, contrast) {
   return(est)
 }
 
-## internal: build a data.table summarising the estimates. The fixed
-## prefix columns are always emitted (in this order):
-##   policy        - the policy label (e.g. "blip(eta=28)"); NA if unnamed.
-##   term          - the estimated parameter label from input_meta$target
-##                   (contrast rows: the parsed contrast term).
-##   action        - the action label; NA for value target and contrast rows.
-##   subgroup      - numeric 1/0 subgroup indicator; NA for value target.
-##   subgroup_prop - proportion of observations in the subgroup; NA for value
-##                   target and when subgroup_indicator is unavailable.
-##   estimate      - the point estimate.
-##   se            - the standard error (sqrt of the variance diagonal).
-##   contrast      - FALSE for value and per-subgroup means; TRUE for the
-##                   subgroup average treatment effects.
-## The variable suffix columns are the remaining columns of input_meta (e.g.
-## threshold, alpha, type, K, quantile_prob_threshold), appended after the
-## fixed prefix.
+## internal: build a data.table summarising the estimates. The table is a
+## concatenation of a small fixed-prefix and the object's `input_meta`
+## data.table (attached column-wise). Layout by target and `contrast`:
 ##
-## Filtering by `contrast`:
-##   - target = "value":    contrast is ignored; a single-view table is returned.
-##   - target = "subgroup": contrast = FALSE returns the per-subgroup potential
-##                          outcome means; contrast = TRUE returns the subgroup
-##                          average treatment effects.
+## - target = "value" (contrast argument is ignored):
+##     one row per policy, columns:
+##       name     - character; the parameter label (from `object$name`,
+##                  e.g. "E[U(d)]" or "E[U(d)]: d=<policy>").
+##       estimate - numeric; the point estimate.
+##       se       - numeric; the standard error (sqrt of the variance
+##                  diagonal).
+##     followed by the columns of `input_meta` (one row per policy;
+##     typically `target` and any static policy-level meta such as
+##     `type`, `K`, `alpha`, `threshold`, `quantile_prob_threshold`).
+##
+## - target = "subgroup", contrast = FALSE:
+##     4 rows per policy (the per-subgroup potential outcome means
+##     E[U(a)|d]; block order [a2|d=1, a1|d=1, a2|d=0, a1|d=0]),
+##     columns:
+##       name                - character; the parameter label.
+##       estimate            - numeric; the point estimate.
+##       se                  - numeric; the standard error.
+##       subgroup_proportion - numeric; the proportion of observations in
+##                             the subgroup that the row refers to.
+##                             `subgroup_indicator` columns are ordered
+##                             [d==a2, d==a1] per policy, so the per-row
+##                             value is obtained by broadcasting each
+##                             indicator column across its two action
+##                             rows (`rep(sp, each = 2)`).
+##     followed by the columns of `input_meta` (4 rows per policy with
+##     `target`, `action`, `subgroup`, and any static policy-level meta).
+##
+## - target = "subgroup", contrast = TRUE:
+##     2 rows per policy (the subgroup average treatment effects
+##     E[U(a2) - U(a1) | d]; block order [d=1, d=0]), columns:
+##       name                - character; the contrast label from
+##                             `object$contrast_name`.
+##       estimate            - numeric; the point estimate of the
+##                             contrast.
+##       se                  - numeric; the standard error.
+##       subgroup_proportion - numeric; the proportion of observations in
+##                             the subgroup that the row refers to
+##                             (identical to the raw `colMeans` of
+##                             `subgroup_indicator`, whose column order
+##                             already matches [d=1, d=0] per policy).
+##     followed by `input_meta` filtered to rows [1, 3] within each
+##     4-row policy block, so the `action` column disappears in meaning
+##     (retained values are the a2 rows) while `subgroup` and any
+##     policy-level meta remain 1:1 with the contrast rows.
 policy_eval_table <- function(object, contrast = TRUE) {
   target <- get_element(object, "target")
   input_meta <- get_element(object, "input_meta")
