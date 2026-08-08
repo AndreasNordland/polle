@@ -1140,3 +1140,121 @@ test_that("policy_eval target = 'subgroup' summary table has the expected schema
   expect_equal(m4$subgroup_proportion, rep(sp4, each = 2L))
   expect_equal(c4$subgroup_proportion, sp4)
 })
+
+test_that("policy_eval target = 'subgroup' summary table has the expected schema for ptl", {
+  d <- sim_single_stage(n = 2e2, seed = 1)
+  pd <- policy_data(d, action = "A", covariates = c("Z", "L"), utility = "U")
+
+  ## ------------------------------------------------------------------
+  ## ptl with a single user-supplied threshold:
+  ## ------------------------------------------------------------------
+  pl1 <- policy_learn(
+    type = "ptl",
+    threshold = 0,
+    control = control_ptl(policy_vars = c("Z", "L"), depth = 2)
+  )
+  sub1 <- policy_eval(
+    target = "subgroup",
+    policy_data = pd,
+    policy_learn = pl1,
+    q_models = q_glm(),
+    g_models = g_glm()
+  )
+  m1 <- summary(sub1, return_table = TRUE, contrast = FALSE)
+  c1 <- summary(sub1, return_table = TRUE, contrast = TRUE)
+
+  ## schema: fixed prefix + input_meta cols (action, subgroup + ptl meta):
+  expected_cols <- c("name", "estimate", "se", "subgroup_proportion",
+                     "action", "subgroup",
+                     "policy", "alpha", "threshold", "depth", "hybrid")
+  expect_equal(names(m1), expected_cols)
+  expect_equal(names(c1), expected_cols)
+
+  ## row counts:
+  expect_equal(nrow(m1), 4L)
+  expect_equal(nrow(c1), 2L)
+
+  ## values / round-trip:
+  expect_equal(m1$name, sub1$name)
+  expect_equal(c1$name, sub1$contrast_name)
+  expect_equal(m1$estimate, unname(sub1$coef))
+  expect_equal(m1$se, unname(sqrt(diag(vcov(sub1, contrast = FALSE)))))
+  expect_equal(c1$estimate, unname(coef(sub1)))
+  expect_equal(c1$se, unname(sqrt(diag(vcov(sub1, contrast = TRUE)))))
+
+  expect_equal(m1$policy, rep("ptl", 4L))
+  expect_equal(m1$threshold, rep(0, 4L))
+  expect_equal(m1$depth, rep(2, 4L))
+  expect_true(all(!m1$hybrid))
+  expect_equal(m1$subgroup, c(1, 1, 0, 0))
+  expect_equal(c1$subgroup, c(1, 0))
+  expect_equal(c1$threshold, rep(0, 2L))
+
+  ## subgroup_proportion matches colMeans(subgroup_indicator):
+  sp1 <- colMeans(sub1$subgroup_indicator)
+  expect_equal(m1$subgroup_proportion, rep(sp1, each = 2L))
+  expect_equal(c1$subgroup_proportion, sp1)
+
+  ## no dynamic threshold with ptl:
+  expect_null(sub1$output_meta)
+
+  ## ------------------------------------------------------------------
+  ## ptl with multiple user-supplied thresholds:
+  ## ------------------------------------------------------------------
+  pl2 <- policy_learn(
+    type = "ptl",
+    threshold = c(0, 0.5),
+    control = control_ptl(policy_vars = c("Z", "L"), depth = 2)
+  )
+  sub2 <- policy_eval(
+    target = "subgroup",
+    policy_data = pd,
+    policy_learn = pl2,
+    q_models = q_glm(),
+    g_models = g_glm()
+  )
+  m2 <- summary(sub2, return_table = TRUE, contrast = FALSE)
+  c2 <- summary(sub2, return_table = TRUE, contrast = TRUE)
+
+  expect_equal(names(m2), expected_cols)
+  expect_equal(nrow(m2), 8L)
+  expect_equal(nrow(c2), 4L)
+  expect_equal(m2$threshold, rep(c(0, 0.5), each = 4L))
+  expect_equal(c2$threshold, rep(c(0, 0.5), each = 2L))
+  expect_equal(m2$subgroup, rep(c(1, 1, 0, 0), 2L))
+  expect_equal(c2$subgroup, rep(c(1, 0), 2L))
+  expect_equal(m2$name, sub2$name)
+  expect_equal(c2$name, sub2$contrast_name)
+  expect_equal(m2$estimate, unname(sub2$coef))
+  expect_equal(c2$estimate, unname(coef(sub2)))
+  sp2 <- colMeans(sub2$subgroup_indicator)
+  expect_equal(m2$subgroup_proportion, rep(sp2, each = 2L))
+  expect_equal(c2$subgroup_proportion, sp2)
+  expect_null(sub2$output_meta)
+
+  ## ------------------------------------------------------------------
+  ## ptl under cross-fitting (M > 1): input_meta is static, schema preserved.
+  ## ------------------------------------------------------------------
+  gf <- fit_g_functions(pd, g_models = g_glm())
+  set.seed(1)
+  sub3 <- policy_eval(
+    target = "subgroup",
+    policy_data = pd,
+    policy_learn = pl2,
+    q_models = q_glm(),
+    g_functions = gf,
+    cross_fit_type = "pooled",
+    variance_type = "pooled",
+    M = 2
+  )
+  m3 <- summary(sub3, return_table = TRUE, contrast = FALSE)
+  c3 <- summary(sub3, return_table = TRUE, contrast = TRUE)
+  expect_equal(names(m3), expected_cols)
+  expect_equal(names(c3), expected_cols)
+  expect_equal(nrow(m3), 8L)
+  expect_equal(nrow(c3), 4L)
+  expect_equal(m3$threshold, rep(c(0, 0.5), each = 4L))
+  expect_equal(c3$threshold, rep(c(0, 0.5), each = 2L))
+  expect_equal(m3$estimate, unname(sub3$coef))
+  expect_equal(c3$estimate, unname(coef(sub3)))
+})

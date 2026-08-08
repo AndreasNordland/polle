@@ -163,12 +163,11 @@ per-subgroup potential outcome means \eqn{E[U(a)|d]} are reported.}
 \item{p.value}{Logical. Should the p.value for associated confidence level be printed.}
 
 \item{return_table}{Logical. Used by \code{summary()}. If \code{TRUE} a
-tidy \link[data.table:data.table]{data.table::data.table} of estimates is
-returned (filtered to the view selected by \code{contrast}) instead of the
-default \link[lava:estimate]{lava::estimate} object. Fixed prefix columns
-\code{policy}, \code{term}, \code{action}, \code{subgroup},
-\code{subgroup_prop}, \code{estimate}, \code{se}, \code{contrast}, followed
-by any static policy meta columns (e.g. \code{threshold}, \code{alpha}).}
+\link[data.table:data.table]{data.table::data.table} of estimates is
+returned instead of the
+default \link[lava:estimate]{lava::estimate} object. Additional meta
+information is included, e.g., subgroup proportions, policy learner settings
+etc.}
 
 \item{paired}{\code{TRUE} indicates that the estimates are based on
 the same data sample.}
@@ -216,14 +215,12 @@ for cross-fitting.}
 \item{\code{cross_fit_type}}{Character string.}
 \item{\code{variance_type}}{Character string.}
 \item{\code{input_meta}}{\link[data.table:data.table]{data.table::data.table} with one row per element
-of \code{coef}, carrying the (static, fold-stable) meta information about
+of \code{coef}, containing the input meta information about
 the target parameter and the policy that produced it (e.g. \code{target},
 \code{action}, \code{subgroup}, and any policy-level meta such as
 \code{threshold}, \code{alpha}, \code{type}, \code{K}).}
-\item{\code{output_meta}}{(only when the policy learner produces
-fold-varying meta, e.g. blip with \code{quantile_prob_threshold}, and
-\code{M = 1}) \link[data.table:data.table]{data.table::data.table} with the learner-computed meta
-values (e.g. the realised numeric \code{threshold}).}
+\item{\code{output_meta}}{\link[data.table:data.table]{data.table::data.table} with computed meta
+information (e.g. the realised numeric \code{threshold}).}
 }
 \description{
 \code{policy_eval()} is used to estimate

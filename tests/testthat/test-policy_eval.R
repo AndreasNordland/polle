@@ -1638,3 +1638,110 @@ test_that("policy_eval target = 'value' summary table has the expected schema fo
   expect_equal(t4$estimate, unname(coef(pe4)))
 })
 
+test_that("policy_eval target = 'value' summary table has the expected schema for ptl", {
+  d <- sim_single_stage(n = 2e2, seed = 1)
+  pd <- policy_data(d, action = "A", covariates = c("Z", "L"), utility = "U")
+
+  ## ------------------------------------------------------------------
+  ## ptl with a single user-supplied threshold:
+  ## ------------------------------------------------------------------
+  pl1 <- policy_learn(
+    type = "ptl",
+    threshold = 0,
+    control = control_ptl(policy_vars = c("Z", "L"), depth = 2)
+  )
+  pe1 <- policy_eval(
+    target = "value",
+    policy_data = pd,
+    policy_learn = pl1,
+    q_models = q_glm(),
+    g_models = g_glm()
+  )
+  t1 <- summary(pe1, return_table = TRUE)
+
+  expect_true(data.table::is.data.table(t1))
+  expect_equal(
+    names(t1),
+    c("name", "estimate", "se",
+      "policy", "alpha", "threshold", "depth", "hybrid")
+  )
+  expect_equal(nrow(t1), 1L)
+  expect_equal(t1$name, "E[U(d)]: d=ptl(eta=0)")
+  expect_equal(t1$policy, "ptl")
+  expect_equal(t1$threshold, 0)
+  expect_equal(t1$depth, 2)
+  expect_false(t1$hybrid)
+  expect_equal(t1$estimate, unname(coef(pe1)))
+  expect_equal(t1$se, unname(sqrt(diag(vcov(pe1)))))
+  ## ptl has no quantile_prob_threshold; output_meta is absent:
+  expect_null(pe1$output_meta)
+
+  ## ------------------------------------------------------------------
+  ## ptl with multiple user-supplied thresholds:
+  ## ------------------------------------------------------------------
+  pl2 <- policy_learn(
+    type = "ptl",
+    threshold = c(0, 0.5),
+    control = control_ptl(policy_vars = c("Z", "L"), depth = 2)
+  )
+  pe2 <- policy_eval(
+    target = "value",
+    policy_data = pd,
+    policy_learn = pl2,
+    q_models = q_glm(),
+    g_models = g_glm()
+  )
+  t2 <- summary(pe2, return_table = TRUE)
+
+  expect_equal(names(t2), names(t1))
+  expect_equal(nrow(t2), 2L)
+  expect_equal(t2$threshold, c(0, 0.5))
+  expect_equal(t2$name,
+               c("E[U(d)]: d=ptl(eta=0)", "E[U(d)]: d=ptl(eta=0.5)"))
+  expect_equal(t2$estimate, unname(coef(pe2)))
+  expect_equal(t2$se, unname(sqrt(diag(vcov(pe2)))))
+  expect_null(pe2$output_meta)
+
+  ## ------------------------------------------------------------------
+  ## ptl with hybrid = TRUE and a custom depth propagates into input_meta:
+  ## ------------------------------------------------------------------
+  pl3 <- policy_learn(
+    type = "ptl",
+    threshold = 0,
+    control = control_ptl(policy_vars = c("Z", "L"),
+                          depth = 2, search.depth = 1, hybrid = TRUE)
+  )
+  pe3 <- policy_eval(
+    target = "value",
+    policy_data = pd,
+    policy_learn = pl3,
+    q_models = q_glm(),
+    g_models = g_glm()
+  )
+  t3 <- summary(pe3, return_table = TRUE)
+  expect_equal(t3$depth, 2)
+  expect_true(t3$hybrid)
+
+  ## ------------------------------------------------------------------
+  ## ptl under cross-fitting (M > 1) with user-supplied thresholds:
+  ## input_meta is static so the schema and columns are preserved.
+  ## ------------------------------------------------------------------
+  gf <- fit_g_functions(pd, g_models = g_glm())
+  set.seed(1)
+  pe4 <- policy_eval(
+    target = "value",
+    policy_data = pd,
+    policy_learn = pl2,
+    q_models = q_glm(),
+    g_functions = gf,
+    cross_fit_type = "pooled",
+    variance_type = "pooled",
+    M = 2
+  )
+  t4 <- summary(pe4, return_table = TRUE)
+  expect_equal(names(t4), names(t2))
+  expect_equal(nrow(t4), 2L)
+  expect_equal(t4$threshold, c(0, 0.5))
+  expect_equal(t4$estimate, unname(coef(pe4)))
+})
+

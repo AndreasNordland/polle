@@ -370,6 +370,8 @@ ptl <- function(policy_data,
     stage_action_sets = stage_action_sets,
     alpha = alpha,
     threshold = threshold,
+    depth = depth,
+    hybrid = hybrid,
     K = K,
     folds = folds
   )
@@ -389,6 +391,8 @@ get_policy.ptl <- function(object, threshold = NULL) {
   policy_vars <- get_element(object, "policy_vars")
   g_functions <- get_element(object, "g_functions", check_name = FALSE)
   alpha <- get_element(object, "alpha")
+  depth <- get_element(object, "depth", check_name = FALSE)
+  hybrid <- get_element(object, "hybrid", check_name = FALSE)
   threshold_selection <- get_element(object, "threshold")
   threshold <- set_threshold(
     threshold = threshold,
@@ -467,9 +471,26 @@ get_policy.ptl <- function(object, threshold = NULL) {
         return(policy_actions)
       }
       ## setting class and attributes:
+      ## input_meta: user-supplied / fold-stable settings. Built as a named
+      ## list to preserve column types when coerced to a data.table.
+      ## ptl thresholds are always user-supplied (no quantile_prob_threshold
+      ## option), so there is no dynamic threshold to store on output_meta.
       th <- threshold_selection[th_idx]
       name <- paste0("ptl(eta=", round(th, 3), ")")
-      policy <- new_policy(policy, name = name)
+      input_meta <- list(policy = "ptl",
+                         alpha = alpha,
+                         threshold = th)
+      if (!is.null(depth)) {
+        ## depth is per-stage; report the stage 1 depth (matches the tree
+        ## whose threshold indexes `th_idx`):
+        input_meta[["depth"]] <- unname(depth[[1]])
+      }
+      if (!is.null(hybrid)) {
+        input_meta[["hybrid"]] <- isTRUE(hybrid)
+      }
+      policy <- new_policy(policy,
+                           name = name,
+                           input_meta = input_meta)
 
       return(policy)
     }
