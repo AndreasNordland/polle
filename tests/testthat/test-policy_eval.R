@@ -1191,6 +1191,59 @@ test_that("policy_eval() return estimates for multiple policies associated with 
     ref_pe
   )
 
+  ## quantile thresholds
+  pl <- policy_learn(
+    type = "blip",
+    control = control_blip(blip_models = q_degen(var = "z"),
+                           quantile_prob_threshold = c(0.5, 0.7))
+  )
+  expect_no_error({
+    pe <- policy_eval(
+      policy_data = pd,
+      policy_learn = pl,
+      q_models = q_degen(var = "z"),
+      g_functions = gf
+    )
+  })
+  expect_equal(
+    pe$output_meta$threshold,
+    quantile(1:1e2, probs = c(0.5, 0.7)) |> unname()
+  )
+
+  ## testing that only unique quantile thresholds are used
+  z <- c(1:40, rep(50, 20), 61:1e2)
+  a <- c(rep(1, 50), rep(2, 50))
+  y <- a * 2
+  p1 <- (z > 28) + 1
+  p2 <- (z > 76) + 1
+  d <- data.table(z = z, a = a, y = y, p1 = p1, p2 = p2)
+  rm(a, z, y, p1, p2)
+  pd <- policy_data(
+    data = d,
+    action = "a",
+    covariates = c("z"),
+    utility = c("y")
+  )
+
+  gf <- fit_g_functions(pd, g_models = g_glm(~1))
+  pl <- policy_learn(
+    type = "blip",
+    control = control_blip(blip_models = q_degen(var = "z"),
+                           quantile_prob_threshold = c(0.5, 0.51))
+  )
+  expect_no_error({
+    pe <- policy_eval(
+      policy_data = pd,
+      policy_learn = pl,
+      q_models = q_degen(var = "z"),
+      g_functions = gf
+    )
+  })
+  expect_equal(
+    pe$input_meta$quantile_prob_threshold,
+    c(0.5) # only the first unique threshold should be used
+  )
+
 })
 
 test_that("conditional.policy_eval agrees with targeted::cate", {
@@ -1435,31 +1488,30 @@ test_that("policy_eval target = 'value' returns a table via summary(return_table
   pe <- policy_eval(pd, policy = policy_def(1, name = "all_treated"),
                     target = "value")
 
-  stop("test not finished")
-
-  ct <- pe$coef_table
+  ct <- summary(pe, return_table = TRUE)
   expect_true(data.table::is.data.table(ct))
-  expect_equal(
-    names(ct),
-    c("policy", "threshold", "subgroup", "term",
-      "estimate", "se", "subgroup_prop", "contrast")
-  )
+
+  ## the fixed prefix of the coef_table schema:
+  fixed_cols <- c("policy", "term", "action", "subgroup",
+                  "subgroup_prop", "estimate", "se", "contrast")
+  expect_equal(head(names(ct), length(fixed_cols)), fixed_cols)
+
   expect_equal(nrow(ct), 1L)
   expect_equal(ct$term, "E[U(d)]")
   expect_equal(ct$policy, "all_treated")
   expect_equal(ct$estimate, unname(coef(pe)))
   expect_equal(ct$se, unname(sqrt(diag(vcov(pe)))))
-  ## value target has no subgroup / threshold / contrast:
+  ## value target has no subgroup / action / subgroup_prop / contrast:
   expect_true(is.na(ct$subgroup))
-  expect_true(is.na(ct$threshold))
+  expect_true(is.na(ct$action))
   expect_true(is.na(ct$subgroup_prop))
   expect_false(ct$contrast)
 
-  ## summary(return_table = TRUE) returns the coef_table for the value target:
-  expect_equal(summary(pe, return_table = TRUE), ct)
+  ## the contrast argument is ignored for target = "value":
+  expect_equal(summary(pe, return_table = TRUE, contrast = FALSE), ct)
 
   ## an unnamed policy leaves the policy column as NA:
   pe0 <- policy_eval(pd, policy = policy_def(1), target = "value")
-  expect_true(is.na(pe0$coef_table$policy))
+  expect_true(is.na(summary(pe0, return_table = TRUE)$policy))
 })
 

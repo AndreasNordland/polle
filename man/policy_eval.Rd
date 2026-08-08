@@ -42,8 +42,7 @@ policy_eval(
   M = 1,
   nrep = 1,
   min_subgroup_size = 1,
-  future_args = list(future.seed = TRUE),
-  name = NULL
+  future_args = list(future.seed = TRUE)
 )
 
 \method{coef}{policy_eval}(object, contrast = TRUE, ...)
@@ -146,10 +145,6 @@ Either "stacked", or "pooled", see details. (Only used if \code{M > 1} and targe
 
 \item{future_args}{Arguments passed to \code{\link[future.apply:future_apply]{future.apply::future_apply()}}.}
 
-\item{name}{Character string. When \code{target = "subgroup"} a character
-vector of length 2 naming the two subgroup average treatment effects
-\eqn{E[U(a_2)-U(a_1)|d], d = 1/0}.}
-
 \item{object, x, y}{Objects of class "policy_eval".}
 
 \item{contrast}{Logical. Only used when \code{target = "subgroup"}. If
@@ -167,9 +162,13 @@ per-subgroup potential outcome means \eqn{E[U(a)|d]} are reported.}
 
 \item{p.value}{Logical. Should the p.value for associated confidence level be printed.}
 
-\item{return_table}{Logical. Used by \code{summary()}. If \code{TRUE} the
-\code{coef_table} \link[data.table:data.table]{data.table::data.table} is returned (filtered to the view
-selected by \code{contrast}) instead of the default \link[lava:estimate]{lava::estimate} object.}
+\item{return_table}{Logical. Used by \code{summary()}. If \code{TRUE} a
+tidy \link[data.table:data.table]{data.table::data.table} of estimates is
+returned (filtered to the view selected by \code{contrast}) instead of the
+default \link[lava:estimate]{lava::estimate} object. Fixed prefix columns
+\code{policy}, \code{term}, \code{action}, \code{subgroup},
+\code{subgroup_prop}, \code{estimate}, \code{se}, \code{contrast}, followed
+by any static policy meta columns (e.g. \code{threshold}, \code{alpha}).}
 
 \item{paired}{\code{TRUE} indicates that the estimates are based on
 the same data sample.}
@@ -216,14 +215,15 @@ Each column represents a different subgroup threshold.}
 for cross-fitting.}
 \item{\code{cross_fit_type}}{Character string.}
 \item{\code{variance_type}}{Character string.}
-\item{\code{coef_table}}{\link[data.table:data.table]{data.table::data.table} summarising the estimates
-by \code{policy}, \code{threshold} (blip/ptl policy learners, only populated
-when \code{M = 1}), \code{subgroup} and \code{term}, with columns
-\code{estimate}, \code{se} and \code{subgroup_prop} (the proportion of
-observations in the subgroup). For \code{target = "subgroup"} both the
-per-subgroup potential outcome means (\code{contrast = FALSE}) and the
-subgroup average treatment effects (\code{contrast = TRUE}) are included; see
-\code{summary()}.}
+\item{\code{input_meta}}{\link[data.table:data.table]{data.table::data.table} with one row per element
+of \code{coef}, carrying the (static, fold-stable) meta information about
+the target parameter and the policy that produced it (e.g. \code{target},
+\code{action}, \code{subgroup}, and any policy-level meta such as
+\code{threshold}, \code{alpha}, \code{type}, \code{K}).}
+\item{\code{output_meta}}{(only when the policy learner produces
+fold-varying meta, e.g. blip with \code{quantile_prob_threshold}, and
+\code{M = 1}) \link[data.table:data.table]{data.table::data.table} with the learner-computed meta
+values (e.g. the realised numeric \code{threshold}).}
 }
 \description{
 \code{policy_eval()} is used to estimate
@@ -348,14 +348,13 @@ pd1 <- policy_data(d1,
 pd1
 
 # defining a static policy (A=1):
-pl1 <- policy_def(1)
+pl1 <- policy_def(1, name = "A=1")
 
 # evaluating the policy:
 pe1 <- policy_eval(policy_data = pd1,
                    policy = pl1,
                    g_models = g_glm(),
-                   q_models = q_glm(),
-                   name = "A=1 (glm)")
+                   q_models = q_glm())
 
 # summarizing the estimated value of the policy:
 # (equivalent to summary(pe1)):
@@ -378,8 +377,8 @@ pe1_rf <- policy_eval(policy_data = pd1,
                       q_models = q_rf(),
                       name = "A=1 (rf)")
 
-# merging the two estimates (equivalent to pe1 + pe1_rf):
-(est1 <- merge(pe1, pe1_rf))
+# merging the two estimates:
+(est1 <- estimate(merge(pe1, pe1_rf), labels = c("glm", "rf")))
 coef(est1)
 head(IC(est1))
 
@@ -406,8 +405,7 @@ pe2 <- policy_eval(type = "dr",
                    policy_learn = pl2,
                    q_models = q_glm(),
                    g_models = g_glm(),
-                   M = 2, # number of folds for cross-fitting
-                   name = "drql")
+                   M = 2) # number of folds for cross-fitting
 # summarizing the estimated value of the policy:
 pe2
 

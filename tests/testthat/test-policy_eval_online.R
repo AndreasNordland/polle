@@ -296,7 +296,7 @@ test_that("policy_eval_sequential has the expected output in the single stage ca
   ## reference online estimate:
   ref_coef <- colSums(train_sigma^(-1) * valid_score) / train_sigma_inverse_sum
   ref_coef <- rev(ref_coef)
-  names(ref_coef) <- c("E[U(2)-U(1)|d=2]: d=test", "E[U(2)-U(1)|d=1]: d=test")
+  names(ref_coef) <- c("E[U(2)-U(1)|d=1]: d=test", "E[U(2)-U(1)|d=0]: d=test")
 
   expect_equal(
     coef(pe),

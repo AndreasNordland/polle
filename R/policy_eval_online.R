@@ -51,7 +51,6 @@
 #' @param M Number of folds for online estimation/sequential validation excluding the initial training block, see details.
 #' @param train_block_size Integer. Size of the initial training block only
 #' used for training of the policy and nuisance models, see details.
-#' @param name Character string.
 #' @param min_subgroup_size Minimum number of observations in the evaluated subgroup (Only used if target = "subgroup").
 #' @return \code{policy_eval_online()} returns an object of inherited class "policy_eval_online", "policy_eval".
 #' The object is a list containing the following elements:
@@ -226,7 +225,6 @@ policy_eval_online <- function(policy_data,
                                target = "value",
                                M = 4,
                                train_block_size = get_n(policy_data) / 5,
-                               name = NULL,
                                min_subgroup_size = 1) {
   ## setting type to "dr":
   type <- "dr"

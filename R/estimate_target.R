@@ -6,7 +6,8 @@ estimate_target <- function(target = "value",
                             actions,
                             policy_actions,
                             policy_name,
-                            policy_meta,
+                            policy_input_meta,
+                            policy_output_meta = NULL,
                             events,
                             g_values,
                             q_values,
@@ -364,7 +365,8 @@ dr_subgroup <- function(K,
                         actions,
                         policy_actions,
                         policy_name,
-                        policy_meta,
+                        policy_input_meta,
+                        policy_output_meta = NULL,
                         events,
                         g_values,
                         q_values,
@@ -493,7 +495,7 @@ dr_subgroup <- function(K,
   }
 
   ## collecting meta information
-  meta <- data.table(
+  input_meta <- data.table(
     target = c(
       paste0("E[U(", as[2], ")]"),
       paste0("E[U(", as[1], ")]"),
@@ -503,8 +505,12 @@ dr_subgroup <- function(K,
     action = c(as[2], as[1], as[2], as[1]),
     subgroup = c(1, 1, 0, 0)
   )
-  meta <- cbind(meta,
-                  as.data.table(as.list(policy_meta)))
+  input_meta <- cbind(input_meta,
+                      as.data.table(as.list(policy_input_meta)))
+  output_meta <- NULL
+  if (!is.null(policy_output_meta)) {
+    output_meta <- as.data.table(as.list(policy_output_meta))
+  }
 
   out <- list(
     coef = sm[["coef"]],
@@ -513,7 +519,8 @@ dr_subgroup <- function(K,
     subgroup_indicator = subgroup_indicator,
     name = name,
     contrast_name = contrast_name,
-    meta = meta
+    input_meta = input_meta,
+    output_meta = output_meta
   )
 
   return(out)
@@ -526,7 +533,8 @@ dr_value <- function(K,
                      actions,
                      policy_actions,
                      policy_name,
-                     policy_meta,
+                     policy_input_meta,
+                     policy_output_meta = NULL,
                      events,
                      g_values,
                      q_values,
@@ -598,11 +606,15 @@ dr_value <- function(K,
   }
 
   ## collecting meta information
-  meta <- data.table(
+  input_meta <- data.table(
     target = c("E[U(d)]")
   )
-  meta <- cbind(meta,
-                  as.data.table(as.list(policy_meta)))
+  input_meta <- cbind(input_meta,
+                      as.data.table(as.list(policy_input_meta)))
+  output_meta <- NULL
+  if (!is.null(policy_output_meta)) {
+    output_meta <- as.data.table(as.list(policy_output_meta))
+  }
 
   ## output checks:
   stopifnot(
@@ -617,7 +629,8 @@ dr_value <- function(K,
     coef_ipw = mean(Zd_ipw),
     coef_or = mean(Zd_or),
     name = name,
-    meta = meta
+    input_meta = input_meta,
+    output_meta = output_meta
   )
 
   return(out)
@@ -628,7 +641,8 @@ or_value <- function(K,
                      actions,
                      policy_actions,
                      policy_name,
-                     policy_meta,
+                     policy_input_meta,
+                     policy_output_meta = NULL,
                      q_values,
                      ...) {
 
@@ -657,11 +671,15 @@ or_value <- function(K,
   }
 
   ## collecting meta information
-  meta <- data.table(
+  input_meta <- data.table(
     target = c("E[U(d)]")
   )
-  meta <- cbind(meta,
-                  as.data.table(as.list(policy_meta)))
+  input_meta <- cbind(input_meta,
+                      as.data.table(as.list(policy_input_meta)))
+  output_meta <- NULL
+  if (!is.null(policy_output_meta)) {
+    output_meta <- as.data.table(as.list(policy_output_meta))
+  }
 
   ##
   ## output checks
@@ -675,7 +693,8 @@ or_value <- function(K,
     coef = mean(Zd_or),
     IC = NULL,
     name = name,
-    meta = meta
+    input_meta = input_meta,
+    output_meta = output_meta
   )
   return(out)
 }
@@ -685,7 +704,8 @@ ipw_value <- function(K,
                       actions,
                       policy_actions,
                       policy_name,
-                      policy_meta,
+                      policy_input_meta,
+                      policy_output_meta = NULL,
                       g_values,
                       utility,
                       ...) {
@@ -729,11 +749,15 @@ ipw_value <- function(K,
   }
 
   ## collecting meta information
-  meta <- data.table(
+  input_meta <- data.table(
     target = c("E[U(d)]")
   )
-  meta <- cbind(meta,
-                  as.data.table(as.list(policy_meta)))
+  input_meta <- cbind(input_meta,
+                      as.data.table(as.list(policy_input_meta)))
+  output_meta <- NULL
+  if (!is.null(policy_output_meta)) {
+    output_meta <- as.data.table(as.list(policy_output_meta))
+  }
 
   ## output checks
 
@@ -745,7 +769,8 @@ ipw_value <- function(K,
     coef = mean(Zd_ipw),
     IC = Zd_ipw - mean(Zd_ipw),
     name = name,
-    meta = meta
+    input_meta = input_meta,
+    output_meta = output_meta
   )
   return(out)
 }

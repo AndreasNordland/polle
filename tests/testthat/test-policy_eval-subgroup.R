@@ -947,7 +947,7 @@ test_that("policy_eval target = 'subgroup' returns a summary table via summary(r
     control = control_blip(blip_models = polle:::q_degen(var = "z"))
   )
 
-  ## no cross-fitting: policy_object is stored so threshold is populated.
+  ## no cross-fitting.
   sub <- policy_eval(
     target = "subgroup",
     policy_data = pd,
@@ -956,60 +956,48 @@ test_that("policy_eval target = 'subgroup' returns a summary table via summary(r
     g_models = g_glm(~1)
   )
 
-  stop("test not finished")
+  means <- summary(sub, return_table = TRUE, contrast = FALSE)
+  contr <- summary(sub, return_table = TRUE, contrast = TRUE)
 
-  ct <- sub$coef_table
-  expect_true(data.table::is.data.table(ct))
-  expect_equal(
-    names(ct),
-    c("policy", "threshold", "subgroup", "term",
-      "estimate", "se", "subgroup_prop", "contrast")
-  )
+  expect_true(data.table::is.data.table(means))
+  expect_true(data.table::is.data.table(contr))
 
-  ## both views are stored: 4 means x 2 policies (contrast = FALSE) and
-  ## 2 subgroup average treatment effects x 2 policies (contrast = TRUE):
-  expect_equal(sum(!ct$contrast), 8L)
-  expect_equal(sum(ct$contrast), 4L)
+  ## the fixed prefix of the coef_table schema:
+  fixed_cols <- c("policy", "term", "action", "subgroup",
+                  "subgroup_prop", "estimate", "se", "contrast")
+  expect_equal(head(names(means), length(fixed_cols)), fixed_cols)
+  expect_equal(head(names(contr), length(fixed_cols)), fixed_cols)
 
-  ## the per-subgroup means agree with the stored coefficients:
-  mean_rows <- ct[ct$contrast == FALSE, ]
-  ## term + policy round-trip back to the stored coefficient names:
-  expect_equal(
-    paste0(mean_rows$term, ": d=", mean_rows$policy),
-    sub$name
-  )
-  expect_equal(mean_rows$estimate, unname(sub$coef))
-  expect_equal(mean_rows$se, unname(sqrt(diag(vcov(sub, contrast = FALSE)))))
+  ## means view: 4 rows per policy (2 subgroups x 2 actions), 2 policies:
+  expect_equal(nrow(means), 8L)
+  expect_true(all(!means$contrast))
+  expect_equal(means$estimate, unname(sub$coef))
+  expect_equal(means$se, unname(sqrt(diag(vcov(sub, contrast = FALSE)))))
 
-  ## the contrast rows agree with the default reported estimates:
-  contrast_rows <- ct[ct$contrast == TRUE, ]
-  expect_equal(contrast_rows$estimate, unname(coef(sub)))
-  expect_equal(contrast_rows$se, unname(sqrt(diag(vcov(sub, contrast = TRUE)))))
+  ## threshold is user-supplied and lives in input_meta -> variable suffix:
+  expect_true("threshold" %in% names(means))
+  expect_equal(means$threshold, rep(c(50, 101), each = 4))
 
-  ## the threshold is populated from the stored policy object (M = 1):
-  expect_equal(mean_rows$threshold, rep(c(50, 101), each = 4))
-  expect_equal(contrast_rows$threshold, rep(c(50, 101), each = 2))
+  expect_equal(means$policy, rep(c("blip(eta=50)", "blip(eta=101)"), each = 4))
+  ## subgroup indicator: 1 = d==a2 block, 0 = d==a1 block
+  expect_equal(means$subgroup, rep(c(1, 1, 0, 0), 2))
+  ## action alternates a2, a1 within each subgroup block
+  expect_equal(means$action, rep(c("2", "1", "2", "1"), 2))
+  expect_equal(means$subgroup_prop, c(0.5, 0.5, 0.5, 0.5, 0, 0, 1, 1))
 
-  ## policy and subgroup labels:
-  expect_equal(unique(ct$policy), c("blip(eta=50)", "blip(eta=101)"))
-  expect_equal(mean_rows$subgroup, rep(c("d=2", "d=2", "d=1", "d=1"), 2))
-  expect_equal(contrast_rows$subgroup, rep(c("d=2", "d=1"), 2))
+  ## contrasts view: 2 rows per policy (subgroup 1, subgroup 0), 2 policies:
+  expect_equal(nrow(contr), 4L)
+  expect_true(all(contr$contrast))
+  expect_equal(contr$estimate, unname(coef(sub)))
+  expect_equal(contr$se, unname(sqrt(diag(vcov(sub, contrast = TRUE)))))
+  expect_equal(contr$threshold, rep(c(50, 101), each = 2))
+  expect_equal(contr$policy, rep(c("blip(eta=50)", "blip(eta=101)"), each = 2))
+  expect_equal(contr$subgroup, rep(c(1, 0), 2))
+  expect_equal(contr$subgroup_prop, c(0.5, 0.5, 0, 1))
+  expect_true(all(is.na(contr$action)))
 
-  ## subgroup proportions (col. [d==2, d==1] per policy):
-  expect_equal(mean_rows$subgroup_prop, c(0.5, 0.5, 0.5, 0.5, 0, 0, 1, 1))
-  expect_equal(contrast_rows$subgroup_prop, c(0.5, 0.5, 0, 1))
-
-  ## summary(return_table = TRUE) respects the contrast argument:
-  st_true <- summary(sub, return_table = TRUE, contrast = TRUE)
-  expect_true(all(st_true$contrast))
-  expect_equal(st_true$estimate, unname(coef(sub)))
-
-  st_false <- summary(sub, return_table = TRUE, contrast = FALSE)
-  expect_false(any(st_false$contrast))
-  expect_equal(st_false$estimate, unname(sub$coef))
-
-  ## cross-fitting: the policy object is not stored, so the threshold column
-  ## is not populated (NA), but the estimates/proportions are still present.
+  ## cross-fitting: threshold is user-supplied (static input_meta) and stable
+  ## across folds; it remains populated in the coef_table.
   gf <- fit_g_functions(pd, g_models = g_glm(~1))
   set.seed(1)
   subc <- policy_eval(
@@ -1022,14 +1010,12 @@ test_that("policy_eval target = 'subgroup' returns a summary table via summary(r
     variance_type = "pooled",
     M = 2
   )
-  ctc <- subc$coef_table
-  expect_true(all(is.na(ctc$threshold)))
+  ctc_means <- summary(subc, return_table = TRUE, contrast = FALSE)
+  ctc_contr <- summary(subc, return_table = TRUE, contrast = TRUE)
+  expect_equal(ctc_means$threshold, rep(c(50, 101), each = 4))
+  expect_equal(ctc_contr$estimate, unname(coef(subc)))
   expect_equal(
-    ctc[ctc$contrast == TRUE, ]$estimate,
-    unname(coef(subc))
-  )
-  expect_equal(
-    ctc[ctc$contrast == FALSE, ]$subgroup_prop,
+    ctc_means$subgroup_prop,
     c(0.5, 0.5, 0.5, 0.5, 0, 0, 1, 1)
   )
 })

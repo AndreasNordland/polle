@@ -145,10 +145,6 @@ V-restricted Q-functions. Contains a fitted model for each stage and action.}
 policy trees. Contains a \link[policytree:policy_tree]{policytree::policy_tree} for each stage.}
 \item{\code{ptl_designs}}{(only if \code{type = "ptl"}) Specification of the
 V-restricted design matrix for each stage}
-\item{\code{policy_table}}{(only if \code{type = "blip"} or \code{"ptl"})
-\link[data.table:data.table]{data.table::data.table} with one row per threshold and columns
-\code{policy} (the policy label, e.g. "blip(eta=25)") and \code{threshold}
-(the numeric threshold).}
 }
 }
 \description{

@@ -783,15 +783,15 @@ test_that("policy_eval with target 'subgroup' has the correct output under right
   expect_equal(
     names(sub$coef),
     c(
-      "E[U(2)|d=2]: d=p",
-      "E[U(1)|d=2]: d=p",
       "E[U(2)|d=1]: d=p",
-      "E[U(1)|d=1]: d=p"
+      "E[U(1)|d=1]: d=p",
+      "E[U(2)|d=0]: d=p",
+      "E[U(1)|d=0]: d=p"
     )
   )
   expect_equal(
     names(coef(sub)),
-    c("E[U(2)-U(1)|d=2]: d=p", "E[U(2)-U(1)|d=1]: d=p")
+    c("E[U(2)-U(1)|d=1]: d=p", "E[U(2)-U(1)|d=0]: d=p")
   )
 
   ##
@@ -912,15 +912,15 @@ test_that("policy_eval with target 'subgroup' has the correct output under right
   expect_equal(
     names(sub$coef),
     c(
-      "E[U(2)|d=2]: d=p",
-      "E[U(1)|d=2]: d=p",
       "E[U(2)|d=1]: d=p",
-      "E[U(1)|d=1]: d=p"
+      "E[U(1)|d=1]: d=p",
+      "E[U(2)|d=0]: d=p",
+      "E[U(1)|d=0]: d=p"
     )
   )
   expect_equal(
     names(coef(sub)),
-    c("E[U(2)-U(1)|d=2]: d=p", "E[U(2)-U(1)|d=1]: d=p")
+    c("E[U(2)-U(1)|d=1]: d=p", "E[U(2)-U(1)|d=0]: d=p")
   )
 
   ## no m_model input:
@@ -947,15 +947,15 @@ test_that("policy_eval with target 'subgroup' has the correct output under right
   expect_equal(
     names(sub$coef),
     c(
-      "E[U(2)|d=2]: d=p",
-      "E[U(1)|d=2]: d=p",
       "E[U(2)|d=1]: d=p",
-      "E[U(1)|d=1]: d=p"
+      "E[U(1)|d=1]: d=p",
+      "E[U(2)|d=0]: d=p",
+      "E[U(1)|d=0]: d=p"
     )
   )
   expect_equal(
     names(coef(sub)),
-    c("E[U(2)-U(1)|d=2]: d=p", "E[U(2)-U(1)|d=1]: d=p")
+    c("E[U(2)-U(1)|d=1]: d=p", "E[U(2)-U(1)|d=0]: d=p")
   )
 
   ## right-censoring NOT occuring at stage 1:
@@ -1048,15 +1048,15 @@ test_that("policy_eval with target 'subgroup' has the correct output under right
   expect_equal(
     names(sub$coef),
     c(
-      "E[U(2)|d=2]: d=p",
-      "E[U(1)|d=2]: d=p",
       "E[U(2)|d=1]: d=p",
-      "E[U(1)|d=1]: d=p"
+      "E[U(1)|d=1]: d=p",
+      "E[U(2)|d=0]: d=p",
+      "E[U(1)|d=0]: d=p"
     )
   )
   expect_equal(
     names(coef(sub)),
-    c("E[U(2)-U(1)|d=2]: d=p", "E[U(2)-U(1)|d=1]: d=p")
+    c("E[U(2)-U(1)|d=1]: d=p", "E[U(2)-U(1)|d=0]: d=p")
   )
 
 })

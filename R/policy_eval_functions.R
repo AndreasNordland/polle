@@ -57,138 +57,141 @@ policy_eval_estimate <- function(object, contrast) {
   return(est)
 }
 
-## internal: build a tidy coef_table (data.table) summarising the estimates by
-## policy, subgroup and (when available) threshold. For target = "subgroup" both
-## the per-subgroup potential outcome means (contrast = FALSE) and the subgroup
-## average treatment effects (contrast = TRUE) are stacked and distinguished by
-## the logical `contrast` column. For target = "value" a single set of rows is
-## produced. The columns are:
+## internal: build a tidy data.table summarising the estimates. The fixed
+## prefix columns are always emitted (in this order):
 ##   policy        - the policy label (e.g. "blip(eta=28)"); NA if unnamed.
-##   threshold     - the numeric blip/ptl threshold; only populated when
-##                   authoritative (i.e. a policy_object is stored, M = 1).
-##   subgroup      - the subgroup the row refers to (e.g. "d=1"); NA for value.
-##   term          - the estimated parameter label.
+##   term          - the estimated parameter label from input_meta$target
+##                   (contrast rows: the parsed contrast term).
+##   action        - the action label; NA for value target and contrast rows.
+##   subgroup      - numeric 1/0 subgroup indicator; NA for value target.
+##   subgroup_prop - proportion of observations in the subgroup; NA for value
+##                   target and when subgroup_indicator is unavailable.
 ##   estimate      - the point estimate.
 ##   se            - the standard error (sqrt of the variance diagonal).
-##   subgroup_prop - the proportion of observations in the subgroup; NA for
-##                   value and when the subgroup indicator is unavailable
-##                   (e.g. nrep > 1).
-##   contrast      - FALSE for the per-subgroup means, TRUE for the subgroup
-##                   average treatment effects.
-policy_eval_table <- function(object, contrast) {
+##   contrast      - FALSE for value and per-subgroup means; TRUE for the
+##                   subgroup average treatment effects.
+## The variable suffix columns are the remaining columns of input_meta (e.g.
+## threshold, alpha, type, K, quantile_prob_threshold), appended after the
+## fixed prefix.
+##
+## Filtering by `contrast`:
+##   - target = "value":    contrast is ignored; a single-view table is returned.
+##   - target = "subgroup": contrast = FALSE returns the per-subgroup potential
+##                          outcome means; contrast = TRUE returns the subgroup
+##                          average treatment effects.
+policy_eval_table <- function(object, contrast = TRUE) {
   target <- get_element(object, "target")
-  meta <- get_element(object, "meta")
-  est <- policy_eval_estimate(object = object, contrast = contrast)
+  input_meta <- get_element(object, "input_meta")
+  name <- get_element(object, "name")
 
-  if (target == "value") {
-    browser()
-  } else if (target == "subgroup") {
-    subgroup_indicator <- get_element(object, "subgroup_indicator")
-    subgroup_proportion <- colMeans(subgroup_indicator)
-    if (isTRUE(contrast)) {
-      odd <- seq.int(1L, nrow(meta), by = 2L)
-      meta <- meta[odd, ]
-      meta$action <- NULL
-      meta$subgroup <- NULL
-    } else {
-      subgroup_proportion <- rep(subgroup_proportion, each = 2)
-    }
-    tab <- meta
-    tab <- cbind(data.table(name = names(coef(est)),
-                            coef = coef (est)),
-                 meta,
-                 data.table(subgroup_proportion = subgroup_proportion))
-    return(tab)
+  ## parse the policy label from a "TERM: d=POLICY" string:
+  parse_policy <- function(x) {
+    ifelse(grepl(": d=", x, fixed = TRUE),
+           sub("^.*: d=", "", x),
+           NA_character_)
   }
 
-  ## which contrast views to build:
-  if (identical(target, "subgroup")) {
-    views <- c(FALSE, TRUE)
-  } else {
-    views <- FALSE
+  ## safe standard error extraction:
+  se_of <- function(est) {
+    tryCatch(sqrt(diag(vcov(est))),
+             error = function(e) rep(NA_real_, length(coef(est))))
   }
 
-  ## authoritative thresholds (only available when a policy_object is stored,
-  ## i.e. M = 1). A stored threshold of 0 is the "no threshold" sentinel:
-  policy_object <- object[["policy_object"]]
-  threshold <- policy_object[["threshold"]]
-  if (!is.null(threshold) && all(threshold == 0)) {
-    threshold <- NULL
-  }
-
-  ## per-policy subgroup indicator columns [d==a2, d==a1]; used for the subgroup
-  ## proportion. NULL for target = "value" and for nrep > 1:
-  subgroup_indicator <- object[["subgroup_indicator"]]
-  subgroup_prop_cols <- NULL
-  if (!is.null(subgroup_indicator)) {
-    subgroup_prop_cols <- colMeans(subgroup_indicator)
-  }
-
-  ## avoid R CMD check NOTEs for data.table non-standard evaluation:
-  policy <- estimate <- se <- subgroup <- subgroup_prop <- NULL
-
-  tabs <- lapply(views, function(v) {
-    est <- policy_eval_estimate(object, contrast = v)
-    coef <- coef(est)
-    labels <- names(coef)
-    se_ <- tryCatch(
-      sqrt(diag(vcov(est))),
-      error = function(e) rep(NA_real_, length(coef))
-    )
-
-    ## split "<term>: d=<policy>" into term and policy:
-    has_policy <- grepl(": d=", labels, fixed = TRUE)
-    pol <- ifelse(has_policy, sub("^.*: d=", "", labels), NA_character_)
-    term <- sub(": d=.*$", "", labels)
-
-    ## subgroup label parsed from the term (e.g. "...|d=1]"):
-    has_subgroup <- grepl("|d=", term, fixed = TRUE)
-    sub_lab <- ifelse(
-      has_subgroup,
-      paste0("d=", sub("^.*\\|d=([^]]+)\\].*$", "\\1", term)),
-      NA_character_
-    )
-
-    dt <- data.table::data.table(
-      policy = pol,
-      threshold = NA_real_,
-      subgroup = sub_lab,
-      term = term,
-      estimate = as.numeric(coef),
-      se = as.numeric(se_),
+  if (identical(target, "value")) {
+    est <- policy_eval_estimate(object, contrast = FALSE)
+    tab <- data.table::data.table(
+      policy        = parse_policy(name),
+      term          = as.character(input_meta[["target"]]),
+      action        = NA_character_,
+      subgroup      = NA_real_,
       subgroup_prop = NA_real_,
-      contrast = v
+      estimate      = unname(as.numeric(coef(est))),
+      se            = unname(as.numeric(se_of(est))),
+      contrast      = FALSE
     )
-
-    ## distinct policies in order of appearance:
-    pol_levels <- unique(pol)
-
-    ## map authoritative threshold by policy index (policy blocks are ordered by
-    ## the sorted unique threshold, matching get_policy.blip / get_policy.ptl):
-    if (!is.null(threshold) && length(threshold) == length(pol_levels)) {
-      thr_map <- threshold
-      names(thr_map) <- pol_levels
-      dt[, threshold := unname(thr_map[policy])]
+    extra_cols <- setdiff(names(input_meta), "target")
+    if (length(extra_cols)) {
+      tab <- cbind(tab, input_meta[, extra_cols, with = FALSE])
     }
+    return(tab[])
+  }
 
-    ## subgroup proportion by within-policy position (per policy the rows are
-    ## ordered [d==a2 (,) d==a1]; the indicator columns are [d==a2, d==a1]):
-    if (!is.null(subgroup_prop_cols) && identical(target, "subgroup")) {
-      per <- if (isTRUE(v)) 1L else 2L
-      for (pl in seq_along(pol_levels)) {
-        idx <- which(dt[["policy"]] == pol_levels[pl])
-        within <- seq_along(idx)
-        sub_col <- ((within - 1L) %/% per) + 1L
-        col <- (pl - 1L) * 2L + sub_col
-        dt[idx, subgroup_prop := subgroup_prop_cols[col]]
-      }
+  if (!identical(target, "subgroup")) {
+    stop("unknown target: ", target)
+  }
+
+  ## subgroup target: build either the means view (contrast = FALSE) or the
+  ## contrasts view (contrast = TRUE).
+  subgroup_indicator <- object[["subgroup_indicator"]]
+  sp_cols <- if (!is.null(subgroup_indicator)) colMeans(subgroup_indicator) else NULL
+
+  if (isFALSE(contrast)) {
+    est <- policy_eval_estimate(object, contrast = FALSE)
+    ## per-policy blocks of 4 rows; sp_cols has 2 entries per policy
+    ## (d==a2 first, d==a1 second). Broadcast to 4 rows per policy.
+    if (!is.null(sp_cols)) {
+      sp <- rep(sp_cols, each = 2)
+    } else {
+      sp <- rep(NA_real_, nrow(input_meta))
     }
+    tab <- data.table::data.table(
+      policy        = parse_policy(name),
+      term          = as.character(input_meta[["target"]]),
+      action        = as.character(input_meta[["action"]]),
+      subgroup      = as.numeric(input_meta[["subgroup"]]),
+      subgroup_prop = as.numeric(sp),
+      estimate      = unname(as.numeric(coef(est))),
+      se            = unname(as.numeric(se_of(est))),
+      contrast      = FALSE
+    )
+    extra_cols <- setdiff(names(input_meta), c("target", "action", "subgroup"))
+    if (length(extra_cols)) {
+      tab <- cbind(tab, input_meta[, extra_cols, with = FALSE])
+    }
+    return(tab[])
+  }
 
-    dt
-  })
+  ## contrast = TRUE
+  est_c <- policy_eval_estimate(object, contrast = TRUE)
+  contrast_name <- get_element(object, "contrast_name", check_name = FALSE)
 
-  out <- data.table::rbindlist(tabs)
-  return(out[])
+  ## for each 4-row policy block in input_meta, keep rows 1 and 3 (subgroup 1
+  ## and subgroup 0):
+  n_blocks <- nrow(input_meta) %/% 4L
+  keep <- as.vector(vapply(
+    seq_len(n_blocks),
+    function(b) (b - 1L) * 4L + c(1L, 3L),
+    integer(2L)
+  ))
+  meta_c <- input_meta[keep, ]
+
+  ## term for contrast rows: parsed from contrast_name by stripping ": d=..."
+  term_c <- sub(": d=.*$", "", contrast_name)
+
+  ## subgroup proportion for contrast rows: sp_cols is already ordered
+  ## [pol1_d==a2, pol1_d==a1, pol2_d==a2, pol2_d==a1, ...] which matches the
+  ## contrast row order (subgroup 1 then subgroup 0 per policy).
+  if (!is.null(sp_cols)) {
+    sp <- as.numeric(sp_cols)
+  } else {
+    sp <- rep(NA_real_, nrow(meta_c))
+  }
+
+  tab <- data.table::data.table(
+    policy        = parse_policy(contrast_name),
+    term          = term_c,
+    action        = NA_character_,
+    subgroup      = as.numeric(meta_c[["subgroup"]]),
+    subgroup_prop = sp,
+    estimate      = unname(as.numeric(coef(est_c))),
+    se            = unname(as.numeric(se_of(est_c))),
+    contrast      = TRUE
+  )
+  extra_cols <- setdiff(names(input_meta), c("target", "action", "subgroup"))
+  if (length(extra_cols)) {
+    tab <- cbind(tab, meta_c[, extra_cols, with = FALSE])
+  }
+  return(tab[])
 }
 
 #' @rdname policy_eval

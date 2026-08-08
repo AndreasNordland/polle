@@ -71,6 +71,12 @@
 #' @param width Integer. Width of printed parameter name.
 #' @param std.error Logical. Should the std.error be printed.
 #' @param p.value Logical. Should the p.value for associated confidence level be printed.
+#' @param return_table Logical. Used by \code{summary()}. If \code{TRUE} a
+#' \link[data.table:data.table]{data.table::data.table} of estimates is
+#' returned instead of the
+#' default \link[lava:estimate]{lava::estimate} object. Additional meta
+#' information is included, e.g., subgroup proportions, policy learner settings
+#' etc.
 #' @param ... Additional arguments.
 #' @return \code{policy_eval()} returns an object of class "policy_eval".
 #' The object is a list containing the following elements:
@@ -111,6 +117,13 @@
 #' for cross-fitting.}
 #' \item{\code{cross_fit_type}}{Character string.}
 #' \item{\code{variance_type}}{Character string.}
+#' \item{\code{input_meta}}{[data.table::data.table] with one row per element
+#' of \code{coef}, containing the input meta information about
+#' the target parameter and the policy that produced it (e.g. \code{target},
+#' \code{action}, \code{subgroup}, and any policy-level meta such as
+#' \code{threshold}, \code{alpha}, \code{type}, \code{K}).}
+#' \item{\code{output_meta}}{[data.table::data.table] with computed meta
+#' information (e.g. the realised numeric \code{threshold}).}
 #' @section S3 generics:
 #' The following S3 generic functions are available for an object of
 #' class \code{policy_eval}:
@@ -544,7 +557,8 @@ policy_eval_object <- function(
     target,
     id,
     name,
-    meta,
+    input_meta,
+    output_meta = NULL,
     contrast_name = NULL,
     coef_ipw = NULL,
     coef_or = NULL,
@@ -709,7 +723,8 @@ policy_eval_type <- function(target,
 
       ## getting policy name and meta information
       pn <- attr(p, which = "name", exact = TRUE)
-      pm <- attr(p, which = "meta", exact = TRUE)
+      p_in <- attr(p, which = "input_meta", exact = TRUE)
+      p_out <- attr(p, which = "output_meta", exact = TRUE)
 
       out <- estimate_target(
         target = target,
@@ -720,7 +735,8 @@ policy_eval_type <- function(target,
         actions = actions,
         policy_actions = pa,
         policy_name = pn,
-        policy_meta = pm,
+        policy_input_meta = p_in,
+        policy_output_meta = p_out,
         events = events,
         g_values = g_values,
         q_values = q_values,
@@ -765,7 +781,16 @@ policy_eval_type <- function(target,
   ## collecting names and meta information
   name <- unlist(lapply(estimate_objects, function(eb) get_element(eb, "name")))
   contrast_name <- unlist(lapply(estimate_objects, function(eb) get_element(eb, "contrast_name", check_name = FALSE)))
-  meta <- data.table::rbindlist(lapply(estimate_objects, function(eb) get_element(eb, "meta")))
+  input_meta <- data.table::rbindlist(lapply(estimate_objects, function(eb) get_element(eb, "input_meta")))
+  output_meta_list <- lapply(
+    estimate_objects,
+    function(eb) get_element(eb, "output_meta", check_name = FALSE)
+  )
+  if (any(!vapply(output_meta_list, is.null, logical(1)))) {
+    output_meta <- data.table::rbindlist(output_meta_list, fill = TRUE)
+  } else {
+    output_meta <- NULL
+  }
 
   out <- policy_eval_object(
     coef = coef,
@@ -790,7 +815,8 @@ policy_eval_type <- function(target,
     min_subgroup_size = min_subgroup_size,
     name = name,
     contrast_name = contrast_name,
-    meta = meta
+    input_meta = input_meta,
+    output_meta = output_meta
   )
 
   return(out)
@@ -856,9 +882,12 @@ policy_eval_cross <- function(args,
 
 
   ## collecting the paramenter name(s) and meta information:
+  ## input_meta is static (fold-stable), so taking it from the first fold is
+  ## safe. output_meta may vary across folds; not collected under CV (out of
+  ## scope in this change).
   name <- get_element(cross_fits[[1]], "name")
   contrast_name <- get_element(cross_fits[[1]], "contrast_name", check_name = FALSE)
-  meta <- get_element(cross_fits[[1]], "meta", check_name = FALSE)
+  input_meta <- get_element(cross_fits[[1]], "input_meta", check_name = FALSE)
 
   ## collecting the ids from each fold (unsorted):
   id <- unlist(lapply(
@@ -1119,7 +1148,7 @@ policy_eval_cross <- function(args,
     folds = folds,
     name = name,
     contrast_name = contrast_name,
-    meta = meta,
+    input_meta = input_meta,
     variance_type = variance_type,
     cross_fit_type = cross_fit_type,
     subgroup_indicator = subgroup_indicator
@@ -1183,7 +1212,7 @@ policy_eval_rep <- function(nrep,
       IC = get_element(pe, "IC"),
       name = get_element(pe, "name"),
       contrast_name = get_element(pe, "contrast_name", check_name = FALSE),
-      meta = get_element(pe, "meta", check_name = FALSE)
+      input_meta = get_element(pe, "input_meta", check_name = FALSE)
     )
     return(out)
   }
@@ -1202,7 +1231,7 @@ policy_eval_rep <- function(nrep,
 
   name <- get_element(rep_fits[[1]], "name")
   contrast_name <- get_element(rep_fits[[1]], "contrast_name", check_name = FALSE)
-  meta <- get_element(rep_fits[[1]], "meta", check_name = FALSE)
+  input_meta <- get_element(rep_fits[[1]], "input_meta", check_name = FALSE)
 
   coef <- lapply(rep_fits, function(x) get_element(x, "coef"))
   coef <- do.call(what = "rbind", coef)
@@ -1218,7 +1247,7 @@ policy_eval_rep <- function(nrep,
     target = get_element(args, "target"),
     id = get_id(policy_data),
     name = name,
-    meta = meta,
+    input_meta = input_meta,
     contrast_name = contrast_name,
     variance_type = variance_type,
     cross_fit_type = cross_fit_type,

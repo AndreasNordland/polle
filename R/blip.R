@@ -387,8 +387,9 @@ blip <- function(policy_data,
       if (k == 1){
         quantile_threshold <- stats::quantile(x = blip_k$blip, probs = quantile_prob_threshold)
       }
-      ## overwriting the threshold argument:
-      threshold <- unname(quantile_threshold)
+      ## overwriting the threshold argument (only unique thresholds):
+      threshold <- unname(unique(quantile_threshold))
+      quantile_prob_threshold <- quantile_prob_threshold[!duplicated(quantile_threshold)]
     }
 
     # getting the stage action with a positive blip:
@@ -594,6 +595,7 @@ get_policy.blip <- function(object, threshold = NULL) {
   K <- get_element(object, "K")
   alpha <- get_element(object, "alpha")
   threshold_selection <- get_element(object, "threshold")
+  quantile_prob_threshold <- object[["quantile_prob_threshold"]]
   threshold <- set_threshold(
     threshold = threshold,
     selection = threshold_selection,
@@ -681,13 +683,33 @@ get_policy.blip <- function(object, threshold = NULL) {
 
       ## setting class and attributes:
       name <- paste0("blip(eta=", round(th, 3), ")")
-      meta <- c(type = "blip",
-                K = K,
-                threshold = th,
-                alpha = alpha)
+      ## input_meta: user-supplied / fold-stable settings. When the threshold
+      ## was derived from a quantile probability, only the (static) quantile
+      ## probability is included in the input meta and the (dynamic) realised
+      ## threshold is stored in output_meta. Built as a named list to preserve
+      ## column types when coerced to a data.table.
+      if (is.null(quantile_prob_threshold)) {
+        input_meta <- list(type = "blip",
+                           K = K,
+                           alpha = alpha,
+                           threshold = th)
+        output_meta <- NULL
+      } else {
+        ## with multiple quantile probabilities, match the realised th to its
+        ## corresponding probability using the sort order (both are unique-sort
+        ## by construction):
+        thr_sel <- sort(unique(unname(threshold_selection)))
+        qp <- quantile_prob_threshold[match(th, thr_sel)]
+        input_meta <- list(type = "blip",
+                           K = K,
+                           alpha = alpha,
+                           quantile_prob_threshold = unname(qp))
+        output_meta <- list(threshold = th)
+      }
       policy <- new_policy(policy,
                            name = name,
-                           meta = meta)
+                           input_meta = input_meta,
+                           output_meta = output_meta)
 
       return(policy)
     }
