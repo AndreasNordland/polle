@@ -527,8 +527,8 @@ test_that("policy_learn with type blip uses the quantile_threshold argument.", {
   )
 
   expect_equal(
-    estimate(pe),
-    estimate(pe_ref)
+    coef(pe) |> unname(),
+    coef(pe_ref) |> unname()
   )
 
   pl <- policy_learn(

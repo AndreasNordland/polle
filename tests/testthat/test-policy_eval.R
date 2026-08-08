@@ -1013,7 +1013,6 @@ test_that("policy_eval with target 'value' has the correct outputs for the stoch
 
 })
 
-
 test_that("policy_eval() return estimates for multiple policies associated with multiple thresholds.", {
 
   z <- 1:1e2

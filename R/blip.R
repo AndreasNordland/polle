@@ -682,13 +682,13 @@ get_policy.blip <- function(object, threshold = NULL) {
       }
 
       ## setting class and attributes:
-      name <- paste0("blip(eta=", round(th, 3), ")")
       ## input_meta: user-supplied / fold-stable settings. When the threshold
       ## was derived from a quantile probability, only the (static) quantile
       ## probability is included in the input meta and the (dynamic) realised
       ## threshold is stored in output_meta. Built as a named list to preserve
       ## column types when coerced to a data.table.
       if (is.null(quantile_prob_threshold)) {
+        name <- paste0("blip(eta=", round(th, 3), ")")
         input_meta <- list(type = "blip",
                            K = K,
                            alpha = alpha,
@@ -700,6 +700,7 @@ get_policy.blip <- function(object, threshold = NULL) {
         ## by construction):
         thr_sel <- sort(unique(unname(threshold_selection)))
         qp <- quantile_prob_threshold[match(th, thr_sel)]
+        name <- paste0("blip(q=", round(qp, 3), ")")
         input_meta <- list(type = "blip",
                            K = K,
                            alpha = alpha,
