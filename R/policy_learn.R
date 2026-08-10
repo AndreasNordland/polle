@@ -237,7 +237,8 @@ policy_learn <- function(type = "blip",
     cross_fit_c_models = cross_fit_c_models,
     save_cross_fit_models = save_cross_fit_models,
     future_args = future_args,
-    full_history = full_history
+    full_history = full_history,
+    name = name
   )
 
   type <- tolower(type)

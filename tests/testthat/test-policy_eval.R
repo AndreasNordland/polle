@@ -1525,7 +1525,10 @@ test_that("policy_eval target = 'value' summary table has the expected schema fo
   )
 
   ## ------------------------------------------------------------------
-  ## blip with a single user-supplied threshold:
+  ## blip with a single user-supplied threshold and a user-supplied name:
+  ## `type` records the learner class ("blip"); `policy` records the raw
+  ## user-supplied name ("cate"); the composed `name` uses the user's name
+  ## as the stem.
   ## ------------------------------------------------------------------
   pl1 <- policy_learn(
     type = "blip",
@@ -1544,10 +1547,12 @@ test_that("policy_eval target = 'value' summary table has the expected schema fo
 
   expect_true(data.table::is.data.table(t1))
   expect_equal(names(t1),
-               c("name", "estimate", "se", "policy", "alpha", "threshold"))
+               c("name", "estimate", "se",
+                 "type", "policy", "alpha", "threshold"))
   expect_equal(nrow(t1), 1L)
   expect_equal(t1$name, "E[U(d)]: d=cate(eta=50)")
-  expect_equal(t1$policy, "blip")
+  expect_equal(t1$type, "blip")
+  expect_equal(t1$policy, "cate")
   expect_equal(t1$threshold, 50)
   expect_equal(t1$estimate, unname(coef(pe1)))
   expect_equal(t1$se, unname(sqrt(diag(vcov(pe1)))))
@@ -1571,11 +1576,15 @@ test_that("policy_eval target = 'value' summary table has the expected schema fo
   t2 <- summary(pe2, return_table = TRUE)
 
   expect_equal(names(t2),
-               c("name", "estimate", "se", "policy", "alpha", "threshold"))
+               c("name", "estimate", "se",
+                 "type", "policy", "alpha", "threshold"))
   expect_equal(nrow(t2), 2L)
   expect_equal(t2$threshold, c(50, 101))
   expect_equal(t2$name,
                c("E[U(d)]: d=blip(eta=50)", "E[U(d)]: d=blip(eta=101)"))
+  ## default name defaults to type; both columns equal "blip":
+  expect_equal(t2$type, c("blip", "blip"))
+  expect_equal(t2$policy, c("blip", "blip"))
   expect_equal(t2$estimate, unname(coef(pe2)))
   expect_equal(t2$se, unname(sqrt(diag(vcov(pe2)))))
   expect_null(pe2$output_meta)
@@ -1603,11 +1612,13 @@ test_that("policy_eval target = 'value' summary table has the expected schema fo
   ## `threshold` lives on output_meta instead.
   expect_equal(names(t3),
                c("name", "estimate", "se",
-                 "policy", "alpha", "quantile_prob_threshold"))
+                 "type", "policy", "alpha", "quantile_prob_threshold"))
   expect_false("threshold" %in% names(t3))
   expect_equal(nrow(t3), 2L)
   expect_equal(t3$quantile_prob_threshold, c(0.25, 0.75))
   expect_true(all(grepl("blip\\(q=", t3$name)))
+  expect_equal(t3$type, c("blip", "blip"))
+  expect_equal(t3$policy, c("blip", "blip"))
   expect_equal(t3$estimate, unname(coef(pe3)))
   expect_equal(t3$se, unname(sqrt(diag(vcov(pe3)))))
 
@@ -1664,10 +1675,11 @@ test_that("policy_eval target = 'value' summary table has the expected schema fo
   expect_equal(
     names(t1),
     c("name", "estimate", "se",
-      "policy", "alpha", "threshold", "depth", "hybrid")
+      "type", "policy", "alpha", "threshold", "depth", "hybrid")
   )
   expect_equal(nrow(t1), 1L)
   expect_equal(t1$name, "E[U(d)]: d=ptl(eta=0)")
+  expect_equal(t1$type, "ptl")
   expect_equal(t1$policy, "ptl")
   expect_equal(t1$threshold, 0)
   expect_equal(t1$depth, 2)
@@ -1710,7 +1722,7 @@ test_that("policy_eval target = 'value' summary table has the expected schema fo
     type = "ptl",
     threshold = 0,
     control = control_ptl(policy_vars = c("Z", "L"),
-                          depth = 2, search.depth = 1, hybrid = TRUE)
+                          depth = 3, search.depth = 2, hybrid = TRUE)
   )
   pe3 <- policy_eval(
     target = "value",
@@ -1720,7 +1732,7 @@ test_that("policy_eval target = 'value' summary table has the expected schema fo
     g_models = g_glm()
   )
   t3 <- summary(pe3, return_table = TRUE)
-  expect_equal(t3$depth, 2)
+  expect_equal(t3$depth, 3)
   expect_true(t3$hybrid)
 
   ## ------------------------------------------------------------------
@@ -1744,5 +1756,30 @@ test_that("policy_eval target = 'value' summary table has the expected schema fo
   expect_equal(nrow(t4), 2L)
   expect_equal(t4$threshold, c(0, 0.5))
   expect_equal(t4$estimate, unname(coef(pe4)))
+
+  ## ------------------------------------------------------------------
+  ## ptl with a user-supplied policy name:
+  ## `type` stays "ptl"; `policy` records the user's name; the composed
+  ## `name` swaps the "ptl" stem for the user's name.
+  ## ------------------------------------------------------------------
+  pl5 <- policy_learn(
+    type = "ptl",
+    threshold = 0,
+    control = control_ptl(policy_vars = c("Z", "L"), depth = 2),
+    name = "tree"
+  )
+  pe5 <- policy_eval(
+    target = "value",
+    policy_data = pd,
+    policy_learn = pl5,
+    q_models = q_glm(),
+    g_models = g_glm()
+  )
+  t5 <- summary(pe5, return_table = TRUE)
+  expect_equal(names(t5), names(t1))
+  expect_equal(nrow(t5), 1L)
+  expect_equal(t5$name, "E[U(d)]: d=tree(eta=0)")
+  expect_equal(t5$type, "ptl")
+  expect_equal(t5$policy, "tree")
 })
 

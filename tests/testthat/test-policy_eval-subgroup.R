@@ -963,16 +963,16 @@ test_that("policy_eval target = 'subgroup' summary table has the expected schema
   expect_true(data.table::is.data.table(c1))
 
   ## schema: means view has the fixed prefix + input_meta columns
-  ## (action, subgroup + policy-level meta: policy, alpha, threshold):
+  ## (action, subgroup + policy-level meta: type, policy, alpha, threshold):
   expect_equal(
     names(m1),
     c("name", "estimate", "se", "subgroup_proportion",
-      "action", "subgroup", "policy", "alpha", "threshold")
+      "action", "subgroup", "type", "policy", "alpha", "threshold")
   )
   expect_equal(
     names(c1),
     c("name", "estimate", "se", "subgroup_proportion",
-      "action", "subgroup", "policy", "alpha", "threshold")
+      "action", "subgroup", "type", "policy", "alpha", "threshold")
   )
 
   ## means: 4 rows for one policy; contrasts: 2 rows.
@@ -992,9 +992,13 @@ test_that("policy_eval target = 'subgroup' summary table has the expected schema
   ## input_meta columns:
   expect_equal(m1$action, c("2", "1", "2", "1"))
   expect_equal(m1$subgroup, c(1, 1, 0, 0))
+  expect_equal(m1$type, rep("blip", 4L))
+  ## default name defaults to type; policy column mirrors it:
   expect_equal(m1$policy, rep("blip", 4L))
   expect_equal(m1$threshold, rep(50, 4L))
   expect_equal(c1$subgroup, c(1, 0))
+  expect_equal(c1$type, rep("blip", 2L))
+  expect_equal(c1$policy, rep("blip", 2L))
   expect_equal(c1$threshold, rep(50, 2L))
   ## the action column is filtered to the a2 rows in the contrast view:
   expect_equal(c1$action, c("2", "2"))
@@ -1029,7 +1033,7 @@ test_that("policy_eval target = 'subgroup' summary table has the expected schema
   expect_equal(
     names(m2),
     c("name", "estimate", "se", "subgroup_proportion",
-      "action", "subgroup", "policy", "alpha", "threshold")
+      "action", "subgroup", "type", "policy", "alpha", "threshold")
   )
 
   ## means: 4 rows x 2 policies = 8; contrasts: 2 rows x 2 policies = 4.
@@ -1087,7 +1091,8 @@ test_that("policy_eval target = 'subgroup' summary table has the expected schema
   expect_equal(
     names(m3),
     c("name", "estimate", "se", "subgroup_proportion",
-      "action", "subgroup", "policy", "alpha", "quantile_prob_threshold")
+      "action", "subgroup", "type", "policy", "alpha",
+      "quantile_prob_threshold")
   )
   expect_false("threshold" %in% names(m3))
   expect_false("threshold" %in% names(c3))
@@ -1139,6 +1144,35 @@ test_that("policy_eval target = 'subgroup' summary table has the expected schema
   sp4 <- colMeans(sub4$subgroup_indicator)
   expect_equal(m4$subgroup_proportion, rep(sp4, each = 2L))
   expect_equal(c4$subgroup_proportion, sp4)
+
+  ## ------------------------------------------------------------------
+  ## blip with a user-supplied policy name:
+  ## `type` stays "blip"; `policy` records the user's name; the composed
+  ## `name` swaps the "blip" stem for the user's name.
+  ## ------------------------------------------------------------------
+  pl5 <- policy_learn(
+    type = "blip",
+    threshold = 50,
+    control = control_blip(blip_models = polle:::q_degen(var = "z")),
+    name = "cate"
+  )
+  sub5 <- policy_eval(
+    target = "subgroup",
+    policy_data = pd,
+    policy_learn = pl5,
+    q_models = polle:::q_degen(var = "z"),
+    g_models = g_glm(~1)
+  )
+  m5 <- summary(sub5, return_table = TRUE, contrast = FALSE)
+  c5 <- summary(sub5, return_table = TRUE, contrast = TRUE)
+  expect_equal(names(m5), names(m1))
+  expect_equal(names(c5), names(c1))
+  expect_equal(m5$type, rep("blip", 4L))
+  expect_equal(m5$policy, rep("cate", 4L))
+  expect_equal(c5$type, rep("blip", 2L))
+  expect_equal(c5$policy, rep("cate", 2L))
+  expect_true(all(grepl("cate\\(eta=50", m5$name)))
+  expect_true(all(grepl("cate\\(eta=50", c5$name)))
 })
 
 test_that("policy_eval target = 'subgroup' summary table has the expected schema for ptl", {
@@ -1166,7 +1200,8 @@ test_that("policy_eval target = 'subgroup' summary table has the expected schema
   ## schema: fixed prefix + input_meta cols (action, subgroup + ptl meta):
   expected_cols <- c("name", "estimate", "se", "subgroup_proportion",
                      "action", "subgroup",
-                     "policy", "alpha", "threshold", "depth", "hybrid")
+                     "type", "policy",
+                     "alpha", "threshold", "depth", "hybrid")
   expect_equal(names(m1), expected_cols)
   expect_equal(names(c1), expected_cols)
 
@@ -1182,12 +1217,16 @@ test_that("policy_eval target = 'subgroup' summary table has the expected schema
   expect_equal(c1$estimate, unname(coef(sub1)))
   expect_equal(c1$se, unname(sqrt(diag(vcov(sub1, contrast = TRUE)))))
 
+  expect_equal(m1$type, rep("ptl", 4L))
+  ## default name defaults to type; policy mirrors it:
   expect_equal(m1$policy, rep("ptl", 4L))
   expect_equal(m1$threshold, rep(0, 4L))
   expect_equal(m1$depth, rep(2, 4L))
   expect_true(all(!m1$hybrid))
   expect_equal(m1$subgroup, c(1, 1, 0, 0))
   expect_equal(c1$subgroup, c(1, 0))
+  expect_equal(c1$type, rep("ptl", 2L))
+  expect_equal(c1$policy, rep("ptl", 2L))
   expect_equal(c1$threshold, rep(0, 2L))
 
   ## subgroup_proportion matches colMeans(subgroup_indicator):
@@ -1257,4 +1296,33 @@ test_that("policy_eval target = 'subgroup' summary table has the expected schema
   expect_equal(c3$threshold, rep(c(0, 0.5), each = 2L))
   expect_equal(m3$estimate, unname(sub3$coef))
   expect_equal(c3$estimate, unname(coef(sub3)))
+
+  ## ------------------------------------------------------------------
+  ## ptl with a user-supplied policy name:
+  ## `type` stays "ptl"; `policy` records the user's name; the composed
+  ## `name` swaps the "ptl" stem for the user's name.
+  ## ------------------------------------------------------------------
+  pl4 <- policy_learn(
+    type = "ptl",
+    threshold = 0,
+    control = control_ptl(policy_vars = c("Z", "L"), depth = 2),
+    name = "tree"
+  )
+  sub4 <- policy_eval(
+    target = "subgroup",
+    policy_data = pd,
+    policy_learn = pl4,
+    q_models = q_glm(),
+    g_models = g_glm()
+  )
+  m4 <- summary(sub4, return_table = TRUE, contrast = FALSE)
+  c4 <- summary(sub4, return_table = TRUE, contrast = TRUE)
+  expect_equal(names(m4), expected_cols)
+  expect_equal(names(c4), expected_cols)
+  expect_equal(m4$type, rep("ptl", 4L))
+  expect_equal(m4$policy, rep("tree", 4L))
+  expect_equal(c4$type, rep("ptl", 2L))
+  expect_equal(c4$policy, rep("tree", 2L))
+  expect_true(all(grepl("tree\\(eta=", m4$name)))
+  expect_true(all(grepl("tree\\(eta=", c4$name)))
 })

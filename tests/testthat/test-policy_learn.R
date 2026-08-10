@@ -159,7 +159,7 @@ test_that("policy_learn checks input", {
     })
 
   # name
-  nn <- list(1, TRUE, "test", NULL)
+  nn <- list(1, TRUE, "test")
   lapply(
     nn, function(name){
       expect_error(
