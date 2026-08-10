@@ -220,14 +220,9 @@ policy_learn <- function(type = "blip",
     (length(save_cross_fit_models) == 1))) {
     stop("save_cross_fit_models must be TRUE or FALSE")
   }
-  if (!is.null(name)) {
-    name <- as.character(name)
-    if (length(name) != 1) {
-      stop("name must be a character string.")
-    }
-    if (length(threshold) > 1 || any(threshold != 0)) {
-      name <- paste(name, "(eta=", threshold, ")", sep = "")
-    }
+  name <- as.character(name)
+  if (length(name) != 1) {
+    stop("name must be a character string.")
   }
 
   if (!is.list(future_args)) {

@@ -1530,7 +1530,8 @@ test_that("policy_eval target = 'value' summary table has the expected schema fo
   pl1 <- policy_learn(
     type = "blip",
     threshold = 50,
-    control = control_blip(blip_models = polle:::q_degen(var = "z"))
+    control = control_blip(blip_models = polle:::q_degen(var = "z")),
+    name = "cate"
   )
   pe1 <- policy_eval(
     target = "value",
@@ -1545,7 +1546,7 @@ test_that("policy_eval target = 'value' summary table has the expected schema fo
   expect_equal(names(t1),
                c("name", "estimate", "se", "policy", "alpha", "threshold"))
   expect_equal(nrow(t1), 1L)
-  expect_equal(t1$name, "E[U(d)]: d=blip(eta=50)")
+  expect_equal(t1$name, "E[U(d)]: d=cate(eta=50)")
   expect_equal(t1$policy, "blip")
   expect_equal(t1$threshold, 50)
   expect_equal(t1$estimate, unname(coef(pe1)))
