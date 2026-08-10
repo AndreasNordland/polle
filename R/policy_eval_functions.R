@@ -164,6 +164,7 @@ policy_eval_table <- function(object, contrast = TRUE) {
     subgroup_proportion = sp
   )
   tab <- cbind(tab, input_meta)
+  tab[["action"]] <- NULL
 
   return(tab)
 }

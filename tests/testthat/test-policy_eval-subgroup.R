@@ -972,7 +972,7 @@ test_that("policy_eval target = 'subgroup' summary table has the expected schema
   expect_equal(
     names(c1),
     c("name", "estimate", "se", "subgroup_proportion",
-      "action", "subgroup", "type", "policy", "alpha", "threshold")
+      "subgroup", "type", "policy", "alpha", "threshold")
   )
 
   ## means: 4 rows for one policy; contrasts: 2 rows.
@@ -1000,8 +1000,6 @@ test_that("policy_eval target = 'subgroup' summary table has the expected schema
   expect_equal(c1$type, rep("blip", 2L))
   expect_equal(c1$policy, rep("blip", 2L))
   expect_equal(c1$threshold, rep(50, 2L))
-  ## the action column is filtered to the a2 rows in the contrast view:
-  expect_equal(c1$action, c("2", "2"))
 
   ## subgroup_proportion matches colMeans(subgroup_indicator):
   sp1 <- colMeans(sub1$subgroup_indicator)
@@ -1034,6 +1032,11 @@ test_that("policy_eval target = 'subgroup' summary table has the expected schema
     names(m2),
     c("name", "estimate", "se", "subgroup_proportion",
       "action", "subgroup", "type", "policy", "alpha", "threshold")
+  )
+  expect_equal(
+    names(c2),
+    c("name", "estimate", "se", "subgroup_proportion",
+      "subgroup", "type", "policy", "alpha", "threshold")
   )
 
   ## means: 4 rows x 2 policies = 8; contrasts: 2 rows x 2 policies = 4.
@@ -1087,11 +1090,18 @@ test_that("policy_eval target = 'subgroup' summary table has the expected schema
   c3 <- summary(sub3, return_table = TRUE, contrast = TRUE)
 
   ## schema: `quantile_prob_threshold` replaces `threshold` in input_meta,
-  ## and `threshold` moves to output_meta.
+  ## and `threshold` moves to output_meta. The contrast view additionally
+  ## drops the `action` column.
   expect_equal(
     names(m3),
     c("name", "estimate", "se", "subgroup_proportion",
       "action", "subgroup", "type", "policy", "alpha",
+      "quantile_prob_threshold")
+  )
+  expect_equal(
+    names(c3),
+    c("name", "estimate", "se", "subgroup_proportion",
+      "subgroup", "type", "policy", "alpha",
       "quantile_prob_threshold")
   )
   expect_false("threshold" %in% names(m3))
@@ -1197,13 +1207,19 @@ test_that("policy_eval target = 'subgroup' summary table has the expected schema
   m1 <- summary(sub1, return_table = TRUE, contrast = FALSE)
   c1 <- summary(sub1, return_table = TRUE, contrast = TRUE)
 
-  ## schema: fixed prefix + input_meta cols (action, subgroup + ptl meta):
-  expected_cols <- c("name", "estimate", "se", "subgroup_proportion",
-                     "action", "subgroup",
+  ## schema: the means view has the fixed prefix + input_meta columns; the
+  ## contrast view drops `action` (contrast rows do not correspond to a
+  ## specific action).
+  means_cols <- c("name", "estimate", "se", "subgroup_proportion",
+                  "action", "subgroup",
+                  "type", "policy",
+                  "alpha", "threshold", "depth", "hybrid")
+  contrast_cols <- c("name", "estimate", "se", "subgroup_proportion",
+                     "subgroup",
                      "type", "policy",
                      "alpha", "threshold", "depth", "hybrid")
-  expect_equal(names(m1), expected_cols)
-  expect_equal(names(c1), expected_cols)
+  expect_equal(names(m1), means_cols)
+  expect_equal(names(c1), contrast_cols)
 
   ## row counts:
   expect_equal(nrow(m1), 4L)
@@ -1255,7 +1271,8 @@ test_that("policy_eval target = 'subgroup' summary table has the expected schema
   m2 <- summary(sub2, return_table = TRUE, contrast = FALSE)
   c2 <- summary(sub2, return_table = TRUE, contrast = TRUE)
 
-  expect_equal(names(m2), expected_cols)
+  expect_equal(names(m2), means_cols)
+  expect_equal(names(c2), contrast_cols)
   expect_equal(nrow(m2), 8L)
   expect_equal(nrow(c2), 4L)
   expect_equal(m2$threshold, rep(c(0, 0.5), each = 4L))
@@ -1288,8 +1305,8 @@ test_that("policy_eval target = 'subgroup' summary table has the expected schema
   )
   m3 <- summary(sub3, return_table = TRUE, contrast = FALSE)
   c3 <- summary(sub3, return_table = TRUE, contrast = TRUE)
-  expect_equal(names(m3), expected_cols)
-  expect_equal(names(c3), expected_cols)
+  expect_equal(names(m3), means_cols)
+  expect_equal(names(c3), contrast_cols)
   expect_equal(nrow(m3), 8L)
   expect_equal(nrow(c3), 4L)
   expect_equal(m3$threshold, rep(c(0, 0.5), each = 4L))
@@ -1317,8 +1334,8 @@ test_that("policy_eval target = 'subgroup' summary table has the expected schema
   )
   m4 <- summary(sub4, return_table = TRUE, contrast = FALSE)
   c4 <- summary(sub4, return_table = TRUE, contrast = TRUE)
-  expect_equal(names(m4), expected_cols)
-  expect_equal(names(c4), expected_cols)
+  expect_equal(names(m4), means_cols)
+  expect_equal(names(c4), contrast_cols)
   expect_equal(m4$type, rep("ptl", 4L))
   expect_equal(m4$policy, rep("tree", 4L))
   expect_equal(c4$type, rep("ptl", 2L))
