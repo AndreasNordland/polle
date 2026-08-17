@@ -1343,3 +1343,415 @@ test_that("policy_eval target = 'subgroup' summary table has the expected schema
   expect_true(all(grepl("tree\\(eta=", m4$name)))
   expect_true(all(grepl("tree\\(eta=", c4$name)))
 })
+
+test_that("policy_eval target = 'subgroup' has symmetrical outputs if a=A/B is switched", {
+
+  catefun <- function(z) (z <= 32) * (-4 + (z - 20) * 1/3)
+  sim_data <- function(n, labels = c("A", "B")) {
+    ## baseline
+    z <- runif(n = n, min = 20, max = 80)
+
+    ## treatment
+    a <- rbinom(n = n, size = 1, prob = 0.5)
+
+    ymean <- a * catefun(z = z)
+    y <- rnorm(n = n, sd = 2, mean = ymean)
+
+    aout <- ifelse(a == 1, labels[1], labels[2])
+
+    data.frame(z = z, a = aout, y = y)
+  }
+
+  set.seed(423)
+  dAB <- sim_data(4e3)
+  pdAB <- policy_data(dAB,
+                    action = "a",
+                    utility = "y",
+                    covariates = c("z"))
+  set.seed(423)
+  dBA <- sim_data(4e3, labels = c("B", "A"))
+  pdBA <- policy_data(dBA,
+                    action = "a",
+                    utility = "y",
+                    covariates = c("z"))
+
+  pl <- policy_learn(type = "blip",
+                   control_blip(q_glm(~ .),
+                                quantile_prob_threshold = c(0.1, 0.5, 0.9)))
+
+  ##
+  ## no cross-fitting
+  ##
+
+  ## subgroup policy eval
+  peAB <- policy_eval(target = "subgroup",
+                    policy_data = pdAB,
+                    policy_learn = pl,
+                    M = 1,
+                    g_models = g_glm(~1),
+                    q_models = q_glm(~ A * z))
+
+  peBA <- policy_eval(target = "subgroup",
+                    policy_data = pdBA,
+                    policy_learn = pl,
+                    M = 1,
+                    g_models = g_glm(~1),
+                    q_models = q_glm(~ A * z))
+
+  expect_equal(sort(peAB$policy_object$threshold),
+               sort(-peBA$policy_object$threshold))
+
+  ## contrast = FALSE
+
+  expect_equal(
+    peAB$coef |> unname(),
+    rev(peBA$coef) |> unname()
+  )
+
+  expect_equal(
+    summary(peAB, contrast = FALSE)$coef |> unname(),
+     peAB$coef |> unname()
+  )
+
+  expect_equal(
+    summary(peBA, contrast = FALSE)$coef |> unname(),
+     peBA$coef |> unname()
+  )
+
+  expect_equal(
+    summary(peAB, contrast = FALSE, return_table = TRUE)$estimate |> unname(),
+     peAB$coef |> unname()
+  )
+
+  expect_equal(
+    summary(peBA, contrast = FALSE, return_table = TRUE)$estimate |> unname(),
+     peBA$coef |> unname()
+  )
+
+  ## contrast = TRUE
+
+  expect_equal(
+    summary(peAB, contrast = TRUE)$coef |> unname(),
+    rev(-summary(peBA, contrast = TRUE)$coef) |> unname()
+  )
+
+  expect_equal(
+    summary(peAB, contrast = TRUE, return_table = TRUE)$estimate |> unname(),
+    rev(-summary(peBA, contrast = TRUE, return_table = TRUE)$estimate) |> unname()
+  )
+
+  ##
+  ## cross-fitting
+  ##
+
+  ## subgroup policy eval
+  set.seed(4234)
+  peAB <- policy_eval(target = "subgroup",
+                    policy_data = pdAB,
+                    policy_learn = pl,
+                    M = 4,
+                    g_models = g_glm(~1),
+                    q_models = q_glm(~ A * z))
+
+  set.seed(4234)
+  peBA <- policy_eval(target = "subgroup",
+                    policy_data = pdBA,
+                    policy_learn = pl,
+                    M = 4,
+                    g_models = g_glm(~1),
+                    q_models = q_glm(~ A * z))
+
+  expect_equal(
+    peAB$coef |> unname(),
+    rev(peBA$coef) |> unname()
+  )
+
+})
+
+test_that("policy_eval target = 'subgroup' almost no treatment effect VS targeted:cate", {
+
+  library("data.table")
+  catefun <- function(z) (20 + (z <= 32) * (-4 + (z - 20) * 1/3))
+  sim_data <- function(n) {
+    ## baseline
+    z <- runif(n = n, min = 20, max = 80)
+
+    ## treatment
+    a <- rbinom(n = n, size = 1, prob = 0.5)
+
+    y <- rnorm(n = n, sd = 10, mean = catefun(z = z) * a)
+
+    data.frame(z = z, a = a, y = y)
+  }
+
+  pl <- policy_learn(type = "blip",
+                   control_blip(q_glm(~ .),
+                                quantile_prob_threshold = c(0.1, 0.5, 0.9)))
+
+  ## sim policy data
+  set.seed(423)
+  d <- sim_data(400)
+  pd <- policy_data(d,
+                    action = "a",
+                    utility = "y",
+                    covariates = c("z"))
+
+  ## subgroup policy eval
+  set.seed(90234)
+  pe <- policy_eval(target = "subgroup",
+                    policy_data = pd,
+                    policy_learn = pl,
+                    M = 1,
+                    g_models = g_glm(~1),
+                    q_models = q_glm(~ A * z))
+
+  ## viz
+  ## library("ggplot2")
+  ## sumtab <- summary(pe, return_table = TRUE)
+  ## sumtab$upper <- sumtab$estimate + 1.96 * sumtab$se
+  ## sumtab$lower <- sumtab$estimate - 1.96 * sumtab$se
+
+  ## ggplot(sumtab) +
+  ##   geom_point(aes(x = quantile_prob_threshold, y = estimate, color = subgroup)) +
+  ##   geom_errorbar(aes(x = quantile_prob_threshold, ymin = lower, ymax = upper, color = subgroup)) +
+  ##   theme_bw()
+
+  ## g1 <- ggplot(sumtab) +
+  ##   geom_point(aes(x = subgroup_proportion, y = estimate)) +
+  ##   geom_errorbar(aes(x = subgroup_proportion, ymin = lower, ymax = upper)) +
+  ##   facet_wrap(~ subgroup) +
+  ##   theme_bw()
+
+  ## sumtab[, sp := ifelse(subgroup == 1, subgroup_proportion, 1 - subgroup_proportion)]
+
+  ## g2 <- ggplot(sumtab) +
+  ##   geom_point(aes(x = sp, y = estimate, color = subgroup)) +
+  ##   geom_errorbar(aes(x = sp, ymin = lower, ymax = upper, color = subgroup)) +
+  ##   theme_bw()
+
+  ## require(gridExtra)
+  ## grid.arrange(g1, g2, ncol=2)
+
+  ## compare to targeted::cate
+  subvar <- pe$subgroup_indicator[, c(1,3,5)]
+  colnames(subvar) <- c("q1", "q5", "q9")
+  d <- cbind(d, subvar)
+
+  tar_est_q1 <- targeted::cate(data = d,
+                               cate.model = ~ q1 - 1,
+                               response.model = y ~ a * z,
+                               treatment.model = a ~ 1,
+                               second.order = FALSE)
+
+  tar_est_q5 <- targeted::cate(data = d,
+                               cate.model = ~ q5 - 1,
+                               response.model = y ~ a * z,
+                               treatment.model = a ~ 1,
+                               second.order = FALSE)
+
+  tar_est_q9 <- targeted::cate(data = d,
+                               cate.model = ~ q9 - 1,
+                               response.model = y ~ a * z,
+                               treatment.model = a ~ 1,
+                               second.order = FALSE)
+
+  expect_equal(
+    tar_est_q1$estimate$coef[c(3,4)][c("q1TRUE", "q1FALSE")] |> unname(),
+    summary(pe, return_table = TRUE)[quantile_prob_threshold == 0.1]$estimate |> unname()
+  )
+  expect_equal(
+    tar_est_q5$estimate$coef[c(3,4)][c("q5TRUE", "q5FALSE")] |> unname(),
+    summary(pe, return_table = TRUE)[quantile_prob_threshold == 0.5]$estimate |> unname()
+  )
+  expect_equal(
+    tar_est_q9$estimate$coef[c(3,4)][c("q9TRUE", "q9FALSE")] |> unname(),
+    summary(pe, return_table = TRUE)[quantile_prob_threshold == 0.9]$estimate |> unname()
+  )
+
+  ## viz policy checks: the policy is opposite the the optimal policy
+  ## po <- pe$policy_object
+  ## blip_coef <- coef(po$blip_functions$stage_1$blip_model$model)
+  ## ref_model <- glm(y ~ a * z, data = d)
+
+  ## ggplot(d) +
+  ##   geom_point(aes(x = z, y = y, color = as.factor(a))) +
+  ##   geom_function(fun = function(x) catefun(z = x), color = "blue") +
+  ##   geom_abline(intercept = blip_coef[1], slope = blip_coef[2], color = "red") +
+  ##   theme_bw()
+
+  ## tmp <- cbind(get_policy(po)[[3]](pd), as.data.table(d))
+  ## tmp[order(z)]
+  ## ggplot(tmp) +
+  ##   geom_histogram(aes(x = z)) +
+  ##   facet_wrap(~ d) +
+  ##   theme_bw()
+
+})
+
+test_that("policy_eval target = 'subgroup' almost no treatment effect with cross-fitting VS targeted:cate", {
+  library("data.table")
+  catefun <- function(z) (20 + (z <= 32) * (-4 + (z - 20) * 1/3))
+  sim_data <- function(n) {
+    ## baseline
+    z <- runif(n = n, min = 20, max = 80)
+
+    ## treatment
+    a <- rbinom(n = n, size = 1, prob = 0.5)
+
+    y <- rnorm(n = n, sd = 10, mean = catefun(z = z) * a)
+
+    data.frame(z = z, a = a, y = y)
+  }
+
+  pl <- policy_learn(type = "blip",
+                   control_blip(q_glm(~ .),
+                                quantile_prob_threshold = c(0.1, 0.5, 0.9)))
+
+  ## sim policy data
+  set.seed(423)
+  ## 423, by change display the opposite heterogenity
+  ## 424 acts as expected
+  d <- sim_data(400)
+  pd <- policy_data(d,
+                    action = "a",
+                    utility = "y",
+                    covariates = c("z"))
+
+  ## subgroup policy eval
+  set.seed(90234)
+  pe <- policy_eval(target = "subgroup",
+                    policy_data = pd,
+                    policy_learn = pl,
+                    M = 10,
+                    g_models = g_glm(~1),
+                    q_models = q_glm(~ A * z))
+
+  ## viz q = 0.1 subgroups
+  ## sg <- pe$subgroup_indicator[, c(1,2)]
+  ## colnames(sg) <- c("high", "low")
+  ## plot_data <- cbind(d, sg)
+  ## g1 <- ggplot(plot_data) +
+  ##   geom_histogram(aes(x = z)) +
+  ##   facet_wrap(~ high) +
+  ##   theme_bw()
+
+  ## g2 <- ggplot(plot_data) +
+  ##   geom_point(aes(x = z, y = y, color = a)) +
+  ##   geom_smooth(aes(x = z, y = y, group= a))
+
+  ## require(gridExtra)
+  ## grid.arrange(g1, g2, ncol=2)
+
+  ## ## viz
+  ## plot_data <- d[d$a == 1,]
+  ## ggplot(plot_data) +
+  ##   geom_point(aes(x = z, y = y)) +
+  ##   geom_smooth(aes(x = z, y = y), method='lm', formula= y~x) +
+  ##   geom_function(fun = function(x) catefun(z = x), color = "blue") +
+  ##   theme_b
+
+
+  ## inspect
+  ## lapply(pe$cross_fits, function(x) x$policy_object$blip_functions$stage_1$blip_model)
+
+  ## viz
+  ## library("ggplot2")
+  ## sumtab <- summary(pe, return_table = TRUE)
+  ## sumtab$upper <- sumtab$estimate + 1.96 * sumtab$se
+  ## sumtab$lower <- sumtab$estimate - 1.96 * sumtab$se
+
+  ## ggplot(sumtab) +
+  ##   geom_point(aes(x = quantile_prob_threshold, y = estimate, color = subgroup)) +
+  ##   geom_errorbar(aes(x = quantile_prob_threshold, ymin = lower, ymax = upper, color = subgroup)) +
+  ##   theme_bw()
+
+  ## g1 <- ggplot(sumtab) +
+  ##   geom_point(aes(x = subgroup_proportion, y = estimate)) +
+  ##   geom_errorbar(aes(x = subgroup_proportion, ymin = lower, ymax = upper)) +
+  ##   facet_wrap(~ subgroup) +
+  ##   theme_bw()
+
+  ## sumtab[, sp := ifelse(subgroup == 1, subgroup_proportion, 1 - subgroup_proportion)]
+  ## g2 <- ggplot(sumtab) +
+  ##   geom_point(aes(x = sp, y = estimate, color = subgroup)) +
+  ##   geom_errorbar(aes(x = sp, ymin = lower, ymax = upper, color = subgroup)) +
+  ##   theme_bw()
+
+  ## require(gridExtra)
+  ## grid.arrange(g1, g2, ncol=2)
+
+  ## ## test
+  ## est <- estimate(pe)
+  ## est[1] - est[2]
+
+  ## compare to targeted::cate
+  subvar <- pe$subgroup_indicator[, c(1,3,5)]
+  colnames(subvar) <- c("q1", "q5", "q9")
+  d <- cbind(d, subvar)
+
+  set.seed(90234)
+  tar_est_q1 <- targeted::cate(data = d,
+                               cate.model = ~ q1 - 1,
+                               response.model = y ~ a * z,
+                               treatment.model = a ~ 1,
+                               nfolds = 10,
+                               second.order = FALSE)
+
+  set.seed(90234)
+  tar_est_q5 <- targeted::cate(data = d,
+                               cate.model = ~ q5 - 1,
+                               response.model = y ~ a * z,
+                               treatment.model = a ~ 1,
+                               nfolds = 10,
+                               second.order = FALSE)
+
+  set.seed(90234)
+  tar_est_q9 <- targeted::cate(data = d,
+                               cate.model = ~ q9 - 1,
+                               response.model = y ~ a * z,
+                               treatment.model = a ~ 1,
+                               nfolds = 10,
+                               second.order = FALSE)
+
+  expect_equal(
+    tar_est_q1$estimate$coef[c(3,4)][c("q1TRUE", "q1FALSE")] |> unname(),
+    summary(pe, return_table = TRUE)[quantile_prob_threshold == 0.1]$estimate |> unname()
+  )
+  expect_equal(
+    tar_est_q5$estimate$coef[c(3,4)][c("q5TRUE", "q5FALSE")] |> unname(),
+    summary(pe, return_table = TRUE)[quantile_prob_threshold == 0.5]$estimate |> unname()
+  )
+  expect_equal(
+    tar_est_q9$estimate$coef[c(3,4)][c("q9TRUE", "q9FALSE")] |> unname(),
+    summary(pe, return_table = TRUE)[quantile_prob_threshold == 0.9]$estimate |> unname()
+  )
+
+  ## viz policy checks: the policy is opposite the the optimal policy
+  ## po <- pe$policy_object
+  ## blip_coef <- coef(po$blip_functions$stage_1$blip_model$model)
+  ## ref_model <- glm(y ~ a * z, data = d)
+
+  ## ggplot(d) +
+  ##   geom_point(aes(x = z, y = y, color = as.factor(a))) +
+  ##   geom_function(fun = function(x) catefun(z = x), color = "blue") +
+  ##   geom_abline(intercept = blip_coef[1], slope = blip_coef[2], color = "red") +
+  ##   theme_bw()
+
+  ## tmp <- cbind(get_policy(po)[[3]](pd), as.data.table(d))
+  ## tmp[order(z)]
+  ## ggplot(tmp) +
+  ##   geom_histogram(aes(x = z)) +
+  ##   facet_wrap(~ d) +
+  ##   theme_bw()
+
+  ## policy_eval with repeated cross-fitting:
+  ## set.seed(4342)
+  ## perep <- policy_eval(target = "subgroup",
+  ##                   policy_data = pd,
+  ##                   policy_learn = pl,
+  ##                   M = 10,
+  ##                   nrep = 2,
+  ##                   g_models = g_glm(~1),
+  ##                   q_models = q_glm(~ A * z))
+  ## summary(perep, contrast = TRUE)
+})
