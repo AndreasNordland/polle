@@ -588,7 +588,38 @@ dr_value <- function(K,
   }
 
   ## calculating the IPW and OR scores:
-  Zd_ipw <- ipw_weight(D[, 1:k], C[, 1:k]) * ipw_weight(II, G = G) * ifelse(is.na(U), 0, U)
+  # One contribution per person; censored people contribute zero.
+  # E marks observed termination, including an event-free endpoint.
+  Zd_ipw <- numeric(length(U))
+
+  for (terminal_stage in seq_len(K + 1L)) {
+    terminal_rows <- which(E[, terminal_stage] == 1L)
+    if (!length(terminal_rows)) next
+
+    if (any(!is.finite(U[terminal_rows]))) {
+      stop("An observed terminal event has a missing or non-finite utility.")
+    }
+
+    # Early terminal U_s is observed before Delta_s and A_s.
+    # Final U_(K+1) requires observation through Delta_(K+1).
+    last_weight_stage <- if (terminal_stage <= K) {
+      terminal_stage - 1L
+    } else {
+      K + 1L
+    }
+
+    terminal_weight <- rep(1, length(terminal_rows))
+    if (last_weight_stage > 0L) {
+      cols <- seq_len(last_weight_stage)
+      terminal_weight <-
+        ipw_weight(D[terminal_rows, cols, drop = FALSE],
+                  C[terminal_rows, cols, drop = FALSE]) *
+        ipw_weight(II[terminal_rows, cols, drop = FALSE],
+                  G[terminal_rows, cols, drop = FALSE])
+    }
+
+    Zd_ipw[terminal_rows] <- terminal_weight * U[terminal_rows]
+  }
   Zd_or <- Q[, 1]
 
   ## naming:
