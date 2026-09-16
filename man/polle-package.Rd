@@ -22,7 +22,6 @@ Useful links:
 
 Authors:
 \itemize{
-  \item Andreas Nordland \email{andreasnordland@gmail.com}
   \item Klaus Holst \email{klaus@holst.it} (\href{https://orcid.org/0000-0002-1364-6789}{ORCID})
 }
 

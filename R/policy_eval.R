@@ -272,13 +272,15 @@
 #' # getting the fitted influence curve (IC) for the value:
 #' head(IC(pe1))
 #'
+#' 
 #' # evaluating the policy using random forest nuisance models:
 #' set.seed(1)
-#' pe1_rf <- policy_eval(policy_data = pd1,
-#'                       policy = pl1,
-#'                       g_models = g_rf(),
-#'                       q_models = q_rf(),
-#'                       name = "A=1 (rf)")
+#' pe1_rf <- policy_eval(
+#'   policy_data = pd1,
+#'   policy = policy_def(1, name = "A=1 (rf)"),
+#'   g_models = g_rf(),
+#'   q_models = q_rf()
+#' )
 #'
 #' # merging the two estimates:
 #' (est1 <- estimate(merge(pe1, pe1_rf), labels = c("glm", "rf")))
