@@ -56,9 +56,6 @@ fit_m_function <- function(policy_data,
       m_model <- m_model(AH = H, V_res = V_res)
     }, error = function(e) {
       stop("Error fitting m_model: ", e$message)
-    }, warning = function(w) {
-      warning("Warning in m_model fitting: ", w$message)
-      ## Continue with the model despite warning
     })
 
     ## setting S3 class and attributes:
