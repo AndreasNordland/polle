@@ -30,11 +30,9 @@ fit_c_function <- function(history, c_model){
   if (inherits(c_model, "g_model")) {
     A <- as.numeric(!(event == c(2)))
     tryCatch({
-      c_model <- c_model(A = A, H = H, action_set = c(0,1))
+      c_model <- c_model(A = A, H = H, action_set = c(0, 1))
     }, error = function(e) {
       stop("Error fitting c_model: ", e$message)
-    }, warning = function(w) {
-      warning("Warning in c_model fitting: ", w$message)
     })
   } else {
     c_model <- c_model(event = event, time = time, time2 = time2, H = H)
