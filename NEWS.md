@@ -1,6 +1,8 @@
 # polle (development version)
-    - Bug fix: final-outcome and discrete-censoring model fitting to complete after
+    - bug fix: final-outcome and discrete-censoring model fitting to complete after
     warnings, retaining the fitted models and preserving the learner warnings.
+    - bug fix: set Q_{K+1} = U for early terminal events under missing final
+      outcome
     
 # polle 1.6.4
     - new citation, <doi:10.18637/jss.v116.i04>, Journal of Statistical Software
