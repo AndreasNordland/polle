@@ -305,16 +305,27 @@ fit_Q_functions <- function(policy_data,
   ## (n X K+1) matrix with entries
   ## k-column = Q_k(H_{k,i}, d_k(H_{k,i})), k = 1,...,K
   ## K+1-column = U (if no missing final outcomes) or Q_{K+1}(H_{K+1})
-  Q <- matrix(nrow = n, ncol = K + 1)
-  if (is.null(m_function) == TRUE){
-    ## getting the observed (complete) utility:
-    utility <- get_utility(policy_data)
-    ## (n) vector with entries U_i:
-    U <- utility$U
-    Q[, K + 1] <- U
-  } else {
+  # Initialize every person's terminal value from their observed total utility.
+  # Known early outcomes must survive even when an m_function is present.
+  Q <- matrix(NA_real_, nrow = n, ncol = K + 1L)
+  utility <- get_utility(policy_data)
+  utility_row <- match(id, utility[["id"]])
+
+  if (anyNA(utility_row) || anyDuplicated(utility[["id"]])) {
+    stop("Cannot align observed utilities with policy-data IDs.")
+  }
+  Q[, K + 1L] <- utility[["U"]][utility_row]
+
+  # Keep the intended model predictions for final-stage histories.
+  # IDs that terminated earlier retain their known observed utility above.
+  if (!is.null(m_function)) {
     Q_K1 <- predict(m_function, new_policy_data = policy_data)
-    Q[(id %in% Q_K1[["id"]]), K + 1] <- Q_K1[["Q"]]
+    prediction_row <- match(Q_K1[["id"]], id)
+
+    if (anyNA(prediction_row) || anyDuplicated(Q_K1[["id"]])) {
+      stop("Cannot align final-stage predictions with policy-data IDs.")
+    }
+    Q[prediction_row, K + 1L] <- Q_K1[["Q"]]
   }
 
   # fitting the Q-functions:

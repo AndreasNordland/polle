@@ -925,7 +925,20 @@ test_that("policy_eval with target 'value' has the correct outputs for the stoch
 
   ref_pe_or <- mean(d$x1)
 
-  ref_pe_ipw <- mean((d$a1 == d$p1) / 0.5 * (d$m == 0) * (d$a2 == d$p2) / 0.5 *  d$y)
+  ## ref_pe_ipw
+  # For m == 1, the fixture removes the second treatment row but retains
+  # the observed terminal outcome y. These subjects contribute w1 * y.
+  # Subjects with m == 0 contribute w1 * w2 * y.
+  # Average over all subjects, including those whose treatment differs
+  # from the policy.
+  w1 <- as.numeric(d$a1 == d$p1) / 0.5
+  w2 <- as.numeric(d$a2 == d$p2) / 0.5
+  # Early terminal outcomes: only the first treatment decision applies.
+  ref_ipw_early <- mean((d$m == 1) * w1 * d$y)
+  # Later terminal outcomes: both treatment decisions apply.
+  ref_ipw_final <- mean((d$m == 0) * w1 * w2 * d$y)
+
+  ref_pe_ipw <- ref_ipw_early + ref_ipw_final
 
   ##
   ## no cross-fitting
