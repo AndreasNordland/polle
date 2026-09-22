@@ -32,9 +32,7 @@ fit_Q_function <- function(history, Q, q_model) {
   V_res <- unlist(Q - U[, "U_bar"] - U_A)
 
   ## removing missing outcomes (censored/coarsened)
-  missing_ <- is.na(Q)
-  V_res <- V_res[missing_ == FALSE]
-  AH <- AH[missing_ == FALSE, ]
+  if (anyNA(V_res)) stop("NA values when fitting Q-function")
 
   ## fitting the (residual) Q-model
   q_model <- q_model(V_res = V_res, AH = AH)
