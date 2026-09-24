@@ -128,8 +128,8 @@ Usually, we want to specify the nuisance models ourselves using the `g_models` a
 pe1 <- policy_eval(pd,
             policy = p1,
             g_models = list(
-              g_sl(formula = ~ BB + L_1, SL.library = c("SL.glm", "SL.ranger")),
-              g_sl(formula = ~ BB + L_1 + C_2, SL.library = c("SL.glm", "SL.ranger"))
+              g_rf(formula = ~ BB + L_1),
+              g_rf(formula = ~ BB + L_1 + C_2)
             ),
             g_full_history = TRUE,
             q_models = list(
@@ -139,7 +139,7 @@ pe1 <- policy_eval(pd,
             q_full_history = TRUE)
 ```
 
-Here we train a super learner g-model for each stage using the full available history and a generalized linear model for the Q-models. The `formula` argument is used to construct the model frame passed to the model for training (and prediction).
+Here we train a random-forest g-model for each stage using the full available history and a generalized linear model for the Q-models. The `formula` argument is used to construct the model frame passed to the model for training (and prediction).
 The valid formula terms depending on `g_full_history` and `q_full_history` are available via `get_history_names()`:
 
 ```{r history_names}

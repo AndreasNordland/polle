@@ -236,7 +236,7 @@ q_step_cf <- function(folds,
 #' @noRd
 #' @param policy_data Policy data object created by [policy_data()].
 #' @param policy_actions Policy actions, see [policy_def].
-#' @param q_models Outcome regression models/Q-models created by [q_glm()], [q_rf()], [q_sl()] or similar functions.
+#' @param q_models Outcome regression models/Q-models created by [q_glm()], [q_rf()] or similar functions.
 #' @param full_history If TRUE, the full history is used to fit each Q-model. If FALSE, the single stage/"Markov type" history is used to fit each Q-model.
 #' @param m_function Function of class m_function to impute missing outcomes.
 #' @examples

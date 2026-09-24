@@ -24,13 +24,13 @@
 #' \itemize{
 #'   \item \code{qv_models}:
 #' Single element or list of V-restricted Q-models created
-#' by [q_glm()], [q_rf()], [q_sl()] or similar functions.
+#' by [q_glm()], [q_rf()] or similar functions.
 #' }
 #' [control_blip()]:\cr
 #' \itemize{
 #'   \item \code{blip_models}:
 #' Single element or list of V-restricted blip-models created
-#' by [q_glm()], [q_rf()], [q_sl()] or similar functions.
+#' by [q_glm()], [q_rf()] or similar functions.
 #' }
 #' [control_ptl()]: \cr
 #' \itemize{

@@ -10,7 +10,7 @@ fit_g_functions(policy_data, g_models, full_history = FALSE)
 \item{policy_data}{Policy data object created by \code{\link[=policy_data]{policy_data()}}.}
 
 \item{g_models}{List of action probability models/g-models for each stage
-created by \code{\link[=g_empir]{g_empir()}}, \code{\link[=g_glm]{g_glm()}}, \code{\link[=g_rf]{g_rf()}}, \code{\link[=g_sl]{g_sl()}} or similar functions.}
+created by \code{\link[=g_empir]{g_empir()}}, \code{\link[=g_glm]{g_glm()}}, \code{\link[=g_rf]{g_rf()}} or similar functions.}
 
 \item{full_history}{If TRUE, the full history is used to fit each g-model.
 If FALSE, the single stage/"Markov type" history is used to fit each g-model.}

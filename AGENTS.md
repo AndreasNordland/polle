@@ -1,8 +1,10 @@
 # polle — agent notes
 
 CRAN R package for policy learning/evaluation. Standard R package layout
-(`R/`, `man/`, `tests/testthat/`, `vignettes/`). R >= 4.1 required;
-`SuperLearner` is attached via `Depends`.
+(`R/`, `man/`, `tests/testthat/`, `vignettes/`). R >= 4.1 required.
+`SuperLearner` was previously attached via `Depends`; it has been removed
+ahead of its scheduled CRAN archival. `q_sl()` / `g_sl()` remain exported
+but currently `stop()` with an informative message.
 
 ## Commands (use the Makefile, not bare R CMD)
 

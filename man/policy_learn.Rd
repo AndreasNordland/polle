@@ -46,13 +46,13 @@ Values (and default values) are set using
 \itemize{
 \item \code{qv_models}:
 Single element or list of V-restricted Q-models created
-by \code{\link[=q_glm]{q_glm()}}, \code{\link[=q_rf]{q_rf()}}, \code{\link[=q_sl]{q_sl()}} or similar functions.
+by \code{\link[=q_glm]{q_glm()}}, \code{\link[=q_rf]{q_rf()}} or similar functions.
 }
 \code{\link[=control_blip]{control_blip()}}:\cr
 \itemize{
 \item \code{blip_models}:
 Single element or list of V-restricted blip-models created
-by \code{\link[=q_glm]{q_glm()}}, \code{\link[=q_rf]{q_rf()}}, \code{\link[=q_sl]{q_sl()}} or similar functions.
+by \code{\link[=q_glm]{q_glm()}}, \code{\link[=q_rf]{q_rf()}} or similar functions.
 }
 \code{\link[=control_ptl]{control_ptl()}}: \cr
 \itemize{

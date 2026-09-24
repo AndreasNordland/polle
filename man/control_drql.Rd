@@ -8,7 +8,7 @@ control_drql(qv_models = q_glm(~.))
 }
 \arguments{
 \item{qv_models}{Single element or list of V-restricted Q-models created
-by \code{\link[=q_glm]{q_glm()}}, \code{\link[=q_rf]{q_rf()}}, \code{\link[=q_sl]{q_sl()}} or similar functions.}
+by \code{\link[=q_glm]{q_glm()}}, \code{\link[=q_rf]{q_rf()}} or similar functions.}
 }
 \value{
 list of (default) control arguments.

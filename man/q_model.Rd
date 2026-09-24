@@ -34,14 +34,7 @@ q_rf(
   ...
 )
 
-q_sl(
-  formula = ~.,
-  SL.library = c("SL.mean", "SL.glm"),
-  env = parent.frame(),
-  onlySL = TRUE,
-  discreteSL = FALSE,
-  ...
-)
+q_sl(...)
 
 q_xgboost(
   formula = ~.,
@@ -71,7 +64,7 @@ not be saved.}
 should happen when the data contain NAs, see \link{na.pass}.}
 
 \item{...}{Additional arguments passed to \code{\link[=glm]{glm()}}, \link[glmnet:glmnet]{glmnet::glmnet},
-\link[ranger:ranger]{ranger::ranger} or \link[SuperLearner:SuperLearner]{SuperLearner::SuperLearner}.}
+\link[ranger:ranger]{ranger::ranger} or \link[xgboost:xgboost]{xgboost::xgboost}.}
 
 \item{alpha}{(Only used by \code{q_glmnet}) The elasticnet mixing parameter
 between 0 and 1. alpha equal to 1 is the lasso penalty, and alpha equal
@@ -90,19 +83,6 @@ Only used if multiple hyper-parameters are given. \code{K} is the number
 of folds and
 \code{rep} is the number of replications.}
 
-\item{SL.library}{(Only used by \code{q_sl}) Either a character vector of
-prediction algorithms or a list containing character vectors,
-see \link[SuperLearner:SuperLearner]{SuperLearner::SuperLearner}.}
-
-\item{env}{(Only used by \code{q_sl}) Environment containing the learner
-functions. Defaults to the calling environment.}
-
-\item{onlySL}{(Only used by \code{q_sl}) Logical. If TRUE, only saves and computes predictions
-for algorithms with non-zero coefficients in the super learner object.}
-
-\item{discreteSL}{(Only used by \code{q_sl}) If TRUE, select the model with
-the lowest cross-validated risk.}
-
 \item{objective}{(Only used by \code{q_xgboost}) specify the learning
 task and the corresponding learning objective, see \link[xgboost:xgboost]{xgboost::xgboost}.}
 
@@ -120,9 +100,14 @@ q_model object: function with arguments 'AH'
 utility).
 }
 \description{
-Use \code{q_glm()}, \code{q_glmnet()}, \code{q_rf()}, and \code{q_sl()} to construct
-an outcome regression model/Q-model object.
+Use \code{q_glm()}, \code{q_glmnet()}, \code{q_rf()} and
+\code{q_xgboost()} to construct an outcome regression model/Q-model object.
 The constructors are used as input for \code{\link[=policy_eval]{policy_eval()}} and \code{\link[=policy_learn]{policy_learn()}}.
+
+\code{q_sl()} is currently unavailable because the 'SuperLearner' package
+is scheduled for archival on CRAN; calling it raises an informative error.
+An ensemble-learner interface based on the 'targeted' package is planned
+for a future release.
 }
 \details{
 \code{q_glm()} is a wrapper of \code{\link[=glm]{glm()}} (generalized linear model).\cr
@@ -131,8 +116,9 @@ penalized maximum likelihood).\cr
 \code{q_rf()} is a wrapper of \code{\link[ranger:ranger]{ranger::ranger()}} (random forest).
 When multiple hyper-parameters are given, the
 model with the lowest cross-validation error is selected.\cr
-\code{q_sl()} is a wrapper of \link[SuperLearner:SuperLearner]{SuperLearner::SuperLearner} (ensemble model).
-\code{q_xgboost()} is a wrapper of \link[xgboost:xgboost]{xgboost::xgboost}.
+\code{q_xgboost()} is a wrapper of \link[xgboost:xgboost]{xgboost::xgboost}.\cr
+\code{q_sl()} previously wrapped \code{SuperLearner::SuperLearner}; see
+the note in the description.
 }
 \examples{
 library("polle")

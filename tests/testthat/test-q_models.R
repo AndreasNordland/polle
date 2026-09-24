@@ -56,9 +56,13 @@ test_that("q_models checks formula input", {
                            policy = p_dynamic,
                            q_models = q_glm(formula = Y~X)),
                "variable 'X' is not found in data when calling 'q_glm' with formula: ~X")
+  ## ns() lives in the base 'splines' package. Previously attached
+  ## transitively via SuperLearner -> gam; load it explicitly now that
+  ## SuperLearner is no longer a hard dependency of polle.
+  library("splines")
   expect_no_error(policy_eval(policy_data = pd,
-                           policy = p_dynamic,
-                           q_models = q_glm(formula = ~ns(C))))
+                              policy = p_dynamic,
+                              q_models = q_glm(formula = ~ns(C))))
 
   ## xgboost
   expect_error(policy_eval(policy_data = pd,
@@ -120,101 +124,10 @@ test_that("q_rf formats data correctly via the formula",{
   )
 })
 
-test_that("q_sl formats data correctly via the formula",{
-  d1 <- sim_single_stage(200, seed=1)
-  d1$BB <- sample(c("group 1", "group & 2", "group & 3"), size = 200, replace = TRUE)
-  pd1 <- policy_data(d1,
-                     action="A",
-                     covariates = list("Z", "B", "L", "BB"),
-                     utility="U")
-
+test_that("q_sl() errors informatively while the SuperLearner interface is unavailable", {
   expect_error(
-    pe <- policy_eval(
-      policy_data = pd1,
-      policy_learn = policy_learn(type = "ql", alpha = 0.05),
-      g_models = g_glm(),
-      g_full_history = FALSE,
-      q_models = q_sl()
-    ),
-    NA
-  )
-
-})
-
-test_that("q_sl can find user-defined learners",{
-  library("polle")
-  d <- sim_single_stage(200, seed=1)
-  d$BB <- sample(c("group 1", "group & 2", "group & 3"), size = 200, replace = TRUE)
-  pd <- policy_data(d,
-                    action="A",
-                    covariates = list("Z", "B", "L", "BB"),
-                    utility="U")
-  p <- policy_def(1)
-
-  env <- as.environment("package:SuperLearner")
-  env <- new.env(parent = env)
-  with(env,{
-    SL.test <- function (Y, X, newX, family, obsWeights, model = TRUE, ...){
-      if (is.matrix(X)) {
-        X = as.data.frame(X)
-      }
-      fit.glm <- glm(Y ~ ., data = X, family = family, weights = obsWeights,
-                     model = model)
-      if (is.matrix(newX)) {
-        newX = as.data.frame(newX)
-      }
-      pred <- predict(fit.glm, newdata = newX, type = "response")
-      fit <- list(object = fit.glm)
-      class(fit) <- "SL.glm" # SL.test
-      out <- list(pred = pred, fit = fit)
-      return(out)
-    }
-  })
-
-  expect_error(
-    qfun <- polle:::fit_Q_functions(pd,
-                                    p(pd),
-                                    q_sl(SL.library = "SL.test", env = env),
-                                    m_function = NULL),
-    NA)
-
-})
-
-test_that("q_glm and q_sl(SL.library('SL.glm')) are (almost) equivalent",{
-  library("SuperLearner")
-  d1 <- sim_single_stage(200, seed=1)
-  d1$A <- as.character(d1$A)
-  d1$BB <- sample(c("group 1", "group_2", "G & 4"), size = nrow(d1), replace = TRUE)
-
-  q1 <- q_glm(formula = ~.)
-  q2 <- q_sl(formula = ~., SL.library = "SL.glm")
-
-  q1 <- q1(AH = d1[,c("A", "B", "Z", "L", "BB")], V_res = d1$U)
-  q2 <- q2(AH = d1[,c("A", "B", "Z", "L", "BB")], V_res = d1$U)
-
-  # names are different
-  expect_equal(
-    unname(coef(q1$model)),
-    unname(coef(q2$model$fitLibrary$SL.glm_All$object))
-  )
-
-  q1 <- q_glm(formula = ~.)
-  q2 <- q_sl(formula = ~., SL.library = "SL.glm")
-  d1$B <- as.character(d1$B)
-  pd1 <- policy_data(d1, action = "A", covariates = c("Z", "L", "B", "BB"), utility = "U")
-  pe1 <- policy_eval(policy_data = pd1,
-              policy = policy_def(1),
-              type = "or",
-              q_models = q1)
-  pe2 <- policy_eval(policy_data = pd1,
-                     policy = policy_def(1),
-                     type = "or",
-                     q_models = q2)
-
-  # names are different
-  expect_equal(
-    unname(coef(pe1$q_functions$stage_1$q_model$glm_model)),
-    unname(coef( pe2$q_functions$stage_1$q_model$fit$fitLibrary$SL.glm_All$object))
+    q_sl(),
+    "SuperLearner"
   )
 })
 

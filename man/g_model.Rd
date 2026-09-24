@@ -31,14 +31,7 @@ g_rf(
   ...
 )
 
-g_sl(
-  formula = ~.,
-  SL.library = c("SL.mean", "SL.glm"),
-  family = binomial(),
-  env = parent.frame(),
-  onlySL = TRUE,
-  ...
-)
+g_sl(...)
 
 g_xgboost(
   formula = ~.,
@@ -57,7 +50,7 @@ the propensity model/g-model. Use \code{\link[=get_history_names]{get_history_na
 variable names.}
 
 \item{...}{Additional arguments passed to \code{\link[=glm]{glm()}}, \link[glmnet:glmnet]{glmnet::glmnet},
-\link[ranger:ranger]{ranger::ranger} or \link[SuperLearner:SuperLearner]{SuperLearner::SuperLearner}.}
+\link[ranger:ranger]{ranger::ranger} or \link[xgboost:xgboost]{xgboost::xgboost}.}
 
 \item{family}{A description of the error distribution and link function to
 be used in the model.}
@@ -85,14 +78,6 @@ Only used if multiple hyper-parameters are given. \code{K} is the number
 of folds and
 \code{rep} is the number of replications.}
 
-\item{SL.library}{(Only used by \code{g_sl}) Either a character vector of prediction algorithms or
-a list containing character vectors, see \link[SuperLearner:SuperLearner]{SuperLearner::SuperLearner}.}
-
-\item{env}{(Only used by \code{g_sl}) Environment containing the learner functions. Defaults to the calling environment.}
-
-\item{onlySL}{(Only used by \code{g_sl}) Logical. If TRUE, only saves and computes predictions
-for algorithms with non-zero coefficients in the super learner object.}
-
 \item{objective}{(Only used by \code{g_xgboost}) specify the learning
 task and the corresponding learning objective, see \link[xgboost:xgboost]{xgboost::xgboost}.}
 
@@ -110,9 +95,14 @@ g-model object: function with arguments 'A'
 }
 \description{
 Use \code{g_glm()}, \code{g_empir()},
-\code{g_glmnet()}, \code{g_rf()}, \code{g_sl()}, \code{g_xgboost} to construct
+\code{g_glmnet()}, \code{g_rf()} and \code{g_xgboost()} to construct
 an action probability model/g-model object.
 The constructors are used as input for \code{\link[=policy_eval]{policy_eval()}} and \code{\link[=policy_learn]{policy_learn()}}.
+
+\code{g_sl()} is currently unavailable because the 'SuperLearner' package
+is scheduled for archival on CRAN; calling it raises an informative error.
+An ensemble-learner interface based on the 'targeted' package is planned
+for a future release.
 }
 \details{
 \code{g_glm()} is a wrapper of \code{\link[=glm]{glm()}} (generalized linear model).\cr
@@ -123,8 +113,9 @@ penalized maximum likelihood).\cr
 \code{g_rf()} is a wrapper of \code{\link[ranger:ranger]{ranger::ranger()}} (random forest).
 When multiple hyper-parameters are given, the
 model with the lowest cross-validation error is selected.\cr
-\code{g_sl()} is a wrapper of \link[SuperLearner:SuperLearner]{SuperLearner::SuperLearner} (ensemble model).\cr
-\code{g_xgboost()} is a wrapper of \link[xgboost:xgboost]{xgboost::xgboost}.
+\code{g_xgboost()} is a wrapper of \link[xgboost:xgboost]{xgboost::xgboost}.\cr
+\code{g_sl()} previously wrapped \code{SuperLearner::SuperLearner}; see
+the note in the description.
 }
 \examples{
 library("polle")
