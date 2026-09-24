@@ -1,21 +1,15 @@
-# polle (development version)
+# polle 1.6.5
+    - `SuperLearner` removed from the package dependencies ahead of its
+      scheduled CRAN archival.
+      An ensemble-learner interface based on the `targeted`
+      package is planned for a future release.
     - bug fix: final-outcome and discrete-censoring model fitting to complete after
-    warnings, retaining the fitted models and preserving the learner warnings.
-    - bug fix: set Q_{K+1} = U for early terminal events under missing final
-      outcome
-    
+        warnings, retaining the fitted models and preserving the learner warnings.
+    - bug fix: set Q_{K+1} = U for early terminal events under missing final outcome
+        
 # polle 1.6.4
     - new citation, <doi:10.18637/jss.v116.i04>, Journal of Statistical Software
-    - `SuperLearner` removed from the package dependencies ahead of its
-      scheduled CRAN archival. `q_sl()` and `g_sl()` remain exported but now
-      raise an informative error when called; the original implementations
-      are retained as commented source in `R/q_models.R`, `R/g_models.R` and
-      `R/sl_models.R`. An ensemble-learner interface based on the `targeted`
-      package is planned for a future release.
-    - the previously undocumented reuse of `policy_learn()`'s outer folds
-      by `q_sl()` (via `SuperLearner.CV.control(validRows = ...)`) is no
-      longer available while `q_sl()` is disabled.
-
+    
 # polle 1.6.3
     - policy_def() gains natural_action and stage_number arguments
     - bug fix: c_cox() now passes time, time2 and event to mets::phreg

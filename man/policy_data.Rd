@@ -123,7 +123,8 @@ maximum number of stages in a \code{policy_data} object.}
 \item{\code{\link[=get_history]{get_history()}}}{ Summarize the history and action at a given stage.}
 \item{\code{\link[=get_history_names]{get_history_names()}}}{ Get history variable names.}
 \item{\code{\link[=get_actions]{get_actions()}}}{ Get the action at every stage.}
-\item{\code{\link[=get_utility]{get_utility()}}}{Get the utility.} \item{\code{\link[=plot]{plot()}}}{Plot method.} }
+\item{\code{\link[=get_utility]{get_utility()}}}{Get the utility.}
+\item{\code{\link[base:plot]{base::plot()}}}{Plot method.} }
 }
 
 \examples{
