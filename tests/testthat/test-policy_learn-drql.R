@@ -22,7 +22,7 @@ test_that("get_policy.drql returns a policy", {
 
   pl <- policy_learn(type = "drql",
                      control = control_drql(
-                       qv_models = q_sl()
+                       qv_models = q_glm(~ .)
                      ))
   expect_error({
     p <- get_policy(pl(pd, q_models = q_glm(), g_models = g_glm()))
@@ -448,7 +448,7 @@ test_that("policy_learn with type drql handles multiple stages with varying stag
 
   pl <- policy_learn(type = "drql",
                      control = control_drql(
-                       qv_models = q_sl(cvControl = SuperLearner.CV.control(V = 10L))
+                       qv_models = q_glm(~ .)
                      ),
                      alpha = 0.1,
                      L = 2)

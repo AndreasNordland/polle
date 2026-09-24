@@ -2,7 +2,7 @@
 #'
 #' \code{fit_g_function} is used to fit a single g-model.
 #' @param history History object created by [get_history()]
-#' @param g_model Propensity model/g-model created by [g_glm()], [g_rf()], [g_sl()] or similar functions.
+#' @param g_model Propensity model/g-model created by [g_glm()], [g_rf()] or similar functions.
 #' @returns Object of class "g_function".
 #' @examples
 #' library("polle")
@@ -145,7 +145,7 @@ predict.g_function <- function(object, new_history, ...){
 #' \code{fit_g_functions} is used to fit a list of g-models.
 #' @param policy_data Policy data object created by [policy_data()].
 #' @param g_models List of action probability models/g-models for each stage
-#' created by [g_empir()], [g_glm()], [g_rf()], [g_sl()] or similar functions.
+#' created by [g_empir()], [g_glm()], [g_rf()] or similar functions.
 #' @param full_history If TRUE, the full history is used to fit each g-model.
 #' If FALSE, the single stage/"Markov type" history is used to fit each g-model.
 #' @examples

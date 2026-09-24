@@ -97,7 +97,7 @@ fit_functions <- function(policy_data,
 #' @param folds List of vectors of indices for each validation fold, see examples.
 #' @param policy_data Policy data object created by [policy_data()].
 #' @param fun Function used to fit the models, either \code{fit_g_functions()}, \code{fit_c_functions()}
-#' @param models single model or list of models like [g_sl()].
+#' @param models single model or list of models like [g_glm()].
 #' @param full_history If TRUE, the full history is used to fit each model.
 #' If FALSE, the single stage/"Markov type" history is used to fit each model.
 #' @param save_models Logical. Should the cross-fitted models be saved.

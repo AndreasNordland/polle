@@ -45,8 +45,6 @@ S3method(plot,policy_data)
 S3method(plot,policy_eval)
 S3method(predict,QV_function)
 S3method(predict,Q_function)
-S3method(predict,SL.glm.formula)
-S3method(predict,SL.nls)
 S3method(predict,blip_function)
 S3method(predict,c_cox)
 S3method(predict,c_function)
@@ -57,7 +55,6 @@ S3method(predict,g_function)
 S3method(predict,g_glm)
 S3method(predict,g_glmnet)
 S3method(predict,g_rf)
-S3method(predict,g_sl)
 S3method(predict,g_xgboost)
 S3method(predict,m_function)
 S3method(predict,nuisance_functions)
@@ -65,7 +62,6 @@ S3method(predict,q_degen)
 S3method(predict,q_glm)
 S3method(predict,q_glmnet)
 S3method(predict,q_rf)
-S3method(predict,q_sl)
 S3method(predict,q_xgboost)
 S3method(print,Q_function)
 S3method(print,g_function)
@@ -82,7 +78,6 @@ S3method(summary,policy_eval)
 S3method(summary,policy_eval_online)
 S3method(vcov,policy_eval)
 S3method(vcov,policy_eval_online)
-export(All)
 export(IC)
 export(c_cox)
 export(c_no_censoring)
@@ -137,36 +132,42 @@ export(sim_single_stage_multi_actions)
 export(sim_two_stage)
 export(sim_two_stage_multi_actions)
 export(subset_id)
-import(SuperLearner)
 import(data.table)
-importFrom(SuperLearner,All)
-importFrom(lava,IC)
-importFrom(lava,estimate)
+importFrom(lava,
+  IC,
+  estimate
+)
 importFrom(methods,formalArgs)
 importFrom(progressr,progressor)
-importFrom(stats,.getXlevels)
-importFrom(stats,addmargins)
-importFrom(stats,aggregate)
-importFrom(stats,as.formula)
-importFrom(stats,binomial)
-importFrom(stats,coef)
-importFrom(stats,complete.cases)
-importFrom(stats,delete.response)
-importFrom(stats,gaussian)
-importFrom(stats,glm)
-importFrom(stats,model.frame)
-importFrom(stats,model.matrix)
-importFrom(stats,model.response)
-importFrom(stats,na.pass)
-importFrom(stats,nls)
-importFrom(stats,predict)
-importFrom(stats,predict.glm)
-importFrom(stats,reformulate)
-importFrom(stats,terms)
-importFrom(stats,update)
-importFrom(stats,var)
-importFrom(stats,vcov)
-importFrom(survival,Surv)
-importFrom(survival,survfit)
-importFrom(utils,capture.output)
-importFrom(utils,tail)
+importFrom(stats,
+  .getXlevels,
+  addmargins,
+  aggregate,
+  as.formula,
+  binomial,
+  coef,
+  complete.cases,
+  delete.response,
+  gaussian,
+  glm,
+  model.frame,
+  model.matrix,
+  model.response,
+  na.pass,
+  nls,
+  predict,
+  predict.glm,
+  reformulate,
+  terms,
+  update,
+  var,
+  vcov
+)
+importFrom(survival,
+  Surv,
+  survfit
+)
+importFrom(utils,
+  capture.output,
+  tail
+)

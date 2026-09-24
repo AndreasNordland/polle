@@ -76,7 +76,7 @@ policy_eval(
 Preferably, use \code{g_models}.}
 
 \item{g_models}{List of action probability models/g-models for each stage
-created by \code{\link[=g_empir]{g_empir()}}, \code{\link[=g_glm]{g_glm()}}, \code{\link[=g_rf]{g_rf()}}, \code{\link[=g_sl]{g_sl()}} or similar functions.
+created by \code{\link[=g_empir]{g_empir()}}, \code{\link[=g_glm]{g_glm()}}, \code{\link[=g_rf]{g_rf()}} or similar functions.
 Only used for evaluation if \code{g_functions} is \code{NULL}.
 If a single model is provided and \code{g_full_history} is \code{FALSE},
 a single g-model is fitted across all stages. If \code{g_full_history} is
@@ -92,7 +92,7 @@ Only valid if the Q-functions are fitted using the same policy.
 Preferably, use \code{q_models}.}
 
 \item{q_models}{Outcome regression models/Q-models created by
-\code{\link[=q_glm]{q_glm()}}, \code{\link[=q_rf]{q_rf()}}, \code{\link[=q_sl]{q_sl()}} or similar functions.
+\code{\link[=q_glm]{q_glm()}}, \code{\link[=q_rf]{q_rf()}} or similar functions.
 Only used for evaluation if \code{q_functions} is \code{NULL}.
 If a single model is provided, the model is reused at every stage.}
 
@@ -371,8 +371,7 @@ set.seed(1)
 pe1_rf <- policy_eval(policy_data = pd1,
                       policy = pl1,
                       g_models = g_rf(),
-                      q_models = q_rf(),
-                      name = "A=1 (rf)")
+                      q_models = q_rf())
 
 # merging the two estimates:
 (est1 <- estimate(merge(pe1, pe1_rf), labels = c("glm", "rf")))

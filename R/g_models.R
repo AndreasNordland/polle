@@ -95,9 +95,14 @@ new_g_model <- function(g_model){
 #' @title g_model class object
 #'
 #' @description  Use \code{g_glm()}, \code{g_empir()},
-#' \code{g_glmnet()}, \code{g_rf()}, \code{g_sl()}, \code{g_xgboost} to construct
+#' \code{g_glmnet()}, \code{g_rf()} and \code{g_xgboost()} to construct
 #' an action probability model/g-model object.
 #' The constructors are used as input for [policy_eval()] and [policy_learn()].
+#'
+#' \code{g_sl()} is currently unavailable because the 'SuperLearner' package
+#' is scheduled for archival on CRAN; calling it raises an informative error.
+#' An ensemble-learner interface based on the 'targeted' package is planned
+#' for a future release.
 #'
 #' @param formula An object of class [formula] specifying the design matrix for
 #' the propensity model/g-model. Use [get_history_names()] to view the available
@@ -120,11 +125,6 @@ new_g_model <- function(g_model){
 #' Only used if multiple hyper-parameters are given. \code{K} is the number
 #' of folds and
 #' \code{rep} is the number of replications.
-#' @param SL.library (Only used by \code{g_sl}) Either a character vector of prediction algorithms or
-#' a list containing character vectors, see [SuperLearner::SuperLearner].
-#' @param env (Only used by \code{g_sl}) Environment containing the learner functions. Defaults to the calling environment.
-#' @param onlySL (Only used by \code{g_sl}) Logical. If TRUE, only saves and computes predictions
-#' for algorithms with non-zero coefficients in the super learner object.
 #' @param objective (Only used by \code{g_xgboost}) specify the learning
 #' task and the corresponding learning objective, see [xgboost::xgboost].
 #' @param nrounds (Only used by \code{g_xgboost}) max number of boosting iterations.
@@ -132,7 +132,7 @@ new_g_model <- function(g_model){
 #' @param learning_rate (Only used by \code{g_xgboost}) learning rate.
 #' @param nthread (Only used by \code{g_xgboost}) number of threads.
 #' @param ... Additional arguments passed to [glm()], [glmnet::glmnet],
-#' [ranger::ranger] or [SuperLearner::SuperLearner].
+#' [ranger::ranger] or [xgboost::xgboost].
 #' @details
 #' \code{g_glm()} is a wrapper of [glm()] (generalized linear model).\cr
 #' \code{g_empir()} calculates the empirical probabilities within the groups
@@ -142,8 +142,9 @@ new_g_model <- function(g_model){
 #' \code{g_rf()} is a wrapper of [ranger::ranger()] (random forest).
 #' When multiple hyper-parameters are given, the
 #' model with the lowest cross-validation error is selected.\cr
-#' \code{g_sl()} is a wrapper of [SuperLearner::SuperLearner] (ensemble model).\cr
-#' \code{g_xgboost()} is a wrapper of [xgboost::xgboost].
+#' \code{g_xgboost()} is a wrapper of [xgboost::xgboost].\cr
+#' \code{g_sl()} previously wrapped \code{SuperLearner::SuperLearner}; see
+#' the note in the description.
 #' @returns g-model object: function with arguments 'A'
 #' (action vector), 'H' (history matrix) and 'action_set'.
 #' @seealso [get_history_names()], [get_g_functions()].
@@ -452,65 +453,79 @@ predict.g_rf <- function(object, new_H, ...){
 
 #' @rdname g_model
 #' @export
-g_sl <- function(formula = ~ .,
-                 SL.library=c("SL.mean", "SL.glm"),
-                 family=binomial(),
-                 env = parent.frame(),
-                 onlySL = TRUE,
-                 ...) {
-  if (!requireNamespace("SuperLearner"))
-    stop("Package 'SuperLearner' required.")
-  formula <- as.formula(formula)
-  force(SL.library)
-  force(env)
-  dotdotdot <- list(...)
-  g_sl <- function(A, H, action_set) {
-    A <- as.numeric(factor(A, levels=action_set))-1
-    check_formula(formula = formula, data = H, call = "g_sl")
-    des <- get_design(formula, data=H)
-    sl_args <- append(list(Y=A,
-                           X=as.data.frame(des$x),
-                           family=family,
-                           SL.library=SL.library,
-                           env = env),
-                      dotdotdot)
-    model <- do.call(SuperLearner::SuperLearner, sl_args)
-
-    model$call <- NULL
-    if(all(model$coef == 0))
-      stop("In g_sl(): All metalearner coefficients are zero.")
-    if(onlySL == TRUE){
-      model$fitLibrary[model$coef == 0] <- NA
-    }
-    des$x <- NULL
-
-    m <- list(model = model,
-              design = des,
-              onlySL = onlySL,
-              action_set = action_set)
-
-    class(m) <- c("g_sl")
-    return(m)
-  }
-  # setting class:
-  g_sl <- new_g_model(g_sl)
-
-  return(g_sl)
+g_sl <- function(...) {
+  stop(
+    "g_sl() is currently unavailable: the 'SuperLearner' package is ",
+    "scheduled for archival on CRAN and has been removed as a dependency ",
+    "of 'polle'. Use g_glm(), g_glmnet(), g_rf(), g_empir() or g_xgboost() ",
+    "instead. An ensemble-learner interface based on the 'targeted' package ",
+    "is planned for a future release.",
+    call. = FALSE
+  )
 }
 
-#' @export
-predict.g_sl <- function(object, new_H, ...) {
-  model <- getElement(object, "model")
-  design <- getElement(object, "design")
-  onlySL <- getElement(object, "onlySL")
-  newdata <- apply_design(design = design, data = new_H)
-  newdata <- as.data.frame(newdata)
-  pr <- predict(model,
-                newdata=newdata,
-                onlySL = onlySL)$pred
-  pr <- cbind((1-pr), pr)
-  return(pr)
-}
+## Original SuperLearner implementation of g_sl(), retained as commented
+## source for a future port to a 'targeted'-based ensemble interface.
+##
+## g_sl <- function(formula = ~ .,
+##                  SL.library=c("SL.mean", "SL.glm"),
+##                  family=binomial(),
+##                  env = parent.frame(),
+##                  onlySL = TRUE,
+##                  ...) {
+##   if (!requireNamespace("SuperLearner"))
+##     stop("Package 'SuperLearner' required.")
+##   formula <- as.formula(formula)
+##   force(SL.library)
+##   force(env)
+##   dotdotdot <- list(...)
+##   g_sl <- function(A, H, action_set) {
+##     A <- as.numeric(factor(A, levels=action_set))-1
+##     check_formula(formula = formula, data = H, call = "g_sl")
+##     des <- get_design(formula, data=H)
+##     sl_args <- append(list(Y=A,
+##                            X=as.data.frame(des$x),
+##                            family=family,
+##                            SL.library=SL.library,
+##                            env = env),
+##                       dotdotdot)
+##     model <- do.call(SuperLearner::SuperLearner, sl_args)
+##
+##     model$call <- NULL
+##     if(all(model$coef == 0))
+##       stop("In g_sl(): All metalearner coefficients are zero.")
+##     if(onlySL == TRUE){
+##       model$fitLibrary[model$coef == 0] <- NA
+##     }
+##     des$x <- NULL
+##
+##     m <- list(model = model,
+##               design = des,
+##               onlySL = onlySL,
+##               action_set = action_set)
+##
+##     class(m) <- c("g_sl")
+##     return(m)
+##   }
+##   # setting class:
+##   g_sl <- new_g_model(g_sl)
+##
+##   return(g_sl)
+## }
+##
+## #' @export
+## predict.g_sl <- function(object, new_H, ...) {
+##   model <- getElement(object, "model")
+##   design <- getElement(object, "design")
+##   onlySL <- getElement(object, "onlySL")
+##   newdata <- apply_design(design = design, data = new_H)
+##   newdata <- as.data.frame(newdata)
+##   pr <- predict(model,
+##                 newdata=newdata,
+##                 onlySL = onlySL)$pred
+##   pr <- cbind((1-pr), pr)
+##   return(pr)
+## }
 
 # sl3 (SuperLearner) interface ----
 

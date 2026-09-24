@@ -17,9 +17,14 @@ new_q_model <- function(q_model) {
 
 #' @title q_model class object
 #'
-#' @description  Use \code{q_glm()}, \code{q_glmnet()}, \code{q_rf()}, and \code{q_sl()} to construct
-#' an outcome regression model/Q-model object.
+#' @description  Use \code{q_glm()}, \code{q_glmnet()}, \code{q_rf()} and
+#' \code{q_xgboost()} to construct an outcome regression model/Q-model object.
 #' The constructors are used as input for [policy_eval()] and [policy_learn()].
+#'
+#' \code{q_sl()} is currently unavailable because the 'SuperLearner' package
+#' is scheduled for archival on CRAN; calling it raises an informative error.
+#' An ensemble-learner interface based on the 'targeted' package is planned
+#' for a future release.
 #'
 #' @param formula An object of class [formula] specifying the design matrix for
 #' the outcome regression model/Q-model at the given stage. The action at the
@@ -44,15 +49,6 @@ new_q_model <- function(q_model) {
 #' Only used if multiple hyper-parameters are given. \code{K} is the number
 #' of folds and
 #' \code{rep} is the number of replications.
-#' @param SL.library (Only used by \code{q_sl}) Either a character vector of
-#' prediction algorithms or a list containing character vectors,
-#' see [SuperLearner::SuperLearner].
-#' @param env (Only used by \code{q_sl}) Environment containing the learner
-#' functions. Defaults to the calling environment.
-#' @param onlySL (Only used by \code{q_sl}) Logical. If TRUE, only saves and computes predictions
-#' for algorithms with non-zero coefficients in the super learner object.
-#' @param discreteSL (Only used by \code{q_sl}) If TRUE, select the model with
-#' the lowest cross-validated risk.
 #' @param objective (Only used by \code{q_xgboost}) specify the learning
 #' task and the corresponding learning objective, see [xgboost::xgboost].
 #' @param nrounds (Only used by \code{q_xgboost}) max number of boosting iterations.
@@ -60,7 +56,7 @@ new_q_model <- function(q_model) {
 #' @param learning_rate (Only used by \code{q_xgboost}) learning rate.
 #' @param nthread (Only used by \code{q_xgboost}) number of threads.
 #' @param ... Additional arguments passed to [glm()], [glmnet::glmnet],
-#' [ranger::ranger] or [SuperLearner::SuperLearner].
+#' [ranger::ranger] or [xgboost::xgboost].
 #' @details
 #' \code{q_glm()} is a wrapper of [glm()] (generalized linear model).\cr
 #' \code{q_glmnet()} is a wrapper of [glmnet::glmnet()] (generalized linear model via
@@ -68,8 +64,9 @@ new_q_model <- function(q_model) {
 #' \code{q_rf()} is a wrapper of [ranger::ranger()] (random forest).
 #' When multiple hyper-parameters are given, the
 #' model with the lowest cross-validation error is selected.\cr
-#' \code{q_sl()} is a wrapper of [SuperLearner::SuperLearner] (ensemble model).
-#' \code{q_xgboost()} is a wrapper of [xgboost::xgboost].
+#' \code{q_xgboost()} is a wrapper of [xgboost::xgboost].\cr
+#' \code{q_sl()} previously wrapped \code{SuperLearner::SuperLearner}; see
+#' the note in the description.
 #' @returns q_model object: function with arguments 'AH'
 #' (combined action and history matrix) and 'V_res' (residual value/expected
 #' utility).
@@ -312,81 +309,95 @@ predict.q_rf <- function(object, new_AH, ...) {
 
 #' @rdname q_model
 #' @export
-q_sl <- function(formula = ~ .,
-                 SL.library=c("SL.mean", "SL.glm"),
-                 env = parent.frame(),
-                 onlySL = TRUE,
-                 discreteSL = FALSE,
-                 ...){
-  if (!requireNamespace("SuperLearner"))
-    stop("Package 'SuperLearner' required.")
-  formula <- as.formula(formula)
-  force(SL.library)
-  force(env)
-  dotdotdot <- list(...)
-  q_sl <- function(AH, V_res, folds = NULL, ...) {
-    check_formula(formula = formula, data = AH, call = "q_sl")
-    des <- get_design(formula, data=AH)
-    if (missing(V_res) || is.null(V_res))
-      V_res <- get_response(formula, data=AH)
-    args_SL <- list(Y = as.numeric(V_res),
-                    X = as.data.frame(des$x),
-                    SL.library = SL.library,
-                    env = env)
-    args_SL <- append(args_SL, dotdotdot)
-    if (!is.null(folds)){
-      # given folds, the cvControl argument is overwritten
-      cvControl <- SuperLearner.CV.control(
-        V = length(folds),
-        shuffle = FALSE,
-        validRows = folds
-      )
-      args_SL[["cvControl"]] <- cvControl
-    }
-    model <- do.call(SuperLearner::SuperLearner, args = args_SL)
-    model$call <- NULL
-    if(all(model$coef == 0)){
-      warning("In q_sl(): All metalearner coefficients are zero. Selecting the learner with the lowest cvrisk.")
-      min_idx <- which.min(model$cvRisk)
-      coef_ <- model$coef * 0
-      coef_[min_idx] <- 1
-      model$coef <- coef_
-    }
-
-    if (discreteSL == TRUE){
-      min_idx <- which.min(model$cvRisk)
-      coef_ <- model$coef * 0
-      coef_[min_idx] <- 1
-      model$coef <- coef_
-    }
-    if(onlySL == TRUE){
-      model$fitLibrary[model$coef == 0] <- NA
-    }
-
-    des$x <- NULL
-    m <- list(model = model,
-              design = des,
-              onlySL = onlySL)
-    class(m) <- c("q_sl")
-    return(m)
-  }
-  q_sl <- new_q_model(q_sl)
-  return(q_sl)
+q_sl <- function(...) {
+  stop(
+    "q_sl() is currently unavailable: the 'SuperLearner' package is ",
+    "scheduled for archival on CRAN and has been removed as a dependency ",
+    "of 'polle'. Use q_glm(), q_glmnet(), q_rf() or q_xgboost() instead. ",
+    "An ensemble-learner interface based on the 'targeted' package is ",
+    "planned for a future release.",
+    call. = FALSE
+  )
 }
-#' @export
-predict.q_sl <- function(object, new_AH, ...) {
-  model <- getElement(object, "model")
-  design <- getElement(object, "design")
-  onlySL <- getElement(object, "onlySL")
-  newdata <- apply_design(design = design, data = new_AH)
-  newdata <- as.data.frame(newdata)
-  pred <- predict(
-         model,
-         newdata = newdata,
-         onlySL = onlySL
-  )$pred[, 1]
-  return(pred)
-}
+
+## Original SuperLearner implementation of q_sl(), retained as commented
+## source for a future port to a 'targeted'-based ensemble interface.
+##
+## q_sl <- function(formula = ~ .,
+##                  SL.library=c("SL.mean", "SL.glm"),
+##                  env = parent.frame(),
+##                  onlySL = TRUE,
+##                  discreteSL = FALSE,
+##                  ...){
+##   if (!requireNamespace("SuperLearner"))
+##     stop("Package 'SuperLearner' required.")
+##   formula <- as.formula(formula)
+##   force(SL.library)
+##   force(env)
+##   dotdotdot <- list(...)
+##   q_sl <- function(AH, V_res, folds = NULL, ...) {
+##     check_formula(formula = formula, data = AH, call = "q_sl")
+##     des <- get_design(formula, data=AH)
+##     if (missing(V_res) || is.null(V_res))
+##       V_res <- get_response(formula, data=AH)
+##     args_SL <- list(Y = as.numeric(V_res),
+##                     X = as.data.frame(des$x),
+##                     SL.library = SL.library,
+##                     env = env)
+##     args_SL <- append(args_SL, dotdotdot)
+##     if (!is.null(folds)){
+##       # given folds, the cvControl argument is overwritten
+##       cvControl <- SuperLearner.CV.control(
+##         V = length(folds),
+##         shuffle = FALSE,
+##         validRows = folds
+##       )
+##       args_SL[["cvControl"]] <- cvControl
+##     }
+##     model <- do.call(SuperLearner::SuperLearner, args = args_SL)
+##     model$call <- NULL
+##     if(all(model$coef == 0)){
+##       warning("In q_sl(): All metalearner coefficients are zero. Selecting the learner with the lowest cvrisk.")
+##       min_idx <- which.min(model$cvRisk)
+##       coef_ <- model$coef * 0
+##       coef_[min_idx] <- 1
+##       model$coef <- coef_
+##     }
+##
+##     if (discreteSL == TRUE){
+##       min_idx <- which.min(model$cvRisk)
+##       coef_ <- model$coef * 0
+##       coef_[min_idx] <- 1
+##       model$coef <- coef_
+##     }
+##     if(onlySL == TRUE){
+##       model$fitLibrary[model$coef == 0] <- NA
+##     }
+##
+##     des$x <- NULL
+##     m <- list(model = model,
+##               design = des,
+##               onlySL = onlySL)
+##     class(m) <- c("q_sl")
+##     return(m)
+##   }
+##   q_sl <- new_q_model(q_sl)
+##   return(q_sl)
+## }
+## #' @export
+## predict.q_sl <- function(object, new_AH, ...) {
+##   model <- getElement(object, "model")
+##   design <- getElement(object, "design")
+##   onlySL <- getElement(object, "onlySL")
+##   newdata <- apply_design(design = design, data = new_AH)
+##   newdata <- as.data.frame(newdata)
+##   pred <- predict(
+##          model,
+##          newdata = newdata,
+##          onlySL = onlySL
+##   )$pred[, 1]
+##   return(pred)
+## }
 
 # xgboost interface -----------------------------------------------------------------
 

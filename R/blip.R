@@ -62,7 +62,7 @@ predict.blip_function <- function(object, new_history, ...) {
 #' @description \code{control_blip} sets the default control arguments
 #' for doubly robust blip-learning, \code{type = "blip"}.
 #' @param blip_models Single element or list of V-restricted blip-models created
-#' by [q_glm()], [q_rf()], [q_sl()] or similar functions.
+#' by [q_glm()], [q_rf()] or similar functions.
 #' @param quantile_prob_threshold Numeric vector. Quantile probabilities
 #' for adaptively setting the threshold for the conditional average treatment effect.
 #' @returns list of (default) control arguments.

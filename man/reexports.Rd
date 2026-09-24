@@ -5,7 +5,6 @@
 \alias{reexports}
 \alias{IC}
 \alias{estimate}
-\alias{All}
 \title{Objects exported from other packages}
 \keyword{internal}
 \description{
@@ -14,7 +13,5 @@ below to see their documentation.
 
 \describe{
   \item{lava}{\code{\link[lava:estimate]{estimate()}}, \code{\link[lava:IC]{IC()}}}
-
-  \item{SuperLearner}{\code{\link[SuperLearner:All]{All()}}}
 }}
 
