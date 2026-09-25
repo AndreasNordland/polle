@@ -55,6 +55,11 @@
 #' used by the support vector machine. The
 #' options are \code{"linear"}, \code{"rbf"}.
 #'    \item \code{augment}:  If \code{TRUE} the outcomes are augmented.
+#'    \item \code{solver}: Quadratic-programming backend for the weighted
+#' SVM used by [DTRlearn2::owl()] when \code{loss = "hinge"}. The default
+#' \code{"ipop"} is exact and order-invariant; \code{"svm"} is faster but
+#' currently returns a decision function whose orientation depends on the
+#' order of the observations. See [control_owl()].
 #' }
 #' [control_earl()]/[control_rwl()]: \cr
 #' \itemize{
@@ -256,9 +261,11 @@ policy_learn <- function(type = "blip",
     }
     call <- "ptl"
   } else if (type %in% c("owl", "bowl")) {
-    if (!requireNamespace("DTRlearn2")) {
+    if (!requireNamespace("DTRlearn2",
+                          versionCheck = list(op = ">=",
+                                              version = "2.1"))) {
       mes <- paste0(
-        "The DTRlearn2 package is required to perform value ",
+        "The 'DTRlearn2' package (>= 2.1) is required to perform value ",
         "searching using outcome-weighted learning."
       )
       stop(mes)

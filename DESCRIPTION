@@ -28,7 +28,7 @@ Imports:
     targeted (>= 0.8),
     DynTxRegime
 Suggests:
-    DTRlearn2,
+    DTRlearn2 (>= 2.1),
     glmnet (>= 4.1-6),
     mets,
     mgcv,
