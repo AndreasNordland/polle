@@ -703,16 +703,23 @@ stage_state_history <- function(object, stage, event_set){
 #' @param object object of class [policy_data()].
 #' @param event_set Integer vector. Subset of c(0,1,2).
 #' @return Object of class "history".
-state_history <- function(object, event_set){
+state_history <- function(object, event_set, final_event_set){
   stage_data <- get_element(object, "stage_data")
   state_names <- get_element(object, "colnames") |> get_element("state_names")
   baseline_data <- get_element(object, "baseline_data")
   baseline_names <- get_element(object, "colnames") |> get_element("baseline_names")
   action_set <- get_element(object, "action_set")
+  K <- get_K(object)
+
+  browser()
 
   action_name <- "A"
   ## default values:
   event <- NULL
+  ## selecting data on events
+  browser()
+
+
   ## constructing history H and action A at the given stage:
   AH_names <- c("id", "stage", "A", state_names)
   AH <- stage_data[event %in% event_set][, AH_names, with = FALSE]
@@ -851,14 +858,20 @@ NULL
 #' nrow(h3$H) # number of observations with two stages.
 #' get_n(pd3) # number of observations in total.
 #' @export
-get_history <- function(object, stage = NULL, full_history = FALSE, event_set = c(0))
+get_history <- function(object,
+                        stage = NULL,
+                        full_history = FALSE,
+                        event_set = c(0),
+                        final_event_set = NULL) {
   UseMethod("get_history")
+}
 
 #' @export
 get_history.policy_data <- function(object,
                                     stage = NULL,
                                     full_history = FALSE,
-                                    event_set = c(0)) {
+                                    event_set = c(0),
+                                    final_event_set = NULL) {
   # input checks:
   if (!is.logical(full_history) | (length(full_history) != 1))
     stop("full_history must be TRUE or FALSE")
@@ -883,7 +896,9 @@ get_history.policy_data <- function(object,
     his <- full_history(object, stage = stage, event_set = event_set)
   } else{
     if (is.null(stage)){
-      his <- state_history(object, event_set = event_set)
+      his <- state_history(object,
+                           event_set = event_set,
+                           final_event_set = final_event_set)
     } else{
       his <- stage_state_history(object, stage = stage, event_set = event_set)
     }

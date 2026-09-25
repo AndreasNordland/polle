@@ -152,7 +152,7 @@ fit_c_functions <- function(policy_data, c_models, full_history = FALSE){
     history_K1 <- get_history(policy_data,
                               stage = K+1,
                               full_history = full_history,
-                              event_set = c(0, 1, 2))
+                              event_set = c(1, 2))
 
     history <- c(history_K, list(history_K1))
 
@@ -163,11 +163,11 @@ fit_c_functions <- function(policy_data, c_models, full_history = FALSE){
                           SIMPLIFY = FALSE)
     names(c_functions) <- paste("stage_", 1:(K+1), sep = "")
   } else{
-    browser()
     history <- get_history(policy_data,
                            stage = NULL,
                            full_history = FALSE,
-                           event_set = c(0,1,2))
+                           event_set = c(0,2),
+                           final_event_set = c(1,2))
     c_functions <- list(all_stages = fit_c_function(history, c_models))
   }
 
