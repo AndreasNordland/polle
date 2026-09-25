@@ -15,8 +15,11 @@ test_that("the implementation of owl agrees with direct application of DTRlearn2
   pi <- predict(pi_model, type = "response")
   pi <- pi * d1$A + (1-pi) * (1-d1$A)
 
+  ## Reference call must use the same solver polle pins in control_owl(),
+  ## see NEWS for DTRlearn2 (>= 2.1).
   set.seed(1)
-  owl1 <- owl(H = H, AA = AA, RR = RR, n = nrow(d1), K = 1, pi = pi)
+  owl1 <- owl(H = H, AA = AA, RR = RR, n = nrow(d1), K = 1, pi = pi,
+              solver = "ipop")
   owl1_dd <- predict(owl1, H = H, K = 1)$treatment[[1]]
   owl1_d <- unname(as.character(unlist((owl1_dd + 1)/2)))
 
@@ -54,8 +57,11 @@ test_that("the implementation of owl agrees with direct application of DTRlearn2
   RR <- list(d$U_2, d$U_3)
 
   library("DTRlearn2")
+  ## Reference call must use the same solver polle pins in control_owl(),
+  ## see NEWS for DTRlearn2 (>= 2.1).
   set.seed(1)
-  owl1 <- owl(H = H, AA = AA, RR = RR, n = nrow(d), K = 2, pi = pi)
+  owl1 <- owl(H = H, AA = AA, RR = RR, n = nrow(d), K = 2, pi = pi,
+              solver = "ipop")
   owl_pred <- predict(owl1, H = H, K = 2)
   owl1_dd1 <- owl_pred$treatment[[1]]
   owl1_dd2 <- owl_pred$treatment[[2]]
