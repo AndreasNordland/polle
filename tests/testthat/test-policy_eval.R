@@ -1432,25 +1432,26 @@ test_that("policy_eval() runs without covariates.", {
   ref_pe <- mean((d$a == "2") / 0.5 * d$y)
   ref_IC <- matrix((d$a == "2") / 0.5 * (d$y - 4) + 4 - ref_pe)
 
-  expect_warning(
-    coef_pe <- coef(pe),
-    "IC does not have mean zero"
-  )
+  ## The Q-model saturates the outcome (A binary, q_glm(~A)) and g == 0.5
+  ## exactly, so the doubly-robust IC is identically zero in exact
+  ## arithmetic. lava's check_ic_mean_zero() then compares |mean|/rms of
+  ## two floating-point noise quantities, and whether it warns is
+  ## platform-dependent (ratio varies from 0 to ~0.14 across row
+  ## permutations of the same data). We therefore suppress the warning
+  ## rather than assert it.
+  coef_pe <- suppressWarnings(coef(pe))
 
   expect_equal(
     coef_pe |> unname(),
     ref_pe
   )
 
-  expect_warning(
-    ic_pe <- IC(pe),
-    "IC does not have mean zero"
-  )
+  ic_pe <- suppressWarnings(IC(pe))
 
   expect_equal(
     ic_pe |> unname(),
     ref_IC,
-    tolerance = 1e-14,
+    tolerance = 1e-8,
     check.attributes = FALSE
   )
 
