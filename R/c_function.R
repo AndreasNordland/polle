@@ -143,11 +143,19 @@ fit_c_functions <- function(policy_data, c_models, full_history = FALSE){
 
   # fitting the c-models:
   if (is.list(c_models)){
-    history <- lapply(1:(K+1),
-                      function(s) get_history(policy_data,
-                                              stage = s,
-                                              full_history = full_history,
-                                              event_set = c(0,1,2)))
+    ## terminal events before censoring, event_set = c(0, 2)
+    history_K <- lapply(1:K,
+                        function(s) get_history(policy_data,
+                                                stage = s,
+                                                full_history = full_history,
+                                                event_set = c(0, 2)))
+    history_K1 <- get_history(policy_data,
+                              stage = K+1,
+                              full_history = full_history,
+                              event_set = c(0, 1, 2))
+
+    history <- c(history_K, list(history_K1))
+
     c_functions <- mapply(history,
                           c_models,
                           FUN = function(h, cm) fit_c_function(history = h,
@@ -155,6 +163,7 @@ fit_c_functions <- function(policy_data, c_models, full_history = FALSE){
                           SIMPLIFY = FALSE)
     names(c_functions) <- paste("stage_", 1:(K+1), sep = "")
   } else{
+    browser()
     history <- get_history(policy_data,
                            stage = NULL,
                            full_history = FALSE,

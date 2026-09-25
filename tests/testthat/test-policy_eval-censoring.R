@@ -1393,6 +1393,13 @@ for the two-stage case under right-censoring and terminal events.", {
   ref_pe <- mean(Z)
   ref_IC <-  Z - ref_pe
 
+  ref_Z_ipw <- (d$delta1 == 1) / c1 * (d$a1 == d$p1) / (g1 * (d$a1 == "1") +
+                                                        g2 * (d$a1 == "2")) *
+    (d$delta2 == 1) / c1 * (d$a2 == d$p2) / (g3 * (d$a2 == "3") +
+                                             g4 * (d$a2 == "4")) *
+    (d$delta3 == 1) / c1 * (d$u1 + d$u2 + d$u3)
+  ref_ipw <- mean(ref_Z_ipw)
+
   ##
   ## no cross-fitting
   ##
@@ -1442,6 +1449,13 @@ for the two-stage case under right-censoring and terminal events.", {
     matrix(ref_IC),
     check.attributes = FALSE
   )
+
+  expect_equal(
+    pe$coef_ipw,
+    ref_ipw
+  )
+
+  stop("implement further tests on coef ipcw")
 
   rm(list = ls())
   ## right-censoring at every stage, and death at stage 2:

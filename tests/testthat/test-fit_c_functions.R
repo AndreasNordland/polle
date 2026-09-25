@@ -286,3 +286,128 @@ test_that("fit_c_functions(): returns default right-censoring model for stages w
   )
 
 })
+
+test_that("fit_c_functions(): correct risk set under terminal events", {
+  ## right-censoring at every stage, and death at stage 1 and 2:
+  set.seed(1)
+  x1 <- runif(n = 1e2, min = -1, max = 1)
+  u1 <- runif(n = 1e2, min = -1, max = 1)
+  a1 <- c(rep(1, 50), rep(2, 50))
+  x2 <- runif(n = 1e2, min = -1, max = 1)
+  a2 <- c(rep(3, 50), rep(4, 50))
+  x3 <- runif(n = 1e2, min = -1, max = 1)
+  u3 <- a1 * x1 + a2 * x2 + runif(n = 1e2, min = -1, max = 1)
+  p1 <- c(rep(1, 25), rep(2, 25), rep(1, 25), rep(2, 25))
+  p2 <- c(rep(3, 25), rep(4, 25), rep(3, 25), rep(4, 25))
+  delta1 <- rbinom(n = 1e2, size = 1, prob = 0.8) # stage 1 non-missing indicator
+  delta2 <- rbinom(n = 1e2, size = 1, prob = 0.8) # stage 2 non-missing indicator
+  delta3 <- rbinom(n = 1e2, size = 1, prob = 0.8) # stage 3 non-missing indicator
+  death1 <- rbinom(n = 1e2, size = 1, prob = 0.1) # stage 1 death indicator
+  death2 <- rbinom(n = 1e2, size = 1, prob = 0.2) # stage 2 death indicator
+  u2 <- runif(n = 1e2, min = -1, max = 1) - death2 * runif(n = 1e2, min = 0, max = 1)
+  d <- data.table(
+    x1 = x1,
+    a1 = a1,
+    x2 = x2,
+    a2 = a2,
+    x3 = x3,
+    p1 = p1,
+    p2 = p2,
+    u1 = u1,
+    u2 = u2,
+    u3 = u3,
+    delta1 = delta1,
+    delta2 = delta2,
+    delta3 = delta3,
+    death1 = death1,
+    death2 = death2
+  )
+
+  pd <- policy_data(
+      data = d,
+      action = c("a1", "a2"),
+      covariates = list(
+          x = c("x1", "x2"),
+          p = c("p1", "p2")
+      ),
+      utility = c("u1", "u2", "u3")
+  )
+
+  ld <- pd$stage_data
+  ld[stage ==3, x := x3]
+
+  ld[stage == 1, delta:= delta1]
+  ld[stage == 2, delta:= delta2]
+  ld[stage == 3, delta := delta3]
+
+  ld[, death := 0]
+  ld[stage == 1, death := death1]
+  ld[stage == 2, death := death2]
+
+  ld[, delta := cumprod(delta), by = id]
+  ld[, nondeath := cumprod(!death), by = id]
+
+  ld[, tmp := cumsum(delta == 0), by = id]
+  ld[, tmp2 := cumsum(nondeath == 0), by = id]
+
+  ld <- ld[tmp %in% c(0, 1)]
+  ld <- ld[tmp2 %in% c(0, 1)]
+
+  ld[, tmp := NULL]
+  ld[, tmp2 := NULL]
+
+  ld[delta == 0, event := 2]
+  ld[death == 1, event := 1] # death before censoring
+
+  ld[, delta := NULL]
+  ld[, death := NULL]
+  ld[, nondeath := NULL]
+
+  ld[event == 2 & stage == 3, U := NA]
+  ld[event == 2, A := NA]
+  ld[event == 1, A := NA]
+
+  pd <- policy_data(data = ld, type = "long")
+
+  ## reference c-model at stage 1
+  tmpdata <- ld[stage == 1]
+  tmpdata <- tmpdata[event %in% c(0,2)] # death before censoring
+  ## probability om being censored among the non-terminal
+  c1 <- mean(tmpdata$event == 2)
+
+  ## reference c-model at stage 2
+  tmpdata <- ld[stage == 2]
+  tmpdata <- tmpdata[event %in% c(0,2)] # death before censoring
+  ## probability om being censored among the non-terminal
+  c2 <- mean(tmpdata$event == 2)
+
+  ## reference c-model at stage 3 (final stage)
+  tmpdata <- ld[stage == 3]
+  tmpdata <- tmpdata[event %in% c(2, 1)] # censoring before final outcome
+  c3 <- mean(tmpdata$event == 2)
+
+  cf <- fit_c_functions(
+    policy_data = pd,
+    c_models = list(g_empir(), g_empir(), g_empir())
+  )
+
+  cf_pred <- predict(cf, new_policy_data = pd)
+
+  expect_equal(
+    c1,
+    1 - cf_pred[stage == 1]$surv_time2[[1]]
+  )
+
+  expect_equal(
+    c2,
+    1 - cf_pred[stage == 2]$surv_time2[[1]]
+  )
+
+  expect_equal(
+    c3,
+    1 - cf_pred[stage == 3]$surv_time2[[1]]
+  )
+
+  stop("consider reference across stages")
+
+})
