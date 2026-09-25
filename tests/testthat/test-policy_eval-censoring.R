@@ -1738,3 +1738,53 @@ for the two-stage case under right-censoring and terminal events.", {
     check.attributes = FALSE
   )
 })
+
+test_that("policy_eval target = 'value' coef_ipw computes under terminal events", {
+  stop("implement test")
+  cohort <- expand.grid(
+    A1 = 0:1, A2 = 0:1, group = c("early", "late", "none1", "none2"),
+    KEEP.OUT.ATTRS = FALSE, stringsAsFactors = FALSE
+  )
+  cohort$id <- sprintf("p%02d", seq_len(nrow(cohort)))
+  cohort$Y <- as.numeric(cohort$group %in% c("early", "late"))
+
+  make_long <- function(early_stop) {
+    do.call(rbind, lapply(seq_len(nrow(cohort)), function(i) {
+      p <- cohort[i, ]
+      last <- if (early_stop && p$group == "early") 2L else 3L
+      stage <- seq_len(last)
+      data.frame(
+        id = p$id, stage = stage, event = as.integer(stage == last),
+        A = c(p$A1, if (last == 3L) p$A2, NA_real_),
+        U = ifelse(stage == last, p$Y, 0), X = 0
+      )
+    }))
+  }
+  long_early <- make_long(TRUE)
+  long_control <- make_long(FALSE)
+
+  as_policy_data <- function(x) {
+    polle::policy_data(x, type = "long", id = "id", stage = "stage",
+                       event = "event", action = "A", utility = "U")
+  }
+  pd_early <- as_policy_data(long_early)
+  pd_control <- as_policy_data(long_control)
+
+  fit_dr <- function(pd) {
+    polle::policy_eval(
+             policy_data = pd, policy = polle::policy_def(1, reuse = TRUE),
+             type = "dr", target = "value", M = 1,
+             g_models = list(polle::g_empir(), polle::g_empir()),
+             q_models = list(polle::q_glm(~1, family = stats::gaussian()),
+                             polle::q_glm(~1, family = stats::gaussian()))
+           )
+  }
+  pe_early <- fit_dr(pd_early)
+  pe_control <- fit_dr(pd_control)
+
+  expect_equal(
+    pe_early$coef_ipw,
+    pe_control$coef_ipw
+  )
+
+})
