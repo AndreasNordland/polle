@@ -117,6 +117,54 @@ test_that("the implementation of owl agrees with direct application of DTRlearn2
   expect_equal(owl1_d2,owl3_d2)
 })
 
+test_that("policy_learn with type = 'owl' is invariant to relabelling of the action set", {
+  ## Motivation: policy_data() sorts action sets. If a call to
+  ## DTRlearn2::owl() gives a decision function whose orientation depends
+  ## on how {0,1} sort relative to {"t1","t2"} etc., relabelling the same
+  ## dataset can yield a different (potentially reversed) learned policy.
+  ## Guards against a regression that appeared with DTRlearn2 (>= 2.1)
+  ## under solver = "svm" and is avoided here by control_owl()'s default
+  ## solver = "ipop".
+  d <- sim_two_stage(200, seed = 1)
+  pd_num <- policy_data(d,
+                        action = c("A_1", "A_2"),
+                        baseline = c("BB", "B"),
+                        covariates = list(L = c("L_1", "L_2"),
+                                          C = c("C_1", "C_2")),
+                        utility = c("U_1", "U_2", "U_3"))
+
+  d_rel <- copy(d)
+  d_rel$A_1 <- ifelse(d$A_1 == 1, "t1", "t2")
+  d_rel$A_2 <- ifelse(d$A_2 == 1, "t3", "t4")
+  pd_rel <- policy_data(d_rel,
+                        action = c("A_1", "A_2"),
+                        baseline = c("BB", "B"),
+                        covariates = list(L = c("L_1", "L_2"),
+                                          C = c("C_1", "C_2")),
+                        utility = c("U_1", "U_2", "U_3"))
+
+  pl <- policy_learn(type = "owl",
+                     control = control_owl(policy_vars = c("B", "L", "C"),
+                                           reuse_scales = TRUE))
+
+  set.seed(1)
+  o_num <- pl(policy_data = pd_num,
+              g_models = list(g_glm(~B + L + C), g_glm(~B + L + C)))
+  set.seed(1)
+  o_rel <- pl(policy_data = pd_rel,
+              g_models = list(g_glm(~B + L + C), g_glm(~B + L + C)))
+
+  a_num <- get_policy(o_num)(pd_num)
+  a_rel <- get_policy(o_rel)(pd_rel)
+
+  ## map "t1"/"t3" (originally coded 1) back onto the numeric labels
+  a_rel_num <- copy(a_rel)
+  a_rel_num[stage == 1, d := ifelse(d == "t1", "1", "0")]
+  a_rel_num[stage == 2, d := ifelse(d == "t3", "1", "0")]
+
+  expect_equal(a_num[["d"]], a_rel_num[["d"]])
+})
+
 test_that("policy_learn with type owl runs as intended", {
   d <- sim_two_stage(200, seed=1)
   pd <- policy_data(d,

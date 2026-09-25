@@ -3,6 +3,9 @@
       scheduled CRAN archival.
       An ensemble-learner interface based on the `targeted`
       package is planned for a future release.
+    - `control_owl()` gains a `solver` argument, defaulting to `"ipop"`.
+      `DTRlearn2` (>= 2.1) changed the default weighted-SVM solver of
+      `DTRlearn2::owl()` to `"svm"` (via `WeightSVM::wsvm`)
     - bug fix: final-outcome and discrete-censoring model fitting to complete after
         warnings, retaining the fitted models and preserving the learner warnings.
     - bug fix: set Q_{K+1} = U for early terminal events under missing final outcome
