@@ -182,6 +182,7 @@ predict.c_functions <- function(object, new_policy_data, ...){
   K <- get_K(new_policy_data)
   full_history <- attr(object, "full_history")
 
+  stop("consider event set")
   if (length(object) == (K+1)){
     history <- lapply(1:(K+1), function(s) get_history(new_policy_data,
                                                        stage = s,

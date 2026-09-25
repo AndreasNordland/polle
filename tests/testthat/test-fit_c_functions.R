@@ -410,4 +410,9 @@ test_that("fit_c_functions(): correct risk set under terminal events", {
 
   stop("consider reference across stages")
 
+  cf <- fit_c_functions(
+    policy_data = pd,
+    c_models = g_empir()
+  )
+
 })
