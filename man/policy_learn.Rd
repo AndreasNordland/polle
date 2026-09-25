@@ -77,6 +77,11 @@ The options are \code{"hinge"}, \code{"ramp"},
 used by the support vector machine. The
 options are \code{"linear"}, \code{"rbf"}.
 \item \code{augment}:  If \code{TRUE} the outcomes are augmented.
+\item \code{solver}: Quadratic-programming backend for the weighted
+SVM used by \code{\link[DTRlearn2:owl]{DTRlearn2::owl()}} when \code{loss = "hinge"}. The default
+\code{"ipop"} is exact and order-invariant; \code{"svm"} is faster but
+currently returns a decision function whose orientation depends on the
+order of the observations. See \code{\link[=control_owl]{control_owl()}}.
 }
 \code{\link[=control_earl]{control_earl()}}/\code{\link[=control_rwl]{control_rwl()}}: \cr
 \itemize{

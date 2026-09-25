@@ -20,6 +20,23 @@
 #' @param sigma Tuning parameter.
 #' @param s Slope parameter.
 #' @param m Number of folds for cross-validation of the parameters.
+#' @param solver Quadratic-programming backend used by
+#' [DTRlearn2::owl()] for the weighted SVM when \code{loss = "hinge"}.
+#' The default \code{"ipop"} uses [kernlab::ipop()] and reproduces the
+#' behaviour of \code{DTRlearn2} prior to version 2.1: the fitted decision
+#' function is exact and invariant to the order of the observations.
+#' \code{"svm"} uses \code{WeightSVM::wsvm} (the default in
+#' \code{DTRlearn2 (>= 2.1)}) and is substantially faster, but as of
+#' \code{DTRlearn2 2.1} the orientation of the fitted decision function
+#' depends on the order in which the observations appear, so
+#' \code{policy_learn(type = "owl")} may return a partially reversed
+#' policy. \code{"svm"} therefore is not recommended until this is
+#' fixed upstream. Note that \code{DTRlearn2::owl()} does not forward
+#' \code{solver} to its augmented path, so \code{solver} has no effect
+#' when \code{augment = TRUE}. For large samples the \code{"ipop"} solver
+#' can be slow (each QP scales super-linearly in \eqn{n}, and
+#' \code{owl_single} performs \code{m * length(c)} QP solves per stage);
+#' reducing \code{c} and/or \code{m} may be worthwhile.
 #' @returns list of (default) control arguments.
 #' @export
 control_owl <- function(policy_vars = NULL,
@@ -31,8 +48,8 @@ control_owl <- function(policy_vars = NULL,
                         c = 2^(-2:2),
                         sigma = c(0.03,0.05,0.07),
                         s = 2.^(-2:2),
-
-                        m = 4){
+                        m = 4,
+                        solver = "ipop"){
   control <- as.list(environment())
   return(control)
 }
@@ -48,6 +65,7 @@ dtrlearn2_owl <- function(policy_data,
                           res.lasso, loss, kernel,
                           augment, c, sigma,
                           s, m,
+                          solver,
                           ...){
 
   if ((is.null(g_models) & is.null(g_functions)))
@@ -190,6 +208,19 @@ dtrlearn2_owl <- function(policy_data,
     pi[[k]] <- G[,k]
   }
 
+  ## The 'solver' argument is pinned to the value chosen in control_owl()
+  ## (default "ipop"). DTRlearn2 (>= 2.1) introduced solver = "svm" as its
+  ## default, which routes the weighted SVM through WeightSVM::wsvm via a
+  ## precomputed kernel. In that path DTRlearn2:::wsvm_solve() reconstructs
+  ## the dual coefficients as alpha1[solution$index] <- solution$coefs
+  ## without applying the LIBSVM sign convention implied by
+  ## solution$labels[1], so the orientation of the fitted decision function
+  ## depends on the order of the observations (negating AA or reordering
+  ## rows does not negate the fit). This corrupts both per-fold CV in
+  ## owl_single() and the multi-stage backward induction (which selects the
+  ## next-stage training subset via results[[j]]$treatment == AA[[j]]).
+  ## "ipop" reproduces the exact, order-invariant behaviour of DTRlearn2
+  ## prior to 2.1. See NEWS 1.6.4 and control_owl()'s @param solver.
   owl_object <- DTRlearn2::owl(H = X,
                                AA = AA,
                                RR = RR,
@@ -203,7 +234,8 @@ dtrlearn2_owl <- function(policy_data,
                                c=c,
                                sigma=sigma,
                                s=s,
-                               m=m)
+                               m=m,
+                               solver=solver)
 
   out <- list(
     owl_object = owl_object,

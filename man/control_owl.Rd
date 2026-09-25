@@ -14,7 +14,8 @@ control_owl(
   c = 2^(-2:2),
   sigma = c(0.03, 0.05, 0.07),
   s = 2^(-2:2),
-  m = 4
+  m = 4,
+  solver = "ipop"
 )
 }
 \arguments{
@@ -44,6 +45,24 @@ options are \code{"linear"}, \code{"rbf"}.}
 \item{s}{Slope parameter.}
 
 \item{m}{Number of folds for cross-validation of the parameters.}
+
+\item{solver}{Quadratic-programming backend used by
+\code{\link[DTRlearn2:owl]{DTRlearn2::owl()}} for the weighted SVM when \code{loss = "hinge"}.
+The default \code{"ipop"} uses \code{\link[kernlab:ipop]{kernlab::ipop()}} and reproduces the
+behaviour of \code{DTRlearn2} prior to version 2.1: the fitted decision
+function is exact and invariant to the order of the observations.
+\code{"svm"} uses \code{WeightSVM::wsvm} (the default in
+\code{DTRlearn2 (>= 2.1)}) and is substantially faster, but as of
+\code{DTRlearn2 2.1} the orientation of the fitted decision function
+depends on the order in which the observations appear, so
+\code{policy_learn(type = "owl")} may return a partially reversed
+policy. \code{"svm"} therefore is not recommended until this is
+fixed upstream. Note that \code{DTRlearn2::owl()} does not forward
+\code{solver} to its augmented path, so \code{solver} has no effect
+when \code{augment = TRUE}. For large samples the \code{"ipop"} solver
+can be slow (each QP scales super-linearly in \eqn{n}, and
+\code{owl_single} performs \code{m * length(c)} QP solves per stage);
+reducing \code{c} and/or \code{m} may be worthwhile.}
 }
 \value{
 list of (default) control arguments.
