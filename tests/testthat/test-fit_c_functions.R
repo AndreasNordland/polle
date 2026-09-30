@@ -393,6 +393,13 @@ test_that("fit_c_functions(): correct risk set under terminal events", {
 
   cf_pred <- predict(cf, new_policy_data = pd)
 
+  tmp <- ld
+  tmp <- tmp[(stage <= 2 & (event %in% c(0,2))) | (stage == 3 & event %in% c(1,2))]
+  expect_equal(
+    cf_pred[, c("id", "stage")],
+    tmp[, c("id", "stage")]
+  )
+
   expect_equal(
     c1,
     1 - cf_pred[stage == 1]$surv_time2[[1]]
@@ -408,11 +415,25 @@ test_that("fit_c_functions(): correct risk set under terminal events", {
     1 - cf_pred[stage == 3]$surv_time2[[1]]
   )
 
-  stop("consider reference across stages")
-
+  ## Markoc state
   cf <- fit_c_functions(
     policy_data = pd,
     c_models = g_empir()
   )
+  cf_pred <- predict(cf, new_policy_data = pd)
 
+  expect_true(length(unique(cf_pred$surv_time2)) == 1)
+
+  expect_equal(
+    cf_pred[, c("id", "stage")],
+    tmp[, c("id", "stage")]
+  )
+
+  c_markov <- mean(tmp$event == 2)
+  expect_equal(
+    c_markov,
+    1 - cf_pred$surv_time2[[1]]
+  )
+
+  stop("finished this test, now look at NA fill of c_values in policy_eval")
 })

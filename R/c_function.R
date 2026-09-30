@@ -149,6 +149,7 @@ fit_c_functions <- function(policy_data, c_models, full_history = FALSE){
                                                 stage = s,
                                                 full_history = full_history,
                                                 event_set = c(0, 2)))
+    ## censoring before the final outcome
     history_K1 <- get_history(policy_data,
                               stage = K+1,
                               full_history = full_history,
@@ -182,12 +183,20 @@ predict.c_functions <- function(object, new_policy_data, ...){
   K <- get_K(new_policy_data)
   full_history <- attr(object, "full_history")
 
-  stop("consider event set")
   if (length(object) == (K+1)){
-    history <- lapply(1:(K+1), function(s) get_history(new_policy_data,
-                                                       stage = s,
-                                                       full_history = full_history,
-                                                       event_set = c(0,1,2)))
+    ## terminal events before censoring, event_set = c(0, 2)
+    history_K <- lapply(1:K,
+                        function(s) get_history(new_policy_data,
+                                                stage = s,
+                                                full_history = full_history,
+                                                event_set = c(0, 2)))
+    ## censoring before the final outcome
+    history_K1 <- get_history(new_policy_data,
+                              stage = K+1,
+                              full_history = full_history,
+                              event_set = c(1, 2))
+    history <- c(history_K, list(history_K1))
+
     values <- mapply(history,
                      object,
                      FUN = function(h, f) predict(f, h),
@@ -199,7 +208,8 @@ predict.c_functions <- function(object, new_policy_data, ...){
     history <- get_history(new_policy_data,
                            stage = NULL,
                            full_history = FALSE,
-                           event_set = c(0,1,2))
+                           event_set = c(0,2),
+                           final_event_set = c(1, 2))
     values <- predict(object[[1]], history)
   } else{
     stop("Provide either 1 or K+1 c-functions for evaluation.")

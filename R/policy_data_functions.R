@@ -711,18 +711,22 @@ state_history <- function(object, event_set, final_event_set){
   action_set <- get_element(object, "action_set")
   K <- get_K(object)
 
-  browser()
-
   action_name <- "A"
   ## default values:
-  event <- NULL
+  event <- stage <- NULL
   ## selecting data on events
-  browser()
-
+  data <- stage_data[stage <= K & (event %in% event_set), ]
+  if (!is.null(final_event_set)) {
+    data_final <- stage_data[stage == (K + 1) & (event %in% final_event_set)]
+  } else {
+    data_final <- stage_data[stage == (K + 1) & (event %in% event_set)]
+  }
+  data <- rbind(data, data_final)
+  setkeyv(data, c("id", "stage"))
 
   ## constructing history H and action A at the given stage:
   AH_names <- c("id", "stage", "A", state_names)
-  AH <- stage_data[event %in% event_set][, AH_names, with = FALSE]
+  AH <- data[, AH_names, with = FALSE]
   ## merging the stage specific histories and the the baseline data by reference:
   if(length(baseline_names) > 0){
     AH[baseline_data, (baseline_names) := mget(paste0('i.', baseline_names))]
@@ -732,10 +736,10 @@ state_history <- function(object, event_set, final_event_set){
   H <- AH[, c("A") := NULL]
 
   ## getting the event at the given stage:
-  event <-  stage_data[event %in% event_set][ , c("id", "stage", "event"), with = FALSE]
+  event <-  data[ , c("id", "stage", "event"), with = FALSE]
 
   ## getting the time at the given stage:
-  time <- stage_data[event %in% event_set][ , c("id", "stage", "time", "time2"), with = FALSE]
+  time <- data[ , c("id", "stage", "time", "time2"), with = FALSE]
 
   history <- list(
     H = H,
