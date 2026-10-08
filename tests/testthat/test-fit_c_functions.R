@@ -434,6 +434,4 @@ test_that("fit_c_functions(): correct risk set under terminal events", {
     c_markov,
     1 - cf_pred$surv_time2[[1]]
   )
-
-  stop("finished this test, now look at NA fill of c_values in policy_eval")
 })

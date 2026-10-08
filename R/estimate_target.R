@@ -87,10 +87,12 @@ event_matrix <- function(events, event_set) {
 #' @param M matrix of missing event indicators
 #' @param n integer, number of subjects
 #' @param K integer, number of stages
+#' @param events, data.table containing id, stage, and event for all events
+#' @param E matrix of terminal event indicators
 #'
 #' @return matrix of censoring probabilities. Dimensions (n X (K+1)).
 #' @noRd
-cens_prob_matrix <- function(c_values, M, n, K) {
+cens_prob_matrix <- function(c_values, M, n, K, events, E) {
   if (!is.null(c_values)){
     if (!data.table::is.data.table(c_values)) {
       stop("c_values must be a data.table")
@@ -100,14 +102,22 @@ cens_prob_matrix <- function(c_values, M, n, K) {
       stop("c_values must contain columns: ",
            paste(required_cols, collapse = ", "))
     }
+    ## expand c_values to all events (fill NA)
+    c_values <- merge(events[, c("id", "stage"), with = FALSE],
+                      c_values,
+                      all.x = TRUE)
 
     surv_time <- dcast(c_values, id ~ stage,
                        value.var = "surv_time")[, -c("id"), with = FALSE]
     surv_time2 <- dcast(c_values, id ~ stage,
                         value.var = "surv_time2")[, -c("id"), with = FALSE]
     C <- as.matrix(surv_time2 / surv_time)
+
     ## set probabilities to 1 for missing events:
     C[M == 1] <- 1
+    ## set probabilities to 1 for terminal events for stages <= K:
+    ## (terminal events before right-censoring)
+    C[, 1:K][E[,1:K] == 1] <- 1
 
     ## check for invalid values:
     if (any(is.na(C)) || any(is.infinite(C))) {
@@ -410,7 +420,12 @@ dr_subgroup <- function(K,
   U[D[,2] == 0] <- 0
 
   ## (n X K+1) matrix with entries C_k(H_k):
-  C <- cens_prob_matrix(c_values = c_values, M = M, n = nrow(id), K = K)
+  C <- cens_prob_matrix(c_values = c_values,
+                        M = M,
+                        n = nrow(id),
+                        K = K,
+                        events = events,
+                        E = E)
 
   ## (n X action_set) matrix with entries  I(A = a)
   II <- matrix(nrow = nrow(id), ncol = length(action_set))
@@ -552,7 +567,12 @@ dr_value <- function(K,
   D <- event_matrix(events = events, event_set = c(0, 1))
 
   ## (n X K+1) matrix with entries C_k(H_k) (non-censoring probabilities):
-  C <- cens_prob_matrix(c_values = c_values, M = M, n = nrow(id), K = K)
+  C <- cens_prob_matrix(c_values = c_values,
+                        M = M,
+                        n = nrow(id),
+                        K = K,
+                        events = events,
+                        E = E)
 
   ## (n X K+1) matrix with entries I(d_k(H_k) = A_k)
   ## I(d_{K+1}(H_{K+1}) = A_{K+1}) = 1:
@@ -586,8 +606,8 @@ dr_value <- function(K,
   for (k in 1:(K+1)) {
     Zd <- Zd + ipw_weight(D[, 1:k], C[, 1:k]) * ipw_weight(II[, 1:k], G[, 1:k]) * (Q[, k + 1] - Q[, k])
   }
-
   ## calculating the IPW and OR scores:
+  D[] <- 1
   Zd_ipw <- ipw_weight(D[, 1:k], C[, 1:k]) * ipw_weight(II, G = G) * ifelse(is.na(U), 0, U)
   Zd_or <- Q[, 1]
 

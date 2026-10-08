@@ -153,7 +153,7 @@ fit_c_functions <- function(policy_data, c_models, full_history = FALSE){
     history_K1 <- get_history(policy_data,
                               stage = K+1,
                               full_history = full_history,
-                              event_set = c(1, 2))
+                              event_set = c(0, 1, 2))
 
     history <- c(history_K, list(history_K1))
 

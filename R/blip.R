@@ -273,7 +273,9 @@ blip <- function(policy_data,
   C <- cens_prob_matrix(c_values = c_values,
                         M = M,
                         n = nrow(id),
-                        K = K)
+                        K = K,
+                        events = events,
+                        E = E)
   rm(M)
 
   ## (n X (K+1)) matrix with columns g_k(A_k, H_k)

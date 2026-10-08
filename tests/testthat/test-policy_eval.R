@@ -902,6 +902,7 @@ test_that("policy_eval with target 'value' has the correct outputs for the stoch
 
   gf <- fit_g_functions(pd, g_models = list(g_glm(~1), g_glm(~1)))
 
+  ## the utility outcome is the same for the early terminal events
   ld <- pd$stage_data
   ld[stage == 2, m := m]
   ld[, m := nafill(m, fill = 0)]
@@ -925,7 +926,10 @@ test_that("policy_eval with target 'value' has the correct outputs for the stoch
 
   ref_pe_or <- mean(d$x1)
 
-  ref_pe_ipw <- mean((d$a1 == d$p1) / 0.5 * (d$m == 0) * (d$a2 == d$p2) / 0.5 *  d$y)
+  ref_pe_ipw <- (d$m == 0) * (d$a1 == d$p1) / 0.5 * (d$a2 == d$p2) / 0.5 *  d$y +
+    (d$m == 1) * (d$a1 == d$p1) / 0.5 * d$y
+  ref_pe_ipw <- mean(ref_pe_ipw)
+
 
   ##
   ## no cross-fitting
@@ -1009,7 +1013,6 @@ test_that("policy_eval with target 'value' has the correct outputs for the stoch
     get_element(pe, "coef_ipw"),
     ref_pe_ipw
   )
-
 
 })
 

@@ -1455,8 +1455,6 @@ for the two-stage case under right-censoring and terminal events.", {
     ref_ipw
   )
 
-  stop("implement further tests on coef ipcw")
-
   rm(list = ls())
   ## right-censoring at every stage, and death at stage 2:
   set.seed(1)
@@ -1546,7 +1544,8 @@ for the two-stage case under right-censoring and terminal events.", {
   g4 <- ld[stage == 2 & event == 0, mean(A == "4")]
 
   ## c-values:
-  c1 <- 1-ld[, list(mean(event == 2))][[1]]
+  c_data <- ld[(stage <= 2 & event != 1) | stage == 3, ]
+  c1 <- 1-c_data[, list(mean(event == 2))][[1]]
 
   Z <- (
     ## Q1
@@ -1572,6 +1571,16 @@ for the two-stage case under right-censoring and terminal events.", {
   ref_pe <- mean(Z)
   ref_IC <-  Z - ref_pe
 
+  ref_Z_ipw <- (d$death2 == 0) * ((d$delta1 == 1) / c1 * (d$a1 == d$p1) / (g1 * (d$a1 == "1") +
+                                                        g2 * (d$a1 == "2")) *
+    (d$delta2 == 1) / c1 * (d$a2 == d$p2) / (g3 * (d$a2 == "3") +
+                                             g4 * (d$a2 == "4")) *
+    (d$delta3 == 1) / c1 * (d$u1 + d$u2 + d$u3)) +
+    (d$death2) * ((d$delta1 == 1) / c1 * (d$a1 == d$p1) / (g1 * (d$a1 == "1") +
+                                                           g2 * (d$a1 == "2")) *
+                  (d$u1 + d$u2))
+  ref_ipw <- mean(ref_Z_ipw)
+
   ##
   ## no cross-fitting
   ##
@@ -1594,6 +1603,11 @@ for the two-stage case under right-censoring and terminal events.", {
     IC(pe) |> unname(),
     matrix(ref_IC),
     check.attributes = FALSE
+  )
+
+  expect_equal(
+    pe$coef_ipw,
+    ref_ipw
   )
 
   rm(list =ls())
@@ -1688,7 +1702,8 @@ for the two-stage case under right-censoring and terminal events.", {
   g4 <- ld[stage == 2 & event == 0, mean(A == "4")]
 
   ## c-values:
-  c1 <- 1-ld[, list(mean(event == 2))][[1]]
+  c_data <- ld[(stage <= 2 & event != 1) | stage == 3, ]
+  c1 <- 1-c_data[, list(mean(event == 2))][[1]]
 
   ## Q1
   Z <- (d$death1 == 0) * (d$x1 + d$u1)
@@ -1714,6 +1729,17 @@ for the two-stage case under right-censoring and terminal events.", {
   ref_pe <- mean(Z)
   ref_IC <-  Z - ref_pe
 
+  ref_Z_ipw <- (d$death2 == 0 & d$death1 == 0) * ((d$delta1 == 1) / c1 * (d$a1 == d$p1) / (g1 * (d$a1 == "1") +
+                                                        g2 * (d$a1 == "2")) *
+    (d$delta2 == 1) / c1 * (d$a2 == d$p2) / (g3 * (d$a2 == "3") +
+                                             g4 * (d$a2 == "4")) *
+    (d$delta3 == 1) / c1 * (d$u1 + d$u2 + d$u3)) +
+    (d$death2 & d$death1 == 0) * ((d$delta1 == 1) / c1 * (d$a1 == d$p1) / (g1 * (d$a1 == "1") +
+                                                           g2 * (d$a1 == "2")) *
+                                  (d$u1 + d$u2)) +
+    (d$death1) * d$u1
+  ref_ipw <- mean(ref_Z_ipw)
+
   ##
   ## no cross-fitting
   ##
@@ -1737,10 +1763,14 @@ for the two-stage case under right-censoring and terminal events.", {
     matrix(ref_IC),
     check.attributes = FALSE
   )
+
+  expect_equal(
+    pe$coef_ipw,
+    ref_ipw
+  )
 })
 
 test_that("policy_eval target = 'value' coef_ipw computes under terminal events", {
-  stop("implement test")
   cohort <- expand.grid(
     A1 = 0:1, A2 = 0:1, group = c("early", "late", "none1", "none2"),
     KEEP.OUT.ATTRS = FALSE, stringsAsFactors = FALSE

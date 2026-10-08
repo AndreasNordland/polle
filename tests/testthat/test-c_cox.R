@@ -55,7 +55,7 @@ test_that("c_cox returns the expected output", {
   pd <- policy_data(data = ld, type = "long", action = "A", time = "time", time2 = "time2")
 
   ## state history across all stages:
-  his <- get_history(pd, event_set = c(0,1,2))
+  his <- get_history(pd, event_set = c(0,1,2)) # no terminal events at stage 1
   fcf <- fit_c_function(
     history = his,
     c_model = c_cox(formula = ~ Z)
@@ -156,15 +156,26 @@ test_that("c_cox returns the expected output", {
   )
 
   ## full history
-  his <- get_history(pd, event_set = c(0,1,2), stage = 2, full_history = TRUE)
+  his <- get_history(pd,
+                     event_set = c(0,1,2),
+                     stage = 2,
+                     full_history = TRUE)
   fcf <- fit_c_function(
     history = his,
     c_model = c_cox(formula = ~ Z_1 * A_1)
   )
-  ref_cox <- phreg(Surv(time = time, time2 = time2, event = (event == 2)) ~ Z*tmp, data = ld[, tmp := shift(A), by = id][stage == 2,])
+  ref_cox <- phreg(
+    Surv(time = time, time2 = time2, event = (event == 2)) ~ Z*tmp,
+    data = ld[, tmp := shift(A), by = id][stage == 2,]
+  )
   ref_cox$call <- NULL
 
-  fcf2 <- fit_c_functions(pd, full_history = TRUE, c_models = list(c_cox(formula = ~ Z_1),c_cox(formula = ~ Z_1 * A_1)))$stage_2$c_model$model
+  fcf2 <- fit_c_functions(
+    pd,
+    full_history = TRUE,
+    c_models = list(c_cox(formula = ~ Z_1),
+                    c_cox(formula = ~ Z_1 * A_1))
+  )$stage_2$c_model$model
 
   expect_equal(
     unname(coef(fcf$c_model$model)),
