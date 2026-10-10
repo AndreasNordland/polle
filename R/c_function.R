@@ -190,11 +190,16 @@ predict.c_functions <- function(object, new_policy_data, ...){
                                                 stage = s,
                                                 full_history = full_history,
                                                 event_set = c(0, 2)))
-    ## censoring before the final outcome
+    ## censoring before the final outcome. event = 0 cannot occur at K+1
+    ## (policy_data enforces event in {1, 2} at stage K+1), but event_set
+    ## must match the fit-side value (c(0, 1, 2)) so that full_history()
+    ## retains the previous-stage rows (event = 0) when constructing the
+    ## wide design matrix. Otherwise previous-stage covariates and
+    ## actions are silently dropped from H at stage K+1.
     history_K1 <- get_history(new_policy_data,
                               stage = K+1,
                               full_history = full_history,
-                              event_set = c(1, 2))
+                              event_set = c(0, 1, 2))
     history <- c(history_K, list(history_K1))
 
     values <- mapply(history,

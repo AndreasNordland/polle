@@ -372,13 +372,13 @@ test_that("fit_c_functions(): correct risk set under terminal events", {
   ## reference c-model at stage 1
   tmpdata <- ld[stage == 1]
   tmpdata <- tmpdata[event %in% c(0,2)] # death before censoring
-  ## probability om being censored among the non-terminal
+  ## probability of being censored among the non-terminal
   c1 <- mean(tmpdata$event == 2)
 
   ## reference c-model at stage 2
   tmpdata <- ld[stage == 2]
   tmpdata <- tmpdata[event %in% c(0,2)] # death before censoring
-  ## probability om being censored among the non-terminal
+  ## probability of being censored among the non-terminal
   c2 <- mean(tmpdata$event == 2)
 
   ## reference c-model at stage 3 (final stage)
@@ -415,7 +415,7 @@ test_that("fit_c_functions(): correct risk set under terminal events", {
     1 - cf_pred[stage == 3]$surv_time2[[1]]
   )
 
-  ## Markoc state
+  ## Markov state
   cf <- fit_c_functions(
     policy_data = pd,
     c_models = g_empir()
@@ -434,4 +434,52 @@ test_that("fit_c_functions(): correct risk set under terminal events", {
     c_markov,
     1 - cf_pred$surv_time2[[1]]
   )
+})
+
+test_that("fit_c_functions(full_history = TRUE) retains previous-stage history at stage K+1", {
+  ## Regression test: predict.c_functions() must build the stage K+1 history
+  ## with the same event_set as fit_c_functions() does. In an earlier
+  ## version the predict side filtered rows with event_set = c(1, 2),
+  ## which caused full_history() to drop all stage 1..K rows (event = 0)
+  ## before pivoting wide, silently losing the previous-stage covariates
+  ## and actions from the design matrix H.
+  set.seed(1)
+  n <- 100
+  d <- data.table(
+    id = rep(seq_len(n), each = 3),
+    stage = rep(1:3, times = n),
+    event = rep(c(0L, 0L, 1L), times = n),
+    A = c(sapply(seq_len(n),
+                 function(i) c(rbinom(1, 1, 0.5),
+                               rbinom(1, 1, 0.5),
+                               NA_integer_))),
+    U = rep(c(0, 0, 1), times = n),
+    X = rnorm(3 * n)
+  )
+  ## induce right-censoring at the final stage:
+  d[stage == 3, event := rbinom(.N, 1, 0.5) + 1L]
+  d[stage == 3 & event == 2, U := NA_real_]
+  d[event == 2, A := NA_integer_]
+  pd <- policy_data(d, type = "long",
+                    id = "id", stage = "stage", event = "event",
+                    action = "A", utility = "U")
+
+  ## Fit side: full_history must include the previous actions and
+  ## covariates at stage K+1.
+  h_fit <- get_history(pd, stage = 3,
+                       full_history = TRUE, event_set = c(0, 1, 2))
+  expect_true(all(c("A_1", "A_2", "X_1", "X_2", "X_3") %in% colnames(h_fit$H)))
+
+  ## Predict side: a c-model whose formula references a previous-stage
+  ## column must still find it at predict time. A g_glm c-model with
+  ## formula = ~ A_1 reaches into H, so the pre-fix behaviour (predict
+  ## side filtering with event_set = c(1, 2), which drops stage 1..K
+  ## rows and so drops the A_1 column from the wide pivot) raises a
+  ## missing-variable error.
+  cf <- fit_c_functions(
+    pd,
+    c_models = list(g_glm(~1), g_glm(~1), g_glm(formula = ~ A_1)),
+    full_history = TRUE
+  )
+  expect_no_error(predict(cf, pd))
 })

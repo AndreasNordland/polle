@@ -701,9 +701,13 @@ stage_state_history <- function(object, stage, event_set){
 #'
 #' @noRd
 #' @param object object of class [policy_data()].
-#' @param event_set Integer vector. Subset of c(0,1,2).
+#' @param event_set Integer vector. Subset of c(0,1,2). Event set used at
+#'   stages 1..K (and at stage K+1 when \code{final_event_set} is \code{NULL}).
+#' @param final_event_set Integer vector or \code{NULL}. If non-\code{NULL},
+#'   event set used at stage K+1 (overrides \code{event_set} at the final
+#'   stage).
 #' @return Object of class "history".
-state_history <- function(object, event_set, final_event_set){
+state_history <- function(object, event_set, final_event_set = NULL){
   stage_data <- get_element(object, "stage_data")
   state_names <- get_element(object, "colnames") |> get_element("state_names")
   baseline_data <- get_element(object, "baseline_data")
@@ -777,7 +781,12 @@ NULL
 #' all stages is returned.
 #' @param full_history Logical. If TRUE, the full history is returned
 #' If FALSE, only the state/Markov-type history is returned.
-#' @param event_set Integer vector. Subset of c(0,1,2).
+#' @param event_set Integer vector. Subset of c(0,1,2). Event set used at
+#'   stages 1..K (and at stage K+1 when \code{final_event_set} is \code{NULL}).
+#' @param final_event_set Integer vector or \code{NULL}. If non-\code{NULL},
+#'   event set used at stage K+1 (overrides \code{event_set} at the final
+#'   stage). Only honoured when \code{stage} is \code{NULL} and
+#'   \code{full_history = FALSE}.
 #' @details
 #' Each observation has the sequential form
 #' \deqn{O= {B, U_1, X_1, A_1, ..., U_K, X_K, A_K, U_{K+1}},}

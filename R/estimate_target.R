@@ -87,7 +87,7 @@ event_matrix <- function(events, event_set) {
 #' @param M matrix of missing event indicators
 #' @param n integer, number of subjects
 #' @param K integer, number of stages
-#' @param events, data.table containing id, stage, and event for all events
+#' @param events data.table containing id, stage, and event for all events
 #' @param E matrix of terminal event indicators
 #'
 #' @return matrix of censoring probabilities. Dimensions (n X (K+1)).
@@ -127,6 +127,10 @@ cens_prob_matrix <- function(c_values, M, n, K, events, E) {
   } else {
     C <- matrix(nrow = n, ncol = K+1, 1)
   }
+
+  ## sanity check: expanding c_values over the full (id x stage) grid is
+  ## supposed to guarantee a complete (n x K+1) matrix.
+  stopifnot(nrow(C) == n, ncol(C) == K + 1)
 
   return(C)
 }
@@ -606,9 +610,11 @@ dr_value <- function(K,
   for (k in 1:(K+1)) {
     Zd <- Zd + ipw_weight(D[, 1:k], C[, 1:k]) * ipw_weight(II[, 1:k], G[, 1:k]) * (Q[, k + 1] - Q[, k])
   }
+
   ## calculating the IPW and OR scores:
-  D[] <- 1
-  Zd_ipw <- ipw_weight(D[, 1:k], C[, 1:k]) * ipw_weight(II, G = G) * ifelse(is.na(U), 0, U)
+  D_ipw <- matrix(1, nrow = nrow(D), ncol = ncol(D))
+  Zd_ipw <- ipw_weight(D_ipw[, 1:(K + 1)], C[, 1:(K + 1)]) *
+    ipw_weight(II, G = G) * ifelse(is.na(U), 0, U)
   Zd_or <- Q[, 1]
 
   ## naming:
