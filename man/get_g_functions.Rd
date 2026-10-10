@@ -27,10 +27,10 @@ pd <- policy_data(d,
                   utility = c("U_1", "U_2", "U_3"))
 pd
 
-# evaluating the static policy a=1 using inverse propensity weighting
-# based on a GLM model at each stage
-pe <- policy_eval(type = "ipw",
-                  policy_data = pd,
+# evaluating the static policy a=1 using doubly robust estimation
+# with a GLM g-model at each stage. The inverse-probability-weighted
+# estimate is available on pe$coef_ipw.
+pe <- policy_eval(policy_data = pd,
                   policy = policy_def(1, reuse = TRUE, name = "A=1"),
                   g_models = list(g_glm(), g_glm()))
 pe

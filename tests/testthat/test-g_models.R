@@ -246,8 +246,7 @@ test_that("g_rf runs:", {
       policy_data = pd1,
       policy_learn = policy_learn(type = "ql", alpha = 0.05),
       g_models = g_rf(formula = ~.),
-      g_full_history = FALSE,
-      type = "ipw"
+      g_full_history = FALSE
     )
   )
 
@@ -298,15 +297,13 @@ test_that("g_glm handles missing covariates", {
 
   expect_error(
     policy_eval(policy_data = pd,
-                policy = p,
-                type = "ipw"),
+                policy = p),
     "NA/NaN/Inf in 'x'"
   )
   expect_error(
     policy_eval(policy_data = pd,
                 policy = p,
-                g_models = list(g_glm(), g_glm()),
-                type = "ipw"),
+                g_models = list(g_glm(), g_glm())),
     "NA/NaN/Inf in 'x'"
   )
 
@@ -335,8 +332,7 @@ test_that("g_glm handles missing covariates", {
                     utility = c("U_1", "U_2", "U_3"))
   expect_error(
     policy_eval(policy_data = pd,
-                policy = p,
-                type = "ipw"),
+                policy = p),
     "NA/NaN/Inf in 'x'"
   )
 })
@@ -356,23 +352,23 @@ test_that("g_glmnet handles missing covariates", {
     suppressWarnings({
       pe <- policy_eval(policy_data = pd,
                         policy = p,
-                        type = "ipw",
-                        g_models = list(g_glmnet(), g_glmnet()))
+                        g_models = list(g_glmnet(), g_glmnet()),
+                        q_models = q_glm(~L + B))
     })
   )
 
   expect_error(
     policy_eval(policy_data = pd,
                 policy = p,
-                type = "ipw",
-                g_models = g_glmnet(~L + B)),
+                g_models = g_glmnet(~L + B),
+                q_models = q_glm(~L + B)),
     NA
   )
   expect_error(
     policy_eval(policy_data = pd,
                 policy = p,
-                type = "ipw",
-                g_models = list(g_glmnet(~L + B), g_glmnet())),
+                g_models = list(g_glmnet(~L + B), g_glmnet()),
+                q_models = q_glm(~L + B)),
     NA
   )
   d <- sim_two_stage(2e3, seed=1)
@@ -387,8 +383,8 @@ test_that("g_glmnet handles missing covariates", {
     expect_warning(
       policy_eval(policy_data = pd,
                   policy = p,
-                  type = "ipw",
-                  g_models = g_glmnet()),
+                  g_models = g_glmnet(),
+                  q_models = q_glm(~L + B)),
       "The regression variables C have missing NA values."
     )
   )

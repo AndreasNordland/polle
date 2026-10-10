@@ -45,12 +45,12 @@
 #' is the average treatement effect among
 #' the subgroup of subjects that would receive
 #' treatment under the policy, see details.
-#' "subgroup" is only implemented for \code{type = "dr"}
+#' "subgroup" is only implemented
 #' in the single-stage case with a dichotomous action set.
-#' @param type Character string. Type of evaluation. Either \code{"dr"}
-#' (doubly robust),
-#' \code{"ipw"} (inverse propensity weighting),
-#' or \code{"or"} (outcome regression).
+#' @param type Character string. Type of evaluation. Currently only
+#' \code{"dr"} (doubly robust) is implemented. The accompanying
+#' inverse-probability-weighted and outcome-regression estimates are
+#' returned on the fitted object as \code{coef_ipw} and \code{coef_or}.
 #' @param cross_fit_type Character string.
 #' Either "stacked", or "pooled", see details. (Only used if \code{M > 1} and target = "subgroup")
 #' @param variance_type Character string. Either "pooled" (default),
@@ -87,15 +87,15 @@
 #' see \code{summary()}, \code{coef()} and \code{estimate()}.}
 #' \item{\code{IC}}{Numeric matrix. Estimated influence curve associated with
 #' \code{coef}.}
-#' \item{\code{type}}{Character string. The type of evaluation ("dr", "ipw",
-#' "or").}
+#' \item{\code{type}}{Character string. The type of evaluation. Currently
+#' only \code{"dr"} is implemented.}
 #' \item{\code{target}}{Character string. The target parameter ("value" or "subgroup")}
 #' \item{\code{id}}{Character vector. The IDs of the observations.}
 #' \item{\code{name}}{Character vector. Names for the each element in \code{coef}.}
-#' \item{\code{coef_ipw}}{(only if \code{type = "dr"}) Numeric vector.
-#' Estimate of \code{coef} based solely on inverse probability weighting.}
-#' \item{\code{coef_or}}{(only if \code{type = "dr"}) Numeric vector.
-#' Estimate of \code{coef} based solely on outcome regression.}
+#' \item{\code{coef_ipw}}{Numeric vector. Estimate of \code{coef} based
+#' solely on inverse probability weighting (censoring-aware).}
+#' \item{\code{coef_or}}{Numeric vector. Estimate of \code{coef} based
+#' solely on outcome regression.}
 #' \item{\code{policy_actions}}{[data.table::data.table] with keys id and stage. Actions
 #' associated with the policy for every observation and stage.}
 #' \item{\code{policy_object}}{(only if \code{policy = NULL} and \code{M = 1})
@@ -173,21 +173,6 @@
 #' \code{g_full_history = FALSE}, \eqn{H_k = \{B, X_k\}}.
 #' Furthermore, if \code{g_full_history = FALSE} and \code{g_models} is a
 #' single model, it is assumed that \eqn{g_1(h_1, a_1) = ... = g_K(h_K, a_K)}.
-#'
-#' If \code{target = "value"} and \code{type = "or"}
-#' \code{policy_eval()} returns the empirical estimate of
-#' the value (\code{coef}):
-#' \deqn{E\left[Q^d_1(H_1, d_1(\cdot))\right]}
-#'
-#' If \code{target = "value"} and \code{type = "ipw"} \code{policy_eval()}
-#' returns the empirical estimates of
-#' the value (\code{coef}) and influence curve (\code{IC}):
-#' \deqn{E\left[\left(\prod_{k=1}^K I\{A_k = d_k(\cdot)\}
-#' g_k(H_k, A_k)^{-1}\right) U\right].}
-#' \deqn{\left(\prod_{k=1}^K I\{A_k =
-#' d_k(\cdot)\} g_k(H_k, A_k)^{-1}\right) U -
-#' E\left[\left(\prod_{k=1}^K
-#' I\{A_k = d_k(\cdot)\} g_k(H_k, A_k)^{-1}\right) U\right].}
 #'
 #' If \code{target = "value"} and
 #' \code{type = "dr"} \code{policy_eval} returns the empirical estimates of
@@ -523,12 +508,15 @@ policy_eval_input_checks <- function(policy_data,
   }
   if (type %in% c("dr", "aipw")) {
     type <- "dr"
-  } else if (type %in% c("ipw")) {
-    type <- "ipw"
-  } else if (type %in% c("or", "q")) {
-    type <- "or"
+  } else if (type %in% c("ipw", "or", "q")) {
+    stop(
+      "type = '", type, "' is no longer supported. ",
+      "Use type = 'dr' and read the inverse-probability-weighted ",
+      "and outcome-regression estimates from 'coef_ipw' and 'coef_or' ",
+      "on the returned object."
+    )
   } else {
-    stop("type must be either 'dr', 'ipw' or  'or'.")
+    stop("type must be 'dr'.")
   }
 
   ## train_block_size used for online/sequential validation:
@@ -607,7 +595,6 @@ policy_eval_type <- function(target,
   ## fitting the g-functions, the q-functions, c-functions, and the policy/policies:
   fits <- fit_functions(
     policy_data = train_policy_data,
-    type = type,
     policy = policy, policy_learn = policy_learn,
     g_models = g_models, g_functions = g_functions,
     g_full_history = g_full_history,
@@ -1046,9 +1033,9 @@ policy_eval_cross <- function(args,
   }
 
   ## calculating the cross-fitted ipw value estimate
-  ## (only if target = "value" and type = "dr"):
+  ## (only emitted when target = "value"):
   coef_ipw <- NULL
-  if (target == "value" && type == "dr") {
+  if (target == "value") {
     coef_ipw <- lapply(
       cross_fits, function(x) get_element(x, "coef_ipw")
     )
@@ -1064,9 +1051,9 @@ policy_eval_cross <- function(args,
 
 
   ## calculating the cross-fitted outcome regression value estimate
-  ## (only if target = "value" and type = "dr"):
+  ## (only emitted when target = "value"):
   coef_or <- NULL
-  if (target == "value" && type == "dr") {
+  if (target == "value") {
     coef_or <- lapply(
       cross_fits, function(x) get_element(x, "coef_or")
     )

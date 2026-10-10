@@ -44,11 +44,11 @@ p1 <- policy_def(policy_functions = '1', reuse = TRUE, name = "(A=1)")
 
 As we want to apply the same policy function at both stages we set `reuse = TRUE`.
 
-`policy_eval()` implements three types of policy evaluations: Inverse
-probability weighting estimation, outcome regression estimation, and doubly
-robust (DR) estimation. As doubly robust estimation is a combination of the two
-other types, we focus on this approach. For details on the implementation see
-Algorithm 1 in [@nordland2023policy]. 
+`policy_eval()` implements doubly robust (DR) policy evaluation. The
+associated inverse-probability-weighted and outcome-regression-only
+estimates are reported on the fitted object as `coef_ipw` and `coef_or`.
+For details on the implementation see Algorithm 1 in
+[@nordland2023policy]. 
 
 ```{r polevalp1}
 (pe1 <- policy_eval(policy_data = pd,

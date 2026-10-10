@@ -154,14 +154,14 @@ test_that("q_glm handles missing covariates", {
   expect_error(
     policy_eval(policy_data = pd,
                 policy = p,
-                type = "or",
+                g_models = g_glm(~L + B),
                 q_models = q_glm(~L)),
     NA
   )
   expect_error(
     policy_eval(policy_data = pd,
                 policy = p,
-                type = "or",
+                g_models = g_glm(~L + B),
                 q_models = list(q_glm(~L), q_glm())),
     NA
   )

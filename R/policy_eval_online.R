@@ -46,8 +46,8 @@
 #' the target parameter is the policy value.
 #' If "subgroup", the target parameter
 #' is the subgroup average treatement effect given by the policy, see details.
-#' "subgroup" is only implemented for \code{type = "dr"}
-#' in the single-stage case with a dichotomous action set.
+#' "subgroup" is only implemented in the single-stage case
+#' with a dichotomous action set.
 #' @param M Number of folds for online estimation/sequential validation excluding the initial training block, see details.
 #' @param train_block_size Integer. Size of the initial training block only
 #' used for training of the policy and nuisance models, see details.

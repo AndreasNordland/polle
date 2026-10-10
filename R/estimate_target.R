@@ -20,22 +20,19 @@ estimate_target <- function(target = "value",
   args[["target"]] <- NULL
   args[["type"]] <- NULL
 
+  ## 'type' is kept as an input to policy_eval() so that future evaluation
+  ## variants can be added, but currently only "dr" is implemented.
+  ## policy_eval_input_checks() rejects any other value, so by the time
+  ## we get here type is always "dr". The stop() below is a defensive
+  ## guard in case estimate_target() is called directly.
+  if (type != "dr") {
+    stop("Only type = 'dr' is implemented.")
+  }
+
   if (target == "value") {
-    if (type == "dr") {
-      out <- do.call(what = "dr_value", args)
-    } else if (type == "ipw") {
-      out <- do.call(what = "ipw_value", args)
-    } else if (type == "or") {
-      out <- do.call(what = "or_value", args)
-    } else {
-      stop()
-    }
+    out <- do.call(what = "dr_value", args)
   } else if (target == "subgroup") {
-    if (type == "dr") {
-      out <- do.call(what = "dr_subgroup", args)
-    } else {
-      stop("target = 'subgroup' only implemented for type = 'dr'.")
-    }
+    out <- do.call(what = "dr_subgroup", args)
   } else {
     stop("unknown target argument.")
   }
@@ -402,6 +399,13 @@ dr_subgroup <- function(K,
     )
     stop(mes)
   }
+  if (nrow(events[stage == 1 & event == 1, ]) > 0) {
+    mes <- paste0(
+      "subgroup average treatment effect evaluation is not ",
+      "implemented for terminal events at stage 1."
+    )
+    stop(mes)
+  }
 
   ## calculating the doubly robust score for each treatment
 
@@ -649,136 +653,5 @@ dr_value <- function(K,
     output_meta = output_meta
   )
 
-  return(out)
-}
-
-or_value <- function(K,
-                     action_set,
-                     actions,
-                     policy_actions,
-                     policy_name,
-                     policy_input_meta,
-                     policy_output_meta = NULL,
-                     q_values,
-                     ...) {
-
-  ## calculating the outcome regression score
-
-  # (n X K) matrix with entries Q_k(d_k(H_k), H_k)
-  q_d_values <- get_a_values(
-    a = policy_actions$d,
-    action_set = action_set,
-    values = q_values
-  )
-  if (!all(complete.cases(q_d_values))) {
-    stop("The policy dictates actions with incomplete (NA) Q-function values")
-  }
-  Q <- dcast(q_d_values, id ~ stage, value.var = "P")[, -c("id"), with = FALSE]
-  Q <- as.matrix(Q)
-
-  Zd_or <- Q[, 1]
-
-  ## naming:
-  name <- "E[U(d)]"
-
-  ## appending policy names:
-  if (!is.null(policy_name)){
-    name <- paste0(name, ": d=", policy_name)
-  }
-
-  ## collecting meta information
-  input_meta <- as.data.table(as.list(policy_input_meta))
-  output_meta <- NULL
-  if (!is.null(policy_output_meta)) {
-    output_meta <- as.data.table(as.list(policy_output_meta))
-  }
-
-  ##
-  ## output checks
-  ##
-
-  stopifnot(
-    all(!is.na(Zd_or))
-  )
-
-  out <- list(
-    coef = mean(Zd_or),
-    IC = NULL,
-    name = name,
-    input_meta = input_meta,
-    output_meta = output_meta
-  )
-  return(out)
-}
-
-ipw_value <- function(K,
-                      action_set,
-                      actions,
-                      policy_actions,
-                      policy_name,
-                      policy_input_meta,
-                      policy_output_meta = NULL,
-                      g_values,
-                      utility,
-                      ...) {
-  ## calculating the inverse probability score
-
-  # (n) vector with entries U_i:
-  U <- utility$U
-
-  # (n X K) matrix with entries I(d_k(H_k) = A_k):
-  IIA <- as.matrix(dcast(
-    actions, id ~ stage,
-    value.var = "A"
-  )[, -c("id"), with = FALSE])
-  IId <- as.matrix(dcast(
-    policy_actions, id ~ stage,
-    value.var = "d"
-  )[, -c("id"), with = FALSE])
-  II <- (IIA == IId)
-  rm(IIA, IId)
-
-  # (n X K) matrix with entries g_k(d_k(H_k), H_k):
-  g_d_values <- get_a_values(
-    a = policy_actions$d,
-    action_set = action_set,
-    g_values
-  )
-  G <- as.matrix(dcast(
-    g_d_values,
-    id ~ stage,
-    value.var = "P"
-  )[, -c("id"), with = FALSE])
-
-  Zd_ipw <- ipw_weight(II, G = G) * U
-
-  ## naming:
-  name <- "E[U(d)]"
-
-  ## appending policy names:
-  if (!is.null(policy_name)){
-    name <- paste0(name, ": d=", policy_name)
-  }
-
-  ## collecting meta information
-  input_meta <- as.data.table(as.list(policy_input_meta))
-  output_meta <- NULL
-  if (!is.null(policy_output_meta)) {
-    output_meta <- as.data.table(as.list(policy_output_meta))
-  }
-
-  ## output checks
-
-  stopifnot(
-    !all(is.na(Zd_ipw))
-  )
-
-  out <- list(
-    coef = mean(Zd_ipw),
-    IC = Zd_ipw - mean(Zd_ipw),
-    name = name,
-    input_meta = input_meta,
-    output_meta = output_meta
-  )
   return(out)
 }

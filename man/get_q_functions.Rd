@@ -30,10 +30,10 @@ pd <- policy_data(d,
 )
 pd
 
-# evaluating the static policy a=1 using outcome regression
-# based on a GLM model at each stage.
+# evaluating the static policy a=1 using doubly robust estimation with
+# a GLM Q-model at each stage. The outcome-regression-only estimate is
+# available on pe$coef_or.
 pe <- policy_eval(
-  type = "or",
   policy_data = pd,
   policy = policy_def(1, reuse = TRUE, name = "A=1"),
   q_models = list(q_glm(), q_glm())
