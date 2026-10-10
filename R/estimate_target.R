@@ -399,6 +399,7 @@ dr_subgroup <- function(K,
     )
     stop(mes)
   }
+  stage <- event <- NULL
   if (nrow(events[stage == 1 & event == 1, ]) > 0) {
     mes <- paste0(
       "subgroup average treatment effect evaluation is not ",
@@ -406,6 +407,7 @@ dr_subgroup <- function(K,
     )
     stop(mes)
   }
+  rm(stage, event)
 
   ## calculating the doubly robust score for each treatment
 
