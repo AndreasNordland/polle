@@ -20,22 +20,19 @@ estimate_target <- function(target = "value",
   args[["target"]] <- NULL
   args[["type"]] <- NULL
 
+  ## 'type' is kept as an input to policy_eval() so that future evaluation
+  ## variants can be added, but currently only "dr" is implemented.
+  ## policy_eval_input_checks() rejects any other value, so by the time
+  ## we get here type is always "dr". The stop() below is a defensive
+  ## guard in case estimate_target() is called directly.
+  if (type != "dr") {
+    stop("Only type = 'dr' is implemented.")
+  }
+
   if (target == "value") {
-    if (type == "dr") {
-      out <- do.call(what = "dr_value", args)
-    } else if (type == "ipw") {
-      out <- do.call(what = "ipw_value", args)
-    } else if (type == "or") {
-      out <- do.call(what = "or_value", args)
-    } else {
-      stop()
-    }
+    out <- do.call(what = "dr_value", args)
   } else if (target == "subgroup") {
-    if (type == "dr") {
-      out <- do.call(what = "dr_subgroup", args)
-    } else {
-      stop("target = 'subgroup' only implemented for type = 'dr'.")
-    }
+    out <- do.call(what = "dr_subgroup", args)
   } else {
     stop("unknown target argument.")
   }
@@ -87,10 +84,12 @@ event_matrix <- function(events, event_set) {
 #' @param M matrix of missing event indicators
 #' @param n integer, number of subjects
 #' @param K integer, number of stages
+#' @param events data.table containing id, stage, and event for all events
+#' @param E matrix of terminal event indicators
 #'
 #' @return matrix of censoring probabilities. Dimensions (n X (K+1)).
 #' @noRd
-cens_prob_matrix <- function(c_values, M, n, K) {
+cens_prob_matrix <- function(c_values, M, n, K, events, E) {
   if (!is.null(c_values)){
     if (!data.table::is.data.table(c_values)) {
       stop("c_values must be a data.table")
@@ -100,14 +99,22 @@ cens_prob_matrix <- function(c_values, M, n, K) {
       stop("c_values must contain columns: ",
            paste(required_cols, collapse = ", "))
     }
+    ## expand c_values to all events (fill NA)
+    c_values <- merge(events[, c("id", "stage"), with = FALSE],
+                      c_values,
+                      all.x = TRUE)
 
     surv_time <- dcast(c_values, id ~ stage,
                        value.var = "surv_time")[, -c("id"), with = FALSE]
     surv_time2 <- dcast(c_values, id ~ stage,
                         value.var = "surv_time2")[, -c("id"), with = FALSE]
     C <- as.matrix(surv_time2 / surv_time)
+
     ## set probabilities to 1 for missing events:
     C[M == 1] <- 1
+    ## set probabilities to 1 for terminal events for stages <= K:
+    ## (terminal events before right-censoring)
+    C[, 1:K][E[,1:K] == 1] <- 1
 
     ## check for invalid values:
     if (any(is.na(C)) || any(is.infinite(C))) {
@@ -117,6 +124,10 @@ cens_prob_matrix <- function(c_values, M, n, K) {
   } else {
     C <- matrix(nrow = n, ncol = K+1, 1)
   }
+
+  ## sanity check: expanding c_values over the full (id x stage) grid is
+  ## supposed to guarantee a complete (n x K+1) matrix.
+  stopifnot(nrow(C) == n, ncol(C) == K + 1)
 
   return(C)
 }
@@ -388,6 +399,13 @@ dr_subgroup <- function(K,
     )
     stop(mes)
   }
+  if (nrow(events[stage == 1 & event == 1, ]) > 0) {
+    mes <- paste0(
+      "subgroup average treatment effect evaluation is not ",
+      "implemented for terminal events at stage 1."
+    )
+    stop(mes)
+  }
 
   ## calculating the doubly robust score for each treatment
 
@@ -410,7 +428,12 @@ dr_subgroup <- function(K,
   U[D[,2] == 0] <- 0
 
   ## (n X K+1) matrix with entries C_k(H_k):
-  C <- cens_prob_matrix(c_values = c_values, M = M, n = nrow(id), K = K)
+  C <- cens_prob_matrix(c_values = c_values,
+                        M = M,
+                        n = nrow(id),
+                        K = K,
+                        events = events,
+                        E = E)
 
   ## (n X action_set) matrix with entries  I(A = a)
   II <- matrix(nrow = nrow(id), ncol = length(action_set))
@@ -552,7 +575,12 @@ dr_value <- function(K,
   D <- event_matrix(events = events, event_set = c(0, 1))
 
   ## (n X K+1) matrix with entries C_k(H_k) (non-censoring probabilities):
-  C <- cens_prob_matrix(c_values = c_values, M = M, n = nrow(id), K = K)
+  C <- cens_prob_matrix(c_values = c_values,
+                        M = M,
+                        n = nrow(id),
+                        K = K,
+                        events = events,
+                        E = E)
 
   ## (n X K+1) matrix with entries I(d_k(H_k) = A_k)
   ## I(d_{K+1}(H_{K+1}) = A_{K+1}) = 1:
@@ -588,7 +616,9 @@ dr_value <- function(K,
   }
 
   ## calculating the IPW and OR scores:
-  Zd_ipw <- ipw_weight(D[, 1:k], C[, 1:k]) * ipw_weight(II, G = G) * ifelse(is.na(U), 0, U)
+  D_ipw <- matrix(1, nrow = nrow(D), ncol = ncol(D))
+  Zd_ipw <- ipw_weight(D_ipw[, 1:(K + 1)], C[, 1:(K + 1)]) *
+    ipw_weight(II, G = G) * ifelse(is.na(U), 0, U)
   Zd_or <- Q[, 1]
 
   ## naming:
@@ -623,136 +653,5 @@ dr_value <- function(K,
     output_meta = output_meta
   )
 
-  return(out)
-}
-
-or_value <- function(K,
-                     action_set,
-                     actions,
-                     policy_actions,
-                     policy_name,
-                     policy_input_meta,
-                     policy_output_meta = NULL,
-                     q_values,
-                     ...) {
-
-  ## calculating the outcome regression score
-
-  # (n X K) matrix with entries Q_k(d_k(H_k), H_k)
-  q_d_values <- get_a_values(
-    a = policy_actions$d,
-    action_set = action_set,
-    values = q_values
-  )
-  if (!all(complete.cases(q_d_values))) {
-    stop("The policy dictates actions with incomplete (NA) Q-function values")
-  }
-  Q <- dcast(q_d_values, id ~ stage, value.var = "P")[, -c("id"), with = FALSE]
-  Q <- as.matrix(Q)
-
-  Zd_or <- Q[, 1]
-
-  ## naming:
-  name <- "E[U(d)]"
-
-  ## appending policy names:
-  if (!is.null(policy_name)){
-    name <- paste0(name, ": d=", policy_name)
-  }
-
-  ## collecting meta information
-  input_meta <- as.data.table(as.list(policy_input_meta))
-  output_meta <- NULL
-  if (!is.null(policy_output_meta)) {
-    output_meta <- as.data.table(as.list(policy_output_meta))
-  }
-
-  ##
-  ## output checks
-  ##
-
-  stopifnot(
-    all(!is.na(Zd_or))
-  )
-
-  out <- list(
-    coef = mean(Zd_or),
-    IC = NULL,
-    name = name,
-    input_meta = input_meta,
-    output_meta = output_meta
-  )
-  return(out)
-}
-
-ipw_value <- function(K,
-                      action_set,
-                      actions,
-                      policy_actions,
-                      policy_name,
-                      policy_input_meta,
-                      policy_output_meta = NULL,
-                      g_values,
-                      utility,
-                      ...) {
-  ## calculating the inverse probability score
-
-  # (n) vector with entries U_i:
-  U <- utility$U
-
-  # (n X K) matrix with entries I(d_k(H_k) = A_k):
-  IIA <- as.matrix(dcast(
-    actions, id ~ stage,
-    value.var = "A"
-  )[, -c("id"), with = FALSE])
-  IId <- as.matrix(dcast(
-    policy_actions, id ~ stage,
-    value.var = "d"
-  )[, -c("id"), with = FALSE])
-  II <- (IIA == IId)
-  rm(IIA, IId)
-
-  # (n X K) matrix with entries g_k(d_k(H_k), H_k):
-  g_d_values <- get_a_values(
-    a = policy_actions$d,
-    action_set = action_set,
-    g_values
-  )
-  G <- as.matrix(dcast(
-    g_d_values,
-    id ~ stage,
-    value.var = "P"
-  )[, -c("id"), with = FALSE])
-
-  Zd_ipw <- ipw_weight(II, G = G) * U
-
-  ## naming:
-  name <- "E[U(d)]"
-
-  ## appending policy names:
-  if (!is.null(policy_name)){
-    name <- paste0(name, ": d=", policy_name)
-  }
-
-  ## collecting meta information
-  input_meta <- as.data.table(as.list(policy_input_meta))
-  output_meta <- NULL
-  if (!is.null(policy_output_meta)) {
-    output_meta <- as.data.table(as.list(policy_output_meta))
-  }
-
-  ## output checks
-
-  stopifnot(
-    !all(is.na(Zd_ipw))
-  )
-
-  out <- list(
-    coef = mean(Zd_ipw),
-    IC = Zd_ipw - mean(Zd_ipw),
-    name = name,
-    input_meta = input_meta,
-    output_meta = output_meta
-  )
   return(out)
 }

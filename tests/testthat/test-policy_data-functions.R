@@ -447,7 +447,6 @@ test_that("full_history() returns the history associated with the event process 
 
 })
 
-
 test_that("stage_state_history() returns the history associated with the action process when event_set = c(0)", {
 
   # long data
@@ -820,7 +819,6 @@ test_that("stage_state_history() returns the history associated with the event p
 
 })
 
-
 test_that("state_history() returns the history associated with the action process when event_set = c(0)", {
 
   # long data
@@ -854,7 +852,7 @@ test_that("state_history() returns the history associated with the action proces
 
 
   ## stage 1:
-  fh <- state_history(pd, event_set = c(0))
+  fh <- state_history(pd, event_set = c(0), final_event_set = NULL)
 
   ref <- data.table(
     id = c(1,3,4),
@@ -895,10 +893,7 @@ test_that("state_history() returns the history associated with the action proces
 
 })
 
-
-
-
-test_that("state_history() returns the history associated with the event process when type = 'censoring'", {
+test_that("state_history() returns the history associated with the censoring process (risk set)", {
 
   # long data
   ## 5 cases: no right censoring, right censored before/at stage 1 action,
@@ -931,16 +926,15 @@ test_that("state_history() returns the history associated with the event process
                     time = c("time"),
                     type = "long")
 
-
-  fh <- state_history(pd, event_set = c(0,2))
+  fh <- state_history(pd, event_set = c(0,2), final_event_set = c(1,2))
 
   ref <- data.table(
-    id = c(1,2,3,3,4,4),
-    stage = c(1,1,1,2,1,2),
-    B = c("gr1","gr2", "gr3", "gr3", "gr4", "gr4"),
-    Z = c("A", "A", "B", NA, "B", NA),
-    L = c(1, 2, 1, 3, 3,4),
-    W = c("blue","red", "blue", "blue", "red", "red")
+    id = c(1,1,2,3,3,4,4),
+    stage = c(1,2,1,1,2,1,2),
+    B = c("gr1","gr1","gr2", "gr3", "gr3", "gr4", "gr4"),
+    Z = c("A",NA,"A", "B", NA, "B", NA),
+    L = c(1,2, 2, 1, 3, 3,4),
+    W = c("blue","blue","red", "blue", "blue", "red", "red")
   )
   setkey(ref, id, stage)
 
@@ -950,9 +944,9 @@ test_that("state_history() returns the history associated with the event process
   )
 
   ref <- data.table(
-    id = c(1,2,3,3,4,4),
-    stage = c(1,1,1,2,1,2),
-    event = c(0,2,0,2,0,2)
+    id = c(1,1,2,3,3,4,4),
+    stage = c(1,2,1,1,2,1,2),
+    event = c(0,1,2,0,2,0,2)
   )
   setkey(ref, id, stage)
 
@@ -962,10 +956,10 @@ test_that("state_history() returns the history associated with the event process
   )
 
   ref <- data.table(
-    id = c(1,2,3,3,4,4),
-    stage = c(1,1,1,2,1,2),
-    time = c(0,0,0,1,0,1),
-    time2 = c(1,0.5,1,1.5,1,1.2)
+    id = c(1,1,2,3,3,4,4),
+    stage = c(1,2,1,1,2,1,2),
+    time = c(0,1,0,0,1,0,1),
+    time2 = c(1,2,0.5,1,1.5,1,1.2)
   )
   setkey(ref, id, stage)
 
@@ -976,7 +970,7 @@ test_that("state_history() returns the history associated with the event process
 
 })
 
-test_that("state_history() returns the history associated with the event process when type = 'all'", {
+test_that("state_history() returns the history associated with the complete event process", {
 
   # long data
   ## 5 cases: no right censoring, right censored before/at stage 1 action,
@@ -1010,7 +1004,7 @@ test_that("state_history() returns the history associated with the event process
                     type = "long")
 
 
-  fh <- state_history(pd, event_set = c(0,1,2))
+  fh <- state_history(pd, event_set = c(0,1,2), final_event_set = c(1,2))
 
   ref <- data.table(
     id = c(1,1,2,3,3,4,4,5),
@@ -1175,7 +1169,6 @@ test_that("a policy_data object prints as expected under right censoring occur."
   )
 
 })
-
 
 test_that("plot.policy_data() does not fail for right-censored data", {
 

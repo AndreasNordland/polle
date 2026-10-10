@@ -5,7 +5,13 @@
 \alias{get_history}
 \title{Get History Object}
 \usage{
-get_history(object, stage = NULL, full_history = FALSE, event_set = c(0))
+get_history(
+  object,
+  stage = NULL,
+  full_history = FALSE,
+  event_set = c(0),
+  final_event_set = NULL
+)
 }
 \arguments{
 \item{object}{Object of class \link{policy_data}.}
@@ -16,7 +22,13 @@ all stages is returned.}
 \item{full_history}{Logical. If TRUE, the full history is returned
 If FALSE, only the state/Markov-type history is returned.}
 
-\item{event_set}{Integer vector. Subset of c(0,1,2).}
+\item{event_set}{Integer vector. Subset of c(0,1,2). Event set used at
+stages 1..K (and at stage K+1 when \code{final_event_set} is \code{NULL}).}
+
+\item{final_event_set}{Integer vector or \code{NULL}. If non-\code{NULL},
+event set used at stage K+1 (overrides \code{event_set} at the final
+stage). Only honoured when \code{stage} is \code{NULL} and
+\code{full_history = FALSE}.}
 }
 \value{
 Object of class \link{history}. The object is a list

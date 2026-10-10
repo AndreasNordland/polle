@@ -34,25 +34,15 @@ policy_eval_estimate <- function(object, contrast) {
   if (identical(target, "subgroup") && isTRUE(contrast)) {
     odd <- seq.int(1L, length(coef), by = 2L)
     coef <- coef[odd] - coef[odd + 1L]
-    if (!is.null(IC)) {
-      IC <- IC[, odd, drop = FALSE] - IC[, odd + 1L, drop = FALSE]
-    }
+    IC <- IC[, odd, drop = FALSE] - IC[, odd + 1L, drop = FALSE]
     labels <- get_element(object, "contrast_name", check_name = FALSE)
   }
 
-  if (!is.null(IC)) {
-    est <- lava::estimate(NULL,
-                          coef = coef,
-                          IC = IC,
-                          labels = labels,
-                          id = id)
-
-  } else {
-    est <- lava::estimate(NULL,
-                          coef = coef,
-                          vcov = NA,
-                          labels = labels)
-  }
+  est <- lava::estimate(NULL,
+                        coef = coef,
+                        IC = IC,
+                        labels = labels,
+                        id = id)
 
   return(est)
 }

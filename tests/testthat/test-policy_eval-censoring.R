@@ -1393,6 +1393,13 @@ for the two-stage case under right-censoring and terminal events.", {
   ref_pe <- mean(Z)
   ref_IC <-  Z - ref_pe
 
+  ref_Z_ipw <- (d$delta1 == 1) / c1 * (d$a1 == d$p1) / (g1 * (d$a1 == "1") +
+                                                        g2 * (d$a1 == "2")) *
+    (d$delta2 == 1) / c1 * (d$a2 == d$p2) / (g3 * (d$a2 == "3") +
+                                             g4 * (d$a2 == "4")) *
+    (d$delta3 == 1) / c1 * (d$u1 + d$u2 + d$u3)
+  ref_ipw <- mean(ref_Z_ipw)
+
   ##
   ## no cross-fitting
   ##
@@ -1441,6 +1448,11 @@ for the two-stage case under right-censoring and terminal events.", {
     IC(pe) |> unname(),
     matrix(ref_IC),
     check.attributes = FALSE
+  )
+
+  expect_equal(
+    pe$coef_ipw,
+    ref_ipw
   )
 
   rm(list = ls())
@@ -1532,7 +1544,8 @@ for the two-stage case under right-censoring and terminal events.", {
   g4 <- ld[stage == 2 & event == 0, mean(A == "4")]
 
   ## c-values:
-  c1 <- 1-ld[, list(mean(event == 2))][[1]]
+  c_data <- ld[(stage <= 2 & event != 1) | stage == 3, ]
+  c1 <- 1-c_data[, list(mean(event == 2))][[1]]
 
   Z <- (
     ## Q1
@@ -1558,6 +1571,16 @@ for the two-stage case under right-censoring and terminal events.", {
   ref_pe <- mean(Z)
   ref_IC <-  Z - ref_pe
 
+  ref_Z_ipw <- (d$death2 == 0) * ((d$delta1 == 1) / c1 * (d$a1 == d$p1) / (g1 * (d$a1 == "1") +
+                                                        g2 * (d$a1 == "2")) *
+    (d$delta2 == 1) / c1 * (d$a2 == d$p2) / (g3 * (d$a2 == "3") +
+                                             g4 * (d$a2 == "4")) *
+    (d$delta3 == 1) / c1 * (d$u1 + d$u2 + d$u3)) +
+    (d$death2) * ((d$delta1 == 1) / c1 * (d$a1 == d$p1) / (g1 * (d$a1 == "1") +
+                                                           g2 * (d$a1 == "2")) *
+                  (d$u1 + d$u2))
+  ref_ipw <- mean(ref_Z_ipw)
+
   ##
   ## no cross-fitting
   ##
@@ -1580,6 +1603,11 @@ for the two-stage case under right-censoring and terminal events.", {
     IC(pe) |> unname(),
     matrix(ref_IC),
     check.attributes = FALSE
+  )
+
+  expect_equal(
+    pe$coef_ipw,
+    ref_ipw
   )
 
   rm(list =ls())
@@ -1674,7 +1702,8 @@ for the two-stage case under right-censoring and terminal events.", {
   g4 <- ld[stage == 2 & event == 0, mean(A == "4")]
 
   ## c-values:
-  c1 <- 1-ld[, list(mean(event == 2))][[1]]
+  c_data <- ld[(stage <= 2 & event != 1) | stage == 3, ]
+  c1 <- 1-c_data[, list(mean(event == 2))][[1]]
 
   ## Q1
   Z <- (d$death1 == 0) * (d$x1 + d$u1)
@@ -1700,6 +1729,17 @@ for the two-stage case under right-censoring and terminal events.", {
   ref_pe <- mean(Z)
   ref_IC <-  Z - ref_pe
 
+  ref_Z_ipw <- (d$death2 == 0 & d$death1 == 0) * ((d$delta1 == 1) / c1 * (d$a1 == d$p1) / (g1 * (d$a1 == "1") +
+                                                        g2 * (d$a1 == "2")) *
+    (d$delta2 == 1) / c1 * (d$a2 == d$p2) / (g3 * (d$a2 == "3") +
+                                             g4 * (d$a2 == "4")) *
+    (d$delta3 == 1) / c1 * (d$u1 + d$u2 + d$u3)) +
+    (d$death2 & d$death1 == 0) * ((d$delta1 == 1) / c1 * (d$a1 == d$p1) / (g1 * (d$a1 == "1") +
+                                                           g2 * (d$a1 == "2")) *
+                                  (d$u1 + d$u2)) +
+    (d$death1) * d$u1
+  ref_ipw <- mean(ref_Z_ipw)
+
   ##
   ## no cross-fitting
   ##
@@ -1723,4 +1763,58 @@ for the two-stage case under right-censoring and terminal events.", {
     matrix(ref_IC),
     check.attributes = FALSE
   )
+
+  expect_equal(
+    pe$coef_ipw,
+    ref_ipw
+  )
+})
+
+test_that("policy_eval target = 'value' coef_ipw computes under terminal events", {
+  cohort <- expand.grid(
+    A1 = 0:1, A2 = 0:1, group = c("early", "late", "none1", "none2"),
+    KEEP.OUT.ATTRS = FALSE, stringsAsFactors = FALSE
+  )
+  cohort$id <- sprintf("p%02d", seq_len(nrow(cohort)))
+  cohort$Y <- as.numeric(cohort$group %in% c("early", "late"))
+
+  make_long <- function(early_stop) {
+    do.call(rbind, lapply(seq_len(nrow(cohort)), function(i) {
+      p <- cohort[i, ]
+      last <- if (early_stop && p$group == "early") 2L else 3L
+      stage <- seq_len(last)
+      data.frame(
+        id = p$id, stage = stage, event = as.integer(stage == last),
+        A = c(p$A1, if (last == 3L) p$A2, NA_real_),
+        U = ifelse(stage == last, p$Y, 0), X = 0
+      )
+    }))
+  }
+  long_early <- make_long(TRUE)
+  long_control <- make_long(FALSE)
+
+  as_policy_data <- function(x) {
+    polle::policy_data(x, type = "long", id = "id", stage = "stage",
+                       event = "event", action = "A", utility = "U")
+  }
+  pd_early <- as_policy_data(long_early)
+  pd_control <- as_policy_data(long_control)
+
+  fit_dr <- function(pd) {
+    polle::policy_eval(
+             policy_data = pd, policy = polle::policy_def(1, reuse = TRUE),
+             type = "dr", target = "value", M = 1,
+             g_models = list(polle::g_empir(), polle::g_empir()),
+             q_models = list(polle::q_glm(~1, family = stats::gaussian()),
+                             polle::q_glm(~1, family = stats::gaussian()))
+           )
+  }
+  pe_early <- fit_dr(pd_early)
+  pe_control <- fit_dr(pd_control)
+
+  expect_equal(
+    pe_early$coef_ipw,
+    pe_control$coef_ipw
+  )
+
 })

@@ -1755,3 +1755,68 @@ test_that("policy_eval target = 'subgroup' almost no treatment effect with cross
   ##                   q_models = q_glm(~ A * z))
   ## summary(perep, contrast = TRUE)
 })
+
+test_that("policy_eval(target = 'subgroup') with a stage-1 terminal event (pre-existing bug, expected to fail)", {
+  ## Pre-existing bug (not introduced by this branch). dr_subgroup() builds
+  ## G, Q and II on the action grid (one row per acting subject) but D, C,
+  ## M, and E on the full event grid (one row per subject). Subscripts
+  ## such as G[D[, 1] == 0, ] <- 1 at R/estimate_target.R:448 therefore
+  ## mismatch whenever any subject has a terminal event at stage 1
+  ## (K == 1), producing the cryptic
+  ##   "(subscript) logical subscript too long"
+  ## error. dr_value() avoids this by threading E through
+  ## policy_action_indicator_matrix() / action_prob_matrix(); dr_subgroup()
+  ## only conditions on D[, 1] == 0 (censoring), never on E[, 1] == 1
+  ## (terminal). There is zero coverage of subgroup + terminal events in
+  ## test-policy_eval-subgroup.R, and the one subgroup+censoring test in
+  ## test-policy_eval-censoring.R has no stage-1 terminal events.
+  ##
+  ## This test is deliberately left failing so the issue is visible on
+  ## every run. Once dr_subgroup() is fixed, expect_no_error() will pass.
+  set.seed(1)
+  n <- 120
+  term1 <- rbinom(n, 1, 0.2)   # terminal event at stage 1
+  cens2 <- rbinom(n, 1, 0.25)  # right-censoring at stage 2
+  rows <- list()
+  for (i in seq_len(n)) {
+    z  <- round(rnorm(1), 3)
+    pp <- sample(1:2, 1)
+    if (term1[i] == 1) {
+      rows[[length(rows) + 1]] <- data.table(
+        id = i, stage = 1L, event = 1L, A = NA_character_,
+        U = z, z = z, p = pp
+      )
+    } else {
+      a <- sample(c("1", "2"), 1)
+      rows[[length(rows) + 1]] <- data.table(
+        id = i, stage = 1L, event = 0L, A = a,
+        U = 0, z = z, p = pp
+      )
+      if (cens2[i] == 1) {
+        rows[[length(rows) + 1]] <- data.table(
+          id = i, stage = 2L, event = 2L, A = NA_character_,
+          U = NA_real_, z = round(rnorm(1), 3), p = pp
+        )
+      } else {
+        rows[[length(rows) + 1]] <- data.table(
+          id = i, stage = 2L, event = 1L, A = NA_character_,
+          U = 2 * as.numeric(a), z = round(rnorm(1), 3), p = pp
+        )
+      }
+    }
+  }
+  ld <- rbindlist(rows); setkey(ld, id, stage)
+  pd <- policy_data(ld, type = "long",
+                    id = "id", stage = "stage", event = "event",
+                    action = "A", utility = "U")
+  pol <- policy_def(function(p) as.character(p), name = "p")
+
+  expect_error(
+    policy_eval(target = "subgroup", policy_data = pd, policy = pol,
+                q_models = polle:::q_degen(var = "z"),
+                m_model  = polle:::q_degen(var = "z"),
+                g_models = list(g_glm(~1)),
+                c_models = g_glm(~1)),
+    "not implemented for terminal events"
+  )
+})

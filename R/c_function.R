@@ -143,11 +143,20 @@ fit_c_functions <- function(policy_data, c_models, full_history = FALSE){
 
   # fitting the c-models:
   if (is.list(c_models)){
-    history <- lapply(1:(K+1),
-                      function(s) get_history(policy_data,
-                                              stage = s,
-                                              full_history = full_history,
-                                              event_set = c(0,1,2)))
+    ## terminal events before censoring, event_set = c(0, 2)
+    history_K <- lapply(1:K,
+                        function(s) get_history(policy_data,
+                                                stage = s,
+                                                full_history = full_history,
+                                                event_set = c(0, 2)))
+    ## censoring before the final outcome
+    history_K1 <- get_history(policy_data,
+                              stage = K+1,
+                              full_history = full_history,
+                              event_set = c(0, 1, 2))
+
+    history <- c(history_K, list(history_K1))
+
     c_functions <- mapply(history,
                           c_models,
                           FUN = function(h, cm) fit_c_function(history = h,
@@ -158,7 +167,8 @@ fit_c_functions <- function(policy_data, c_models, full_history = FALSE){
     history <- get_history(policy_data,
                            stage = NULL,
                            full_history = FALSE,
-                           event_set = c(0,1,2))
+                           event_set = c(0,2),
+                           final_event_set = c(1,2))
     c_functions <- list(all_stages = fit_c_function(history, c_models))
   }
 
@@ -174,10 +184,24 @@ predict.c_functions <- function(object, new_policy_data, ...){
   full_history <- attr(object, "full_history")
 
   if (length(object) == (K+1)){
-    history <- lapply(1:(K+1), function(s) get_history(new_policy_data,
-                                                       stage = s,
-                                                       full_history = full_history,
-                                                       event_set = c(0,1,2)))
+    ## terminal events before censoring, event_set = c(0, 2)
+    history_K <- lapply(1:K,
+                        function(s) get_history(new_policy_data,
+                                                stage = s,
+                                                full_history = full_history,
+                                                event_set = c(0, 2)))
+    ## censoring before the final outcome. event = 0 cannot occur at K+1
+    ## (policy_data enforces event in {1, 2} at stage K+1), but event_set
+    ## must match the fit-side value (c(0, 1, 2)) so that full_history()
+    ## retains the previous-stage rows (event = 0) when constructing the
+    ## wide design matrix. Otherwise previous-stage covariates and
+    ## actions are silently dropped from H at stage K+1.
+    history_K1 <- get_history(new_policy_data,
+                              stage = K+1,
+                              full_history = full_history,
+                              event_set = c(0, 1, 2))
+    history <- c(history_K, list(history_K1))
+
     values <- mapply(history,
                      object,
                      FUN = function(h, f) predict(f, h),
@@ -189,7 +213,8 @@ predict.c_functions <- function(object, new_policy_data, ...){
     history <- get_history(new_policy_data,
                            stage = NULL,
                            full_history = FALSE,
-                           event_set = c(0,1,2))
+                           event_set = c(0,2),
+                           final_event_set = c(1, 2))
     values <- predict(object[[1]], history)
   } else{
     stop("Provide either 1 or K+1 c-functions for evaluation.")

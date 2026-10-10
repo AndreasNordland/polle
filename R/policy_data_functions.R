@@ -701,21 +701,36 @@ stage_state_history <- function(object, stage, event_set){
 #'
 #' @noRd
 #' @param object object of class [policy_data()].
-#' @param event_set Integer vector. Subset of c(0,1,2).
+#' @param event_set Integer vector. Subset of c(0,1,2). Event set used at
+#'   stages 1..K (and at stage K+1 when \code{final_event_set} is \code{NULL}).
+#' @param final_event_set Integer vector or \code{NULL}. If non-\code{NULL},
+#'   event set used at stage K+1 (overrides \code{event_set} at the final
+#'   stage).
 #' @return Object of class "history".
-state_history <- function(object, event_set){
+state_history <- function(object, event_set, final_event_set = NULL){
   stage_data <- get_element(object, "stage_data")
   state_names <- get_element(object, "colnames") |> get_element("state_names")
   baseline_data <- get_element(object, "baseline_data")
   baseline_names <- get_element(object, "colnames") |> get_element("baseline_names")
   action_set <- get_element(object, "action_set")
+  K <- get_K(object)
 
   action_name <- "A"
   ## default values:
-  event <- NULL
+  event <- stage <- NULL
+  ## selecting data on events
+  data <- stage_data[stage <= K & (event %in% event_set), ]
+  if (!is.null(final_event_set)) {
+    data_final <- stage_data[stage == (K + 1) & (event %in% final_event_set)]
+  } else {
+    data_final <- stage_data[stage == (K + 1) & (event %in% event_set)]
+  }
+  data <- rbind(data, data_final)
+  setkeyv(data, c("id", "stage"))
+
   ## constructing history H and action A at the given stage:
   AH_names <- c("id", "stage", "A", state_names)
-  AH <- stage_data[event %in% event_set][, AH_names, with = FALSE]
+  AH <- data[, AH_names, with = FALSE]
   ## merging the stage specific histories and the the baseline data by reference:
   if(length(baseline_names) > 0){
     AH[baseline_data, (baseline_names) := mget(paste0('i.', baseline_names))]
@@ -725,10 +740,10 @@ state_history <- function(object, event_set){
   H <- AH[, c("A") := NULL]
 
   ## getting the event at the given stage:
-  event <-  stage_data[event %in% event_set][ , c("id", "stage", "event"), with = FALSE]
+  event <-  data[ , c("id", "stage", "event"), with = FALSE]
 
   ## getting the time at the given stage:
-  time <- stage_data[event %in% event_set][ , c("id", "stage", "time", "time2"), with = FALSE]
+  time <- data[ , c("id", "stage", "time", "time2"), with = FALSE]
 
   history <- list(
     H = H,
@@ -766,7 +781,12 @@ NULL
 #' all stages is returned.
 #' @param full_history Logical. If TRUE, the full history is returned
 #' If FALSE, only the state/Markov-type history is returned.
-#' @param event_set Integer vector. Subset of c(0,1,2).
+#' @param event_set Integer vector. Subset of c(0,1,2). Event set used at
+#'   stages 1..K (and at stage K+1 when \code{final_event_set} is \code{NULL}).
+#' @param final_event_set Integer vector or \code{NULL}. If non-\code{NULL},
+#'   event set used at stage K+1 (overrides \code{event_set} at the final
+#'   stage). Only honoured when \code{stage} is \code{NULL} and
+#'   \code{full_history = FALSE}.
 #' @details
 #' Each observation has the sequential form
 #' \deqn{O= {B, U_1, X_1, A_1, ..., U_K, X_K, A_K, U_{K+1}},}
@@ -851,14 +871,20 @@ NULL
 #' nrow(h3$H) # number of observations with two stages.
 #' get_n(pd3) # number of observations in total.
 #' @export
-get_history <- function(object, stage = NULL, full_history = FALSE, event_set = c(0))
+get_history <- function(object,
+                        stage = NULL,
+                        full_history = FALSE,
+                        event_set = c(0),
+                        final_event_set = NULL) {
   UseMethod("get_history")
+}
 
 #' @export
 get_history.policy_data <- function(object,
                                     stage = NULL,
                                     full_history = FALSE,
-                                    event_set = c(0)) {
+                                    event_set = c(0),
+                                    final_event_set = NULL) {
   # input checks:
   if (!is.logical(full_history) | (length(full_history) != 1))
     stop("full_history must be TRUE or FALSE")
@@ -883,7 +909,9 @@ get_history.policy_data <- function(object,
     his <- full_history(object, stage = stage, event_set = event_set)
   } else{
     if (is.null(stage)){
-      his <- state_history(object, event_set = event_set)
+      his <- state_history(object,
+                           event_set = event_set,
+                           final_event_set = final_event_set)
     } else{
       his <- stage_state_history(object, stage = stage, event_set = event_set)
     }

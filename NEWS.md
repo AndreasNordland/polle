@@ -1,3 +1,17 @@
+# polle 1.6.6
+    - bug fix: the risk set used by `fit_c_functions()` and
+        `predict.c_functions()` now correctly excludes subjects whose
+        terminal event has already occurred (events in {0, 2} at stages 1..K
+        and {1, 2} at stage K+1).
+    - bug fix: `policy_eval(type = "dr")$coef_ipw` is now correctly
+        computed when some subjects terminate before stage K+1.
+    - breaking: `policy_eval(type = "ipw")` and `policy_eval(type = "or")`
+        are no longer supported. The accompanying inverse-probability-weighted
+        and outcome-regression-only estimates remain available on a
+        `type = "dr"` fit as `coef_ipw` and `coef_or`.
+        Calling `policy_eval()` with `type = "ipw"` or `type = "or"` now
+        raises an informative error pointing at the migration path.
+
 # polle 1.6.5
     - `SuperLearner` removed from the package dependencies ahead of its
       scheduled CRAN archival.
@@ -9,7 +23,7 @@
     - bug fix: final-outcome and discrete-censoring model fitting to complete after
         warnings, retaining the fitted models and preserving the learner warnings.
     - bug fix: set Q_{K+1} = U for early terminal events under missing final outcome
-        
+
 # polle 1.6.4
     - new citation, <doi:10.18637/jss.v116.i04>, Journal of Statistical Software
     

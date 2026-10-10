@@ -167,12 +167,12 @@ new_g_model <- function(g_model){
 #' # defining a g-model:
 #' g_model <- g_glm(formula = ~B+C)
 #'
-#' # evaluating the static policy (A=1) using inverse propensity weighting
-#' # based on a state glm model across all stages:
-#' pe <- policy_eval(type = "ipw",
-#'                   policy_data = pd,
+#' # evaluating the static policy (A=1) using doubly robust estimation
+#' # with a state glm g-model across all stages. The
+#' # inverse-probability-weighted estimate is available on pe$coef_ipw:
+#' pe <- policy_eval(policy_data = pd,
 #'                   policy = policy_def(1, reuse = TRUE),
-#'                  g_models = g_model)
+#'                   g_models = g_model)
 #' # inspecting the fitted g-model:
 #' get_g_functions(pe)
 #'
@@ -180,14 +180,13 @@ new_g_model <- function(g_model){
 #' get_history_names(pd, stage = 1)
 #' get_history_names(pd, stage = 2)
 #'
-#' # evaluating the same policy based on a full history
-#' # glm model for each stage:
-#' pe <- policy_eval(type = "ipw",
-#'                    policy_data = pd,
-#'                    policy = policy_def(1, reuse = TRUE),
-#'                    g_models = list(g_glm(~ L_1 + B),
-#'                                    g_glm(~ A_1 + L_2 + B)),
-#'                    g_full_history = TRUE)
+#' # evaluating the same policy with a full-history glm g-model
+#' # for each stage:
+#' pe <- policy_eval(policy_data = pd,
+#'                   policy = policy_def(1, reuse = TRUE),
+#'                   g_models = list(g_glm(~ L_1 + B),
+#'                                   g_glm(~ A_1 + L_2 + B)),
+#'                   g_full_history = TRUE)
 #' # inspecting the fitted g-models:
 #' get_g_functions(pe)
 NULL

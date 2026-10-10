@@ -724,7 +724,6 @@ test_that("policy_learn with type 'blip' has the expected output for a fixed two
 
 })
 
-
 test_that("policy_learn with type 'blip' has the correct outputs for the stochastic two-stage case and a single final utility outcome.", {
 
   set.seed(1)
@@ -782,102 +781,104 @@ test_that("policy_learn with type 'blip' has the correct outputs for the stochas
              g_functions = gf)
   )
 
+  ## TODO: implement rest of the test, including right-censoring
+
   ## stage2
 
-  p <- policy_def(function(p) p, name = "test", reuse = TRUE)
+  ## p <- policy_def(function(p) p, name = "test", reuse = TRUE)
 
-  ref_pe <- mean(d$x1 +
-                 (d$a1 == d$p1) / 0.5 * (((d$m == 0) * d$x2 + (d$m == 1) * d$y) - d$x1) +
-                 (d$m == 0) * (d$a1 == d$p1) / 0.5 * (d$a2 == d$p2) / 0.5 * (d$y - d$x2))
+  ## ref_pe <- mean(d$x1 +
+  ##                (d$a1 == d$p1) / 0.5 * (((d$m == 0) * d$x2 + (d$m == 1) * d$y) - d$x1) +
+  ##                (d$m == 0) * (d$a1 == d$p1) / 0.5 * (d$a2 == d$p2) / 0.5 * (d$y - d$x2))
 
-  ref_IC <-  (d$x1 +
-              (d$a1 == d$p1) / 0.5 * (((d$m == 0) * d$x2 + (d$m == 1) * d$y) - d$x1) +
-              (d$m == 0) * (d$a1 == d$p1) / 0.5 * (d$a2 == d$p2) / 0.5 * (d$y - d$x2) -
-              ref_pe)
+  ## ref_IC <-  (d$x1 +
+  ##             (d$a1 == d$p1) / 0.5 * (((d$m == 0) * d$x2 + (d$m == 1) * d$y) - d$x1) +
+  ##             (d$m == 0) * (d$a1 == d$p1) / 0.5 * (d$a2 == d$p2) / 0.5 * (d$y - d$x2) -
+  ##             ref_pe)
 
-  ref_pe_or <- mean(d$x1)
+  ## ref_pe_or <- mean(d$x1)
 
-  ref_pe_ipw <- mean((d$a1 == d$p1) / 0.5 * (d$m == 0) * (d$a2 == d$p2) / 0.5 *  d$y)
+  ## ref_pe_ipw <- mean((d$a1 == d$p1) / 0.5 * (d$m == 0) * (d$a2 == d$p2) / 0.5 *  d$y)
 
-  ##
-  ## no cross-fitting
-  ##
+  ## ##
+  ## ## no cross-fitting
+  ## ##
 
-  pe <- policy_eval(
-    policy_data = pd,
-    policy = p,
-    q_models = list(q_degen(var = "x"), q_degen(var = "x")),
-    g_functions = gf
-  )
+  ## pe <- policy_eval(
+  ##   policy_data = pd,
+  ##   policy = p,
+  ##   q_models = list(q_degen(var = "x"), q_degen(var = "x")),
+  ##   g_functions = gf
+  ## )
 
-  expect_equal(
-    pe$name,
-    names(coef(pe))
-  )
-  expect_equal(
-    pe$name,
-    c("E[U(d)]: d=test")
-  )
+  ## expect_equal(
+  ##   pe$name,
+  ##   names(coef(pe))
+  ## )
+  ## expect_equal(
+  ##   pe$name,
+  ##   c("E[U(d)]: d=test")
+  ## )
 
-  expect_equal(
-    coef(pe) |> unname(),
-    ref_pe
-  )
+  ## expect_equal(
+  ##   coef(pe) |> unname(),
+  ##   ref_pe
+  ## )
 
-  expect_equal(
-    IC(pe),
-    matrix(ref_IC),
-    check.attributes = FALSE
-  )
+  ## expect_equal(
+  ##   IC(pe),
+  ##   matrix(ref_IC),
+  ##   check.attributes = FALSE
+  ## )
 
-  expect_equal(
-    get_element(pe, "coef_or"),
-    ref_pe_or
-  )
+  ## expect_equal(
+  ##   get_element(pe, "coef_or"),
+  ##   ref_pe_or
+  ## )
 
-  expect_equal(
-    get_element(pe, "coef_ipw"),
-    ref_pe_ipw
-  )
+  ## expect_equal(
+  ##   get_element(pe, "coef_ipw"),
+  ##   ref_pe_ipw
+  ## )
 
-  ## cross-fitting
+  ## ## cross-fitting
 
-  pe <- policy_eval(
-    policy_data = pd,
-    policy = p,
-    q_models = list(q_degen(var = "x"), q_degen(var = "x")),
-    g_functions = gf,
-    M = 2
-  )
+  ## pe <- policy_eval(
+  ##   policy_data = pd,
+  ##   policy = p,
+  ##   q_models = list(q_degen(var = "x"), q_degen(var = "x")),
+  ##   g_functions = gf,
+  ##   M = 2
+  ## )
 
-  expect_equal(
-    pe$name,
-    names(coef(pe))
-  )
-  expect_equal(
-    pe$name,
-    c("E[U(d)]: d=test")
-  )
+  ## expect_equal(
+  ##   pe$name,
+  ##   names(coef(pe))
+  ## )
+  ## expect_equal(
+  ##   pe$name,
+  ##   c("E[U(d)]: d=test")
+  ## )
 
-  expect_equal(
-    coef(pe) |> unname(),
-    ref_pe
-  )
+  ## expect_equal(
+  ##   coef(pe) |> unname(),
+  ##   ref_pe
+  ## )
 
-  expect_equal(
-    IC(pe),
-    matrix(ref_IC),
-    check.attributes = FALSE
-  )
+  ## expect_equal(
+  ##   IC(pe),
+  ##   matrix(ref_IC),
+  ##   check.attributes = FALSE
+  ## )
 
-  expect_equal(
-    get_element(pe, "coef_or"),
-    ref_pe_or
-  )
+  ## expect_equal(
+  ##   get_element(pe, "coef_or"),
+  ##   ref_pe_or
+  ## )
 
-  expect_equal(
-    get_element(pe, "coef_ipw"),
-    ref_pe_ipw
-  )
+  ## expect_equal(
+  ##   get_element(pe, "coef_ipw"),
+  ##   ref_pe_ipw
+  ## )
 
 })

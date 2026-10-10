@@ -13,12 +13,9 @@ test_that("policy_eval returns g and Q-function values.", {
   expect_true(nrow(pe$q_values) == 1e2)
   expect_true(all(names(pe$q_values) == c("id", "stage", "Q_0", "Q_1")))
 
-  pe <- policy_eval(pd, policy = p, type = "ipw")
+  ## type = "dr" always fits both g- and Q-models.
+  pe <- policy_eval(pd, policy = p, type = "dr")
   expect_true(!is.null(pe$g_values))
-  expect_true(is.null(pe$q_values))
-
-  pe <- policy_eval(pd, policy = p, type = "or")
-  expect_true(is.null(pe$g_values))
   expect_true(!is.null(pe$q_values))
 
   ##
@@ -36,9 +33,9 @@ test_that("policy_eval returns g and Q-function values.", {
   expect_true(all(names(pe$q_values) == c("id", "stage", "Q_0", "Q_1")))
   expect_true(all(key(pe$q_values) == c("id", "stage")))
 
-  pe <- policy_eval(pd, policy = p, type = "ipw", M = 2)
+  pe <- policy_eval(pd, policy = p, M = 2)
   expect_true(!is.null(pe$g_values))
-  expect_true(is.null(pe$q_values))
+  expect_true(!is.null(pe$q_values))
 })
 
 test_that(
@@ -108,7 +105,25 @@ test_that("policy_eval checks inputs.", {
       policy = p,
       type = "test"
     ),
-    "type must be either 'dr', 'ipw' or  'or'."
+    "type must be 'dr'."
+  )
+  ## "ipw" and "or" are no longer supported; the message explains the
+  ## migration path.
+  expect_error(
+    policy_eval(
+      policy_data = pd,
+      policy = p,
+      type = "ipw"
+    ),
+    "type = 'ipw' is no longer supported"
+  )
+  expect_error(
+    policy_eval(
+      policy_data = pd,
+      policy = p,
+      type = "or"
+    ),
+    "type = 'or' is no longer supported"
   )
   expect_error(
     policy_eval(
@@ -323,50 +338,27 @@ test_that("policy_eval runs on a subset of the data with missing actions from th
 
   pd2 <- subset_id(pd1, id = get_id(pd1)[d1$A == "0"])
 
-  ## ipw
+  ## IPW estimate from the DR fit is zero on a subset where the policy
+  ## action is never observed.
   expect_error(
-    pe1_ipw <- policy_eval(pd1, policy = policy_def(1), type = "ipw"),
+    pe1 <- policy_eval(pd1, policy = policy_def(1)),
     NA
   )
   expect_error(
-    pe2_ipw <- policy_eval(
+    pe2 <- policy_eval(
       policy_data = pd2,
-      g_functions = get_g_functions(pe1_ipw),
-      policy = policy_def(1),
-      type = "ipw"
+      g_functions = get_g_functions(pe1),
+      q_functions = get_q_functions(pe1),
+      policy = policy_def(1)
     ),
     NA
   )
   expect_equal(
-    coef(pe2_ipw) |> unname(),
+    pe2$coef_ipw |> unname(),
     0
   )
-  expect_equal(
-    IC(pe2_ipw) |> unname(),
-    matrix(rep(0, get_n(pd2))),
-    check.attributes = FALSE
-  )
-
-  ## or
-  expect_error(
-    pe1_or <- policy_eval(pd1, policy = policy_def(1), type = "or"),
-    NA
-  )
-  expect_error(
-    pe2_or <- policy_eval(
-      policy_data = pd2,
-      q_functions = get_q_functions(pe1_or),
-      policy = policy_def(1),
-      type = "or"
-    ),
-    NA
-  )
-  expect_equal(
-    IC(pe2_or),
-    NULL
-  )
   expect_no_error(
-    summary(pe2_or)
+    summary(pe2)
   )
 })
 
@@ -902,6 +894,7 @@ test_that("policy_eval with target 'value' has the correct outputs for the stoch
 
   gf <- fit_g_functions(pd, g_models = list(g_glm(~1), g_glm(~1)))
 
+  ## the utility outcome is the same for the early terminal events
   ld <- pd$stage_data
   ld[stage == 2, m := m]
   ld[, m := nafill(m, fill = 0)]
@@ -925,7 +918,10 @@ test_that("policy_eval with target 'value' has the correct outputs for the stoch
 
   ref_pe_or <- mean(d$x1)
 
-  ref_pe_ipw <- mean((d$a1 == d$p1) / 0.5 * (d$m == 0) * (d$a2 == d$p2) / 0.5 *  d$y)
+  ref_pe_ipw <- (d$m == 0) * (d$a1 == d$p1) / 0.5 * (d$a2 == d$p2) / 0.5 *  d$y +
+    (d$m == 1) * (d$a1 == d$p1) / 0.5 * d$y
+  ref_pe_ipw <- mean(ref_pe_ipw)
+
 
   ##
   ## no cross-fitting
@@ -1009,7 +1005,6 @@ test_that("policy_eval with target 'value' has the correct outputs for the stoch
     get_element(pe, "coef_ipw"),
     ref_pe_ipw
   )
-
 
 })
 

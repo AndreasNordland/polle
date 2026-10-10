@@ -60,7 +60,7 @@ test_that("q_glmnet handles missing covariates", {
             pe <- policy_eval(
                 policy_data = pd,
                 policy = p,
-                type = "or",
+                g_models = g_glm(~ L + B),
                 q_models = q_glmnet()
             )
         })
@@ -71,7 +71,7 @@ test_that("q_glmnet handles missing covariates", {
         policy_eval(
             policy_data = pd,
             policy = p,
-            type = "or",
+            g_models = g_glm(~ L + B),
             q_models = q_glmnet(~ L + A)
         ),
         NA
@@ -80,7 +80,7 @@ test_that("q_glmnet handles missing covariates", {
         policy_eval(
             policy_data = pd,
             policy = p,
-            type = "or",
+            g_models = g_glm(~ L + B),
             q_models = list(q_glmnet(~ L + A), q_glmnet())
         ),
         NA
@@ -103,7 +103,7 @@ test_that("q_glmnet handles missing covariates", {
             policy_eval(
                 policy_data = pd,
                 policy = p,
-                type = "or",
+                g_models = g_glm(~ L + B),
                 q_models = q_glmnet()
             ),
             "The regression variables C have missing NA values."

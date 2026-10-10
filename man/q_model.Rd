@@ -133,13 +133,13 @@ pd1
 # available history variable names for the outcome regression:
 get_history_names(pd1)
 
-# evaluating the static policy a=1 using inverse
-# propensity weighting based on the given Q-model:
-pe1 <- policy_eval(type = "or",
-                   policy_data = pd1,
+# evaluating the static policy a=1 using doubly robust estimation and
+# reading the outcome-regression-only estimate from coef_or:
+pe1 <- policy_eval(policy_data = pd1,
                    policy = policy_def(1, name = "A=1"),
                    q_model = q_glm(formula = ~A*.))
 pe1
+pe1$coef_or
 
 # getting the fitted Q-function values
 head(predict(get_q_functions(pe1), pd1))
@@ -157,10 +157,10 @@ pd2
 get_history_names(pd2, stage = 1)
 get_history_names(pd2, stage = 2)
 
-# evaluating the static policy a=1 using outcome
-# regression based on a glm model for each stage:
-pe2 <- policy_eval(type = "or",
-            policy_data = pd2,
+# evaluating the static policy a=1 using doubly robust estimation with
+# a glm Q-model at each stage; the outcome-regression-only estimate is
+# available on pe2$coef_or:
+pe2 <- policy_eval(policy_data = pd2,
             policy = policy_def(1, reuse = TRUE, name = "A=1"),
             q_model = list(q_glm(~ A * L_1),
                            q_glm(~ A * (L_1 + L_2))),
