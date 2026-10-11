@@ -36,6 +36,7 @@ Suggests:
     knitr,
     ranger,
     rmarkdown,
+    SuperLearner (>= 2.0-42),
     testthat (>= 3.0),
     ggplot2
 Roxygen: list(markdown = TRUE)

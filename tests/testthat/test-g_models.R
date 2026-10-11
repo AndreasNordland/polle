@@ -205,6 +205,16 @@ test_that("g_models checks formula input", {
     "variable 'X' is not found in data when calling 'g_glm' with formula: ~X"
   )
 
+  if (requireNamespace("SuperLearner", quietly = TRUE)) {
+    expect_error(
+      policy_eval(
+        policy_data = pd,
+        policy = p_dynamic,
+        g_models = g_sl(formula = a ~ X)),
+      "variable 'X' is not found in data when calling 'g_sl' with formula: ~X"
+    )
+  }
+
   expect_error(
     policy_eval(
       policy_data = pd,
@@ -254,10 +264,66 @@ test_that("g_rf runs:", {
 })
 
 
-test_that("g_sl() errors informatively while the SuperLearner interface is unavailable", {
-  expect_error(
-    g_sl(),
-    "SuperLearner"
+test_that("g_sl formats data correctly via the formula", {
+  skip_if_not_installed("SuperLearner")
+  d1 <- sim_single_stage(200, seed = 1)
+  d1$BB <- sample(c("group 1", "group & 2", "group & 3"),
+                  size = 200, replace = TRUE)
+  pd1 <- policy_data(d1,
+                     action = "A",
+                     covariates = list("Z", "B", "L", "BB"),
+                     utility = "U")
+
+  expect_no_error(
+    policy_eval(
+      policy_data = pd1,
+      policy_learn = policy_learn(type = "ql", alpha = 0.05),
+      g_models = g_sl(formula = ~.),
+      g_full_history = FALSE,
+      q_models = q_glm()
+    )
+  )
+})
+
+test_that("g_sl can find user-defined learners", {
+  skip_if_not_installed("SuperLearner")
+  d1 <- sim_single_stage(200, seed = 1)
+  d1$BB <- sample(c("group 1", "group & 2", "group & 3"),
+                  size = 200, replace = TRUE)
+  pd1 <- policy_data(d1,
+                     action = "A",
+                     covariates = list("Z", "B", "L", "BB"),
+                     utility = "U")
+
+  env <- new.env(parent = globalenv())
+  env$SL.test <- function(Y, X, newX, family, obsWeights, model = TRUE, ...) {
+    if (is.matrix(X)) X <- as.data.frame(X)
+    fit.glm <- glm(Y ~ ., data = X, family = family,
+                   weights = obsWeights, model = model)
+    if (is.matrix(newX)) newX <- as.data.frame(newX)
+    pred <- predict(fit.glm, newdata = newX, type = "response")
+    fit <- list(object = fit.glm)
+    class(fit) <- "SL.test"
+    list(pred = pred, fit = fit)
+  }
+  env$predict.SL.test <- function(object, newdata, ...) {
+    if (is.matrix(newdata)) newdata <- as.data.frame(newdata)
+    predict(object = object$object, newdata = newdata, type = "response")
+  }
+
+  g_model <- g_sl(
+    formula = ~.,
+    SL.library = "SL.test",
+    env = env
+  )
+  his <- get_history(pd1)
+
+  expect_no_error(
+    g_model(
+      H = polle:::get_H(his),
+      A = polle:::get_A(his),
+      action_set = pd1$action_set
+    )
   )
 })
 

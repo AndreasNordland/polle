@@ -2,9 +2,12 @@
 
 CRAN R package for policy learning/evaluation. Standard R package layout
 (`R/`, `man/`, `tests/testthat/`, `vignettes/`). R >= 4.1 required.
-`SuperLearner` was previously attached via `Depends`; it has been removed
-ahead of its scheduled CRAN archival. `q_sl()` / `g_sl()` remain exported
-but currently `stop()` with an informative message.
+`SuperLearner` is listed in `Suggests` (not `Depends`); `q_sl()` and
+`g_sl()` guard access to it via `check_superlearner()`. Library and
+screening algorithm names are resolved against a dedicated environment
+whose parent is the `SuperLearner` namespace (`sl_library_env()` in
+`R/sl_models.R`), which keeps them resolvable under `future`
+`multisession` workers.
 
 ## Commands (use the Makefile, not bare R CMD)
 

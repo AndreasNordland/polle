@@ -1,3 +1,7 @@
+# polle 1.6.7
+    - `q_sl()` and `g_sl()` are reinstated, with `SuperLearner (>=2.0-42)`
+    in `Suggests` rather than `Depends`.
+
 # polle 1.6.6
     - bug fix: the risk set used by `fit_c_functions()` and
         `predict.c_functions()` now correctly excludes subjects whose
@@ -11,12 +15,13 @@
         `type = "dr"` fit as `coef_ipw` and `coef_or`.
         Calling `policy_eval()` with `type = "ipw"` or `type = "or"` now
         raises an informative error pointing at the migration path.
+    
 
 # polle 1.6.5
-    - `SuperLearner` removed from the package dependencies ahead of its
-      scheduled CRAN archival.
-      An ensemble-learner interface based on the `targeted`
-      package is planned for a future release.
+    - `SuperLearner` was removed from the package dependencies in
+      anticipation of its CRAN archival; it has since been reinstated as
+      `Suggests`, see the 1.6.6 entry above. `q_sl()` and `g_sl()` were
+      temporarily unavailable in this release.
     - `control_owl()` gains a `solver` argument, defaulting to `"ipop"`.
       `DTRlearn2` (>= 2.1) changed the default weighted-SVM solver of
       `DTRlearn2::owl()` to `"svm"` (via `WeightSVM::wsvm`)

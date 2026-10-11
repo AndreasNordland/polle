@@ -20,9 +20,10 @@ test_that("get_policy.drql returns a policy", {
     is.data.table(p(pd))
   )
 
+  skip_if_not_installed("SuperLearner")
   pl <- policy_learn(type = "drql",
                      control = control_drql(
-                       qv_models = q_glm(~ .)
+                       qv_models = q_sl()
                      ))
   expect_error({
     p <- get_policy(pl(pd, q_models = q_glm(), g_models = g_glm()))
@@ -428,6 +429,7 @@ test_that("policy_learn with type = 'drql' saves cross-fitted models.", {
 
 
 test_that("policy_learn with type drql handles multiple stages with varying stage action sets", {
+  skip_if_not_installed("SuperLearner")
 
   d <- sim_multi_stage(300, seed = 1)
   ## changing administrative right-censoring events to terminal events:
@@ -448,7 +450,9 @@ test_that("policy_learn with type drql handles multiple stages with varying stag
 
   pl <- policy_learn(type = "drql",
                      control = control_drql(
-                       qv_models = q_glm(~ .)
+                       qv_models = q_sl(
+                         cvControl = SuperLearner::SuperLearner.CV.control(V = 10L)
+                       )
                      ),
                      alpha = 0.1,
                      L = 2)

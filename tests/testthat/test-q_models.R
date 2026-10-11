@@ -124,10 +124,76 @@ test_that("q_rf formats data correctly via the formula",{
   )
 })
 
-test_that("q_sl() errors informatively while the SuperLearner interface is unavailable", {
-  expect_error(
-    q_sl(),
-    "SuperLearner"
+test_that("q_sl formats data correctly via the formula", {
+  skip_if_not_installed("SuperLearner")
+  d1 <- sim_single_stage(200, seed = 1)
+  d1$BB <- sample(c("group 1", "group & 2", "group & 3"),
+                  size = 200, replace = TRUE)
+  pd1 <- policy_data(d1,
+                     action = "A",
+                     covariates = list("Z", "B", "L", "BB"),
+                     utility = "U")
+
+  expect_no_error(
+    policy_eval(
+      policy_data = pd1,
+      policy_learn = policy_learn(type = "ql", alpha = 0.05),
+      g_models = g_glm(),
+      g_full_history = FALSE,
+      q_models = q_sl()
+    )
+  )
+})
+
+test_that("q_sl can find user-defined learners", {
+  skip_if_not_installed("SuperLearner")
+  d <- sim_single_stage(200, seed = 1)
+  d$BB <- sample(c("group 1", "group & 2", "group & 3"),
+                 size = 200, replace = TRUE)
+  pd <- policy_data(d,
+                    action = "A",
+                    covariates = list("Z", "B", "L", "BB"),
+                    utility = "U")
+  p <- policy_def(1)
+
+  env <- new.env(parent = globalenv())
+  with(env, {
+    SL.test <- function(Y, X, newX, family, obsWeights, model = TRUE, ...) {
+      if (is.matrix(X)) X <- as.data.frame(X)
+      fit.glm <- glm(Y ~ ., data = X, family = family,
+                     weights = obsWeights, model = model)
+      if (is.matrix(newX)) newX <- as.data.frame(newX)
+      pred <- predict(fit.glm, newdata = newX, type = "response")
+      fit <- list(object = fit.glm)
+      class(fit) <- "SL.glm" # SL.test
+      list(pred = pred, fit = fit)
+    }
+  })
+
+  expect_no_error(
+    polle:::fit_Q_functions(pd,
+                            p(pd),
+                            q_sl(SL.library = "SL.test", env = env),
+                            m_function = NULL)
+  )
+})
+
+test_that("q_glm and q_sl(SL.library('SL.glm')) are (almost) equivalent", {
+  skip_if_not_installed("SuperLearner")
+  d1 <- sim_single_stage(200, seed = 1)
+  d1$A <- as.character(d1$A)
+  d1$BB <- sample(c("group 1", "group_2", "G & 4"),
+                  size = nrow(d1), replace = TRUE)
+
+  q1 <- q_glm(formula = ~.)
+  q2 <- q_sl(formula = ~., SL.library = "SL.glm")
+
+  q1_fit <- q1(AH = d1[, c("A", "B", "Z", "L", "BB")], V_res = d1$U)
+  q2_fit <- q2(AH = d1[, c("A", "B", "Z", "L", "BB")], V_res = d1$U)
+
+  expect_equal(
+    unname(coef(q1_fit$model)),
+    unname(coef(q2_fit$model$fitLibrary$SL.glm_All$object))
   )
 })
 
