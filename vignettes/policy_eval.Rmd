@@ -124,7 +124,7 @@ Note that a model is trained for each stage. Again, we can predict from the Q-mo
 
 Usually, we want to specify the nuisance models ourselves using the `g_models` and `q_models` arguments:
 
-```{r gq_models, cache = TRUE}
+```{r gq_models, cache = TRUE, eval = requireNamespace("SuperLearner", quietly = TRUE) && requireNamespace("ranger", quietly = TRUE)}
 pe1 <- policy_eval(pd,
             policy = p1,
             g_models = list(

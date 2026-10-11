@@ -29,6 +29,7 @@ Imports:
     DynTxRegime
 Suggests:
     DTRlearn2 (>= 2.1),
+    future,
     glmnet (>= 4.1-6),
     mets,
     mgcv,

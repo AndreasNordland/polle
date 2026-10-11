@@ -62,6 +62,7 @@ test_that("q_sl with discreteSL = TRUE picks the learner with the lowest cvrisk.
 test_that("q_sl() works under future::plan('multisession') with SuperLearner only Suggested", {
   skip_on_cran()
   skip_if_not_installed("SuperLearner")
+  skip_if_not_installed("future")
   skip_if_not_installed("future.apply")
 
   d <- sim_two_stage(200, seed = 1)

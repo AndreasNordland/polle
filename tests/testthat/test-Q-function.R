@@ -1,6 +1,3 @@
-# devtools::test(filter = "test-Q-function", stop_on_failure = TRUE)
-
-
 # The 64-person cohort is exactly balanced across treatment and outcome groups.
 # Its always-treat risk is 0.50. When enabled, early outcomes terminate at
 # stage 2 and final-stage observation has probability 0.75. All four
