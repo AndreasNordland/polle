@@ -239,6 +239,10 @@ q_step_cf <- function(folds,
 #' @param q_models Outcome regression models/Q-models created by [q_glm()], [q_rf()], [q_sl()] or similar functions.
 #' @param full_history If TRUE, the full history is used to fit each Q-model. If FALSE, the single stage/"Markov type" history is used to fit each Q-model.
 #' @param m_function Function of class m_function to impute missing outcomes.
+#' @param policy_actions_natural (Internal) policy actions for every hypothetical
+#' natural action, only used for policies that depend on the natural action.
+#' @param g_values (Internal) action probabilities at right-censoring events, only
+#' used for policies that depend on the natural action.
 #' @examples
 #' library("polle")
 #' ### Simulating two-stage policy data
@@ -268,7 +272,9 @@ fit_Q_functions <- function(policy_data,
                             policy_actions,
                             q_models,
                             full_history = FALSE,
-                            m_function = NULL) {
+                            m_function = NULL,
+                            policy_actions_natural = NULL,
+                            g_values = NULL) {
   K <- get_K(policy_data)
   n <- get_n(policy_data)
   action_set <- get_action_set(policy_data)
@@ -300,6 +306,9 @@ fit_Q_functions <- function(policy_data,
   # getting the IDs:
   id <- get_id(policy_data)
 
+  ## observed actions (only used for policies that depend on the natural action):
+  actions <- get_actions(policy_data)
+
   ## (n X K+1) matrix with entries
   ## k-column = Q_k(H_{k,i}, d_k(H_{k,i})), k = 1,...,K
   ## K+1-column = U (if no missing final outcomes)
@@ -329,8 +338,21 @@ fit_Q_functions <- function(policy_data,
     idx_k <- q_step_k$idx_k
 
     # getting the Q-function values under the policy for each right-censoring and action event:
-    d_k <- merge(q_values_k, policy_actions)[["d"]]
-    q_d_values_k <- get_a_values(a = d_k, action_set = action_set, values = q_values_k)$P
+    if (is.null(policy_actions_natural)) {
+      d_k <- merge(q_values_k, policy_actions)[["d"]]
+      q_d_values_k <- get_a_values(a = d_k, action_set = action_set, values = q_values_k)$P
+    } else {
+      ## policies that depend on the natural action: the values at
+      ## right-censoring events are integrated over the natural action
+      q_d_values_k <- natural_policy_q_values(
+        q_values = q_values_k,
+        g_values = g_values,
+        actions = actions,
+        policy_actions = policy_actions,
+        policy_actions_natural = policy_actions_natural,
+        action_set = action_set
+      )[["Q_d"]][["P"]]
+    }
 
     # inserting the Q-function values under the policy in Q:
     Q[idx_k, k] <- q_d_values_k

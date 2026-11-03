@@ -445,6 +445,10 @@ policy_eval_input_checks <- function(policy_data,
     }
   }
 
+  if (isTRUE(attr(policy, "natural_action")) && target != "value") {
+    stop("Policies that depend on the natural action are only implemented for target = 'value'.")
+  }
+
   model_input_checks(policy_data = policy_data,
                      g_functions = g_functions, g_models = g_models,
                      g_full_history = g_full_history, save_g_functions = save_g_functions,
@@ -629,10 +633,23 @@ policy_eval_type <- function(target,
   id <- data.table(id = get_id(valid_policy_data))
   setkeyv(id, "id")
 
-  ## getting the g-function values (for events 0):
+  ## policies that depend on the natural action need the action probabilities
+  ## at right-censoring events (before the action):
+  natural <- any(vapply(
+    policy,
+    function(p) isTRUE(attr(p, which = "natural_action", exact = TRUE)),
+    logical(1)
+  ))
+
+  ## getting the g-function values (for events 0, or events 0,2 for policies
+  ## that depend on the natural action):
   g_values <- NULL
   if (!is.null(g_functions)) {
-    g_values <- predict(g_functions, valid_policy_data, event_set = c(0))
+    g_values <- predict(
+      g_functions,
+      valid_policy_data,
+      event_set = if (natural) c(0, 2) else c(0)
+    )
   }
 
   ## getting the Q-function values (for events 0,2):
@@ -701,10 +718,22 @@ policy_eval_type <- function(target,
       ## getting the policy actions for both right-censoring and action events:
       pa <- p(valid_policy_data)
 
+      ## policy actions for every hypothetical natural action (if the policy
+      ## depends on the natural action):
+      pa_natural <- NULL
+      natural_policy <- isTRUE(attr(p, which = "natural_action", exact = TRUE))
+      if (natural_policy) {
+        pa_natural <- natural_policy_actions(p, valid_policy_data)
+        if (anyNA(merge(actions[, c("id", "stage")], pa, by = c("id", "stage"))[["d"]])) {
+          stop("The policy returned missing actions for observed natural actions.")
+        }
+      }
+
       ## checking that the policy actions comply with the stage action sets:
       check_actions(
         actions = pa,
-        policy_data = valid_policy_data
+        policy_data = valid_policy_data,
+        allow_na = natural_policy
       )
 
       ## getting policy name and meta information
@@ -720,6 +749,7 @@ policy_eval_type <- function(target,
         action_set = action_set,
         actions = actions,
         policy_actions = pa,
+        policy_actions_natural = pa_natural,
         policy_name = pn,
         policy_input_meta = p_in,
         policy_output_meta = p_out,

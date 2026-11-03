@@ -1,3 +1,15 @@
+# polle 1.6.8
+    - new: `policy_def(natural_action = TRUE)` defines policies that depend on
+        the natural (observed) action, e.g., "treat the patient, unless
+        cancer develops during follow-up, in which case the natural treatment
+        is followed", as in the
+        `lmtp` package. `policy_eval(target = "value")` estimates the value
+        with a doubly robust score using the stage-wise weights
+        g^d(A|H)/g(A|H) and Q-functions fitted on the pseudo outcomes
+        Q(H, d(A, H)). For subjects censored before the action, the outcome
+        regression is integrated over the fitted action probabilities, so
+        `g_models` must be specified under right-censoring.
+
 # polle 1.6.7
     - `q_sl()` and `g_sl()` are reinstated, with `SuperLearner (>=2.0-42)`
     in `Suggests` rather than `Depends`.

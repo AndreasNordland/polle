@@ -72,13 +72,38 @@ NULL
 #' input to the policy functions.
 #' @param reuse If TRUE, the policy function is reused at every stage.
 #' @param name Character string.
-#' @param natural_action Logical. If TRUE, the natural/observed action
-#' variable will be passeed to the policy functions.
+#' @param natural_action Logical. If TRUE, the natural (observed) action is
+#' passed to the policy functions as the argument \code{A}, which defines a
+#' policy that depends on the natural value of the action, see details.
 #' @param stage_number Logical. If TRUE, the stage number is passed to the
-#' policy functions.
+#' policy functions as the argument \code{stage}.
 #' @returns Function of class \code{"policy"}. The function takes a
 #' [policy_data] object as input and returns a [data.table::data.table]
 #' with keys \code{id} and \code{stage} and action variable \code{d}.
+#' @details
+#' \strong{Policies that depend on the natural action.}
+#' If \code{natural_action = TRUE}, the policy functions have access to the
+#' natural (observed) action \code{A}. This defines a modified treatment policy
+#' as in the \code{lmtp} package, e.g., "treat the patient, unless cancer
+#' develops during follow-up, in which case the natural treatment is followed".
+#' The policy value is the
+#' expected utility if the natural actions had been replaced by the policy
+#' actions (and the natural action is otherwise left unchanged).
+#' In [policy_eval()], the value is estimated with the doubly robust score where
+#' the stage-wise weight is
+#' \eqn{g^d(A|H)/g(A|H)}, \eqn{g^d(a|H) = \sum_{a': d(a',H) = a} g(a'|H)}, which
+#' is 1 whenever the policy follows the natural action. The Q-functions are
+#' fitted with the pseudo outcomes \eqn{Q(H, d(A, H))}.
+#'
+#' The policy function is not evaluated when the natural action is missing, i.e.,
+#' when right-censoring occurs before the action (the policy action is \code{NA}).
+#' For these events the outcome regression is integrated over the
+#' fitted action probabilities, \eqn{\sum_a g(a|H) Q(H, d(a, H))}, so \code{g_models}
+#' must be specified and should be well-specified for the evaluation
+#' to be doubly robust under right-censoring. Without right-censoring the
+#' estimator does not depend on the fitted action model through this term.
+#' Policies that depend on the natural action are only implemented for
+#' \code{target = "value"} and discrete actions.
 #' @seealso [get_history_names()], [get_history()].
 #' @examples
 #' library("polle")
@@ -132,6 +157,19 @@ NULL
 #'   full_history = TRUE
 #' )
 #' p2_dynamic(pd2)
+#'
+#' # defining a policy that depends on the natural action:
+#' # treat at every stage, but if L_2 is large (a stand-in for a cancer
+#' # diagnosis) the natural action is followed at stage 2:
+#' p2_natural <- policy_def(
+#'   policy_functions = list(
+#'     1,
+#'     function(A, L_2) ifelse(L_2 > 1, A, "1")
+#'   ),
+#'   natural_action = TRUE,
+#'   full_history = TRUE
+#' )
+#' p2_natural(pd2)
 #' @export
 policy_def <- function(policy_functions,
                        full_history = FALSE,
@@ -142,6 +180,8 @@ policy_def <- function(policy_functions,
   force(policy_functions)
   force(full_history)
   force(reuse)
+  force(natural_action)
+  force(stage_number)
 
   ## input checks
   if (!(is.logical(full_history) & (length(full_history) == 1)))
@@ -150,6 +190,12 @@ policy_def <- function(policy_functions,
     stop("reuse must be TRUE or FALSE")
   if (full_history == TRUE & reuse == TRUE)
     stop("full_history must be FALSE when reuse is TRUE.")
+  if (!(is.logical(natural_action) & (length(natural_action) == 1) &
+        !is.na(natural_action)))
+    stop("natural_action must be TRUE or FALSE")
+  if (!(is.logical(stage_number) & (length(stage_number) == 1) &
+        !is.na(stage_number)))
+    stop("stage_number must be TRUE or FALSE")
   if (!is.null(name)){
     name <- as.character(name)
     if (length(name) != 1)
@@ -166,7 +212,7 @@ policy_def <- function(policy_functions,
       stop("When reuse is TRUE, policy_functions must be a single function or a constant.")
   }
 
-  policy <- function(policy_data){
+  policy_actions_fun <- function(policy_data, natural = NULL){
     if(!inherits(policy_data, what = "policy_data")){
       stop("The policy input is not of inherited class policy_data.")
     }
@@ -205,7 +251,7 @@ policy_def <- function(policy_functions,
                               event_set = c(0,2)) # action and right-censoring events
     )
     policy_actions <- mapply(
-      function(sp, sh) sp(sh),
+      function(sp, sh) sp(sh, natural = natural),
       policy_functions,
       stage_histories,
       SIMPLIFY = FALSE
@@ -213,7 +259,7 @@ policy_def <- function(policy_functions,
     policy_actions <- rbindlist(policy_actions)
     setkeyv(policy_actions, c("id", "stage"))
 
-    if (!all(unlist(policy_actions[, "d"]) %in% action_set)){
+    if (!all(na.omit(unlist(policy_actions[, "d"])) %in% action_set)){
       mes <- "The policy actions does not comply with the action set of the policy data object."
       warning(mes)
     }
@@ -221,8 +267,14 @@ policy_def <- function(policy_functions,
     return(policy_actions)
   }
 
+  policy <- function(policy_data) policy_actions_fun(policy_data)
+
   # setting class and attributes:
   policy <- new_policy(policy, name = name)
+  if (natural_action == TRUE) {
+    attr(policy, "natural_action") <- TRUE
+    attr(policy, "natural_policy") <- policy_actions_fun
+  }
 
   return(policy)
 }
@@ -280,7 +332,7 @@ static_policy <- function(action, name=paste0("a=",action)) {
   if (length(action) != 1)
     stop("the action argument in static_policy must be a single character or string.")
 
-  f <- function(history) {
+  f <- function(history, natural = NULL) {
     d <- NULL
     pol <- get_id_stage(history)
     pol[, d := action]
@@ -330,29 +382,62 @@ static_policy <- function(action, name=paste0("a=",action)) {
 #' # applying the dynamic policy at stage 2:
 #' head(dynamic_policy(fun = function(C_1, C_2) (C_1>1) & (C_2>1))(his))
 #' @noRd
-dynamic_policy <- function(fun, natural_action, stage_number) {
+dynamic_policy <- function(fun, natural_action = FALSE, stage_number = FALSE) {
 
   if (!"..." %in% names(formals(fun))) {
     formals(fun) <- c(formals(fun), alist(...=))
   }
 
-  f <- function(history){
-    args <- get_H(history)
-    if (isTRUE(natural_action)){
-      args <- cbind(A = get_A(history), args)
-    }
-    if (isTRUE(stage_number)) {
-      stage <- get_id_stage(history)[["stage"]]
-      args <- cbind(stage = stage, args)
-    }
-    action <- do.call(what = "fun", args = args)
-    action <- as.character(action)
-    d <- NULL
+  f <- function(history, natural = NULL){
     pol <- get_id_stage(history)
+    args <- as.list(get_H(history))
+    n <- nrow(pol)
+    ok <- rep(TRUE, n)
+    if (isTRUE(stage_number)) {
+      args <- c(list(stage = pol[["stage"]]), args)
+    }
+    if (isTRUE(natural_action)) {
+      A <- get_A(history)
+      if (!is.null(natural)) {
+        A <- rep(as.character(natural), n)
+      }
+      ## the policy function is not evaluated when the natural action is
+      ## missing (right-censoring before the action):
+      ok <- !is.na(A)
+      args <- c(list(A = A), args)
+    }
+    action <- rep(NA_character_, n)
+    if (any(ok)) {
+      args_ok <- lapply(args, function(x) x[ok])
+      action[ok] <- as.character(do.call(what = "fun", args = args_ok))
+    }
+    d <- NULL
     pol[, d := action]
     return(pol)
   }
   return(f)
+}
+
+## policy actions under every hypothetical natural action:
+## returns a keyed data.table with columns id, stage and d_<a> for each a in the
+## action set. Used for policies that depend on the natural action.
+natural_policy_actions <- function(policy, policy_data) {
+  fun <- attr(policy, "natural_policy")
+  if (is.null(fun))
+    stop("The policy does not depend on the natural action.")
+  action_set <- get_action_set(policy_data)
+  out <- NULL
+  for (a in action_set) {
+    pa <- fun(policy_data, natural = a)
+    setnames(pa, "d", paste0("d_", a))
+    if (is.null(out)) {
+      out <- pa
+    } else {
+      out <- merge(out, pa, by = c("id", "stage"), sort = TRUE)
+    }
+  }
+  setkeyv(out, c("id", "stage"))
+  return(out)
 }
 
 policy_g_functions <- function(g_functions, name = "pgf"){
