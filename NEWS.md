@@ -1,3 +1,11 @@
+# polle 1.6.8
+    - `q_glm()` and `g_glm()` now store a slimmed `glm` object: the copy of
+        the data, the rows of the QR matrix beyond the R factor, and the data
+        captured by the formula environment are dropped. This substantially
+        reduces the memory used by the fitted nuisance models for large
+        data. Predictions, `coef()` and `summary()` of the stored models are
+        unchanged.
+
 # polle 1.6.7
     - `q_sl()` and `g_sl()` are reinstated, with `SuperLearner (>=2.0-42)`
     in `Suggests` rather than `Depends`.

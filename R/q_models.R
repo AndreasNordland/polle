@@ -145,6 +145,7 @@ q_glm <- function(formula = ~ A*.,
                   na.action = na.pass,
                   ...){
   formula <- as.formula(formula)
+  formula_env <- environment(formula)
   dotdotdot <- list(...)
 
   q_glm <- function(AH, V_res, ...) {
@@ -172,6 +173,7 @@ q_glm <- function(formula = ~ A*.,
     }
 
     model$call <- NULL
+    model <- slim_glm(model, env = formula_env)
     m <- list(model = model)
 
     class(m) <- c("q_glm")

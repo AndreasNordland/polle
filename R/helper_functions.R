@@ -49,6 +49,18 @@ ipw_weight <- function(D, G){
   return(out)
 }
 
+# Reduce the memory footprint of a fitted glm. predict() only needs the
+# coefficients, the terms, the family, the rank and the R factor of the QR
+# decomposition, so the data copy, the remaining rows of the QR matrix and the
+# data captured by the formula environment are dropped.
+slim_glm <- function(fit, env) {
+  fit$data <- NULL
+  fit$qr$qr <- fit$qr$qr[seq_len(min(dim(fit$qr$qr))), , drop = FALSE]
+  environment(fit$formula) <- env
+  attr(fit$terms, ".Environment") <- env
+  return(fit)
+}
+
 colprod <- function(M) {
   if (is.vector(M)) {
     out <- M
