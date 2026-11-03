@@ -25,11 +25,12 @@ input to the policy functions.}
 
 \item{name}{Character string.}
 
-\item{natural_action}{Logical. If TRUE, the natural/observed action
-variable will be passeed to the policy functions.}
+\item{natural_action}{Logical. If TRUE, the natural (observed) action is
+passed to the policy functions as the argument \code{A}, which defines a
+policy that depends on the natural value of the action, see details.}
 
 \item{stage_number}{Logical. If TRUE, the stage number is passed to the
-policy functions.}
+policy functions as the argument \code{stage}.}
 }
 \value{
 Function of class \code{"policy"}. The function takes a
@@ -40,6 +41,31 @@ with keys \code{id} and \code{stage} and action variable \code{d}.
 \code{policy_def} returns a function of class \link{policy}.
 The function input is a \link{policy_data} object and it returns a \link[data.table:data.table]{data.table::data.table}
 with keys \code{id} and \code{stage} and action variable \code{d}.
+}
+\details{
+\strong{Policies that depend on the natural action.}
+If \code{natural_action = TRUE}, the policy functions have access to the
+natural (observed) action \code{A}. This defines a modified treatment policy
+as in the \code{lmtp} package, e.g., "treat the patient, unless cancer
+develops during follow-up, in which case the natural treatment is followed".
+The policy value is the
+expected utility if the natural actions had been replaced by the policy
+actions (and the natural action is otherwise left unchanged).
+In \code{\link[=policy_eval]{policy_eval()}}, the value is estimated with the doubly robust score where
+the stage-wise weight is
+\eqn{g^d(A|H)/g(A|H)}, \eqn{g^d(a|H) = \sum_{a': d(a',H) = a} g(a'|H)}, which
+is 1 whenever the policy follows the natural action. The Q-functions are
+fitted with the pseudo outcomes \eqn{Q(H, d(A, H))}.
+
+The policy function is not evaluated when the natural action is missing, i.e.,
+when right-censoring occurs before the action (the policy action is \code{NA}).
+For these events the outcome regression is integrated over the
+fitted action probabilities, \eqn{\sum_a g(a|H) Q(H, d(a, H))}, so \code{g_models}
+must be specified and should be well-specified for the evaluation
+to be doubly robust under right-censoring. Without right-censoring the
+estimator does not depend on the fitted action model through this term.
+Policies that depend on the natural action are only implemented for
+\code{target = "value"} and discrete actions.
 }
 \examples{
 library("polle")
@@ -93,6 +119,19 @@ p2_dynamic <- policy_def(
   full_history = TRUE
 )
 p2_dynamic(pd2)
+
+# defining a policy that depends on the natural action:
+# treat at every stage, but if L_2 is large (a stand-in for a cancer
+# diagnosis) the natural action is followed at stage 2:
+p2_natural <- policy_def(
+  policy_functions = list(
+    1,
+    function(A, L_2) ifelse(L_2 > 1, A, "1")
+  ),
+  natural_action = TRUE,
+  full_history = TRUE
+)
+p2_natural(pd2)
 }
 \seealso{
 \code{\link[=get_history_names]{get_history_names()}}, \code{\link[=get_history]{get_history()}}.

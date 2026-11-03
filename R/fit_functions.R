@@ -57,6 +57,18 @@ fit_functions <- function(policy_data,
   # getting the policy actions:
   policy_actions <- policy(policy_data = policy_data)
 
+  ## policies that depend on the natural action: the policy actions for every
+  ## hypothetical natural action and the action probabilities at right-censoring
+  ## events (before the action) are needed to fit the Q-functions:
+  policy_actions_natural <- NULL
+  g_values <- NULL
+  if (isTRUE(attr(policy, which = "natural_action", exact = TRUE))) {
+    policy_actions_natural <- natural_policy_actions(policy, policy_data)
+    if (!is.null(g_functions)) {
+      g_values <- predict(g_functions, policy_data, event_set = c(0, 2))
+    }
+  }
+
   ## the policy actions are needed to fit the Q-functions.
   ## note that the policy actions at the first stage will not
   ## affect the fit.
@@ -71,7 +83,9 @@ fit_functions <- function(policy_data,
           policy_data,
           policy_actions = policy_actions,
           q_models = q_models, full_history = q_full_history,
-          m_function = m_function
+          m_function = m_function,
+          policy_actions_natural = policy_actions_natural,
+          g_values = g_values
         )
       }
     }

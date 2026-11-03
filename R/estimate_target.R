@@ -5,6 +5,7 @@ estimate_target <- function(target = "value",
                             action_set,
                             actions,
                             policy_actions,
+                            policy_actions_natural = NULL,
                             policy_name,
                             policy_input_meta,
                             policy_output_meta = NULL,
@@ -285,16 +286,19 @@ action_prob_matrix <- function(g_values, actions, id, D, E, action_set) {
 #'   * Final stage outcome regression values (col K+1)
 #'   * Observed utility outcomes (col K+2)
 #' @noRd
-policy_action_outcome_matrix <- function(q_values, m_values, U, policy_actions, id, D, action_set) {
+policy_action_outcome_matrix <- function(q_values, m_values, U, policy_actions, id, D, action_set,
+                                         q_d_values = NULL) {
   n <- nrow(id)
   K <- ncol(D) - 1
 
   if (!is.null(q_values)) {
-    q_d_values <- get_a_values(
-      a = policy_actions[["d"]],
-      action_set = action_set,
-      values = q_values
-    )
+    if (is.null(q_d_values)) {
+      q_d_values <- get_a_values(
+        a = policy_actions[["d"]],
+        action_set = action_set,
+        values = q_values
+      )
+    }
 
     if (!all(complete.cases(q_d_values))) {
       stop("The policy dictates actions with incomplete (NA) Q-function values")
@@ -370,11 +374,139 @@ subgroup_means <- function(Z, subgroup_indicator, min_subgroup_size) {
   return(list(coef = coef, IC = IC))
 }
 
+#' Stage-wise weight factors for policies that depend on the natural action
+#'
+#' The factor at stage k is g^d_k(A_k | H_k) / g_k(A_k | H_k), where
+#' g^d_k(a | H_k) = sum_{a': d_k(a', H_k) = a} g_k(a' | H_k) is the
+#' probability of the policy action. The factor is 1 for right-censored,
+#' terminal and final (K+1) stages.
+#'
+#' @param g_values data.table with the action probabilities.
+#' @param actions data.table with the observed actions (events 0).
+#' @param policy_actions_natural data.table with the policy actions for every
+#' hypothetical natural action, see natural_policy_actions().
+#' @param id data.table with subject IDs.
+#' @param D matrix of non-censoring indicators.
+#' @param E matrix of terminal event indicators.
+#' @param action_set vector of possible actions.
+#' @return matrix with dimensions (n X (K+1)).
+#' @noRd
+natural_ratio_matrix <- function(g_values, actions, policy_actions_natural, id, D, E, action_set) {
+  if (is.null(g_values)) {
+    stop("g_models (or g_functions) are required for policies that depend on the natural action.")
+  }
+  keys <- actions[, c("id", "stage"), with = FALSE]
+  g_mat <- as.matrix(
+    merge(keys, g_values, by = c("id", "stage"))[, -c("id", "stage"), with = FALSE]
+  )
+  d_nat <- merge(keys, policy_actions_natural, by = c("id", "stage"))
+  A <- actions[["A"]]
+
+  ## g_k(A_k | H_k):
+  gA <- g_mat[cbind(seq_along(A), match(A, action_set))]
+  ## g^d_k(A_k | H_k):
+  gd <- rep(0, length(A))
+  for (j in seq_along(action_set)) {
+    gj <- g_mat[, j]
+    gj[is.na(gj)] <- 0
+    follows <- (d_nat[[paste0("d_", action_set[j])]] == A)
+    follows[is.na(follows)] <- FALSE
+    gd <- gd + gj * follows
+  }
+  r <- gd / gA
+  if (any(is.na(r)) || any(is.infinite(r))) {
+    stop("The policy dictates actions with fitted probability 0. Unable to calculate inverse probability weights.")
+  }
+
+  R <- dcast(data.table(keys, r = r), id ~ stage, value.var = "r")
+  R <- merge(id, R, all.x = TRUE)
+  id <- NULL
+  R[, id := NULL]
+  R <- as.matrix(R)
+  R <- cbind(R, 1)
+  R[D == 0] <- 1
+  R[E == 1] <- 1
+  colnames(R) <- 1:ncol(R)
+
+  return(R)
+}
+
+#' Outcome regression values for policies that depend on the natural action
+#'
+#' For observed actions the value is Q_k(H_k, d_k(A_k, H_k)). For right-censored
+#' events (before the action) the natural action is missing and the value is the
+#' integral sum_a g_k(a | H_k) Q_k(H_k, d_k(a, H_k)). The values Q_k(H_k, A_k) at the
+#' observed actions are also returned (0 for right-censored events).
+#'
+#' @param q_values data.table with the Q-function values (events 0, 2).
+#' @param g_values data.table with the action probabilities (events 0, 2).
+#' @param actions data.table with the observed actions (events 0).
+#' @param policy_actions data.table with the policy actions (NA for events 2).
+#' @param policy_actions_natural data.table with the policy actions for every
+#' hypothetical natural action.
+#' @param action_set vector of possible actions.
+#' @return list with data.tables Q_d and Q_A with columns id, stage and P.
+#' @noRd
+natural_policy_q_values <- function(q_values, g_values, actions, policy_actions,
+                                    policy_actions_natural, action_set) {
+  keys <- q_values[, c("id", "stage"), with = FALSE]
+  d_obs <- merge(keys, policy_actions, by = c("id", "stage"))[["d"]]
+  A_obs <- merge(keys, actions, by = c("id", "stage"), all.x = TRUE)[["A"]]
+  stopifnot(
+    length(d_obs) == nrow(keys),
+    length(A_obs) == nrow(keys)
+  )
+  censored <- is.na(A_obs)
+  if (any(is.na(d_obs) & !censored)) {
+    stop("The policy returned missing actions for observed natural actions.")
+  }
+
+  q_mat <- as.matrix(q_values[, -c("id", "stage"), with = FALSE])
+  q_at <- function(a) q_mat[cbind(seq_len(nrow(q_mat)), match(a, action_set))]
+
+  Q_d <- q_at(d_obs)
+  Q_A <- q_at(A_obs)
+
+  if (any(censored)) {
+    if (is.null(g_values)) {
+      mes <- paste0(
+        "g_models (or g_functions) are required for policies that depend on the ",
+        "natural action when right-censoring occurs before the action."
+      )
+      stop(mes)
+    }
+    g_mat <- as.matrix(
+      merge(keys, g_values, by = c("id", "stage"))[, -c("id", "stage"), with = FALSE]
+    )
+    d_nat <- merge(keys, policy_actions_natural, by = c("id", "stage"))
+    integral <- rep(0, nrow(keys))
+    for (j in seq_along(action_set)) {
+      gj <- g_mat[, j]
+      gj[is.na(gj)] <- 0
+      qj <- q_at(d_nat[[paste0("d_", action_set[j])]])
+      integral <- integral + ifelse(gj == 0, 0, gj * qj)
+    }
+    Q_d[censored] <- integral[censored]
+  }
+  Q_A[censored] <- 0
+
+  if (anyNA(Q_d) || anyNA(Q_A)) {
+    stop("The policy dictates actions with incomplete (NA) Q-function values")
+  }
+
+  out <- list(
+    Q_d = data.table(keys, P = Q_d),
+    Q_A = data.table(keys, P = Q_A)
+  )
+  return(out)
+}
+
 dr_subgroup <- function(K,
                         id,
                         action_set,
                         actions,
                         policy_actions,
+                        policy_actions_natural = NULL,
                         policy_name,
                         policy_input_meta,
                         policy_output_meta = NULL,
@@ -385,6 +517,9 @@ dr_subgroup <- function(K,
                         m_values,
                         utility,
                         min_subgroup_size) {
+  if (!is.null(policy_actions_natural)) {
+    stop("target = 'subgroup' is not implemented for policies that depend on the natural action.")
+  }
   if (K != 1) {
     mes <- paste0(
       "subgroup average treatment effect evaluation",
@@ -551,6 +686,7 @@ dr_value <- function(K,
                      action_set,
                      actions,
                      policy_actions,
+                     policy_actions_natural = NULL,
                      policy_name,
                      policy_input_meta,
                      policy_output_meta = NULL,
@@ -584,43 +720,97 @@ dr_value <- function(K,
                         events = events,
                         E = E)
 
-  ## (n X K+1) matrix with entries I(d_k(H_k) = A_k)
-  ## I(d_{K+1}(H_{K+1}) = A_{K+1}) = 1:
-  II <- policy_action_indicator_matrix(actions = actions,
-                                       policy_actions = policy_actions,
-                                       D = D,
-                                       E = E,
-                                       id = id)
+  if (is.null(policy_actions_natural)) {
+    ## (n X K+1) matrix with entries I(d_k(H_k) = A_k)
+    ## I(d_{K+1}(H_{K+1}) = A_{K+1}) = 1:
+    II <- policy_action_indicator_matrix(actions = actions,
+                                         policy_actions = policy_actions,
+                                         D = D,
+                                         E = E,
+                                         id = id)
 
-  ## (n X K+1) matrix with entries g_k(A_k, H_k) (action probabilities):
-  ## g_{K+1} = 1
-  G <- action_prob_matrix(g_values = g_values,
-                          actions = actions,
-                          id = id,
-                          D = D,
-                          E = E,
-                          action_set = action_set)
+    ## (n X K+1) matrix with entries g_k(A_k, H_k) (action probabilities):
+    ## g_{K+1} = 1
+    G <- action_prob_matrix(g_values = g_values,
+                            actions = actions,
+                            id = id,
+                            D = D,
+                            E = E,
+                            action_set = action_set)
 
-  ## (n X (K+2)) matrix with columns Q_k(H_{k,i}, d_k(H_{k,i}))
-  ## (outcome regression values):
-  Q <- policy_action_outcome_matrix(q_values = q_values,
-                                    m_values = m_values,
-                                    U = U,
+    ## (n X (K+2)) matrix with columns Q_k(H_{k,i}, d_k(H_{k,i}))
+    ## (outcome regression values):
+    Q <- policy_action_outcome_matrix(q_values = q_values,
+                                      m_values = m_values,
+                                      U = U,
+                                      policy_actions = policy_actions,
+                                      id = id,
+                                      D = D,
+                                      action_set)
+  } else {
+    ## policy that depends on the natural action:
+    ## (n X K+1) matrix with entries g^d_k(A_k | H_k) / g_k(A_k | H_k):
+    R <- natural_ratio_matrix(g_values = g_values,
+                              actions = actions,
+                              policy_actions_natural = policy_actions_natural,
+                              id = id,
+                              D = D,
+                              E = E,
+                              action_set = action_set)
+
+    q_d_values <- NULL
+    q_A_values <- NULL
+    if (!is.null(q_values)) {
+      nq <- natural_policy_q_values(q_values = q_values,
+                                    g_values = g_values,
+                                    actions = actions,
                                     policy_actions = policy_actions,
-                                    id = id,
-                                    D = D,
-                                    action_set)
+                                    policy_actions_natural = policy_actions_natural,
+                                    action_set = action_set)
+      q_d_values <- nq[["Q_d"]]
+      q_A_values <- nq[["Q_A"]]
+    }
+    ## (n X (K+2)) matrix with columns Q_k(H_k, d_k(A_k, H_k)) for observed
+    ## actions and sum_a g_k(a | H_k) Q_k(H_k, d_k(a, H_k)) for
+    ## right-censored events (before the action):
+    Q <- policy_action_outcome_matrix(q_values = q_values,
+                                      m_values = m_values,
+                                      U = U,
+                                      policy_actions = policy_actions,
+                                      id = id,
+                                      D = D,
+                                      action_set = action_set,
+                                      q_d_values = q_d_values)
+    ## (n X (K+2)) matrix with columns Q_k(H_k, A_k):
+    Q_A <- policy_action_outcome_matrix(q_values = q_values,
+                                        m_values = m_values,
+                                        U = U,
+                                        policy_actions = policy_actions,
+                                        id = id,
+                                        D = D,
+                                        action_set = action_set,
+                                        q_d_values = q_A_values)
+  }
 
   ## calculating the doubly robust score:
   Zd <- Q[, 1]
   for (k in 1:(K+1)) {
-    Zd <- Zd + ipw_weight(D[, 1:k], C[, 1:k]) * ipw_weight(II[, 1:k], G[, 1:k]) * (Q[, k + 1] - Q[, k])
+    if (is.null(policy_actions_natural)) {
+      Zd <- Zd + ipw_weight(D[, 1:k], C[, 1:k]) * ipw_weight(II[, 1:k], G[, 1:k]) * (Q[, k + 1] - Q[, k])
+    } else {
+      Zd <- Zd + ipw_weight(D[, 1:k], C[, 1:k]) * colprod(R[, 1:k]) * (Q[, k + 1] - Q_A[, k])
+    }
   }
 
   ## calculating the IPW and OR scores:
   D_ipw <- matrix(1, nrow = nrow(D), ncol = ncol(D))
-  Zd_ipw <- ipw_weight(D_ipw[, 1:(K + 1)], C[, 1:(K + 1)]) *
-    ipw_weight(II, G = G) * ifelse(is.na(U), 0, U)
+  if (is.null(policy_actions_natural)) {
+    Zd_ipw <- ipw_weight(D_ipw[, 1:(K + 1)], C[, 1:(K + 1)]) *
+      ipw_weight(II, G = G) * ifelse(is.na(U), 0, U)
+  } else {
+    Zd_ipw <- ipw_weight(D_ipw[, 1:(K + 1)], C[, 1:(K + 1)]) *
+      colprod(R) * ifelse(is.na(U), 0, U)
+  }
   Zd_or <- Q[, 1]
 
   ## naming:

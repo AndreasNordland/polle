@@ -1,4 +1,4 @@
-check_actions <- function(actions, policy_data){
+check_actions <- function(actions, policy_data, allow_na = FALSE){
   ## checking the format of the actions data.table
   if (!is.data.table(actions))
     stop("actions must be a data.table.")
@@ -12,7 +12,11 @@ check_actions <- function(actions, policy_data){
   stage_action_sets <- get_stage_action_sets(policy_data)
   stage <- NULL
   for(k_ in 1:K){
-    if (!all(unlist(actions[stage == k_, "d"]) %in% stage_action_sets[[k_]])){
+    d_k <- unlist(actions[stage == k_, "d"])
+    if (allow_na) {
+      d_k <- d_k[!is.na(d_k)]
+    }
+    if (!all(d_k %in% stage_action_sets[[k_]])){
       mes <- "The policy actions does not comply with the stage action sets of the policy data object."
       stop(mes)
     }
