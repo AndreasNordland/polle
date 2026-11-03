@@ -68,7 +68,14 @@ new_q_model <- function(q_model) {
 #' @param ... Additional arguments passed to [glm()], [glmnet::glmnet],
 #' [ranger::ranger], [SuperLearner::SuperLearner] or [xgboost::xgboost].
 #' @details
-#' \code{q_glm()} is a wrapper of [glm()] (generalized linear model).\cr
+#' \code{q_glm()} is a wrapper of [glm()] (generalized linear model).
+#' For a gaussian family with identity link, \code{q_glm()} uses
+#' \code{control = glm.control(epsilon = 1e-4)} unless \code{control} is
+#' given. This gives the same rank tolerance (1e-7) as [lm()], such that
+#' aliased terms are detected and set to \code{NA} also for very large
+#' sample sizes, where the [glm()] default (1e-11) may keep them with huge,
+#' offsetting coefficients. The estimates are otherwise unchanged. Use
+#' \code{control = glm.control()} to recover the [glm()] default.\cr
 #' \code{q_glmnet()} is a wrapper of [glmnet::glmnet()] (generalized linear model via
 #' penalized maximum likelihood).\cr
 #' \code{q_rf()} is a wrapper of [ranger::ranger()] (random forest).
@@ -137,6 +144,18 @@ NULL
 
 # glm interface --------------------------------------
 
+is_gaussian_identity <- function(family) {
+  family <- tryCatch(
+    {
+      if (is.character(family)) family <- get(family, mode = "function")
+      if (is.function(family)) family <- family()
+      family
+    },
+    error = function(e) NULL
+  )
+  identical(family$family, "gaussian") && identical(family$link, "identity")
+}
+
 #' @rdname q_model
 #' @export
 q_glm <- function(formula = ~ A*.,
@@ -146,6 +165,12 @@ q_glm <- function(formula = ~ A*.,
                   ...){
   formula <- as.formula(formula)
   dotdotdot <- list(...)
+  if (is.null(dotdotdot[["control"]]) && is_gaussian_identity(family)) {
+    # glm.fit() detects aliased columns with tolerance min(1e-7, epsilon / 1000)
+    # (lm() uses 1e-7); epsilon = 1e-4 gives lm's tolerance. For gaussian with
+    # identity link, epsilon does not affect the estimates.
+    dotdotdot$control <- glm.control(epsilon = 1e-4)
+  }
 
   q_glm <- function(AH, V_res, ...) {
     data <- AH
