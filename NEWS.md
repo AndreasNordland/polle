@@ -1,3 +1,18 @@
+# polle 1.6.8
+    - new argument `weight_truncation` in `policy_eval()` (default `NULL`,
+        no truncation). The stage-wise action weights `1/g` and censoring
+        weights `1/c` are truncated independently at an upper percentile at
+        every stage (within each fold when `M > 1`) before they are
+        cumulated, so an extreme stage does not affect later stages. The
+        caps and the number of truncated observations are returned in
+        `$weight_truncation`. Truncation introduces bias, see
+        `?policy_eval`.
+    - new argument `weight_bound` in `policy_eval()` (default `NULL`): a
+        fixed lower bound on the estimated action (`"g"`) and
+        non-censoring (`"c"`) probabilities, i.e. a fixed cap `1/weight_bound`
+        on the stage-wise weights, as an alternative or addition to
+        `weight_truncation`.
+
 # polle 1.6.7
     - `q_sl()` and `g_sl()` are reinstated, with `SuperLearner (>=2.0-42)`
     in `Suggests` rather than `Depends`.

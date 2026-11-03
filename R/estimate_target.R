@@ -14,7 +14,8 @@ estimate_target <- function(target = "value",
                             c_values,
                             m_values,
                             utility,
-                            min_subgroup_size) {
+                            min_subgroup_size,
+                            weight_truncation = NULL) {
 
   args <- as.list(environment())
   args[["target"]] <- NULL
@@ -32,6 +33,7 @@ estimate_target <- function(target = "value",
   if (target == "value") {
     out <- do.call(what = "dr_value", args)
   } else if (target == "subgroup") {
+    args[["weight_truncation"]] <- NULL
     out <- do.call(what = "dr_subgroup", args)
   } else {
     stop("unknown target argument.")
@@ -545,6 +547,83 @@ dr_subgroup <- function(K,
   return(out)
 }
 
+## (n X (K+1)) matrix of cumulative inverse probability weights
+## W_k = prod_{j <= k} w_j with stage-wise factors
+## w_j = (D_j / C_j) * (II_j / G_j).
+## probs and bounds are NULL (no truncation) or vectors c(g = , c = ) (NA: no
+## truncation). The action factor II_j / G_j and the censoring factor
+## D_j / C_j are truncated independently before the factors are cumulated.
+## bounds are lower bounds on the probabilities G_j and C_j, i.e. the factors
+## are capped at 1 / bound. probs are percentiles, calculated at every stage
+## among the observations with a positive stage weight w_j and a positive
+## cumulative weight at the previous stage, i.e. among the observations that
+## are still contributing to the estimate, after the bounds are applied.
+## Truncating stage by stage means that a stage with extreme weights does not
+## affect the truncation thresholds at later stages.
+cumulative_weights <- function(D, C, II, G, K, probs = NULL, bounds = NULL) {
+  n <- nrow(II)
+  W <- matrix(1, nrow = n, ncol = K + 1)
+
+  if (is.null(probs) && is.null(bounds)) {
+    for (k in 1:(K + 1)) {
+      W[, k] <- ipw_weight(D[, 1:k], C[, 1:k]) * ipw_weight(II[, 1:k], G[, 1:k])
+    }
+    return(list(W = W, truncation = NULL))
+  }
+  if (is.null(probs)) probs <- c(g = NA_real_, c = NA_real_)
+  if (is.null(bounds)) bounds <- c(g = NA_real_, c = NA_real_)
+
+  truncate <- function(w, active, trivial, prob, bound) {
+    w_orig <- w
+    active <- active & !trivial
+    cap <- Inf
+    if (!is.na(bound)) {
+      cap <- 1 / bound
+      w <- pmin(w, cap)
+    }
+    if (!is.na(prob) && any(active)) {
+      cap <- unname(stats::quantile(w[active], probs = prob, type = 1))
+      w <- pmin(w, cap)
+    }
+    list(
+      w = w,
+      cap = cap,
+      n_active = sum(active),
+      n_truncated = sum(active & (w_orig > cap))
+    )
+  }
+
+  W_prev <- rep(1, n)
+  truncation <- list()
+  for (k in 1:(K + 1)) {
+    w_g <- ipw_weight(II[, k], G[, k])
+    w_c <- ipw_weight(D[, k], C[, k])
+    active <- (W_prev > 0) & (w_g > 0) & (w_c > 0)
+    for (component in c("g", "c")) {
+      prob <- probs[[component]]
+      bound <- bounds[[component]]
+      if (is.na(prob) && is.na(bound)) next
+      if (component == "g") {
+        res <- truncate(w_g, active, is.na(G[, k]), prob, bound)
+        w_g <- res$w
+      } else {
+        res <- truncate(w_c, active, is.na(C[, k]), prob, bound)
+        w_c <- res$w
+      }
+      truncation[[length(truncation) + 1]] <- data.table(
+        stage = k,
+        weight = component,
+        cap = res$cap,
+        n_active = res$n_active,
+        n_truncated = res$n_truncated
+      )
+    }
+    W_prev <- W_prev * w_g * w_c
+    W[, k] <- W_prev
+  }
+  return(list(W = W, truncation = rbindlist(truncation)))
+}
+
 ## doubly robust score for the policy value.
 dr_value <- function(K,
                      id,
@@ -560,6 +639,7 @@ dr_value <- function(K,
                      c_values,
                      m_values,
                      utility,
+                     weight_truncation = NULL,
                      ...) {
   ## (n) observed utility vector:
   U <- utility[["U"]]
@@ -611,16 +691,30 @@ dr_value <- function(K,
                                     D = D,
                                     action_set)
 
+  ## (n X (K+1)) matrix of cumulative weights (optionally truncated stage by
+  ## stage):
+  cw <- cumulative_weights(D = D, C = C, II = II, G = G, K = K,
+                           probs = weight_truncation[["probs"]],
+                           bounds = weight_truncation[["bounds"]])
+  W <- cw[["W"]]
+
   ## calculating the doubly robust score:
   Zd <- Q[, 1]
   for (k in 1:(K+1)) {
-    Zd <- Zd + ipw_weight(D[, 1:k], C[, 1:k]) * ipw_weight(II[, 1:k], G[, 1:k]) * (Q[, k + 1] - Q[, k])
+    Zd <- Zd + W[, k] * (Q[, k + 1] - Q[, k])
   }
 
   ## calculating the IPW and OR scores:
   D_ipw <- matrix(1, nrow = nrow(D), ncol = ncol(D))
-  Zd_ipw <- ipw_weight(D_ipw[, 1:(K + 1)], C[, 1:(K + 1)]) *
-    ipw_weight(II, G = G) * ifelse(is.na(U), 0, U)
+  if (is.null(weight_truncation)) {
+    W_ipw <- ipw_weight(D_ipw[, 1:(K + 1)], C[, 1:(K + 1)]) *
+      ipw_weight(II, G = G)
+  } else {
+    W_ipw <- cumulative_weights(D = D_ipw, C = C, II = II, G = G, K = K,
+                                probs = weight_truncation[["probs"]],
+                                bounds = weight_truncation[["bounds"]])[["W"]][, K + 1]
+  }
+  Zd_ipw <- W_ipw * ifelse(is.na(U), 0, U)
   Zd_or <- Q[, 1]
 
   ## naming:
@@ -652,7 +746,8 @@ dr_value <- function(K,
     coef_or = mean(Zd_or),
     name = name,
     input_meta = input_meta,
-    output_meta = output_meta
+    output_meta = output_meta,
+    weight_truncation = cw[["truncation"]]
   )
 
   return(out)
