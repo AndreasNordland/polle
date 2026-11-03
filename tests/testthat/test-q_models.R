@@ -232,3 +232,62 @@ test_that("q_glm handles missing covariates", {
     NA
   )
 })
+
+test_that("q_glm detects aliased terms with the rank tolerance of lm", {
+  set.seed(1)
+  n <- 2000
+  AH <- data.frame(A = factor(rbinom(n, 1, 0.5), levels = 0:1), L = rnorm(n))
+  # collinear with the intercept up to 1e-9: kept by the glm() default
+  # tolerance (1e-11), but aliased for lm() (1e-7).
+  AH$lag <- 1 + 1e-9 * rnorm(n)
+  V_res <- rbinom(n, 1, 0.01)
+
+  fit_glm <- function(...) {
+    q_glm(~ A * ., ...)(AH = AH, V_res = V_res)$model
+  }
+
+  default <- fit_glm()
+  expect_equal(default$rank, 4)
+  expect_equal(sum(is.na(coef(default))), 2)
+  expect_lt(max(abs(coef(default)), na.rm = TRUE), 1)
+  expect_true(all(is.finite(predict(default, newdata = AH, type = "response"))))
+  expect_equal(
+    unname(coef(default)[!is.na(coef(default))]),
+    unname(coef(lm(V_res ~ A * L, data = AH))),
+    tolerance = 1e-8
+  )
+
+  # glm() default is recovered via control
+  expect_equal(fit_glm(control = glm.control())$rank, 6)
+
+  # a user supplied control is not overruled
+  expect_equal(fit_glm(control = glm.control(epsilon = 1e-4))$rank, 4)
+  expect_equal(fit_glm(control = glm.control(epsilon = 1e-4, maxit = 10))$control$maxit, 10)
+
+  # family given as a character string or function
+  expect_equal(fit_glm(family = "gaussian")$rank, 4)
+  expect_equal(fit_glm(family = gaussian)$rank, 4)
+})
+
+test_that("q_glm only changes the glm control for gaussian identity models", {
+  set.seed(1)
+  n <- 500
+  AH <- data.frame(A = factor(rbinom(n, 1, 0.5), levels = 0:1), L = rnorm(n))
+  V_res <- rbinom(n, 1, plogis(AH$L))
+
+  qb <- q_glm(~ A * L, family = binomial())(AH = AH, V_res = V_res)$model
+  expect_equal(qb$control$epsilon, 1e-8)
+  expect_equal(
+    unname(coef(qb)),
+    unname(coef(glm(V_res ~ A * L, data = AH, family = binomial())))
+  )
+
+  # full rank gaussian: unchanged estimates
+  qg <- q_glm(~ A * L)(AH = AH, V_res = V_res)$model
+  expect_equal(qg$control$epsilon, 1e-4)
+  expect_equal(
+    unname(coef(qg)),
+    unname(coef(glm(V_res ~ A * L, data = AH))),
+    tolerance = 1e-10
+  )
+})

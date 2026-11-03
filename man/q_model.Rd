@@ -131,7 +131,14 @@ model/Q-model object. The constructors are used as input for
 \code{\link[=policy_eval]{policy_eval()}} and \code{\link[=policy_learn]{policy_learn()}}.
 }
 \details{
-\code{q_glm()} is a wrapper of \code{\link[=glm]{glm()}} (generalized linear model).\cr
+\code{q_glm()} is a wrapper of \code{\link[=glm]{glm()}} (generalized linear model).
+For a gaussian family with identity link, \code{q_glm()} uses
+\code{control = glm.control(epsilon = 1e-4)} unless \code{control} is
+given. This gives the same rank tolerance (1e-7) as \code{\link[=lm]{lm()}}, such that
+aliased terms are detected and set to \code{NA} also for very large
+sample sizes, where the \code{\link[=glm]{glm()}} default (1e-11) may keep them with huge,
+offsetting coefficients. The estimates are otherwise unchanged. Use
+\code{control = glm.control()} to recover the \code{\link[=glm]{glm()}} default.\cr
 \code{q_glmnet()} is a wrapper of \code{\link[glmnet:glmnet]{glmnet::glmnet()}} (generalized linear model via
 penalized maximum likelihood).\cr
 \code{q_rf()} is a wrapper of \code{\link[ranger:ranger]{ranger::ranger()}} (random forest).

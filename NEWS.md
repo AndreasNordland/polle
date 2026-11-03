@@ -1,3 +1,13 @@
+# polle 1.6.8
+    - bug fix: `q_glm()` (and hence the m-model) now uses
+        `control = glm.control(epsilon = 1e-4)` by default for gaussian
+        models with identity link, which gives the same rank tolerance as
+        `lm()`. With very large sample sizes, the `glm()` default could keep
+        structurally aliased terms (e.g. a covariate that is constant at
+        stage 1 or an empty action-by-covariate cell), resulting in huge
+        offsetting coefficients and out-of-range Q-function predictions.
+        Supply `control = glm.control()` to recover the previous behavior.
+
 # polle 1.6.7
     - `q_sl()` and `g_sl()` are reinstated, with `SuperLearner (>=2.0-42)`
     in `Suggests` rather than `Depends`.
