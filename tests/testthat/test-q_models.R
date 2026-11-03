@@ -232,3 +232,34 @@ test_that("q_glm handles missing covariates", {
     NA
   )
 })
+
+test_that("q_glm stores a slimmed glm that predicts as the full glm", {
+  set.seed(1)
+  n <- 500
+  AH <- data.frame(
+    A = factor(rbinom(n, 1, 0.5), levels = 0:1),
+    L = rnorm(n),
+    K = 1 # aliased with the intercept: rank-deficient design
+  )
+  V_res <- rbinom(n, 1, plogis(AH$L))
+
+  qf <- q_glm(~ A * (L + K) + I(L^2))
+  fit <- qf(AH = AH, V_res = V_res)$model
+  full <- glm(V_res ~ A * (L + K) + I(L^2), data = AH)
+
+  expect_lt(fit$rank, length(coef(fit)))
+  expect_null(fit$data)
+  expect_equal(nrow(fit$qr$qr), ncol(fit$qr$qr))
+  expect_identical(environment(fit$terms), environment())
+  expect_identical(environment(fit$formula), environment())
+
+  newdata <- AH[1:50, ]
+  newdata$A <- factor(c("1", "0"), levels = 0:1)[rep(1:2, 25)]
+  expect_equal(
+    suppressWarnings(predict(fit, newdata = newdata, type = "response")),
+    suppressWarnings(predict(full, newdata = newdata, type = "response"))
+  )
+  expect_equal(coef(fit), coef(full))
+  expect_equal(summary(fit)$coefficients, summary(full)$coefficients)
+  expect_equal(unname(residuals(fit)), unname(residuals(full)))
+})

@@ -273,6 +273,7 @@ g_glm <- function(formula = ~.,
                   na.action = na.pass,
                   ...) {
   formula <- as.formula(formula)
+  formula_env <- environment(formula)
   dotdotdot <- list(...)
 
   g_glm <- function(A, H, action_set){
@@ -296,6 +297,7 @@ g_glm <- function(formula = ~.,
     }
 
     model$call <- NULL
+    model <- slim_glm(model, env = formula_env)
 
     m <- list(model = model)
     class(m) <- c("g_glm")

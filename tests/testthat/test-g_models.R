@@ -456,3 +456,30 @@ test_that("g_glmnet handles missing covariates", {
   )
 
 })
+
+test_that("g_glm stores a slimmed glm that predicts as the full glm", {
+  set.seed(1)
+  n <- 500
+  H <- data.frame(
+    L = rnorm(n),
+    K = 1 # aliased with the intercept: rank-deficient design
+  )
+  A <- as.character(rbinom(n, 1, plogis(H$L)))
+
+  fit <- g_glm(~ L + K + I(L^2))(A = A, H = H, action_set = c("0", "1"))$model
+  full <- glm(as.numeric(A) ~ L + K + I(L^2), data = H, family = "binomial")
+
+  expect_lt(fit$rank, length(coef(fit)))
+  expect_null(fit$data)
+  expect_equal(nrow(fit$qr$qr), ncol(fit$qr$qr))
+  expect_identical(environment(fit$terms), environment())
+  expect_identical(environment(fit$formula), environment())
+
+  newdata <- H[1:50, ]
+  expect_equal(
+    suppressWarnings(predict(fit, newdata = newdata, type = "response")),
+    suppressWarnings(predict(full, newdata = newdata, type = "response"))
+  )
+  expect_equal(coef(fit), coef(full))
+  expect_equal(summary(fit)$coefficients, summary(full)$coefficients)
+})
