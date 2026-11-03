@@ -42,6 +42,8 @@ policy_eval(
   M = 1,
   nrep = 1,
   min_subgroup_size = 1,
+  weight_truncation = NULL,
+  weight_bound = NULL,
   future_args = list(future.seed = TRUE)
 )
 
@@ -142,6 +144,25 @@ Either "stacked", or "pooled", see details. (Only used if \code{M > 1} and targe
 \item{nrep}{Number of repetitions of cross-fitting (estimates averaged over repeated cross-fittings)}
 
 \item{min_subgroup_size}{Minimum number of observations in the evaluated subgroup (Only used if target = "subgroup").}
+
+\item{weight_truncation}{\code{NULL} (default, no truncation), a number in
+(0, 1] or a named numeric vector with names \code{"g"} and/or \code{"c"}.
+The stage-wise inverse probability weights are truncated at the given upper
+percentile at every stage; a number is used for both the action weights
+\code{1/g} (names \code{"g"}) and the censoring weights \code{1/c}
+(\code{"c"}), which are truncated independently, e.g.
+\code{c(g = 0.99, c = 0.95)}. Omitted names are not truncated.
+Truncation introduces bias, see details.
+(Only used if target = "value").}
+
+\item{weight_bound}{\code{NULL} (default, no bound), a number in (0, 1) or a
+named numeric vector with names \code{"g"} and/or \code{"c"}. Lower bound
+on the estimated action probabilities \eqn{g_k} (\code{"g"}) and
+non-censoring probabilities \eqn{c_k} (\code{"c"}) of the followed
+action/uncensored observations, i.e. the stage-wise weights are capped at
+the fixed value \code{1/weight_bound}. A bound is applied before
+\code{weight_truncation}. Introduces bias, see details.
+(Only used if target = "value").}
 
 \item{future_args}{Arguments passed to \code{\link[future.apply:future_apply]{future.apply::future_apply()}}.}
 
@@ -304,6 +325,52 @@ If \code{target = "subgroup"}, \code{type = "dr"}, \code{K = 1},
 1\}}} n^{-1} \sum_{(Z, H) \in \mathcal{Z}_{1,m} \times \mathcal{H}_{1,m}}
 I\{d_1(H) = 1\} \left\{Z(1)-Z(0)\right\},} where for ease of notation we let
 the integer \eqn{n} be the number of oberservations in each fold.
+
+If \code{weight_truncation} is given (only \code{target = "value"}), the
+stage-wise factors \eqn{I\{A_j = d_j(\cdot)\}/g_j(H_j, A_j)} and
+\eqn{I\{\Delta_j = 1\}/c_j(H_j)} are capped at the given percentile of their
+positive values among the observations still following the policy and
+uncensored at stage \eqn{j}. The percentiles are calculated separately at
+each stage, for each weight type and, if \code{M > 1}, within each fold. The
+capped factors are then cumulated over the stages, hence a stage with
+extreme weights does not change the truncation at later stages. Capping the
+factor at \eqn{c} is equivalent to bounding the probability of the followed
+action below by \eqn{1/c}. The truncated weights are treated as fixed when
+calculating the influence curve. Truncation trades variance for bias: the
+estimator is no longer doubly robust, the inverse-probability-weighted
+estimate \code{coef_ipw} is biased downwards for non-negative utilities,
+and the bias does not vanish with the sample size. Use the
+\code{weight_truncation} element of the returned object (caps and the number
+of truncated observations per stage) to judge the amount of truncation, and
+prefer improving the g-models over heavy truncation.
+
+\code{weight_bound} is the fixed-level alternative to percentile
+truncation: the estimated probabilities are bounded below by a constant
+instead of the weights being capped at a data-dependent percentile. A bound
+only affects observations with probabilities below the bound, whereas a
+percentile always truncates the upper tail of the weights. Bounding the
+probabilities is the approach recommended for doubly robust estimators by
+Petersen et al. (2012). It has the same consequences for bias and
+double robustness as \code{weight_truncation}.
+
+There is no universally correct bound. A reasonable workflow is to first
+run \code{policy_eval()} without a bound and inspect the smallest estimated
+action probabilities in \code{g_values}. If they are all
+well above 0.05, a bound has no effect and is not needed. Otherwise start
+with \code{weight_bound = 0.05}, or \code{0.01} for large samples,
+(Petersen et al. consider bounds in this range), and check the
+\code{weight_truncation} element of the result: if only a few percent of the
+active observations are bounded the bias is expected to be small, while a
+large share points to a positivity problem that a bound cannot fix. Compare
+the estimates for a few values, e.g. no bound, 0.05 and 0.01; stable
+estimates are more convincing than any single choice.
+
+The bound and the truncation are applied at every
+stage separately, so with K stages the cumulative weight can still be as
+large as \code{(1/weight_bound)^K}; use a larger bound or add
+\code{weight_truncation} when the number of stages is large. If both are given, the bound
+is applied first. The reported cap is then the percentile of the bounded
+weights (and thus at most \code{1/weight_bound}).
 }
 \section{S3 generics}{
 
@@ -394,6 +461,10 @@ pe2
 head(get_policy_actions(pe2))
 }
 \references{
+Petersen, Maya, et al. "Diagnosing and responding to violations in the
+positivity assumption." Statistical Methods in Medical Research 21.1 (2012):
+31-54. \doi{10.1177/0962280210386207}
+\cr \cr
 van der Laan, Mark J., and Alexander R. Luedtke.
 "Targeted learning of the mean outcome under an optimal dynamic treatment rule."
 Journal of causal inference 3.1 (2015): 61-95.
